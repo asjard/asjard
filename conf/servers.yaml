@@ -2,6 +2,9 @@ servers:
   grpc:
     addresses:
       grpc: 127.0.0.1:8080
+  pprof:
+    enabled: true
+    address: 127.0.0.1:9081
   http:
     # The maximum number of concurrent connections the server may serve.
     #
@@ -9,7 +12,7 @@ servers:
     #
     # Concurrency only works if you either call Serve once, or only ServeConn multiple times.
     # It works with ListenAndServe as well.
-    concurrency: !!int 262144
+    Concurrency: !!int 262144
 
     # Per-connection buffer size for requests' reading.
     # This also limits the maximum header size.
@@ -18,12 +21,12 @@ servers:
     # and/or multi-KB headers (for example, BIG cookies).
     #
     # Default buffer size is used if not set.
-    readBufferSize: !!int 4096
+    ReadBufferSize: !!int 4096
 
     # Per-connection buffer size for responses' writing.
     #
     # Default buffer size is used if not set.
-    writeBufferSize: !!int 4096
+    WriteBufferSize: !!int 4096
 
     # ReadTimeout is the amount of time allowed to read
     # the full request including body. The connection's read
@@ -31,25 +34,24 @@ servers:
     # keep-alive connections after the first byte has been read.
     #
     # By default request read timeout is unlimited.
-    readTimeout: !!str 0
+    ReadTimeout: !!str 3s
 
     # WriteTimeout is the maximum duration before timing out
     # writes of the response. It is reset after the request handler
     # has returned.
     #
-    # By default response write timeout is unlimited.
-    writeTimeout: !!str 0
+    WriteTimeout: !!str 3s
 
     # IdleTimeout is the maximum amount of time to wait for the
     # next request when keep-alive is enabled. If IdleTimeout
     # is zero, the value of ReadTimeout is used.
-    idleTimeout: !!str 0
+    IdleTimeout: !!str 0s
 
     # Maximum number of concurrent client connections allowed per IP.
     #
     # By default unlimited number of concurrent connections
     # may be established to the server from a single IP address.
-    maxConnsPerIP: !!int 0
+    MaxConnsPerIP: !!int 0
 
     # Maximum number of requests served per connection.
     #
@@ -57,23 +59,24 @@ servers:
     # 'Connection: close' header is added to the last response.
     #
     # By default unlimited number of requests may be served per connection.
-    maxRequestsPerConn: !!int 0
+    MaxRequestsPerConn: !!int 0
 
     # MaxIdleWorkerDuration is the maximum idle time of a single worker in the underlying
     # worker pool of the Server. Idle workers beyond this time will be cleared.
-    maxIdleWorkerDuration: !!str 0
+    MaxIdleWorkerDuration: !!str 10m
 
     # Period between tcp keep-alive messages.
     #
     # TCP keep-alive period is determined by operation system by default.
-    # TCPKeepalivePeriod: time.Duration
+    TCPKeepalivePeriod: !!str 0s
 
     # Maximum request body size.
     #
     # The server rejects requests with bodies exceeding this limit.
     #
     # Request body size is limited by DefaultMaxRequestBodySize by default.
-    # MaxRequestBodySize int
+    # 4 * 1024 * 1024
+    MaxRequestBodySize: !!int 4194304
 
     # Whether to disable keep-alive connections.
     #
@@ -81,14 +84,14 @@ servers:
     # the first response to client if this option is set to true.
     #
     # By default keep-alive connections are enabled.
-    # DisableKeepalive bool
+    DisableKeepalive: !!bool false
 
     # Whether to enable tcp keep-alive connections.
     #
     # Whether the operating system should send tcp keep-alive messages on the tcp connection.
     #
     # By default tcp keep-alive connections are disabled.
-    # TCPKeepalive bool
+    TCPKeepalive: !!bool false
 
     # Aggressively reduces memory usage at the cost of higher CPU usage
     # if set to true.
@@ -98,7 +101,7 @@ servers:
     # usage by more than 50%.
     #
     # Aggressive memory usage reduction is disabled by default.
-    # ReduceMemoryUsage bool
+    ReduceMemoryUsage: !!bool false
 
     # Rejects all non-GET requests if set to true.
     #
@@ -107,7 +110,7 @@ servers:
     # by ReadBufferSize if GetOnly is set.
     #
     # Server accepts all the requests by default.
-    # GetOnly bool
+    GetOnly: !!bool false
 
     # Will not pre parse Multipart Form data if set to true.
     #
@@ -115,7 +118,7 @@ servers:
     # multipart form data as a binary blob, or choose when to parse the data.
     #
     # Server pre parses multipart form data by default.
-    # DisablePreParseMultipartForm bool
+    DisablePreParseMultipartForm: !!bool true
 
     # Logs all errors, including the most frequent
     # 'connection reset by peer', 'broken pipe' and 'connection timeout'
@@ -125,7 +128,7 @@ servers:
     # By default the most frequent errors such as
     # 'connection reset by peer', 'broken pipe' and 'connection timeout'
     # are suppressed in order to limit output log traffic.
-    # LogAllErrors bool
+    LogAllErrors: !!bool false
 
     # Will not log potentially sensitive content in error logs
     #
@@ -133,7 +136,7 @@ servers:
     # in the request/response.
     #
     # Server logs all full errors by default.
-    # SecureErrorLogMessage bool
+    SecureErrorLogMessage: !!bool false
 
     # Header names are passed as-is without normalization
     # if this option is set.
@@ -151,12 +154,12 @@ servers:
     #     * HOST -> Host
     #     * content-type -> Content-Type
     #     * cONTENT-lenGTH -> Content-Length
-    # DisableHeaderNamesNormalizing bool
+    DisableHeaderNamesNormalizing: !!bool false
 
     # SleepWhenConcurrencyLimitsExceeded is a duration to be slept of if
     # the concurrency limit in exceeded (default [when is 0]: don't sleep
     # and accept new connections immediately).
-    # SleepWhenConcurrencyLimitsExceeded time.Duration
+    SleepWhenConcurrencyLimitsExceeded: !!str 0s
 
     # NoDefaultServerHeader, when set to true, causes the default Server header
     # to be excluded from the Response.
@@ -165,35 +168,39 @@ servers:
     # internal default value in its absence. With this option set to true,
     # the only time a Server header will be sent is if a non-zero length
     # value is explicitly provided during a request.
-    # NoDefaultServerHeader bool
+    NoDefaultServerHeader: !!bool false
 
     # NoDefaultDate, when set to true, causes the default Date
     # header to be excluded from the Response.
     #
     # The default Date header value is the current date value. When
     # set to true, the Date will not be present.
-    # NoDefaultDate bool
+    NoDefaultDate: !!bool false
 
     # NoDefaultContentType, when set to true, causes the default Content-Type
     # header to be excluded from the Response.
     #
     # The default Content-Type header value is the internal default value. When
     # set to true, the Content-Type will not be present.
-    # NoDefaultContentType bool
+    NoDefaultContentType: !!bool false
 
     # KeepHijackedConns is an opt-in disable of connection
     # close by fasthttp after connections' HijackHandler returns.
     # This allows to save goroutines, e.g. when fasthttp used to upgrade
     # http connections to WS and connection goes to another handler,
     # which will close it when needed.
-    # KeepHijackedConns bool
+    KeepHijackedConns: !!bool false
 
     # CloseOnShutdown when true adds a `Connection: close` header when the server is shutting down.
-    # CloseOnShutdown bool
+    CloseOnShutdown: !!bool false
 
     # StreamRequestBody enables request body streaming,
     # and calls the handler sooner when given body is
     # larger than the current limit.
-    # StreamRequestBody bool
+    StreamRequestBody: !!bool false
+
+    # 证书相关配置
+    certFile: ""
+    keyFile: ""
     addresses:
       rest: 127.0.0.1:8080

@@ -27,6 +27,12 @@ type Options struct {
 	// 分隔符, 字符串转换为列表时有用, 默认空白符
 	delimiter   string
 	unmarshaler Unmarshaler
+	// 忽略大小写
+	ignoreCase bool
+	// 转换为大写
+	toUpper bool
+	// 转换为小写
+	toLower bool
 }
 
 type watchOptions struct {
@@ -103,8 +109,29 @@ func WithDelimiter(delimiter string) func(opts *Options) {
 	}
 }
 
-// 获取参数
-func getOptions(opts ...Option) *Options {
+// WithIgnoreCase 设置大小写敏感
+func WithIgnoreCase() func(opts *Options) {
+	return func(opts *Options) {
+		opts.ignoreCase = true
+	}
+}
+
+// WithToUpper 设置转换为大写
+func WithToUpper() func(opts *Options) {
+	return func(opts *Options) {
+		opts.toUpper = true
+	}
+}
+
+// WithToLower 设置转换为小写
+func WithToLower() func(opts *Options) {
+	return func(opts *Options) {
+		opts.toLower = true
+	}
+}
+
+// GetOptions 获取参数
+func GetOptions(opts ...Option) *Options {
 	options := &Options{}
 	for _, opt := range opts {
 		opt(options)

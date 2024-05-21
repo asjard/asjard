@@ -420,7 +420,7 @@ func (m *ConfigManager) disconnect() {
 
 // Set 添加配置，添加在本地内存或者远程的配置中心
 func Set(key string, value any, opts ...Option) error {
-	return configmanager.setValue(key, value, getOptions(opts...))
+	return configmanager.setValue(key, value, GetOptions(opts...))
 }
 
 // Get 获取配置
@@ -428,15 +428,10 @@ func Set(key string, value any, opts ...Option) error {
 // 自动加密或解密
 //
 //	@param key 需要获取的配置的key
-//	@param defaultValue 默认值，如果获取不到则使用默认值
 //	@param opts 获取配置的可选参数
 //	@return any
-func Get(key string, defaultValue any, opts ...Option) any {
-	v := configmanager.getValue(key, getOptions(opts...))
-	if v == nil {
-		return defaultValue
-	}
-	return v
+func Get(key string, options *Options) any {
+	return configmanager.getValue(key, options)
 }
 
 // GetWithPrefix 根据前缀获取配置
@@ -445,7 +440,7 @@ func Get(key string, defaultValue any, opts ...Option) any {
 //	@param opts 获取配置的可选参数
 //	@return map 返回的值的key为properties格式的
 func GetWithPrefix(prefixKey string, opts ...Option) map[string]any {
-	return configmanager.getValueByPrefix(prefixKey, getOptions(opts...))
+	return configmanager.getValueByPrefix(prefixKey, GetOptions(opts...))
 }
 
 // GetString 获取配置并转化为字符串类型
@@ -455,13 +450,20 @@ func GetWithPrefix(prefixKey string, opts ...Option) map[string]any {
 //	@param opts 获取配置的可选参数
 //	@return string
 func GetString(key string, defaultValue string, opts ...Option) string {
-	v := Get(key, opts)
+	options := GetOptions(opts...)
+	v := Get(key, options)
 	if v == nil {
 		return defaultValue
 	}
 	value, err := cast.ToStringE(v)
 	if err != nil {
 		return defaultValue
+	}
+	if options.toLower {
+		return strings.ToLower(value)
+	}
+	if options.toUpper {
+		return strings.ToUpper(value)
 	}
 	return value
 }
@@ -473,11 +475,11 @@ func GetString(key string, defaultValue string, opts ...Option) string {
 //	@param opts
 //	@return []string
 func GetStrings(key string, defaultValue []string, opts ...Option) []string {
-	v := Get(key, opts)
+	options := GetOptions(opts...)
+	v := Get(key, options)
 	if v == nil {
 		return defaultValue
 	}
-	options := getOptions(opts...)
 	if options.delimiter == "" {
 		value, err := cast.ToStringSliceE(v)
 		if err != nil {
@@ -503,7 +505,7 @@ func GetStrings(key string, defaultValue []string, opts ...Option) []string {
 //	@param opts
 //	@return bool
 func GetBool(key string, defaultValue bool, opts ...Option) bool {
-	v := Get(key, opts)
+	v := Get(key, GetOptions(opts...))
 	if v == nil {
 		return defaultValue
 	}
@@ -518,7 +520,6 @@ func GetBool(key string, defaultValue bool, opts ...Option) bool {
 //	@param opts 可选参数WithDelimiter, 默认分隔符空格
 //	@return []bool
 func GetBools(key string, defaultValue []bool, opts ...Option) []bool {
-	// options := getOptions(opts...)
 	return defaultValue
 }
 
@@ -529,7 +530,7 @@ func GetBools(key string, defaultValue []bool, opts ...Option) []bool {
 //	@param opts
 //	@return int
 func GetInt(key string, defaultValue int, opts ...Option) int {
-	v := Get(key, opts)
+	v := Get(key, GetOptions(opts...))
 	if v == nil {
 		return defaultValue
 	}
@@ -557,7 +558,7 @@ func GetInts(key string, defaultValue []int, opts ...Option) []int {
 //	@param opts
 //	@return int64
 func GetInt64(key string, defaultValue int64, opts ...Option) int64 {
-	v := Get(key, opts)
+	v := Get(key, GetOptions(opts...))
 	if v == nil {
 		return defaultValue
 	}
@@ -575,7 +576,7 @@ func GetInt64s(key string, defaultValue []int64, opts ...Option) []int64 {
 
 // GetInt32 获取配置并转化为int32类型
 func GetInt32(key string, defaultValue int32, opts ...Option) int32 {
-	v := Get(key, opts)
+	v := Get(key, GetOptions(opts...))
 	if v == nil {
 		return defaultValue
 	}
@@ -593,7 +594,7 @@ func GetInt32s(key string, defaultValue []int32, opts ...Option) []int32 {
 
 // GetFloat64 获取配置并转化为float64
 func GetFloat64(key string, defaultValue float64, opts ...Option) float64 {
-	v := Get(key, opts)
+	v := Get(key, GetOptions(opts...))
 	if v == nil {
 		return defaultValue
 	}
@@ -611,7 +612,7 @@ func GetFloat64s(key string, defaultValue []float64, opts ...Option) []float64 {
 
 // GetFloat32 获取配置并转化为float32
 func GetFloat32(key string, defaultValue float32, opts ...Option) float32 {
-	v := Get(key, opts)
+	v := Get(key, GetOptions(opts...))
 	if v == nil {
 		return defaultValue
 	}
@@ -624,7 +625,7 @@ func GetFloat32(key string, defaultValue float32, opts ...Option) float32 {
 
 // GetDuration 获取配置并转化为time.Duration类型
 func GetDuration(key string, defaultValue time.Duration, opts ...Option) time.Duration {
-	v := Get(key, opts)
+	v := Get(key, GetOptions(opts...))
 	if v == nil {
 		return defaultValue
 	}
@@ -638,11 +639,11 @@ func GetDuration(key string, defaultValue time.Duration, opts ...Option) time.Du
 
 // GetTime 获取并转化为time.Time类型
 func GetTime(key string, defaultValue time.Time, opts ...Option) time.Time {
-	v := Get(key, opts)
+	options := GetOptions(opts...)
+	v := Get(key, options)
 	if v == nil {
 		return defaultValue
 	}
-	options := getOptions(opts...)
 	value, err := cast.ToTimeInDefaultLocationE(v, options.location)
 	if err != nil {
 		return defaultValue
@@ -668,7 +669,7 @@ GetWithUnmarshal 根据前缀序列化
 @return error
 */
 func GetWithUnmarshal(prefix string, outPtr any, opts ...Option) error {
-	options := getOptions(opts...)
+	options := GetOptions(opts...)
 	if options.unmarshaler != nil {
 		outByte, err := json.Marshal(getConfigMap(GetWithPrefix(prefix, opts...)))
 		if err != nil {

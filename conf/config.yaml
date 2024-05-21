@@ -4,8 +4,8 @@ config:
   # etcd配置中心配置
   etcd:
     # 配置中心地址
-    endpoints: 
-    - {{database.etcd.endpoints[0]}}
-    - {{database.etcd.endpoints[1]}}
+    endpoints: []
+    # - {{database.etcd.endpoints[0]}}
+    # - {{database.etcd.endpoints[1]}}
     params:
       x: y

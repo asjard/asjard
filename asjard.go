@@ -7,6 +7,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
 	cfgenv "github.com/asjard/asjard/core/config/sources/env"
 	cfgfile "github.com/asjard/asjard/core/config/sources/file"
@@ -93,6 +94,11 @@ func (asd *Asjard) init() error {
 	if err := registry.Init(); err != nil {
 		return err
 	}
+
+	// 系统启动
+	if err := bootstrap.Start(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -168,5 +174,6 @@ func (asd *Asjard) stop() {
 	}
 	// 配置中心断开连接
 	config.DisConnect()
+	bootstrap.Stop()
 	logger.Info("system exit done")
 }

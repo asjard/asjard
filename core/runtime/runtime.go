@@ -42,16 +42,6 @@ func Init() error {
 		Environment = config.GetString("environment", "dev")
 		Version = config.GetString("instance.version", "1.0.0")
 		Name = config.GetString("instance.name", constant.Framework)
-		logger.Debugf(`
-runtime info: 
-	APP: %s
-	Region: %s
-	AZ: %s
-	Environment: %s
-	ServiceID: %s
-	ServiceName: %s
-	ServiceVersion: %s
-	`, APP, Region, AZ, Environment, ServiceID, Name, Version)
 	})
 	return nil
 }

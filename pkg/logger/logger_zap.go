@@ -64,3 +64,8 @@ func (l *ZapLogger) Error(v ...any) {
 func (l *ZapLogger) Errorf(format string, v ...any) {
 	l.SugaredLogger.Errorf(format, v...)
 }
+
+// SetLevel 设置日志级别
+func (l *ZapLogger) SetLevel(level logger.Level) {
+
+}

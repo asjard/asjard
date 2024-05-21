@@ -90,3 +90,8 @@ func (dl defaultLogger) Error(v ...interface{}) {
 func (dl defaultLogger) Errorf(format string, v ...interface{}) {
 	dl.infof(ERROR, format, v...)
 }
+
+// SetLevel 设置日志级别
+func (dl *defaultLogger) SetLevel(level Level) {
+	dl.level = level
+}

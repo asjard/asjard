@@ -26,3 +26,19 @@ func (l Level) String() string {
 	}
 	return ""
 }
+
+// GetLevel 根据字符串获取日志级别
+func GetLevel(level string) Level {
+	switch level {
+	case DEBUG.String():
+		return DEBUG
+	case INFO.String():
+		return INFO
+	case WARN.String():
+		return WARN
+	case ERROR.String():
+		return ERROR
+	default:
+		return DEBUG
+	}
+}

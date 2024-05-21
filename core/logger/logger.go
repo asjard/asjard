@@ -1,6 +1,8 @@
 package logger
 
-import "log"
+import (
+	"log"
+)
 
 // Logger 日志
 type Logger interface {
@@ -15,6 +17,8 @@ type Logger interface {
 
 	Error(v ...any)
 	Errorf(format string, v ...any)
+	// 设置日志级别
+	SetLevel(level Level)
 }
 
 // L 日志组件
@@ -41,6 +45,12 @@ func Init() error {
 		}
 		L = lg
 	}
+	// setLevel := func(level string) {
+	// 	Debugf("level changed %s", level)
+	// }
+	// setLevel(config.GetString("log.level", "DEBUG", config.WithWatch(func(event *config.Event) {
+	// 	setLevel(cast.ToString(event.Value.Value))
+	// })))
 	return nil
 }
 
@@ -87,4 +97,10 @@ func Error(text string) {
 // Errorf .
 func Errorf(format string, value ...any) {
 	L.Errorf(format, value...)
+}
+
+// SetLevel 设置日志级别
+func SetLevel(level string) {
+	Debugf("logger level changed: %s", level)
+	L.SetLevel(GetLevel(level))
 }
