@@ -1,0 +1,4 @@
+# 加解密相关配置
+cipher:
+  # 默认加解密组件名称
+  default: default
