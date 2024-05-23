@@ -1,39 +1,63 @@
 package main
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/asjard/asjard"
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
+	apb "github.com/asjard/asjard/examples/protos_repo"
+	routing "github.com/qiangxue/fasthttp-routing"
+	"github.com/valyala/fasthttp"
 
 	// _ "github.com/asjard/asjard/pkg/logger"
 	_ "github.com/asjard/asjard/pkg/security/base64"
 	// _ "github.com/asjard/asjard/pkg/server/grpc"
-	rest "github.com/asjard/asjard/pkg/server/http"
+	"github.com/asjard/asjard/pkg/server/rest"
 )
 
 // Hello .
 type Hello struct{}
 
 // Say .
-// func (h Hello) Say(ctx context.Context, in interface{}) (interface{}, error) {
-// 	return nil, nil
-// }
+func (h Hello) Say(ctx *rest.Context, in *apb.Empty) (*apb.SayResp, error) {
+	// panic("say hello panic")
+	return &apb.SayResp{Msg: "hello"}, nil
+}
 
-// func (h Hello) Http(c echo.Context) error {
-// 	return nil
-// }
+// Hello .
+func (h Hello) Hello(c *routing.Context) error {
+	c.Response.SetBodyString("hello")
+	return nil
+}
+
+// Hello1 .
+func (h Hello) Hello1(c *fasthttp.RequestCtx) {
+	c.Response.SetBodyString("hello")
+}
+
+// Hello2 .
+func (h Hello) Hello2(ctx *rest.Context) (any, error) {
+	return nil, nil
+}
+
+// ServiceDesc .
+func (h Hello) ServiceDesc() rest.ServiceDesc {
+	return apb.HelloRestServiceDesc
+}
 
 // Routers .
-func (Hello) Routers() []*rest.Router {
-	return []*rest.Router{}
+func (h Hello) Routers() []*rest.Router {
+	return []*rest.Router{
+		{Name: "hello", Path: "/", Method: http.MethodGet, Handler: h.Hello2},
+	}
 }
 
-// Groups .
-func (Hello) Groups() []*rest.Group {
-	return []*rest.Group{}
-}
+// // Groups .
+// func (Hello) Groups() []*rest.Group {
+// 	return []*rest.Group{}
+// }
 
 type instance struct {
 	ID   string
@@ -53,7 +77,7 @@ func main() {
 	config.Set("test.env.key", "testxxx")
 	go func() {
 		for {
-			logger.Debugf("http.rest=%s", config.GetString("servers.http.addresses.rest", ""))
+			// logger.Debugf("http.rest=%s", config.GetString("servers.http.addresses.rest", ""))
 			// logger.Debugf("----testEnv=%s", config.GetString("testEnv", "not found"))
 			// logger.Debugf("----a=%s", config.GetString("a", "not found"))
 			// jsonOut := make(map[string]int)

@@ -13,6 +13,8 @@ var (
 	HOME_DIR_ENV_NAME = "ASJARD_HOME_DIR"
 	// CONF_DIR 配置文件目录名称
 	CONF_DIR = "conf"
+	// CERT_DIR 证书存放路径
+	CERT_DIR = "certs"
 )
 
 // GetWorkDir 获取当前工作目录
@@ -42,6 +44,11 @@ func GetHomeDir() string {
 // GetConfDir 获取配置目录
 func GetConfDir() string {
 	return filepath.Join(GetHomeDir(), CONF_DIR)
+}
+
+// GetCertDir 获取证书存放路径
+func GetCertDir() string {
+	return filepath.Join(GetHomeDir(), CONF_DIR, CERT_DIR)
 }
 
 // IsPathExists 目录或文件是否存在

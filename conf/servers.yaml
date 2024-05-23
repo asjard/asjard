@@ -202,5 +202,9 @@ servers:
     # 证书相关配置
     certFile: ""
     keyFile: ""
+    # 文档相关配置
+    doc: 
+      # 错误页地址
+      errorPage: ""
     addresses:
       rest: 127.0.0.1:8080

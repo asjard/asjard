@@ -2,16 +2,17 @@ package rest
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
+	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/utils"
-	routing "github.com/qiangxue/fasthttp-routing"
+	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 )
 
@@ -27,14 +28,18 @@ const (
 
 // Handler .
 type Handler interface {
-	Routers() []*Router
-	Groups() []*Group
+	// Routers() []*Router
+	// Groups() []*Group
+	ServiceDesc() ServiceDesc
 }
+
+// ErrorHandler 错误处理
+type ErrorHandler func(ctx *Context, err error)
 
 // RestServer .
 type RestServer struct {
 	addresses map[string]string
-	router    *routing.Router
+	router    *router.Router
 	server    fasthttp.Server
 	certFile  string
 	keyFile   string
@@ -42,8 +47,21 @@ type RestServer struct {
 
 var _ server.Server = &RestServer{}
 
+var errorHandler ErrorHandler = func(ctx *Context, err error) {
+	DefaultErrorHandler(ctx, err)
+	contextPool.Put(ctx)
+}
+
 func init() {
 	server.AddServer(New)
+}
+
+// SetErrorHandler 设置错误处理
+func SetErrorHandler(errHandler ErrorHandler) {
+	errorHandler = func(ctx *Context, err error) {
+		errHandler(ctx, err)
+		contextPool.Put(ctx)
+	}
 }
 
 // New .
@@ -54,18 +72,19 @@ func New() (server.Server, error) {
 	}
 	certFile := config.GetString("servers.http.certFile", "")
 	if certFile != "" {
-		certFile = filepath.Join(utils.GetConfDir(), certFile)
+		certFile = filepath.Join(utils.GetCertDir(), certFile)
 	}
 	keyFile := config.GetString("servers.http.keyFile", "")
 	if keyFile != "" {
-		keyFile = filepath.Join(utils.GetConfDir(), keyFile)
+		keyFile = filepath.Join(utils.GetCertDir(), keyFile)
 	}
-	return &RestServer{
+	server := &RestServer{
 		addresses: addressesMap,
-		router:    routing.New(),
+		router:    router.New(),
 		certFile:  certFile,
 		keyFile:   keyFile,
 		server: fasthttp.Server{
+			Name:                               config.GetString("servers.http.name", constant.Framework),
 			Concurrency:                        config.GetInt("servers.http.Concurrency", fasthttp.DefaultConcurrency),
 			ReadBufferSize:                     config.GetInt("servers.http.ReadBufferSize", defaultReadBufferSize),
 			WriteBufferSize:                    config.GetInt("servers.http.ReadBufferSize", defaultWriteBufferSize),
@@ -92,8 +111,10 @@ func New() (server.Server, error) {
 			KeepHijackedConns:                  config.GetBool("servers.http.KeepHijackedConns", false),
 			CloseOnShutdown:                    config.GetBool("servers.http.CloseOnShutdown", false),
 			StreamRequestBody:                  config.GetBool("servers.http.StreamRequestBody", false),
+			Logger:                             &Logger{},
 		},
-	}, nil
+	}
+	return server, nil
 }
 
 // AddHandler .
@@ -102,7 +123,7 @@ func (s *RestServer) AddHandler(handler any) error {
 	if !ok {
 		return fmt.Errorf("invlaid handler, must implement *rest.Handler")
 	}
-	if err := s.addRouter(h.Routers()); err != nil {
+	if err := s.addRouter(h); err != nil {
 		return err
 	}
 	return nil
@@ -110,6 +131,21 @@ func (s *RestServer) AddHandler(handler any) error {
 
 // Start .
 func (s *RestServer) Start() error {
+	s.server.ErrorHandler = func(ctx *fasthttp.RequestCtx, err error) {
+		logger.Errorf("request %s %s err: %v", ctx.Method(), ctx.Path(), err)
+		errorHandler(NewContext(ctx), ErrInterServerError)
+	}
+	s.router.NotFound = func(ctx *fasthttp.RequestCtx) {
+		errorHandler(NewContext(ctx), ErrNotFound)
+	}
+	s.router.MethodNotAllowed = func(ctx *fasthttp.RequestCtx) {
+		errorHandler(NewContext(ctx), ErrMethodNotAllowed)
+	}
+	s.router.PanicHandler = func(ctx *fasthttp.RequestCtx, err interface{}) {
+		logger.Errorf("request %s %s err: %v", ctx.Method(), ctx.Path(), err)
+		errorHandler(NewContext(ctx), ErrInterServerError)
+	}
+	s.server.Handler = s.router.Handler
 	for _, address := range s.addresses {
 		if strings.HasPrefix(address, "unix") {
 			if err := s.server.ListenAndServeUNIX(address, os.ModeSocket); err != nil {
@@ -151,15 +187,12 @@ func (s *RestServer) ListenAddresses() []*server.EndpointAddress {
 	return addresses
 }
 
-func (s *RestServer) addRouter(routers []*Router) error {
-	for _, router := range routers {
-		s.router.To(router.Method, router.Path, func(ctx *routing.Context) error {
-			switch router.Method {
-			case http.MethodPost, http.MethodPut, http.MethodPatch:
-			default:
-			}
-			return nil
-		})
+func (s *RestServer) addRouter(handler Handler) error {
+	desc := handler.ServiceDesc()
+	for _, method := range desc.Methods {
+		if method.Method != "" && method.Path != "" && method.Handler != nil {
+			s.router.Handle(method.Method, method.Path, method.Handler(handler))
+		}
 	}
 	return nil
 }
