@@ -5,7 +5,7 @@ servers:
   pprof:
     enabled: true
     address: 127.0.0.1:9081
-  http:
+  rest:
     # The maximum number of concurrent connections the server may serve.
     #
     # DefaultConcurrency is used if not set.
@@ -205,6 +205,6 @@ servers:
     # 文档相关配置
     doc: 
       # 错误页地址
-      errorPage: ""
+      errPage: "https://www.baidu.com"
     addresses:
       rest: 127.0.0.1:8080

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 
@@ -49,7 +50,7 @@ var _ server.Server = &RestServer{}
 
 var errorHandler ErrorHandler = func(ctx *Context, err error) {
 	DefaultErrorHandler(ctx, err)
-	contextPool.Put(ctx)
+	ctx.Close()
 }
 
 func init() {
@@ -60,21 +61,21 @@ func init() {
 func SetErrorHandler(errHandler ErrorHandler) {
 	errorHandler = func(ctx *Context, err error) {
 		errHandler(ctx, err)
-		contextPool.Put(ctx)
+		ctx.Close()
 	}
 }
 
 // New .
 func New() (server.Server, error) {
 	addressesMap := make(map[string]string)
-	if err := config.GetWithUnmarshal("servers.http.addresses", &addressesMap); err != nil {
+	if err := config.GetWithUnmarshal("servers.rest.addresses", &addressesMap); err != nil {
 		return nil, err
 	}
-	certFile := config.GetString("servers.http.certFile", "")
+	certFile := config.GetString("servers.rest.certFile", "")
 	if certFile != "" {
 		certFile = filepath.Join(utils.GetCertDir(), certFile)
 	}
-	keyFile := config.GetString("servers.http.keyFile", "")
+	keyFile := config.GetString("servers.rest.keyFile", "")
 	if keyFile != "" {
 		keyFile = filepath.Join(utils.GetCertDir(), keyFile)
 	}
@@ -84,33 +85,33 @@ func New() (server.Server, error) {
 		certFile:  certFile,
 		keyFile:   keyFile,
 		server: fasthttp.Server{
-			Name:                               config.GetString("servers.http.name", constant.Framework),
-			Concurrency:                        config.GetInt("servers.http.Concurrency", fasthttp.DefaultConcurrency),
-			ReadBufferSize:                     config.GetInt("servers.http.ReadBufferSize", defaultReadBufferSize),
-			WriteBufferSize:                    config.GetInt("servers.http.ReadBufferSize", defaultWriteBufferSize),
-			ReadTimeout:                        config.GetDuration("servers.http.ReadTimeout", time.Second*3),
-			WriteTimeout:                       config.GetDuration("servers.http.WriteTimeout", time.Second*3),
-			IdleTimeout:                        config.GetDuration("servers.http.WriteTimeout", config.GetDuration("servers.http.ReadTimeout", time.Second*3)),
-			MaxConnsPerIP:                      config.GetInt("servers.http.WriteTimeout", 0),
-			MaxRequestsPerConn:                 config.GetInt("servers.http.MaxRequestsPerConn", 0),
-			MaxIdleWorkerDuration:              config.GetDuration("servers.http.MaxIdleWorkerDuration", time.Minute*10),
-			TCPKeepalivePeriod:                 config.GetDuration("servers.http.TCPKeepalivePeriod", 0),
-			MaxRequestBodySize:                 config.GetInt("servers.http.MaxRequestBodySize", fasthttp.DefaultMaxRequestBodySize),
-			DisableKeepalive:                   config.GetBool("servers.http.DisableKeepalive", false),
-			TCPKeepalive:                       config.GetBool("servers.http.TCPKeepalive", false),
-			ReduceMemoryUsage:                  config.GetBool("servers.http.ReduceMemoryUsage", false),
-			GetOnly:                            config.GetBool("servers.http.GetOnly", false),
-			DisablePreParseMultipartForm:       config.GetBool("servers.http.DisablePreParseMultipartForm", true),
-			LogAllErrors:                       config.GetBool("servers.http.LogAllErrors", false),
-			SecureErrorLogMessage:              config.GetBool("servers.http.SecureErrorLogMessage", false),
-			DisableHeaderNamesNormalizing:      config.GetBool("servers.http.DisableHeaderNamesNormalizing", false),
-			SleepWhenConcurrencyLimitsExceeded: config.GetDuration("servers.http.SleepWhenConcurrencyLimitsExceeded", 0),
-			NoDefaultServerHeader:              config.GetBool("servers.http.NoDefaultServerHeader", false),
-			NoDefaultDate:                      config.GetBool("servers.http.NoDefaultDate", false),
-			NoDefaultContentType:               config.GetBool("servers.http.NoDefaultContentType", false),
-			KeepHijackedConns:                  config.GetBool("servers.http.KeepHijackedConns", false),
-			CloseOnShutdown:                    config.GetBool("servers.http.CloseOnShutdown", false),
-			StreamRequestBody:                  config.GetBool("servers.http.StreamRequestBody", false),
+			Name:                               config.GetString("servers.rest.name", constant.Framework),
+			Concurrency:                        config.GetInt("servers.rest.Concurrency", fasthttp.DefaultConcurrency),
+			ReadBufferSize:                     config.GetInt("servers.rest.ReadBufferSize", defaultReadBufferSize),
+			WriteBufferSize:                    config.GetInt("servers.rest.ReadBufferSize", defaultWriteBufferSize),
+			ReadTimeout:                        config.GetDuration("servers.rest.ReadTimeout", time.Second*3),
+			WriteTimeout:                       config.GetDuration("servers.rest.WriteTimeout", time.Second*3),
+			IdleTimeout:                        config.GetDuration("servers.rest.WriteTimeout", config.GetDuration("servers.rest.ReadTimeout", time.Second*3)),
+			MaxConnsPerIP:                      config.GetInt("servers.rest.WriteTimeout", 0),
+			MaxRequestsPerConn:                 config.GetInt("servers.rest.MaxRequestsPerConn", 0),
+			MaxIdleWorkerDuration:              config.GetDuration("servers.rest.MaxIdleWorkerDuration", time.Minute*10),
+			TCPKeepalivePeriod:                 config.GetDuration("servers.rest.TCPKeepalivePeriod", 0),
+			MaxRequestBodySize:                 config.GetInt("servers.rest.MaxRequestBodySize", fasthttp.DefaultMaxRequestBodySize),
+			DisableKeepalive:                   config.GetBool("servers.rest.DisableKeepalive", false),
+			TCPKeepalive:                       config.GetBool("servers.rest.TCPKeepalive", false),
+			ReduceMemoryUsage:                  config.GetBool("servers.rest.ReduceMemoryUsage", false),
+			GetOnly:                            config.GetBool("servers.rest.GetOnly", false),
+			DisablePreParseMultipartForm:       config.GetBool("servers.rest.DisablePreParseMultipartForm", true),
+			LogAllErrors:                       config.GetBool("servers.rest.LogAllErrors", false),
+			SecureErrorLogMessage:              config.GetBool("servers.rest.SecureErrorLogMessage", false),
+			DisableHeaderNamesNormalizing:      config.GetBool("servers.rest.DisableHeaderNamesNormalizing", false),
+			SleepWhenConcurrencyLimitsExceeded: config.GetDuration("servers.rest.SleepWhenConcurrencyLimitsExceeded", 0),
+			NoDefaultServerHeader:              config.GetBool("servers.rest.NoDefaultServerHeader", false),
+			NoDefaultDate:                      config.GetBool("servers.rest.NoDefaultDate", false),
+			NoDefaultContentType:               config.GetBool("servers.rest.NoDefaultContentType", false),
+			KeepHijackedConns:                  config.GetBool("servers.rest.KeepHijackedConns", false),
+			CloseOnShutdown:                    config.GetBool("servers.rest.CloseOnShutdown", false),
+			StreamRequestBody:                  config.GetBool("servers.rest.StreamRequestBody", false),
 			Logger:                             &Logger{},
 		},
 	}
@@ -191,6 +192,11 @@ func (s *RestServer) addRouter(handler Handler) error {
 	desc := handler.ServiceDesc()
 	for _, method := range desc.Methods {
 		if method.Method != "" && method.Path != "" && method.Handler != nil {
+			ht := reflect.TypeOf(desc.HandlerType).Elem()
+			st := reflect.TypeOf(handler)
+			if !st.Implements(ht) {
+				return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
+			}
 			s.router.Handle(method.Method, method.Path, method.Handler(handler))
 		}
 	}

@@ -6,7 +6,8 @@ import (
 
 // Status .
 type Status struct {
-	// 错误码
+	// 错误码, 因为会包含HTTP状态码
+	// 自定义错误码应>=600
 	Code int32 `json:"code"`
 	// 错误信息
 	Message string `json:"message"`

@@ -10,6 +10,7 @@ import (
 // AccountRestServer rest服务需要实现的方法
 type AccountRestServer interface {
 	Say(ctx *rest.Context, in *Empty) (*SayResp, error)
+	rest.Handler
 }
 
 // AccountSayHandler .
@@ -34,6 +35,30 @@ var HelloRestServiceDesc = rest.ServiceDesc{
 			MethodName: "Say",
 			Method:     http.MethodGet,
 			Path:       "/",
+			Handler:    AccountSayHandler,
+		},
+		{
+			MethodName: "Say1",
+			Method:     http.MethodGet,
+			Path:       "/{account_id}/",
+			Handler:    AccountSayHandler,
+		},
+		{
+			MethodName: "Say1",
+			Method:     http.MethodGet,
+			Path:       "/region/{region}/user/{user_id}/",
+			Handler:    AccountSayHandler,
+		},
+		{
+			MethodName: "Say1",
+			Method:     http.MethodGet,
+			Path:       "/region/{region_id}/project/{project_id}/user/{user_id}",
+			Handler:    AccountSayHandler,
+		},
+		{
+			MethodName: "Say1",
+			Method:     http.MethodPost,
+			Path:       "/region/{region_id}/project/{project_id}/user/{user_id}",
 			Handler:    AccountSayHandler,
 		},
 	},
