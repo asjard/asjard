@@ -15,6 +15,7 @@ import (
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/utils"
 	"github.com/fasthttp/router"
+	"github.com/google/uuid"
 	"github.com/valyala/fasthttp"
 )
 
@@ -27,8 +28,10 @@ const (
 	defaultReadBufferSize  = 4096
 	defaultWriteBufferSize = 4096
 
-	// HeaderResponseRequestMethod 返回头
+	// HeaderResponseRequestMethod 请求方法返回头
 	HeaderResponseRequestMethod = "x-request-method"
+	// HeaderResponseRequestID 请求ID返回头
+	HeaderResponseRequestID = "x-request-id"
 )
 
 // Handler .
@@ -222,9 +225,9 @@ func (s *RestServer) addRouter(handler Handler) error {
 				if !st.Implements(ht) {
 					return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
 				}
-				// s.router.Handle(md, method.Path, method.Handler(handler))
 				s.router.Handle(md, method.Path, func(ctx *fasthttp.RequestCtx) {
 					ctx.Response.Header.Set(HeaderResponseRequestMethod, method.MethodName)
+					ctx.Response.Header.Set(HeaderResponseRequestID, uuid.NewString())
 					method.Handler(ctx, handler)
 				})
 			}
