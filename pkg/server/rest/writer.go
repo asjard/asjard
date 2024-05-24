@@ -3,6 +3,7 @@ package rest
 import (
 	"encoding/json"
 	"net/http"
+	"reflect"
 
 	"github.com/asjard/asjard/utils"
 	"github.com/valyala/fasthttp"
@@ -14,7 +15,11 @@ const (
 )
 
 // DefaultWriter 默认输出
+// 当data和err都为nil约定为已自行write
 func DefaultWriter(c *Context, data any, err error) {
+	if err == nil && reflect.ValueOf(data).IsNil() {
+		return
+	}
 	response := newResponse(c, data, err)
 	var statusCode uint32 = http.StatusOK
 	if c.URI().QueryArgs().Has(QueryParamNeedStatusCode) {

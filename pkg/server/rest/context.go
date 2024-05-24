@@ -143,9 +143,8 @@ func (c *Context) GetQueryParam(key string) (string, bool) {
 	return values[0], true
 }
 
-// Write .
+// Write 请求返回
 func (c *Context) Write(data any, err error) {
-	// c.writeJSON(http.StatusOK, c.newResponse(c, data, err))
 	c.write(c, data, err)
 	c.Close()
 }
