@@ -163,6 +163,9 @@ func (c *Context) readBodyParamsToEntity(entity any) error {
 	if entity == nil {
 		return nil
 	}
+	if len(c.postBody) == 0 {
+		return nil
+	}
 	if err := json.Unmarshal(c.postBody, entity); err != nil {
 		// 修改下原本返回的错误信息，去掉语言相关内容
 		if e, ok := err.(*json.UnmarshalTypeError); ok {
