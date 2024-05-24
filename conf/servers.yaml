@@ -4,8 +4,10 @@ servers:
       grpc: 127.0.0.1:8080
   pprof:
     enabled: true
-    address: 127.0.0.1:9081
+    addresses: 
+      listen: 127.0.0.1:9081
   rest:
+    enabled: true
     # 证书相关配置
     certFile: ""
     keyFile: ""
@@ -14,7 +16,8 @@ servers:
       # 错误页地址
       errPage: "https://www.baidu.com"
     addresses:
-      rest: 127.0.0.1:8080
+      listen: 127.0.0.1:8080
+      advertise: 127.0.0.1:8081
     options:
       # The maximum number of concurrent connections the server may serve.
       #

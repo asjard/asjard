@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -44,6 +45,7 @@ type RestServer struct {
 	server    fasthttp.Server
 	certFile  string
 	keyFile   string
+	enabled   bool
 }
 
 var _ server.Server = &RestServer{}
@@ -83,6 +85,7 @@ func New() (server.Server, error) {
 		router:    router.New(),
 		certFile:  certFile,
 		keyFile:   keyFile,
+		enabled:   config.GetBool("servers.rest.enabled", false),
 		server: fasthttp.Server{
 			Name:            runtime.APP,
 			Concurrency:     config.GetInt("servers.rest.options.Concurrency", fasthttp.DefaultConcurrency),
@@ -131,7 +134,7 @@ func (s *RestServer) AddHandler(handler any) error {
 }
 
 // Start .
-func (s *RestServer) Start() error {
+func (s *RestServer) Start(startErr chan error) error {
 	s.server.ErrorHandler = func(ctx *fasthttp.RequestCtx, err error) {
 		logger.Errorf("request %s %s err: %v", ctx.Method(), ctx.Path(), err)
 		NewContext(ctx).Write(nil, ErrInterServerError)
@@ -147,23 +150,36 @@ func (s *RestServer) Start() error {
 		NewContext(ctx).Write(nil, ErrInterServerError)
 	}
 	s.server.Handler = s.router.Handler
-	for _, address := range s.addresses {
-		if strings.HasPrefix(address, "unix") {
-			if err := s.server.ListenAndServeUNIX(address, os.ModeSocket); err != nil {
-				return err
-			}
-		} else if s.certFile != "" && s.keyFile != "" {
-			if err := s.server.ListenAndServeTLS(address, s.certFile, s.keyFile); err != nil {
-				return err
-			}
-		} else {
-			if err := s.server.ListenAndServe(address); err != nil {
-				return err
-			}
-		}
+	address, ok := s.addresses["listen"]
+	if !ok {
+		return errors.New("config servces.rest.addresses.listen not found")
 	}
-	return nil
+	if strings.HasPrefix(address, "unix") {
+		go func() {
+			if err := s.server.ListenAndServeUNIX(address, os.ModeSocket); err != nil {
+				startErr <- fmt.Errorf("start rest server with address %s fail %s",
+					address, err.Error())
+			}
+		}()
+	} else if s.certFile != "" && s.keyFile != "" {
+		go func() {
+			if err := s.server.ListenAndServeTLS(address, s.certFile, s.keyFile); err != nil {
+				startErr <- fmt.Errorf("start rest server with address %s fail %s",
+					address, err.Error())
+			}
+		}()
 
+	} else {
+		go func() {
+			if err := s.server.ListenAndServe(address); err != nil {
+				// return err
+				startErr <- fmt.Errorf("start rest server with address %s fail %s",
+					address, err.Error())
+			}
+		}()
+	}
+	logger.Debugf("start rest server on address: %s", address)
+	return nil
 }
 
 // Stop .
@@ -174,6 +190,11 @@ func (s *RestServer) Stop() {
 // Protocol .
 func (s *RestServer) Protocol() string {
 	return Protocol
+}
+
+// Enabled .
+func (s *RestServer) Enabled() bool {
+	return s.enabled
 }
 
 // ListenAddresses 监听地址列表

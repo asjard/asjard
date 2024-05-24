@@ -17,13 +17,15 @@ type Server interface {
 	// 请求后
 	// AfterRequest()
 	// 服务启动
-	Start() error
+	Start(startErr chan error) error
 	// 服务停止
 	Stop()
 	// 服务提供的协议
 	Protocol() string
 	// 服务监听地址列表
 	ListenAddresses() []*EndpointAddress
+	// 是否已启用
+	Enabled() bool
 }
 
 // Handler .

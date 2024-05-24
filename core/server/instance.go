@@ -60,10 +60,10 @@ func GetInstance() *Instance {
 // AddEndpoint 添加服务端口
 func (s *Instance) AddEndpoint(endpoint *Endpoint) error {
 	if endpoint == nil {
-		return errors.New("endpoint is must")
+		return nil
 	}
-	if endpoint.Protocol == "" || len(endpoint.Addresses) == 0 {
-		return errors.New("endpoint protocol and addresses is must")
+	if endpoint.Protocol == "" {
+		return errors.New("endpoint protocol is must")
 	}
 	for _, ed := range s.Endpoints {
 		if ed.Protocol == endpoint.Protocol {

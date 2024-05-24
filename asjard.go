@@ -25,12 +25,14 @@ type Asjard struct {
 	servers  []server.Server
 	handlers map[string][]interface{}
 	hm       sync.RWMutex
+	startErr chan error
 }
 
 // New 入口
 func New() *Asjard {
 	return &Asjard{
 		handlers: make(map[string][]interface{}),
+		startErr: make(chan error),
 	}
 }
 
@@ -121,7 +123,9 @@ func (asd *Asjard) Start() error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP, syscall.SIGABRT)
 	select {
 	case s := <-quit:
-		logger.Info("system get os signal " + s.String() + " start exiting...")
+		logger.Infof("system get os signal %s start exiting...", s.String())
+	case err := <-asd.startErr:
+		logger.Errorf("start error: %s", err)
 	}
 	// 系统停止
 	asd.stop()
@@ -135,6 +139,9 @@ func (asd *Asjard) startServers() error {
 	svc := server.GetInstance()
 	// 启动所有服务
 	for _, sv := range asd.servers {
+		if !sv.Enabled() {
+			continue
+		}
 		logger.Debugf("Start start server '%s'", sv.Protocol())
 		// 添加handler
 		asd.hm.RLock()
@@ -152,7 +159,7 @@ func (asd *Asjard) startServers() error {
 			return fmt.Errorf("server '%s' add endpoint fail[%s]", sv.Protocol(), err.Error())
 		}
 		// 启动服务
-		if err := sv.Start(); err != nil {
+		if err := sv.Start(asd.startErr); err != nil {
 			return fmt.Errorf("start server '%s' fail[%s]", sv.Protocol(), err.Error())
 		}
 		logger.Debugf("server '%s' started", sv.Protocol())

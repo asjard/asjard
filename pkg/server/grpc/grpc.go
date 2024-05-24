@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/server"
 )
 
@@ -12,6 +13,7 @@ const (
 // GrpcServer .
 type GrpcServer struct {
 	addresses []*server.EndpointAddress
+	enabled   bool
 }
 
 var _ server.Server = &GrpcServer{}
@@ -26,6 +28,7 @@ func New() (server.Server, error) {
 		addresses: []*server.EndpointAddress{
 			{Name: "grpc", Address: ":8080"},
 		},
+		enabled: config.GetBool("servers.grpc.enabled", false),
 	}, nil
 }
 
@@ -40,7 +43,7 @@ func (s *GrpcServer) Handle(req *server.Request) (*server.Response, error) {
 }
 
 // Start .
-func (s *GrpcServer) Start() error {
+func (s *GrpcServer) Start(startErr chan error) error {
 	return nil
 }
 
@@ -51,6 +54,11 @@ func (s *GrpcServer) Stop() {
 // Protocol .
 func (s *GrpcServer) Protocol() string {
 	return Protocol
+}
+
+// Enabled .
+func (s *GrpcServer) Enabled() bool {
+	return s.enabled
 }
 
 // ListenAddresses 监听地址列表

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/asjard/asjard"
 	hpb "github.com/asjard/asjard/examples/protobuf/hello"
 	"github.com/asjard/asjard/pkg/server/rest"
@@ -22,5 +24,7 @@ func (Hello) ServiceDesc() rest.ServiceDesc {
 func main() {
 	server := asjard.New()
 	server.AddHandler(rest.Protocol, &Hello{})
-	server.Start()
+	if err := server.Start(); err != nil {
+		log.Println(err.Error())
+	}
 }
