@@ -13,13 +13,11 @@ type HelloRestServer interface {
 }
 
 // SayHandler .
-func SayHandler(srv any) fasthttp.RequestHandler {
-	return func(c *fasthttp.RequestCtx) {
-		rest.NewContext(c).
-			ReadAndWrite(func(ctx *rest.Context, in any) (any, error) {
-				return srv.(HelloRestServer).Say(ctx, in.(*Say))
-			}, new(Say))
-	}
+func SayHandler(ctx *fasthttp.RequestCtx, srv any) {
+	rest.NewContext(ctx).
+		ReadAndWrite(func(ctx *rest.Context, in any) (any, error) {
+			return srv.(HelloRestServer).Say(ctx, in.(*Say))
+		}, new(Say))
 }
 
 // HelloRestServiceDesc .

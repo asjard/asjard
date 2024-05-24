@@ -2,7 +2,7 @@ package rest
 
 import "github.com/valyala/fasthttp"
 
-type methodHandler func(srv any) fasthttp.RequestHandler
+type methodHandler func(ctx *fasthttp.RequestCtx, srv any)
 
 // ServiceDesc represents an RPC service's specification.
 type ServiceDesc struct {

@@ -26,6 +26,9 @@ const (
 const (
 	defaultReadBufferSize  = 4096
 	defaultWriteBufferSize = 4096
+
+	// HeaderResponseRequestMethod 返回头
+	HeaderResponseRequestMethod = "x-request-method"
 )
 
 // Handler .
@@ -219,7 +222,11 @@ func (s *RestServer) addRouter(handler Handler) error {
 				if !st.Implements(ht) {
 					return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
 				}
-				s.router.Handle(md, method.Path, method.Handler(handler))
+				// s.router.Handle(md, method.Path, method.Handler(handler))
+				s.router.Handle(md, method.Path, func(ctx *fasthttp.RequestCtx) {
+					ctx.Response.Header.Set(HeaderResponseRequestMethod, method.MethodName)
+					method.Handler(ctx, handler)
+				})
 			}
 		}
 	}
