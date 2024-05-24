@@ -1,13 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/asjard/asjard"
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
-	apb "github.com/asjard/asjard/examples/protos_repo"
+	hpb "github.com/asjard/asjard/examples/protobuf/hello"
 
 	// _ "github.com/asjard/asjard/pkg/logger"
 	_ "github.com/asjard/asjard/pkg/security/base64"
@@ -19,14 +18,13 @@ import (
 type Hello struct{}
 
 // Say .
-func (h Hello) Say(ctx *rest.Context, in *apb.Empty) (*apb.SayResp, error) {
-	fmt.Println("user_id=", in.UserId)
-	return &apb.SayResp{Msg: "hello"}, nil
+func (h Hello) Say(ctx *rest.Context, in *hpb.Say) (*hpb.Say, error) {
+	return in, nil
 }
 
 // ServiceDesc .
 func (h Hello) ServiceDesc() rest.ServiceDesc {
-	return apb.HelloRestServiceDesc
+	return hpb.HelloRestServiceDesc
 }
 
 // // Groups .

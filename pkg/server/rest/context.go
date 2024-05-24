@@ -25,9 +25,9 @@ const (
 // Context fasthttp.RequestCtx的封装
 type Context struct {
 	*fasthttp.RequestCtx
-	errorHandler ErrorHandler
-	errPage      string
-	queryParams  map[string][]string
+	// errorHandler ErrorHandler
+	errPage     string
+	queryParams map[string][]string
 	// 列表顺序为倒序
 	// 例如路由为: /region/{region_id}/project/{project_id}/user/{user_id}
 	// 请求路径为: /region/1/project/2/user/3
@@ -36,6 +36,9 @@ type Context struct {
 	pathParams   []*KV
 	headerParams map[string][]string
 	postBody     []byte
+	// 返回内容
+	response *Response
+	write    Writer
 }
 
 // KV .
@@ -57,59 +60,93 @@ var contextPool = sync.Pool{
 func NewContext(ctx *fasthttp.RequestCtx) *Context {
 	c := contextPool.Get().(*Context)
 	c.RequestCtx = ctx
-	c.errorHandler = errorHandler
 	c.errPage = config.GetString("servers.rest.doc.errPage", "")
+	c.write = writer
 	return c
 }
 
 // ReadEntity 解析请求参数并序列化到entityPrt中
-func (c *Context) ReadEntity(entityPtr any) error {
-	switch string(c.Method()) {
-	case http.MethodPost, http.MethodPut, http.MethodPatch:
-		return c.readEntity(entityPtr)
-	default:
-		return c.readQueryEntity(entityPtr)
-	}
-}
-
-// readEntity 解析请求参数并序列化到entityPrt中
 // 解析顺序 query -> header -> body -> path
 // 后解析的同名参数会覆盖前解析的同名参数
-func (c *Context) readEntity(entityPtr any) error {
+// post,put,patch解析body体,其余不解析
+func (c *Context) ReadEntity(entityPtr any) error {
 	if err := c.readQueryParamToEntity(entityPtr); err != nil {
 		return err
 	}
 	if err := c.readHeaderParamsToEntity(entityPtr); err != nil {
 		return err
 	}
-	if err := c.readBodyParamsToEntity(entityPtr); err != nil {
-		return err
+	requestMethod := string(c.Method())
+	if requestMethod == http.MethodPost ||
+		requestMethod == http.MethodPut ||
+		requestMethod == http.MethodPatch {
+		if err := c.readBodyParamsToEntity(entityPtr); err != nil {
+			return err
+		}
 	}
 	return c.readPathParamsToEntity(entityPtr)
 }
 
-// readQueryEntity 功能同readEntity但不解析body体
-// 解析顺序 query -> header -> path
-func (c *Context) readQueryEntity(entityPtr any) error {
-	if err := c.readQueryParamToEntity(entityPtr); err != nil {
-		return err
+// ReadAndWrite 解析请求参数并返回
+func (c *Context) ReadAndWrite(handler func(ctx *Context, in any) (any, error), entityPtr any) {
+	if err := c.ReadEntity(entityPtr); err != nil {
+		c.Write(nil, err)
+		return
 	}
-	if err := c.readHeaderParamsToEntity(entityPtr); err != nil {
-		return err
+	c.Write(handler(c, entityPtr))
+}
+
+// GetParam 获取参数
+// 获取顺序 path -> header -> query
+// 返回获取到的第一个
+func (c *Context) GetParam(key string) (string, bool) {
+	if value, ok := c.GetPathParam(key); ok {
+		return value, ok
 	}
-	return c.readPathParamsToEntity(entityPtr)
+	if value, ok := c.GetHeaderParam(key); ok {
+		return value, ok
+	}
+	return c.GetQueryParam(key)
+}
+
+// GetPathParam 获取路径参数
+func (c *Context) GetPathParam(key string) (string, bool) {
+	for _, kv := range c.pathParams {
+		if kv.Key == key {
+			return kv.Value, true
+		}
+	}
+	return "", false
+}
+
+// GetHeaderParam 获取请求头参数
+func (c *Context) GetHeaderParam(key string) (string, bool) {
+	values, ok := c.headerParams[key]
+	if !ok {
+		return "", false
+	}
+	if len(values) == 0 {
+		return "", true
+	}
+	return values[0], true
+}
+
+// GetQueryParam 获取query参数
+func (c *Context) GetQueryParam(key string) (string, bool) {
+	values, ok := c.queryParams[key]
+	if !ok {
+		return "", false
+	}
+	if len(values) == 0 {
+		return "", true
+	}
+	return values[0], true
 }
 
 // Write .
-func (c *Context) Write(response any, err error) {
-	if err != nil {
-		c.errorHandler(c, err)
-		return
-	}
-	c.writeJSON(http.StatusOK, &Response{
-		Status: &Status{},
-		Data:   response,
-	})
+func (c *Context) Write(data any, err error) {
+	// c.writeJSON(http.StatusOK, c.newResponse(c, data, err))
+	c.write(c, data, err)
 	c.Close()
 }
 
@@ -200,14 +237,4 @@ func (c *Context) readPathParamsToEntity(entity any) error {
 		return Error(http.StatusBadRequest, fmt.Sprintf("read path params fail: %s", err.Error()), "")
 	}
 	return nil
-}
-
-func (c *Context) writeJSON(statusCode int, body any) error {
-	if body == nil {
-		c.Response.SetStatusCode(statusCode)
-		return nil
-	}
-	c.Response.Header.Set(fasthttp.HeaderContentType, MIME_JSON)
-	c.Response.SetStatusCode(statusCode)
-	return json.NewEncoder(c.Response.BodyWriter()).Encode(body)
 }

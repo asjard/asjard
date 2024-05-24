@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package api.v1.hello;
+
+service Hello {
+    rpc Say(Say) returns(Say){};
+}
+
+message Say {
+    region_id string =1;
+    project_id string =2;
+    user_id int64 = 3;
+    repeated str_list string = 4;
+    repeated int_list int64 = 5;
+    obj SayObj = 6;
+    repeated objs SayObj = 7;
+}
+
+
+message SayObj {
+    field_int int64 = 1;
+    field_str string = 2;
+}

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/utils"
 	"github.com/fasthttp/router"
@@ -34,8 +34,8 @@ type Handler interface {
 	ServiceDesc() ServiceDesc
 }
 
-// ErrorHandler 错误处理
-type ErrorHandler func(ctx *Context, err error)
+// Writer 结果输出
+type Writer func(ctx *Context, data any, err error)
 
 // RestServer .
 type RestServer struct {
@@ -48,21 +48,20 @@ type RestServer struct {
 
 var _ server.Server = &RestServer{}
 
-var errorHandler ErrorHandler = func(ctx *Context, err error) {
-	DefaultErrorHandler(ctx, err)
-	ctx.Close()
-}
+var writer Writer = DefaultWriter
 
 func init() {
 	server.AddServer(New)
 }
 
-// SetErrorHandler 设置错误处理
-func SetErrorHandler(errHandler ErrorHandler) {
-	errorHandler = func(ctx *Context, err error) {
-		errHandler(ctx, err)
-		ctx.Close()
-	}
+// // SetResponse 设置返回内容
+// func SetResponse(nsp NewResponse) {
+// 	newResponse = nsp
+// }
+
+// SetWriter 设置输出
+func SetWriter(wrt Writer) {
+	writer = wrt
 }
 
 // New .
@@ -85,33 +84,34 @@ func New() (server.Server, error) {
 		certFile:  certFile,
 		keyFile:   keyFile,
 		server: fasthttp.Server{
-			Name:                               config.GetString("servers.rest.name", constant.Framework),
-			Concurrency:                        config.GetInt("servers.rest.Concurrency", fasthttp.DefaultConcurrency),
-			ReadBufferSize:                     config.GetInt("servers.rest.ReadBufferSize", defaultReadBufferSize),
-			WriteBufferSize:                    config.GetInt("servers.rest.ReadBufferSize", defaultWriteBufferSize),
-			ReadTimeout:                        config.GetDuration("servers.rest.ReadTimeout", time.Second*3),
-			WriteTimeout:                       config.GetDuration("servers.rest.WriteTimeout", time.Second*3),
-			IdleTimeout:                        config.GetDuration("servers.rest.WriteTimeout", config.GetDuration("servers.rest.ReadTimeout", time.Second*3)),
-			MaxConnsPerIP:                      config.GetInt("servers.rest.WriteTimeout", 0),
-			MaxRequestsPerConn:                 config.GetInt("servers.rest.MaxRequestsPerConn", 0),
-			MaxIdleWorkerDuration:              config.GetDuration("servers.rest.MaxIdleWorkerDuration", time.Minute*10),
-			TCPKeepalivePeriod:                 config.GetDuration("servers.rest.TCPKeepalivePeriod", 0),
-			MaxRequestBodySize:                 config.GetInt("servers.rest.MaxRequestBodySize", fasthttp.DefaultMaxRequestBodySize),
-			DisableKeepalive:                   config.GetBool("servers.rest.DisableKeepalive", false),
-			TCPKeepalive:                       config.GetBool("servers.rest.TCPKeepalive", false),
-			ReduceMemoryUsage:                  config.GetBool("servers.rest.ReduceMemoryUsage", false),
-			GetOnly:                            config.GetBool("servers.rest.GetOnly", false),
-			DisablePreParseMultipartForm:       config.GetBool("servers.rest.DisablePreParseMultipartForm", true),
-			LogAllErrors:                       config.GetBool("servers.rest.LogAllErrors", false),
-			SecureErrorLogMessage:              config.GetBool("servers.rest.SecureErrorLogMessage", false),
-			DisableHeaderNamesNormalizing:      config.GetBool("servers.rest.DisableHeaderNamesNormalizing", false),
-			SleepWhenConcurrencyLimitsExceeded: config.GetDuration("servers.rest.SleepWhenConcurrencyLimitsExceeded", 0),
-			NoDefaultServerHeader:              config.GetBool("servers.rest.NoDefaultServerHeader", false),
-			NoDefaultDate:                      config.GetBool("servers.rest.NoDefaultDate", false),
-			NoDefaultContentType:               config.GetBool("servers.rest.NoDefaultContentType", false),
-			KeepHijackedConns:                  config.GetBool("servers.rest.KeepHijackedConns", false),
-			CloseOnShutdown:                    config.GetBool("servers.rest.CloseOnShutdown", false),
-			StreamRequestBody:                  config.GetBool("servers.rest.StreamRequestBody", false),
+			Name:            runtime.APP,
+			Concurrency:     config.GetInt("servers.rest.options.Concurrency", fasthttp.DefaultConcurrency),
+			ReadBufferSize:  config.GetInt("servers.rest.options.ReadBufferSize", defaultReadBufferSize),
+			WriteBufferSize: config.GetInt("servers.rest.options.ReadBufferSize", defaultWriteBufferSize),
+			ReadTimeout:     config.GetDuration("servers.rest.options.ReadTimeout", time.Second*3),
+			WriteTimeout:    config.GetDuration("servers.rest.options.WriteTimeout", time.Second*3),
+			IdleTimeout: config.GetDuration("servers.rest.options.WriteTimeout",
+				config.GetDuration("servers.rest.options.ReadTimeout", time.Second*3)),
+			MaxConnsPerIP:                      config.GetInt("servers.rest.options.WriteTimeout", 0),
+			MaxRequestsPerConn:                 config.GetInt("servers.rest.options.MaxRequestsPerConn", 0),
+			MaxIdleWorkerDuration:              config.GetDuration("servers.rest.options.MaxIdleWorkerDuration", time.Minute*10),
+			TCPKeepalivePeriod:                 config.GetDuration("servers.rest.options.TCPKeepalivePeriod", 0),
+			MaxRequestBodySize:                 config.GetInt("servers.rest.options.MaxRequestBodySize", fasthttp.DefaultMaxRequestBodySize),
+			DisableKeepalive:                   config.GetBool("servers.rest.options.DisableKeepalive", false),
+			TCPKeepalive:                       config.GetBool("servers.rest.options.TCPKeepalive", false),
+			ReduceMemoryUsage:                  config.GetBool("servers.rest.options.ReduceMemoryUsage", false),
+			GetOnly:                            config.GetBool("servers.rest.options.GetOnly", false),
+			DisablePreParseMultipartForm:       config.GetBool("servers.rest.options.DisablePreParseMultipartForm", true),
+			LogAllErrors:                       config.GetBool("servers.rest.options.LogAllErrors", false),
+			SecureErrorLogMessage:              config.GetBool("servers.rest.options.SecureErrorLogMessage", false),
+			DisableHeaderNamesNormalizing:      config.GetBool("servers.rest.options.DisableHeaderNamesNormalizing", false),
+			SleepWhenConcurrencyLimitsExceeded: config.GetDuration("servers.rest.options.SleepWhenConcurrencyLimitsExceeded", 0),
+			NoDefaultServerHeader:              config.GetBool("servers.rest.options.NoDefaultServerHeader", false),
+			NoDefaultDate:                      config.GetBool("servers.rest.options.NoDefaultDate", false),
+			NoDefaultContentType:               config.GetBool("servers.rest.options.NoDefaultContentType", false),
+			KeepHijackedConns:                  config.GetBool("servers.rest.options.KeepHijackedConns", false),
+			CloseOnShutdown:                    config.GetBool("servers.rest.options.CloseOnShutdown", false),
+			StreamRequestBody:                  config.GetBool("servers.rest.options.StreamRequestBody", false),
 			Logger:                             &Logger{},
 		},
 	}
@@ -134,17 +134,17 @@ func (s *RestServer) AddHandler(handler any) error {
 func (s *RestServer) Start() error {
 	s.server.ErrorHandler = func(ctx *fasthttp.RequestCtx, err error) {
 		logger.Errorf("request %s %s err: %v", ctx.Method(), ctx.Path(), err)
-		errorHandler(NewContext(ctx), ErrInterServerError)
+		NewContext(ctx).Write(nil, ErrInterServerError)
 	}
 	s.router.NotFound = func(ctx *fasthttp.RequestCtx) {
-		errorHandler(NewContext(ctx), ErrNotFound)
+		NewContext(ctx).Write(nil, ErrNotFound)
 	}
 	s.router.MethodNotAllowed = func(ctx *fasthttp.RequestCtx) {
-		errorHandler(NewContext(ctx), ErrMethodNotAllowed)
+		NewContext(ctx).Write(nil, ErrMethodNotAllowed)
 	}
 	s.router.PanicHandler = func(ctx *fasthttp.RequestCtx, err interface{}) {
 		logger.Errorf("request %s %s err: %v", ctx.Method(), ctx.Path(), err)
-		errorHandler(NewContext(ctx), ErrInterServerError)
+		NewContext(ctx).Write(nil, ErrInterServerError)
 	}
 	s.server.Handler = s.router.Handler
 	for _, address := range s.addresses {
@@ -191,13 +191,15 @@ func (s *RestServer) ListenAddresses() []*server.EndpointAddress {
 func (s *RestServer) addRouter(handler Handler) error {
 	desc := handler.ServiceDesc()
 	for _, method := range desc.Methods {
-		if method.Method != "" && method.Path != "" && method.Handler != nil {
-			ht := reflect.TypeOf(desc.HandlerType).Elem()
-			st := reflect.TypeOf(handler)
-			if !st.Implements(ht) {
-				return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
+		if len(method.Methods) != 0 && method.Path != "" && method.Handler != nil {
+			for _, md := range method.Methods {
+				ht := reflect.TypeOf(desc.HandlerType).Elem()
+				st := reflect.TypeOf(handler)
+				if !st.Implements(ht) {
+					return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
+				}
+				s.router.Handle(md, method.Path, method.Handler(handler))
 			}
-			s.router.Handle(method.Method, method.Path, method.Handler(handler))
 		}
 	}
 	return nil
