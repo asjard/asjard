@@ -225,13 +225,17 @@ func (s *RestServer) addRouter(handler Handler) error {
 				if !st.Implements(ht) {
 					return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
 				}
-				s.router.Handle(md, method.Path, func(ctx *fasthttp.RequestCtx) {
-					ctx.Response.Header.Set(HeaderResponseRequestMethod, method.MethodName)
-					ctx.Response.Header.Set(HeaderResponseRequestID, uuid.NewString())
-					method.Handler(ctx, handler)
-				})
+				s.addRouterHandler(method.MethodName, md, method.Path, handler, method.Handler)
 			}
 		}
 	}
 	return nil
+}
+
+func (s *RestServer) addRouterHandler(name, method, path string, svc Handler, handle methodHandler) {
+	s.router.Handle(method, path, func(ctx *fasthttp.RequestCtx) {
+		ctx.Response.Header.Set(HeaderResponseRequestMethod, name)
+		ctx.Response.Header.Set(HeaderResponseRequestID, uuid.NewString())
+		handle(ctx, svc)
+	})
 }

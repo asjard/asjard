@@ -20,6 +20,9 @@ type Status struct {
 	Doc string `json:"doc"`
 }
 
+// StatusOption .
+type StatusOption func(*Status)
+
 var (
 	// StatusInternalServerError 系统内部错误状态
 	StatusInternalServerError = &Status{
@@ -27,11 +30,11 @@ var (
 		Message: "Internal Server Error",
 	}
 	// ErrNotFound .
-	ErrNotFound = Error(http.StatusNotFound, "Page Not Found", "")
+	ErrNotFound = Error(http.StatusNotFound, "Page Not Found")
 	// ErrMethodNotAllowed .
-	ErrMethodNotAllowed = Error(http.StatusMethodNotAllowed, "Method Not Allowed", "")
+	ErrMethodNotAllowed = Error(http.StatusMethodNotAllowed, "Method Not Allowed")
 	// ErrInterServerError .
-	ErrInterServerError = Error(http.StatusInternalServerError, "Internal Server Error", "")
+	ErrInterServerError = Error(http.StatusInternalServerError, "Internal Server Error")
 )
 
 // Error .
@@ -49,9 +52,13 @@ func (s *Status) Error() string {
 //
 //	XXX: 表示HTTP状态码，固定三位数字
 //	Y: 表示自定义错误码，位数不限制
-func Error(code uint32, msg, doc string) error {
+func Error(code uint32, msg string, options ...StatusOption) error {
 	if code == 0 {
 		return nil
 	}
-	return &Status{Code: code, Message: msg, Doc: doc}
+	status := &Status{Code: code, Message: msg}
+	for _, opt := range options {
+		opt(status)
+	}
+	return status
 }
