@@ -9,8 +9,12 @@ import (
 var (
 	homeDir = ""
 	hdonce  sync.Once
+	confDir = ""
+	cdonce  sync.Once
 	// HOME_DIR_ENV_NAME 家目录环境变量名称
 	HOME_DIR_ENV_NAME = "ASJARD_HOME_DIR"
+	// CONF_DIR_ENV_NAME 配置目录环境变量名称
+	CONF_DIR_ENV_NAME = "ASJARD_CONF_DIR"
 	// CONF_DIR 配置文件目录名称
 	CONF_DIR = "conf"
 	// CERT_DIR 证书存放路径
@@ -43,12 +47,18 @@ func GetHomeDir() string {
 
 // GetConfDir 获取配置目录
 func GetConfDir() string {
-	return filepath.Join(GetHomeDir(), CONF_DIR)
+	cdonce.Do(func() {
+		confDir = os.Getenv(CONF_DIR_ENV_NAME)
+		if confDir == "" {
+			confDir = filepath.Join(GetHomeDir(), CONF_DIR)
+		}
+	})
+	return confDir
 }
 
 // GetCertDir 获取证书存放路径
 func GetCertDir() string {
-	return filepath.Join(GetHomeDir(), CONF_DIR, CERT_DIR)
+	return filepath.Join(GetConfDir(), CERT_DIR)
 }
 
 // IsPathExists 目录或文件是否存在
