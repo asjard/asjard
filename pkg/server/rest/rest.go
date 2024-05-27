@@ -13,6 +13,7 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/pkg/status"
 	"github.com/asjard/asjard/utils"
 	"github.com/fasthttp/router"
 	"github.com/google/uuid"
@@ -143,17 +144,17 @@ func (s *RestServer) AddHandler(handler any) error {
 func (s *RestServer) Start(startErr chan error) error {
 	s.server.ErrorHandler = func(ctx *fasthttp.RequestCtx, err error) {
 		logger.Errorf("request %s %s err: %v", ctx.Method(), ctx.Path(), err)
-		NewContext(ctx).Write(nil, ErrInterServerError)
+		NewContext(ctx).Write(nil, status.ErrInterServerError)
 	}
 	s.router.NotFound = func(ctx *fasthttp.RequestCtx) {
-		NewContext(ctx).Write(nil, ErrNotFound)
+		NewContext(ctx).Write(nil, status.ErrNotFound)
 	}
 	s.router.MethodNotAllowed = func(ctx *fasthttp.RequestCtx) {
-		NewContext(ctx).Write(nil, ErrMethodNotAllowed)
+		NewContext(ctx).Write(nil, status.ErrMethodNotAllowed)
 	}
 	s.router.PanicHandler = func(ctx *fasthttp.RequestCtx, err interface{}) {
 		logger.Errorf("request %s %s err: %v", ctx.Method(), ctx.Path(), err)
-		NewContext(ctx).Write(nil, ErrInterServerError)
+		NewContext(ctx).Write(nil, status.ErrInterServerError)
 	}
 	s.server.Handler = s.router.Handler
 	address, ok := s.addresses["listen"]

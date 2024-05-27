@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/pkg/status"
 	"github.com/spf13/cast"
 	"github.com/valyala/fasthttp"
 )
@@ -170,13 +171,13 @@ func (c *Context) readBodyParamsToEntity(entity any) error {
 		// 修改下原本返回的错误信息，去掉语言相关内容
 		if e, ok := err.(*json.UnmarshalTypeError); ok {
 			if e.Struct != "" || e.Field != "" {
-				return Error(http.StatusBadRequest,
+				return status.Error(http.StatusBadRequest,
 					"cannot deserialize "+e.Value+" into field "+e.Field+" of type "+e.Type.String())
 			}
-			return Error(http.StatusBadRequest,
+			return status.Error(http.StatusBadRequest,
 				"cannot deserialize "+e.Value+" into value of type "+e.Type.String())
 		}
-		return Error(http.StatusBadRequest, fmt.Sprintf("read body params fail: %s", err.Error()))
+		return status.Error(http.StatusBadRequest, fmt.Sprintf("read body params fail: %s", err.Error()))
 	}
 	return nil
 }
@@ -195,7 +196,7 @@ func (c *Context) readQueryParamToEntity(entity any) error {
 		return nil
 	}
 	if err := mapForm(entity, c.queryParams); err != nil {
-		return Error(http.StatusBadRequest, fmt.Sprintf("read query params fail: %s", err.Error()))
+		return status.Error(http.StatusBadRequest, fmt.Sprintf("read query params fail: %s", err.Error()))
 	}
 	return nil
 }
@@ -214,7 +215,7 @@ func (c *Context) readHeaderParamsToEntity(entity any) error {
 		return nil
 	}
 	if err := mapForm(entity, c.headerParams); err != nil {
-		return Error(http.StatusBadRequest, fmt.Sprintf("read header params fail: %s", err.Error()))
+		return status.Error(http.StatusBadRequest, fmt.Sprintf("read header params fail: %s", err.Error()))
 	}
 	return nil
 }
@@ -234,7 +235,7 @@ func (c *Context) readPathParamsToEntity(entity any) error {
 		pathForm[kv.Key] = []string{kv.Value}
 	}
 	if err := mapForm(entity, pathForm); err != nil {
-		return Error(http.StatusBadRequest, fmt.Sprintf("read path params fail: %s", err.Error()))
+		return status.Error(http.StatusBadRequest, fmt.Sprintf("read path params fail: %s", err.Error()))
 	}
 	return nil
 }

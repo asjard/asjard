@@ -1,10 +1,14 @@
 package rest
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/asjard/asjard/pkg/status"
+)
 
 // Response 请求返回
 type Response struct {
-	*Status
+	*status.Status
 	// 请求数据
 	Data any `json:"data"`
 }
@@ -12,7 +16,7 @@ type Response struct {
 var responsePool = sync.Pool{
 	New: func() any {
 		return &Response{
-			Status: &Status{},
+			Status: &status.Status{},
 			Data:   nil,
 		}
 	},
@@ -21,12 +25,12 @@ var responsePool = sync.Pool{
 func newResponse(c *Context, data any, err error) *Response {
 	response := responsePool.Get().(*Response)
 	if err == nil {
-		response.Status = &Status{}
+		response.Status = &status.Status{}
 	} else {
-		if status, ok := err.(*Status); ok {
-			response.Status = status
+		if stts, ok := err.(*status.Status); ok {
+			response.Status = stts
 		} else {
-			response.Status = StatusInternalServerError
+			response.Status = status.StatusInternalServerError
 		}
 	}
 	if response.Status.Code != 0 && response.Status.Doc == "" {
