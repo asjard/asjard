@@ -1,9 +1,38 @@
 servers:
   grpc:
-    addresses:
-      grpc: 127.0.0.1:8080
-  pprof:
     enabled: true
+    addresses:
+      listen: 127.0.0.1:8081
+    options:
+      keepaliveParams: 
+        # MaxConnectionIdle is a duration for the amount of time after which an
+        # idle connection would be closed by sending a GoAway. Idleness duration is
+        # defined since the most recent time the number of outstanding RPCs became
+        # zero or the connection establishment.
+        # The current default value is infinity.
+        MaxConnectionIdle: !!str 5m
+        # MaxConnectionAge is a duration for the maximum amount of time a
+        # connection may exist before it will be closed by sending a GoAway. A
+        # random jitter of +/-10% will be added to MaxConnectionAge to spread out
+        # connection storms.
+        # The current default value is infinity.
+        MaxConnectionAge: !!str 0s
+        # MaxConnectionAgeGrace is an additive period after MaxConnectionAge after
+        # which the connection will be forcibly closed.
+        # The current default value is infinity.
+        MaxConnectionAgeGrace: !!str 0s
+        # After a duration of this time if the server doesn't see any activity it
+        # pings the client to see if the transport is still alive.
+        # If set below 1s, a minimum value of 1s will be used instead.
+        # The current default value is 2 hours.
+        Time: !!str 10s
+        # After having pinged for keepalive check, the server waits for a duration
+        # of Timeout and if no activity is seen even after that the connection is
+        # closed.
+        # The current default value is 20 seconds.
+        Timeout: !!str 1s
+  pprof:
+    enabled: false
     addresses: 
       listen: 127.0.0.1:9081
   rest:
@@ -17,7 +46,7 @@ servers:
       errPage: "https://www.baidu.com"
     addresses:
       listen: 127.0.0.1:8080
-      advertise: 127.0.0.1:8081
+      advertise: 127.0.0.1:8082
     options:
       # The maximum number of concurrent connections the server may serve.
       #

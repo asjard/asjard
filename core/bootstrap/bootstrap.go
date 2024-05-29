@@ -4,8 +4,10 @@ import "github.com/asjard/asjard/core/logger"
 
 // BootstrapHandler 启动引导需实现的方法
 type BootstrapHandler interface {
-	Start() error
-	Stop()
+	// 启动时执行
+	Bootstrap() error
+	// 停止时执行
+	Shutdown()
 }
 
 var bootstrapHandlers []BootstrapHandler
@@ -20,7 +22,7 @@ func Start() error {
 	logger.Debug("bootstrap Start")
 	defer logger.Debug("bootstrap Done")
 	for _, handler := range bootstrapHandlers {
-		if err := handler.Start(); err != nil {
+		if err := handler.Bootstrap(); err != nil {
 			return err
 		}
 	}
@@ -30,6 +32,6 @@ func Start() error {
 // Stop 系统停止
 func Stop() {
 	for _, handler := range bootstrapHandlers {
-		handler.Stop()
+		handler.Shutdown()
 	}
 }

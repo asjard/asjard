@@ -58,11 +58,14 @@ var contextPool = sync.Pool{
 }
 
 // NewContext .
-func NewContext(ctx *fasthttp.RequestCtx) *Context {
+func NewContext(ctx *fasthttp.RequestCtx, options ...Option) *Context {
 	c := contextPool.Get().(*Context)
 	c.RequestCtx = ctx
 	c.errPage = config.GetString("servers.rest.doc.errPage", "")
-	c.write = writer
+	c.write = defaultWriter
+	for _, opt := range options {
+		opt(c)
+	}
 	return c
 }
 
@@ -171,13 +174,13 @@ func (c *Context) readBodyParamsToEntity(entity any) error {
 		// 修改下原本返回的错误信息，去掉语言相关内容
 		if e, ok := err.(*json.UnmarshalTypeError); ok {
 			if e.Struct != "" || e.Field != "" {
-				return status.Error(http.StatusBadRequest,
+				return status.Errorf(http.StatusBadRequest,
 					"cannot deserialize "+e.Value+" into field "+e.Field+" of type "+e.Type.String())
 			}
-			return status.Error(http.StatusBadRequest,
+			return status.Errorf(http.StatusBadRequest,
 				"cannot deserialize "+e.Value+" into value of type "+e.Type.String())
 		}
-		return status.Error(http.StatusBadRequest, fmt.Sprintf("read body params fail: %s", err.Error()))
+		return status.Errorf(http.StatusBadRequest, fmt.Sprintf("read body params fail: %s", err.Error()))
 	}
 	return nil
 }
@@ -196,7 +199,7 @@ func (c *Context) readQueryParamToEntity(entity any) error {
 		return nil
 	}
 	if err := mapForm(entity, c.queryParams); err != nil {
-		return status.Error(http.StatusBadRequest, fmt.Sprintf("read query params fail: %s", err.Error()))
+		return status.Errorf(http.StatusBadRequest, fmt.Sprintf("read query params fail: %s", err.Error()))
 	}
 	return nil
 }
@@ -215,7 +218,7 @@ func (c *Context) readHeaderParamsToEntity(entity any) error {
 		return nil
 	}
 	if err := mapForm(entity, c.headerParams); err != nil {
-		return status.Error(http.StatusBadRequest, fmt.Sprintf("read header params fail: %s", err.Error()))
+		return status.Errorf(http.StatusBadRequest, fmt.Sprintf("read header params fail: %s", err.Error()))
 	}
 	return nil
 }
@@ -235,7 +238,7 @@ func (c *Context) readPathParamsToEntity(entity any) error {
 		pathForm[kv.Key] = []string{kv.Value}
 	}
 	if err := mapForm(entity, pathForm); err != nil {
-		return status.Error(http.StatusBadRequest, fmt.Sprintf("read path params fail: %s", err.Error()))
+		return status.Errorf(http.StatusBadRequest, fmt.Sprintf("read path params fail: %s", err.Error()))
 	}
 	return nil
 }

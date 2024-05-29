@@ -13,8 +13,8 @@ func init() {
 	AddBootstrap(&Logger{})
 }
 
-// Start .
-func (l Logger) Start() error {
+// Bootstrap .
+func (l Logger) Bootstrap() error {
 	level := config.GetString("logger.level", logger.DEBUG.String(),
 		config.WithToUpper(), config.WithWatch(func(event *config.Event) {
 			logger.SetLevel(cast.ToString(event.Value.Value))
@@ -23,5 +23,5 @@ func (l Logger) Start() error {
 	return nil
 }
 
-// Stop .
-func (l Logger) Stop() {}
+// Shutdown .
+func (l Logger) Shutdown() {}

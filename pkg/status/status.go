@@ -30,11 +30,11 @@ var (
 		Message: "Internal Server Error",
 	}
 	// ErrNotFound .
-	ErrNotFound = Error(http.StatusNotFound, "Page Not Found")
+	ErrNotFound = Errorf(http.StatusNotFound, "Page Not Found")
 	// ErrMethodNotAllowed .
-	ErrMethodNotAllowed = Error(http.StatusMethodNotAllowed, "Method Not Allowed")
+	ErrMethodNotAllowed = Errorf(http.StatusMethodNotAllowed, "Method Not Allowed")
 	// ErrInterServerError .
-	ErrInterServerError = Error(http.StatusInternalServerError, "Internal Server Error")
+	ErrInterServerError = Errorf(http.StatusInternalServerError, "Internal Server Error")
 )
 
 // Error .
@@ -45,14 +45,14 @@ func (s *Status) Error() string {
 	return fmt.Sprintf("(%d)%s,doc:%s", s.Code, s.Message, s.Doc)
 }
 
-// Error returns an error representing code, msg and doc.  If code is 0, returns nil.
+// Errorf returns an error representing code, msg and doc.  If code is 0, returns nil.
 // 非http.StatusText范围内的错误码为自定义错误码
 // 自定义错误码格式为: XXXY
 // 其中:
 //
 //	XXX: 表示HTTP状态码，固定三位数字
 //	Y: 表示自定义错误码，位数不限制
-func Error(code uint32, msg string, options ...StatusOption) error {
+func Errorf(code uint32, msg string, options ...StatusOption) error {
 	if code == 0 {
 		return nil
 	}

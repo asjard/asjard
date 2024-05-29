@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -37,9 +38,7 @@ const (
 
 // Handler .
 type Handler interface {
-	// Routers() []*Router
-	// Groups() []*Group
-	ServiceDesc() ServiceDesc
+	RestServiceDesc() ServiceDesc
 }
 
 // Writer 结果输出
@@ -57,7 +56,7 @@ type RestServer struct {
 
 var _ server.Server = &RestServer{}
 
-var writer Writer = DefaultWriter
+var defaultWriter Writer = DefaultWriter
 
 func init() {
 	server.AddServer(New)
@@ -70,7 +69,7 @@ func init() {
 
 // SetWriter 设置输出
 func SetWriter(wrt Writer) {
-	writer = wrt
+	defaultWriter = wrt
 }
 
 // New .
@@ -132,7 +131,7 @@ func New() (server.Server, error) {
 func (s *RestServer) AddHandler(handler any) error {
 	h, ok := handler.(Handler)
 	if !ok {
-		return fmt.Errorf("invlaid handler, must implement *rest.Handler")
+		return fmt.Errorf("invlaid handler, %v must implement *rest.Handler", reflect.TypeOf(handler))
 	}
 	if err := s.addRouter(h); err != nil {
 		return err
@@ -152,8 +151,8 @@ func (s *RestServer) Start(startErr chan error) error {
 	s.router.MethodNotAllowed = func(ctx *fasthttp.RequestCtx) {
 		NewContext(ctx).Write(nil, status.ErrMethodNotAllowed)
 	}
-	s.router.PanicHandler = func(ctx *fasthttp.RequestCtx, err interface{}) {
-		logger.Errorf("request %s %s err: %v", ctx.Method(), ctx.Path(), err)
+	s.router.PanicHandler = func(ctx *fasthttp.RequestCtx, err any) {
+		logger.Errorf("request %s %s err: %v\n%s", ctx.Method(), ctx.Path(), err, string(debug.Stack()))
 		NewContext(ctx).Write(nil, status.ErrInterServerError)
 	}
 	s.server.Handler = s.router.Handler
@@ -217,26 +216,26 @@ func (s *RestServer) ListenAddresses() []*server.EndpointAddress {
 }
 
 func (s *RestServer) addRouter(handler Handler) error {
-	desc := handler.ServiceDesc()
+	desc := handler.RestServiceDesc()
 	for _, method := range desc.Methods {
-		if len(method.Methods) != 0 && method.Path != "" && method.Handler != nil {
-			for _, md := range method.Methods {
-				ht := reflect.TypeOf(desc.HandlerType).Elem()
-				st := reflect.TypeOf(handler)
-				if !st.Implements(ht) {
-					return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
-				}
-				s.addRouterHandler(method.MethodName, md, method.Path, handler, method.Handler)
+		if method.Method != "" && method.Path != "" && method.Handler != nil {
+			ht := reflect.TypeOf(desc.HandlerType).Elem()
+			st := reflect.TypeOf(handler)
+			if !st.Implements(ht) {
+				return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
 			}
+			s.addRouterHandler(method.Method, desc, method, handler)
 		}
 	}
 	return nil
 }
 
-func (s *RestServer) addRouterHandler(name, method, path string, svc Handler, handle methodHandler) {
-	s.router.Handle(method, path, func(ctx *fasthttp.RequestCtx) {
-		ctx.Response.Header.Set(HeaderResponseRequestMethod, name)
+func (s *RestServer) addRouterHandler(method string, serviceDesc ServiceDesc, methodDesc MethodDesc, svc Handler) {
+	s.router.Handle(method, methodDesc.Path, func(ctx *fasthttp.RequestCtx) {
+		ctx.Response.Header.Set(HeaderResponseRequestMethod, methodDesc.MethodName)
 		ctx.Response.Header.Set(HeaderResponseRequestID, uuid.NewString())
-		handle(ctx, svc)
+		methodDesc.Handler(NewContext(ctx,
+			WithErrPage(serviceDesc.ErrPage),
+			WithWriter(serviceDesc.Writer)), svc)
 	})
 }
