@@ -11,6 +11,7 @@ import (
 	"github.com/asjard/asjard/core/config"
 	cfgenv "github.com/asjard/asjard/core/config/sources/env"
 	cfgfile "github.com/asjard/asjard/core/config/sources/file"
+	cfgmem "github.com/asjard/asjard/core/config/sources/mem"
 	"github.com/asjard/asjard/core/handler"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/registry"
@@ -62,6 +63,11 @@ func (asd *Asjard) init() error {
 
 	// 文件配置加载
 	if err := config.Load(cfgfile.Priority); err != nil {
+		return err
+	}
+
+	// 内存配置源加载
+	if err := config.Load(cfgmem.Priority); err != nil {
 		return err
 	}
 
