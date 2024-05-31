@@ -22,11 +22,6 @@ type Server interface {
 	Enabled() bool
 }
 
-// Handler .
-type Handler interface {
-	Protocol() string
-}
-
 // NewServerFunc .
 type NewServerFunc func(interceptor UnaryServerInterceptor) (Server, error)
 
