@@ -1,6 +1,10 @@
 package rest
 
-type methodHandler func(ctx *Context, srv any)
+import (
+	"github.com/asjard/asjard/core/server"
+)
+
+type methodHandler func(ctx *Context, srv any, interceptor server.UnaryServerInterceptor) (any, error)
 
 // ServiceDesc represents an RPC service's specification.
 type ServiceDesc struct {

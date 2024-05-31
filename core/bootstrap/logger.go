@@ -3,6 +3,9 @@ package bootstrap
 import (
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
+
+	// 引入zap日志
+	// _ "github.com/asjard/asjard/pkg/logger"
 	"github.com/spf13/cast"
 )
 

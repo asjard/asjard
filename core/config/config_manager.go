@@ -6,11 +6,13 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/security"
 	ccast "github.com/asjard/asjard/utils/cast"
@@ -19,9 +21,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const (
-	// PropertiesDelimiter properties格式分隔符
-	PropertiesDelimiter = "."
+const ()
+
+var (
+	configParamCompile = regexp.MustCompile("\\${(.*?)}")
 )
 
 // Sourcer 配置源需要时间的方法
@@ -147,12 +150,10 @@ func DisConnect() {
 func (m *ConfigManager) load(priority int) error {
 	for _, source := range sources {
 		if source.loaded {
-			logger.Warnf("source %s loaded", source.name)
 			continue
 		}
 
 		if priority >= 0 && source.priority > priority {
-			logger.Warnf("source %s priority %d greater than load priority %d", source.name, source.priority, priority)
 			break
 		}
 		newSourcer, err := source.newSourceFunc()
@@ -180,10 +181,8 @@ func (m *ConfigManager) load(priority int) error {
 func (m *ConfigManager) watch(event *Event) {
 	switch event.Type {
 	case EventTypeCreate, EventTypeUpdate:
-		logger.Debugf("config updated %s=%s", event.Key, event.Value.String())
 		m.update(event)
 	case EventTypeDelete:
-		logger.Debugf("config deleted %s=%s", event.Key, event.Value.String())
 		m.delete(event)
 	}
 }
@@ -339,7 +338,7 @@ func (m *ConfigManager) getValueByPrefix(prefix string, opts *Options) map[strin
 	out := make(map[string]any)
 	for key, value := range m.getConfigs() {
 		if strings.HasPrefix(key, prefix) {
-			out[strings.TrimPrefix(key, prefix+PropertiesDelimiter)] = m.getValueWithOptions(value.Value, opts)
+			out[strings.TrimPrefix(key, prefix+constant.ConfigDelimiter)] = m.getValueWithOptions(value.Value, opts)
 		}
 	}
 	return out
@@ -355,7 +354,20 @@ func (m *ConfigManager) getValueWithOptions(value any, opts *Options) any {
 			value = decryptedValue
 		}
 	}
-	// TODO 支持参数渲染
+	// 支持参数渲染
+	valueStr, ok := value.(string)
+	if ok && configParamCompile.MatchString(valueStr) {
+		for _, matchKey := range configParamCompile.FindAllString(valueStr, -1) {
+			k1 := strings.Split(matchKey, "${")
+			if len(k1) == 2 {
+				k2 := strings.Split(k1[1], "}")
+				if len(k2) == 2 {
+					valueStr = strings.Replace(valueStr, matchKey, GetString(strings.TrimSpace(k2[0]), ""), -1)
+				}
+			}
+		}
+		value = valueStr
+	}
 	return value
 }
 
@@ -480,18 +492,11 @@ func GetStrings(key string, defaultValue []string, opts ...Option) []string {
 	if v == nil {
 		return defaultValue
 	}
-	if options.delimiter == "" {
-		value, err := cast.ToStringSliceE(v)
-		if err != nil {
-			return defaultValue
-		}
-		return value
-	}
-	value, err := cast.ToStringE(v)
+	value, err := ccast.ToStringSliceE(v, options.delimiter)
 	if err != nil {
 		return defaultValue
 	}
-	return strings.Split(value, options.delimiter)
+	return value
 }
 
 // GetBool 获取配置并转化为bool类型
@@ -651,6 +656,15 @@ func GetTime(key string, defaultValue time.Time, opts ...Option) time.Time {
 	return value
 }
 
+// GetAndUnmarshal 获取结果并序列化
+func GetAndUnmarshal(key string, outPtr any, opts ...Option) error {
+	options := GetOptions(opts...)
+	if options.unmarshaler != nil {
+		return options.unmarshaler.Unmarshal([]byte(GetString(key, "", opts...)), outPtr)
+	}
+	return GetAndJsonUnmarshal(key, outPtr, opts...)
+}
+
 // GetAndJsonUnmarshal 获取配置并JSON反序列化
 func GetAndJsonUnmarshal(key string, outPtr any, opts ...Option) error {
 	return json.Unmarshal([]byte(GetString(key, "", opts...)), outPtr)
@@ -704,7 +718,7 @@ func getConfigMap(configs map[string]any) map[string]any {
 	result := make(map[string]any)
 	skipKeys := make(map[string]struct{})
 	for key, value := range configs {
-		keyList := strings.Split(key, PropertiesDelimiter)
+		keyList := strings.Split(key, constant.ConfigDelimiter)
 		if _, ok := skipKeys[key]; ok {
 			continue
 		}
@@ -741,9 +755,9 @@ func getConfigValue(index int, keyList []string, value any, keyValue map[string]
 		}
 		key = strings.Split(key, "[")[0]
 		listKey := key
-		preKey := strings.Join(keyList[:index], PropertiesDelimiter)
+		preKey := strings.Join(keyList[:index], constant.ConfigDelimiter)
 		if preKey != "" {
-			listKey = preKey + PropertiesDelimiter + listKey
+			listKey = preKey + constant.ConfigDelimiter + listKey
 		}
 		listIndex := 0
 		var listValues []any
@@ -764,10 +778,10 @@ func getConfigValue(index int, keyList []string, value any, keyValue map[string]
 	// 列表
 	if strings.HasSuffix(key, "]") {
 		key = strings.Split(key, "[")[0]
-		preKey := strings.Join(keyList[:index], PropertiesDelimiter)
+		preKey := strings.Join(keyList[:index], constant.ConfigDelimiter)
 		listKey := key
 		if preKey != "" {
-			listKey = preKey + PropertiesDelimiter + listKey
+			listKey = preKey + constant.ConfigDelimiter + listKey
 		}
 		listIndex := 0
 		var listValues []map[string]any
@@ -777,7 +791,7 @@ func getConfigValue(index int, keyList []string, value any, keyValue map[string]
 			exist := false
 			for k, v := range keyValue {
 				if strings.HasPrefix(k, indexKey) {
-					listKeyValue[strings.Join(strings.Split(k, PropertiesDelimiter)[index+1:], PropertiesDelimiter)] = v
+					listKeyValue[strings.Join(strings.Split(k, constant.ConfigDelimiter)[index+1:], constant.ConfigDelimiter)] = v
 					skipKeys[k] = struct{}{}
 					exist = true
 				}

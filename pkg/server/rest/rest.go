@@ -17,7 +17,6 @@ import (
 	"github.com/asjard/asjard/pkg/status"
 	"github.com/asjard/asjard/utils"
 	"github.com/fasthttp/router"
-	"github.com/google/uuid"
 	"github.com/valyala/fasthttp"
 )
 
@@ -29,11 +28,6 @@ const (
 const (
 	defaultReadBufferSize  = 4096
 	defaultWriteBufferSize = 4096
-
-	// HeaderResponseRequestMethod 请求方法返回头
-	HeaderResponseRequestMethod = "x-request-method"
-	// HeaderResponseRequestID 请求ID返回头
-	HeaderResponseRequestID = "x-request-id"
 )
 
 // Handler .
@@ -46,12 +40,13 @@ type Writer func(ctx *Context, data any, err error)
 
 // RestServer .
 type RestServer struct {
-	addresses map[string]string
-	router    *router.Router
-	server    fasthttp.Server
-	certFile  string
-	keyFile   string
-	enabled   bool
+	addresses   map[string]string
+	router      *router.Router
+	server      fasthttp.Server
+	certFile    string
+	keyFile     string
+	enabled     bool
+	interceptor server.UnaryServerInterceptor
 }
 
 var _ server.Server = &RestServer{}
@@ -59,7 +54,7 @@ var _ server.Server = &RestServer{}
 var defaultWriter Writer = DefaultWriter
 
 func init() {
-	server.AddServer(New)
+	server.AddServer(Protocol, New)
 }
 
 // // SetResponse 设置返回内容
@@ -73,7 +68,7 @@ func SetWriter(wrt Writer) {
 }
 
 // New .
-func New() (server.Server, error) {
+func New(interceptor server.UnaryServerInterceptor) (server.Server, error) {
 	addressesMap := make(map[string]string)
 	if err := config.GetWithUnmarshal("servers.rest.addresses", &addressesMap); err != nil {
 		return nil, err
@@ -87,11 +82,12 @@ func New() (server.Server, error) {
 		keyFile = filepath.Join(utils.GetCertDir(), keyFile)
 	}
 	server := &RestServer{
-		addresses: addressesMap,
-		router:    router.New(),
-		certFile:  certFile,
-		keyFile:   keyFile,
-		enabled:   config.GetBool("servers.rest.enabled", false),
+		addresses:   addressesMap,
+		router:      router.New(),
+		certFile:    certFile,
+		keyFile:     keyFile,
+		enabled:     config.GetBool("servers.rest.enabled", false),
+		interceptor: interceptor,
 		server: fasthttp.Server{
 			Name:            runtime.APP,
 			Concurrency:     config.GetInt("servers.rest.options.Concurrency", fasthttp.DefaultConcurrency),
@@ -224,18 +220,16 @@ func (s *RestServer) addRouter(handler Handler) error {
 			if !st.Implements(ht) {
 				return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
 			}
-			s.addRouterHandler(method.Method, desc, method, handler)
+			s.addRouterHandler(method.Method, method, handler)
 		}
 	}
 	return nil
 }
 
-func (s *RestServer) addRouterHandler(method string, serviceDesc ServiceDesc, methodDesc MethodDesc, svc Handler) {
+func (s *RestServer) addRouterHandler(method string, methodDesc MethodDesc, svc Handler) {
 	s.router.Handle(method, methodDesc.Path, func(ctx *fasthttp.RequestCtx) {
-		ctx.Response.Header.Set(HeaderResponseRequestMethod, methodDesc.MethodName)
-		ctx.Response.Header.Set(HeaderResponseRequestID, uuid.NewString())
-		methodDesc.Handler(NewContext(ctx,
-			WithErrPage(serviceDesc.ErrPage),
-			WithWriter(serviceDesc.Writer)), svc)
+		cc := NewContext(ctx)
+		reply, err := methodDesc.Handler(cc, svc, s.interceptor)
+		cc.Write(reply, err)
 	})
 }

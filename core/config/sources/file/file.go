@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/security"
 	"github.com/asjard/asjard/utils"
@@ -347,7 +348,7 @@ func (s *File) convertYamlToProperties(yamlContent []byte) (map[string]any, erro
 
 func (s *File) doConvertYamlToProperties(prefix string, mapSlice yaml.MapSlice, configs map[string]any) error {
 	if prefix != "" {
-		prefix += config.PropertiesDelimiter
+		prefix += constant.ConfigDelimiter
 	}
 	for _, item := range mapSlice {
 		key, ok := item.Key.(string)

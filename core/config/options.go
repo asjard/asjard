@@ -1,6 +1,10 @@
 package config
 
-import "time"
+import (
+	"time"
+
+	"github.com/asjard/asjard/core/constant"
+)
 
 // Unmarshaler 反序列化需要实现的方法
 type Unmarshaler interface {
@@ -137,7 +141,7 @@ func GetOptions(opts ...Option) *Options {
 		opt(options)
 	}
 	if options.delimiter == "" {
-		options.delimiter = " "
+		options.delimiter = constant.DefaultDelimiter
 	}
 	return options
 }

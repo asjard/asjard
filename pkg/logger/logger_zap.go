@@ -13,7 +13,7 @@ type ZapLogger struct {
 var _ logger.Logger = &ZapLogger{}
 
 func init() {
-	logger.AddLogger(New)
+	logger.SetLogger(New)
 }
 
 // New 初始化日志框架

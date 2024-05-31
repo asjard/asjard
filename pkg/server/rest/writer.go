@@ -17,7 +17,7 @@ const (
 // DefaultWriter 默认输出
 // 当data和err都为nil约定为已自行write
 func DefaultWriter(c *Context, data any, err error) {
-	if err == nil && reflect.ValueOf(data).IsNil() {
+	if err == nil && (data == nil || reflect.ValueOf(data).IsNil()) {
 		return
 	}
 	response := newResponse(c, data, err)

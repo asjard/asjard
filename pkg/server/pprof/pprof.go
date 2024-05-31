@@ -27,11 +27,11 @@ type PprofServer struct {
 var _ server.Server = &PprofServer{}
 
 func init() {
-	server.AddServer(New)
+	server.AddServer(Protocol, New)
 }
 
 // New .
-func New() (server.Server, error) {
+func New(interceptor server.UnaryServerInterceptor) (server.Server, error) {
 	server := &PprofServer{
 		addresses: make(map[string]string),
 		enabled:   config.GetBool("servers.pprof.enabled", false),
@@ -43,7 +43,7 @@ func New() (server.Server, error) {
 }
 
 // AddHandler .
-func (s *PprofServer) AddHandler(hander any) error {
+func (s *PprofServer) AddHandler(_ any) error {
 	return nil
 }
 

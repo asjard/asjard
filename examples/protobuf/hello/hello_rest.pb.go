@@ -7,13 +7,25 @@
 package hello
 
 import (
+	context "context"
+	server "github.com/asjard/asjard/core/server"
 	rest "github.com/asjard/asjard/pkg/server/rest"
 )
 
-func _Hello_Say_RestHandler(ctx *rest.Context, srv any) {
-	ctx.ReadAndWrite(func(rc *rest.Context, in any) (any, error) {
-		return srv.(HelloServer).Say(rc, in.(*SayReq))
-	}, new(SayReq))
+func _Hello_Say_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+	in := new(SayReq)
+	if interceptor == nil {
+		return srv.(HelloServer).Say(ctx, in)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "api.v1.hello.Hello.Say",
+		Protocol:   rest.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(HelloServer).Say(ctx, in)
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // HelloRestServiceDesc is the rest.ServiceDesc for Hello service.

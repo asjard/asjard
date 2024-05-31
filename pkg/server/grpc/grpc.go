@@ -1,14 +1,18 @@
 package grpc
 
 import (
+	"context"
 	"errors"
 	"net"
+	"path/filepath"
 	"time"
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/utils"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 )
 
@@ -19,9 +23,10 @@ const (
 
 // GrpcServer .
 type GrpcServer struct {
-	addresses map[string]string
-	enabled   bool
-	server    *grpc.Server
+	addresses   map[string]string
+	enabled     bool
+	server      *grpc.Server
+	interceptor server.UnaryServerInterceptor
 }
 
 // Handler .
@@ -32,23 +37,52 @@ type Handler interface {
 var _ server.Server = &GrpcServer{}
 
 func init() {
-	server.AddServer(New)
+	server.AddServer(Protocol, New)
 }
 
 // New .
-func New() (server.Server, error) {
+func New(interceptor server.UnaryServerInterceptor) (server.Server, error) {
 	addressesMap := make(map[string]string)
 	if err := config.GetWithUnmarshal("servers.grpc.addresses", &addressesMap); err != nil {
 		return nil, err
 	}
+	var opts []grpc.ServerOption
+	certFile := config.GetString("servers.grpc.certFile", "")
+	if certFile != "" {
+		certFile = filepath.Join(utils.GetCertDir(), certFile)
+	}
+	keyFile := config.GetString("servers.grpc.keyFile", "")
+	if keyFile != "" {
+		keyFile = filepath.Join(utils.GetCertDir(), keyFile)
+	}
+	if certFile != "" && keyFile != "" {
+		creds, err := credentials.NewServerTLSFromFile(certFile, keyFile)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, grpc.Creds(creds))
+	}
+	opts = append(opts, grpc.KeepaliveParams(keepalive.ServerParameters{
+		MaxConnectionIdle: config.GetDuration("servers.grpc.options.MaxConnectionIdle", 5*time.Minute),
+		Time:              config.GetDuration("servers.grpc.options.Time", 10*time.Second),
+		Timeout:           config.GetDuration("servers.grpc.options.Timeout", time.Second),
+	}))
+	opts = append(opts, grpc.ChainUnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+		if interceptor != nil {
+			return interceptor(ctx, req, &server.UnaryServerInfo{
+				Server:     info.Server,
+				FullMethod: info.FullMethod,
+				Protocol:   Protocol,
+			}, func(ctx context.Context, in any) (any, error) {
+				return handler(ctx, in)
+			})
+		}
+		return handler(ctx, req)
+	}))
 	return &GrpcServer{
 		addresses: addressesMap,
-		server: grpc.NewServer(grpc.KeepaliveParams(keepalive.ServerParameters{
-			MaxConnectionIdle: config.GetDuration("servers.grpc.options.MaxConnectionIdle", 5*time.Minute),
-			Time:              config.GetDuration("servers.grpc.options.Time", 10*time.Second),
-			Timeout:           config.GetDuration("servers.grpc.options.Timeout", time.Second),
-		})),
-		enabled: config.GetBool("servers.grpc.enabled", false),
+		enabled:   config.GetBool("servers.grpc.enabled", false),
+		server:    grpc.NewServer(opts...),
 	}, nil
 }
 
@@ -60,6 +94,11 @@ func (s *GrpcServer) AddHandler(handler any) error {
 	}
 	s.server.RegisterService(h.GrpcServiceDesc(), handler)
 	return nil
+}
+
+// WithChainUnaryInterceptor 设置拦截器
+func (s *GrpcServer) WithChainUnaryInterceptor(interceptor server.UnaryServerInterceptor) {
+	s.interceptor = interceptor
 }
 
 // Start .

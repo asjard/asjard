@@ -117,7 +117,7 @@ func (asd *Asjard) Start() error {
 	if err := registry.Registe(); err != nil {
 		return err
 	}
-	logger.Debug("System Started")
+	logger.Info("System Started")
 	// 优雅退出
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP, syscall.SIGABRT)
@@ -176,8 +176,10 @@ func (asd *Asjard) stop() {
 	}
 	logger.Info("start stop server")
 	for _, server := range asd.servers {
-		logger.Infof("server '%s' stopped", server.Protocol())
-		server.Stop()
+		if server.Enabled() {
+			logger.Infof("server '%s' stopped", server.Protocol())
+			server.Stop()
+		}
 	}
 	// 配置中心断开连接
 	config.DisConnect()

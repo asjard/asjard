@@ -54,8 +54,8 @@ func Init() error {
 	return nil
 }
 
-// AddLogger 添加日志组件
-func AddLogger(newFunc NewLoggerFunc) {
+// SetLogger 添加日志组件
+func SetLogger(newFunc NewLoggerFunc) {
 	newLoggerFunc = newFunc
 }
 

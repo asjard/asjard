@@ -45,6 +45,11 @@ func (s *Status) Error() string {
 	return fmt.Sprintf("(%d)%s,doc:%s", s.Code, s.Message, s.Doc)
 }
 
+// HttpCode 获取HTTP状态码
+func (s *Status) HttpCode() uint32 {
+	return s.Code
+}
+
 // Errorf returns an error representing code, msg and doc.  If code is 0, returns nil.
 // 非http.StatusText范围内的错误码为自定义错误码
 // 自定义错误码格式为: XXXY

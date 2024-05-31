@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+
 	"github.com/asjard/asjard/core/logger"
 )
 
@@ -8,14 +10,6 @@ import (
 type Server interface {
 	// 注册
 	AddHandler(handler any) error
-	// 请求处理前
-	// BeforeHandle()
-	// 请求处理
-	// Handle(request *Request) (*Response, error)
-	// 请求前
-	// PreRequest()
-	// 请求后
-	// AfterRequest()
 	// 服务启动
 	Start(startErr chan error) error
 	// 服务停止
@@ -34,10 +28,10 @@ type Handler interface {
 }
 
 // NewServerFunc .
-type NewServerFunc func() (Server, error)
+type NewServerFunc func(interceptor UnaryServerInterceptor) (Server, error)
 
 var (
-	newServerFuncs []NewServerFunc
+	newServerFuncs = make(map[string]NewServerFunc)
 )
 
 // Init 服务初始化
@@ -46,8 +40,8 @@ func Init() ([]Server, error) {
 	logger.Debug("start init server")
 	defer logger.Debug("init server done")
 	var servers []Server
-	for _, newServer := range newServerFuncs {
-		server, err := newServer()
+	for protocol, newServer := range newServerFuncs {
+		server, err := newServer(getChainUnaryInterceptors(protocol))
 		if err != nil {
 			return servers, err
 		}
@@ -58,7 +52,10 @@ func Init() ([]Server, error) {
 }
 
 // AddServer 服务注册
-func AddServer(newServerFunc NewServerFunc) error {
-	newServerFuncs = append(newServerFuncs, newServerFunc)
+func AddServer(protocol string, newServerFunc NewServerFunc) error {
+	if _, ok := newServerFuncs[protocol]; ok {
+		return fmt.Errorf("protocol %s server already exist", protocol)
+	}
+	newServerFuncs[protocol] = newServerFunc
 	return nil
 }

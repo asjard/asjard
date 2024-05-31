@@ -5,4 +5,8 @@ const (
 	Framework = "ASJARD"
 	// FrameworkVersion 框架版本号
 	FrameworkVersion = "1.0.0"
+	// DefaultDelimiter 默认分隔符
+	DefaultDelimiter = ","
+	// ConfigDelimiter 配置分隔符
+	ConfigDelimiter = "."
 )

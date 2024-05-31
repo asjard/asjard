@@ -3,6 +3,7 @@ package rest
 import (
 	"sync"
 
+	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/pkg/status"
 )
 
@@ -30,6 +31,7 @@ func newResponse(c *Context, data any, err error) *Response {
 		if stts, ok := err.(*status.Status); ok {
 			response.Status = stts
 		} else {
+			logger.Error(err.Error())
 			response.Status = status.StatusInternalServerError
 		}
 	}

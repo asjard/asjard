@@ -29,29 +29,32 @@ type Context struct {
 	// errorHandler ErrorHandler
 	errPage     string
 	queryParams map[string][]string
-	// 列表顺序为倒序
+	queryLoaded bool
 	// 例如路由为: /region/{region_id}/project/{project_id}/user/{user_id}
 	// 请求路径为: /region/1/project/2/user/3
-	// 则解析道此列表中的参数为
-	// [{key: "user_id", value: "3"},{key: "project_id", value:"2"},{key: "region_id",value:"1"}]
-	pathParams   []*KV
+	// {"region_id":"1","project_id":"2","user_id":"3"}
+	pathParams   map[string][]string
+	pathLoaded   bool
 	headerParams map[string][]string
+	headLoaded   bool
 	postBody     []byte
+	postLoaded   bool
 	// 返回内容
 	response *Response
 	write    Writer
 }
 
 // KV .
-type KV struct {
-	Key, Value string
-}
+// type KV struct {
+// 	Key, Value string
+// }
 
 var contextPool = sync.Pool{
 	New: func() any {
 		return &Context{
 			errPage:      config.GetString("servers.rest.doc.errPage", ""),
 			queryParams:  make(map[string][]string),
+			pathParams:   make(map[string][]string),
 			headerParams: make(map[string][]string),
 		}
 	},
@@ -74,7 +77,7 @@ func NewContext(ctx *fasthttp.RequestCtx, options ...Option) *Context {
 // 后解析的同名参数会覆盖前解析的同名参数
 // post,put,patch解析body体,其余不解析
 func (c *Context) ReadEntity(entityPtr any) error {
-	if err := c.readQueryParamToEntity(entityPtr); err != nil {
+	if err := c.readQueryParamsToEntity(entityPtr); err != nil {
 		return err
 	}
 	if err := c.readHeaderParamsToEntity(entityPtr); err != nil {
@@ -115,16 +118,20 @@ func (c *Context) GetParam(key string) (string, bool) {
 
 // GetPathParam 获取路径参数
 func (c *Context) GetPathParam(key string) (string, bool) {
-	for _, kv := range c.pathParams {
-		if kv.Key == key {
-			return kv.Value, true
-		}
+	c.readPathParams()
+	values, ok := c.pathParams[key]
+	if !ok {
+		return "", false
 	}
-	return "", false
+	if len(values) == 0 {
+		return "", true
+	}
+	return values[0], true
 }
 
 // GetHeaderParam 获取请求头参数
 func (c *Context) GetHeaderParam(key string) (string, bool) {
+	c.readHeaderParams()
 	values, ok := c.headerParams[key]
 	if !ok {
 		return "", false
@@ -137,6 +144,7 @@ func (c *Context) GetHeaderParam(key string) (string, bool) {
 
 // GetQueryParam 获取query参数
 func (c *Context) GetQueryParam(key string) (string, bool) {
+	c.readQueryParams()
 	values, ok := c.queryParams[key]
 	if !ok {
 		return "", false
@@ -156,14 +164,25 @@ func (c *Context) Write(data any, err error) {
 // Close .
 func (c *Context) Close() {
 	c.queryParams = make(map[string][]string)
+	c.queryLoaded = false
 	c.headerParams = make(map[string][]string)
-	c.pathParams = []*KV{}
+	c.headLoaded = false
+	c.pathParams = make(map[string][]string)
+	c.pathLoaded = false
 	c.postBody = []byte{}
+	c.postLoaded = false
 	contextPool.Put(c)
 }
 
+func (c *Context) readBodyParams() {
+	if !c.postLoaded {
+		c.postBody = c.Request.Body()
+		c.postLoaded = true
+	}
+}
+
 func (c *Context) readBodyParamsToEntity(entity any) error {
-	c.postBody = c.Request.Body()
+	c.readBodyParams()
 	if entity == nil {
 		return nil
 	}
@@ -185,16 +204,23 @@ func (c *Context) readBodyParamsToEntity(entity any) error {
 	return nil
 }
 
-func (c *Context) readQueryParamToEntity(entity any) error {
-	c.QueryArgs().VisitAll(func(key, value []byte) {
-		k := string(key)
-		v := string(value)
-		if _, ok := c.queryParams[k]; !ok {
-			c.queryParams[k] = []string{v}
-		} else {
-			c.queryParams[k] = append(c.queryParams[k], v)
-		}
-	})
+func (c *Context) readQueryParams() {
+	if !c.queryLoaded {
+		c.QueryArgs().VisitAll(func(key, value []byte) {
+			k := string(key)
+			v := string(value)
+			if _, ok := c.queryParams[k]; !ok {
+				c.queryParams[k] = []string{v}
+			} else {
+				c.queryParams[k] = append(c.queryParams[k], v)
+			}
+		})
+		c.queryLoaded = true
+	}
+}
+
+func (c *Context) readQueryParamsToEntity(entity any) error {
+	c.readQueryParams()
 	if entity == nil {
 		return nil
 	}
@@ -204,16 +230,23 @@ func (c *Context) readQueryParamToEntity(entity any) error {
 	return nil
 }
 
+func (c *Context) readHeaderParams() {
+	if !c.headLoaded {
+		c.Request.Header.VisitAll(func(key, value []byte) {
+			k := string(key)
+			v := string(value)
+			if _, ok := c.headerParams[k]; !ok {
+				c.headerParams[k] = []string{v}
+			} else {
+				c.headerParams[k] = append(c.headerParams[k], v)
+			}
+		})
+		c.headLoaded = true
+	}
+}
+
 func (c *Context) readHeaderParamsToEntity(entity any) error {
-	c.Request.Header.VisitAll(func(key, value []byte) {
-		k := string(key)
-		v := string(value)
-		if _, ok := c.headerParams[k]; !ok {
-			c.headerParams[k] = []string{v}
-		} else {
-			c.headerParams[k] = append(c.headerParams[k], v)
-		}
-	})
+	c.readBodyParams()
 	if entity == nil {
 		return nil
 	}
@@ -223,21 +256,27 @@ func (c *Context) readHeaderParamsToEntity(entity any) error {
 	return nil
 }
 
-func (c *Context) readPathParamsToEntity(entity any) error {
-	c.VisitUserValues(func(key []byte, value any) {
-		c.pathParams = append(c.pathParams, &KV{
-			Key:   string(key),
-			Value: cast.ToString(value),
+func (c *Context) readPathParams() {
+	if !c.pathLoaded {
+		c.VisitUserValues(func(key []byte, value any) {
+			keyStr := string(key)
+			valueStr := cast.ToString(value)
+			if _, ok := c.pathParams[keyStr]; ok {
+				c.pathParams[keyStr] = append(c.pathParams[keyStr], valueStr)
+			} else {
+				c.pathParams[keyStr] = []string{valueStr}
+			}
 		})
-	})
+		c.pathLoaded = true
+	}
+}
+
+func (c *Context) readPathParamsToEntity(entity any) error {
+	c.readPathParams()
 	if entity == nil {
 		return nil
 	}
-	pathForm := make(map[string][]string)
-	for _, kv := range c.pathParams {
-		pathForm[kv.Key] = []string{kv.Value}
-	}
-	if err := mapForm(entity, pathForm); err != nil {
+	if err := mapForm(entity, c.pathParams); err != nil {
 		return status.Errorf(http.StatusBadRequest, fmt.Sprintf("read path params fail: %s", err.Error()))
 	}
 	return nil

@@ -1,6 +1,11 @@
 servers:
+  interceptors: ""
   grpc:
+    interceptors: "testInterceptor,testInterceptor1"
     enabled: true
+    # 证书相关配置
+    certFile: ""
+    keyFile: ""
     addresses:
       listen: 127.0.0.1:8081
     options:
@@ -35,7 +40,10 @@ servers:
     enabled: false
     addresses: 
       listen: 127.0.0.1:9081
+  rest1:
+    interceptors: ${servers.rest.interceptors}
   rest:
+    interceptors: "restReadEntity,restResponseHeader"
     enabled: true
     # 证书相关配置
     certFile: ""
@@ -43,7 +51,7 @@ servers:
     # 文档相关配置
     doc: 
       # 错误页地址
-      errPage: "https://www.baidu.com"
+      errPage: https://www.google.com
     addresses:
       listen: 127.0.0.1:8080
       advertise: 127.0.0.1:8082
