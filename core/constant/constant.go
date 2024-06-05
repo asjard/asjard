@@ -35,4 +35,7 @@ const (
 	ServiceVersionKey = "version"
 	// DiscoverNameKey 服务发现者
 	DiscoverNameKey = "discoverName"
+
+	// DefaultCipherName 默认加解密名称
+	DefaultCipherName = "default"
 )

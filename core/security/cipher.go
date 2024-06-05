@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 )
 
@@ -40,9 +41,9 @@ var (
 func init() {
 	cpm = &cipherManager{
 		ciphers:           make(map[string]Cipher),
-		defaultCipherName: "default",
+		defaultCipherName: constant.DefaultCipherName,
 	}
-	AddCipher(DefaultCipherName, NewDefaultCipher)
+	AddCipher(constant.DefaultCipherName, NewDefaultCipher)
 }
 
 // Init 加解密组件初始化
