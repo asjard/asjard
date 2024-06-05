@@ -1,0 +1,4 @@
+loadbalance:
+  # roundRobin负载均衡配置
+  roundRobin:
+    x: " "
