@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server"
@@ -152,7 +153,7 @@ func (s *RestServer) Start(startErr chan error) error {
 		NewContext(ctx).Write(nil, status.ErrInterServerError)
 	}
 	s.server.Handler = s.router.Handler
-	address, ok := s.addresses["listen"]
+	address, ok := s.addresses[constant.ServerListenAddressName]
 	if !ok {
 		return errors.New("config servces.rest.addresses.listen not found")
 	}
@@ -200,15 +201,8 @@ func (s *RestServer) Enabled() bool {
 }
 
 // ListenAddresses 监听地址列表
-func (s *RestServer) ListenAddresses() []*server.EndpointAddress {
-	var addresses []*server.EndpointAddress
-	for name, address := range s.addresses {
-		addresses = append(addresses, &server.EndpointAddress{
-			Name:    name,
-			Address: address,
-		})
-	}
-	return addresses
+func (s *RestServer) ListenAddresses() map[string]string {
+	return s.addresses
 }
 
 func (s *RestServer) addRouter(handler Handler) error {

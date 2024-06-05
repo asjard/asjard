@@ -27,6 +27,21 @@ func _Hello_Say_RestHandler(ctx *rest.Context, srv any, interceptor server.Unary
 	}
 	return interceptor(ctx, in, info, handler)
 }
+func _Hello_Call_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+	in := new(SayReq)
+	if interceptor == nil {
+		return srv.(HelloServer).Call(ctx, in)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "api.v1.hello.Hello.Call",
+		Protocol:   rest.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(HelloServer).Call(ctx, in)
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 // HelloRestServiceDesc is the rest.ServiceDesc for Hello service.
 // It's only intended for direct use with rest.AddHandler,
@@ -48,6 +63,20 @@ var HelloRestServiceDesc = rest.ServiceDesc{
 			Method:     "POST",
 			Path:       "/v1/region/{region_id}/project/{project_id}/user/{user_id}",
 			Handler:    _Hello_Say_RestHandler,
+		},
+		{
+			MethodName: "Call",
+			Desc:       ".",
+			Method:     "GET",
+			Path:       "/v2",
+			Handler:    _Hello_Call_RestHandler,
+		},
+		{
+			MethodName: "Call",
+			Desc:       ".",
+			Method:     "POST",
+			Path:       "/v2/region/{region_id}/project/{project_id}/user/{user_id}",
+			Handler:    _Hello_Call_RestHandler,
 		},
 	},
 }

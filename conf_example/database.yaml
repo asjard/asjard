@@ -1,0 +1,15 @@
+database:
+  mysql:
+    dsn: mysql://xxx:yy@127.0.0.1:3306/test
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    db: 0
+    auth: xxx
+  mongo:
+    hosts:
+      - "127.0.0.1:2370"
+  etcd:
+    endpoints:
+    - "127.0.0.1:2379"
+    

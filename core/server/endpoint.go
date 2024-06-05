@@ -1,15 +1,15 @@
 package server
 
 // Endpoint .
-type Endpoint struct {
-	// 协议
-	Protocol string
-	// 地址列表
-	Addresses []*EndpointAddress
-}
+// type Endpoint struct {
+// 	// 协议
+// 	Protocol string
+// 	// 地址列表
+// 	Addresses []*EndpointAddress
+// }
 
-// EndpointAddress .
-type EndpointAddress struct {
-	Name    string
-	Address string
-}
+// Endpoint .
+// type Endpoint struct {
+// 	Name    string
+// 	Address string
+// }

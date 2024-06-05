@@ -1,28 +1,64 @@
 package client
 
 import (
-	"context"
+	"fmt"
 
+	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
 	"google.golang.org/grpc"
 )
 
-// ClientConn 客户端需要实现的方法
-type ClientConn interface {
-	Invoke(ctx context.Context, method string, req any) (any, error)
+type ClientInterface interface {
+	// target format asjard://grpc/serviceName
+	NewConn(target string, options *ClientOptions) (grpc.ClientConnInterface, error)
 }
 
-// ClientConnInterface defines the functions clients need to perform unary and
-// streaming RPCs.  It is implemented by *ClientConn, and is only intended to
-// be referenced by generated code.
-type ClientConnInterface interface {
-	// Invoke performs a unary RPC and returns after the response is received
-	// into reply.
-	Invoke(ctx context.Context, method string, args any, reply any, opts ...CallOption) error
-	// NewStream begins a streaming RPC.
-	// NewStream(ctx context.Context, desc *StreamDesc, method string, opts ...CallOption) (ClientStream, error)
+// NewClientFunc 初始化客户端的方法
+type NewClientFunc func(*ClientOptions) ClientInterface
+
+var newClients = make(map[string]NewClientFunc)
+var clients = make(map[string]ClientInterface)
+
+// AddClient 添加客户端
+func AddClient(protocol string, newClient NewClientFunc) {
+	newClients[protocol] = newClient
 }
 
-// NewClient .
-func NewClient(protocol, serviceName string) {
-	grpc.NewClient(serviceName)
+// Init 客户端初始化
+func Init() error {
+	for protocol, newClient := range newClients {
+		clients[protocol] = newClient(&ClientOptions{
+			Resolver: &ClientBuilder{},
+			Balancer: NewBalanceBuilder(config.GetString(fmt.Sprintf("clients.%s.loadbalance", protocol),
+				config.GetString("clients.loadbalance", DefaultBalanceRoundRobin))),
+		})
+	}
+	return nil
+}
+
+// Client 客户端
+type Client struct {
+	protocol   string
+	serverName string
+}
+
+// Conn 链接地址
+func (c Client) Conn() (grpc.ClientConnInterface, error) {
+	cc, ok := clients[c.protocol]
+	if !ok {
+		return nil, fmt.Errorf("protocol %s client not found", c.protocol)
+	}
+	// 设置置指定服务的负载均衡
+	options := &ClientOptions{
+		Balancer: NewBalanceBuilder(config.GetString(fmt.Sprintf("clients.%s.%s.loadbalance", c.protocol, c.serverName), "")),
+	}
+	return cc.NewConn(fmt.Sprintf("%s://%s/%s", constant.Framework, c.protocol, c.serverName), options)
+}
+
+// NewClient 新客户端
+func NewClient(protocol, serverName string) *Client {
+	return &Client{
+		protocol:   protocol,
+		serverName: serverName,
+	}
 }

@@ -1,0 +1,7 @@
+clients:
+  # 客户端负载均很
+  loadbalance: ""
+  grpc:
+    loadbalance: ""
+  rest:
+    loadbalance: ""

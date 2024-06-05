@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/utils"
@@ -103,7 +104,7 @@ func (s *GrpcServer) WithChainUnaryInterceptor(interceptor server.UnaryServerInt
 
 // Start .
 func (s *GrpcServer) Start(startErr chan error) error {
-	address, ok := s.addresses["listen"]
+	address, ok := s.addresses[constant.ServerListenAddressName]
 	if !ok {
 		return errors.New("config servers.grpc.addresses.listen not found")
 	}
@@ -138,13 +139,6 @@ func (s *GrpcServer) Enabled() bool {
 }
 
 // ListenAddresses 监听地址列表
-func (s *GrpcServer) ListenAddresses() []*server.EndpointAddress {
-	var addresses []*server.EndpointAddress
-	for name, address := range s.addresses {
-		addresses = append(addresses, &server.EndpointAddress{
-			Name:    name,
-			Address: address,
-		})
-	}
-	return addresses
+func (s *GrpcServer) ListenAddresses() map[string]string {
+	return s.addresses
 }

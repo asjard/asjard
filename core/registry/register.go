@@ -11,9 +11,6 @@ type Register interface {
 	Registe(instance *server.Instance) error
 	// 从配置中心移除服务实例
 	Remove(instance *server.Instance)
-	// 心跳，表示本服务还活着
-	// 防止注册中心将服务实例删除
-	Heartbeat(instance *server.Instance)
 	// 注册中心名称
 	Name() string
 }

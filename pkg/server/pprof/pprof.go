@@ -9,6 +9,7 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
 )
@@ -49,7 +50,7 @@ func (s *PprofServer) AddHandler(_ any) error {
 
 // Start .
 func (s *PprofServer) Start(startErr chan error) error {
-	address, ok := s.addresses["listen"]
+	address, ok := s.addresses[constant.ServerListenAddressName]
 	if !ok {
 		return errors.New("config servers.pprof.addresses.listen not found")
 	}
@@ -76,13 +77,6 @@ func (s *PprofServer) Enabled() bool {
 }
 
 // ListenAddresses .
-func (s *PprofServer) ListenAddresses() []*server.EndpointAddress {
-	var addresses []*server.EndpointAddress
-	for name, address := range s.addresses {
-		addresses = append(addresses, &server.EndpointAddress{
-			Name:    name,
-			Address: address,
-		})
-	}
-	return addresses
+func (s *PprofServer) ListenAddresses() map[string]string {
+	return s.addresses
 }

@@ -12,8 +12,8 @@ import (
 // 服务健康方法
 type healthCheckFunc func(discoverName string, instance *server.Instance) error
 
-// ServiceInstance 带发现者的服务实例详情
-type ServiceInstance struct {
+// Instance 带发现者的服务实例详情
+type Instance struct {
 	// 服务发现者
 	DiscoverName string
 	// 实例详情
@@ -24,7 +24,7 @@ type ServiceInstance struct {
 type cache struct {
 	// 服务列表
 	// TODO 需要更新存储结构
-	services []*ServiceInstance
+	services []*Instance
 
 	// 健康检查方法
 	healthCheckFunc healthCheckFunc
@@ -36,6 +36,13 @@ type cache struct {
 	// value: 失败次数
 	failureThresholds map[string]int
 	fm                sync.RWMutex
+	listeners         map[string]*listener
+	lm                sync.RWMutex
+}
+
+type listener struct {
+	options  *Options
+	callback func(*Event)
 }
 
 type serviceCache struct {
@@ -53,6 +60,7 @@ func newCache(hf healthCheckFunc) *cache {
 		failureThreshold:  config.GetInt("registry.failureThreshold", 1),
 		healthCheckFunc:   hf,
 		failureThresholds: map[string]int{},
+		listeners:         map[string]*listener{},
 	}
 	if config.GetBool("registry.healthCheck", true) {
 		go c.healthCheck()
@@ -60,7 +68,7 @@ func newCache(hf healthCheckFunc) *cache {
 	return c
 }
 
-func (instance *ServiceInstance) canPick(options *Options) bool {
+func (instance *Instance) canPick(options *Options) bool {
 	for _, pickFunc := range options.getPickFuncs() {
 		if !pickFunc(instance) {
 			return false
@@ -70,35 +78,78 @@ func (instance *ServiceInstance) canPick(options *Options) bool {
 }
 
 // 获取服务实例
-func (c *cache) pick(options *Options) []*server.Instance {
-	var services []*server.Instance
-	for _, service := range c.services {
-		if service.canPick(options) {
-			services = append(services, service.Instance)
+func (c *cache) pick(options *Options) []*Instance {
+	var instances []*Instance
+	for _, instance := range c.services {
+		if instance.canPick(options) {
+			instances = append(instances, instance)
 		}
 	}
-	return services
+	c.addListener(options)
+	return instances
+}
+
+func (c *cache) addListener(options *Options) {
+	if options.watchName != "" && options.watch != nil {
+		c.lm.Lock()
+		c.listeners[options.watchName] = &listener{
+			options:  options,
+			callback: options.watch,
+		}
+		c.lm.Unlock()
+	}
+}
+
+func (c *cache) removeListener(listenerName string) {
+	c.lm.Lock()
+	for name := range c.listeners {
+		if name == listenerName {
+			delete(c.listeners, name)
+		}
+	}
+	c.lm.Unlock()
 }
 
 // 更新本地缓存中的服务实例
-func (c *cache) update(discoverName string, instances []*server.Instance) {
-	for _, svc := range c.services {
-		for _, instance := range instances {
-			if instance.ID == svc.Instance.ID {
-				svc.DiscoverName = discoverName
-				svc.Instance = instance
+func (c *cache) update(instances []*Instance) {
+	for _, instance := range instances {
+		exist := false
+		for index := range c.services {
+			if instance.Instance.ID == c.services[index].Instance.ID {
+				c.services[index] = instance
+				c.notify(EventTypeUpdate, c.services[index])
+				exist = true
 			}
+		}
+		if !exist {
+			c.services = append(c.services, instance)
+			c.notify(EventTypeUpdate, instance)
 		}
 	}
 }
 
 // 从本地缓存中删除服务实例
-func (c *cache) delete(instance *server.Instance) {
+func (c *cache) delete(instance *Instance) {
+	logger.Debugf("delete instance %s", instance.Instance.Name)
 	for index, svc := range c.services {
-		if svc.Instance.ID == instance.ID {
+		if svc.Instance.ID == instance.Instance.ID {
+			c.notify(EventTypeDelete, svc)
 			c.services = append(c.services[:index], c.services[index+1:]...)
 		}
 	}
+}
+
+func (c *cache) notify(eventType EventType, instance *Instance) {
+	c.lm.RLock()
+	for _, listener := range c.listeners {
+		if instance.canPick(listener.options) {
+			listener.options.watch(&Event{
+				Type:     eventType,
+				Instance: instance,
+			})
+		}
+	}
+	c.lm.RUnlock()
 }
 
 // 服务健康检查

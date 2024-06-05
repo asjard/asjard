@@ -23,3 +23,17 @@ type Event struct {
 	// 配置的值
 	Value *Value
 }
+
+// String 返回字符串
+func (e EventType) String() string {
+	switch e {
+	case EventTypeCreate:
+		return "Create"
+	case EventTypeUpdate:
+		return "Update"
+	case EventTypeDelete:
+		return "Delete"
+	default:
+		return "Unknown"
+	}
+}

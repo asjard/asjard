@@ -29,11 +29,13 @@ type Options struct {
 	// 主要用来缓存
 	customePickFuncKeys []string
 	pickFuncs           []PickFunc
+	watch               func(*Event)
+	watchName           string
 }
 
 // PickFunc 服务选择过滤方法
 // 如果返回true则表示该实例满足要求
-type PickFunc func(instance *ServiceInstance) bool
+type PickFunc func(instance *Instance) bool
 
 // Option .
 type Option func(opts *Options)
@@ -139,8 +141,16 @@ func WithMetadata(metadata map[string]string) func(opts *Options) {
 	}
 }
 
+// WithWatch 更新服务变化
+func WithWatch(name string, callback func(*Event)) func(opts *Options) {
+	return func(opts *Options) {
+		opts.watch = callback
+		opts.watchName = name
+	}
+}
+
 func (opts *Options) okPickFunc() PickFunc {
-	return func(instance *ServiceInstance) bool {
+	return func(instance *Instance) bool {
 		return true
 	}
 }
@@ -148,7 +158,7 @@ func (opts *Options) okPickFunc() PickFunc {
 // 应用选择
 func (opts *Options) appPickFunc() PickFunc {
 	if opts.App != "" {
-		return func(instance *ServiceInstance) bool {
+		return func(instance *Instance) bool {
 			return instance.Instance.App == opts.App
 		}
 	}
@@ -158,7 +168,7 @@ func (opts *Options) appPickFunc() PickFunc {
 // 区域选择
 func (opts *Options) regionPickFunc() PickFunc {
 	if opts.Region != "" {
-		return func(instance *ServiceInstance) bool {
+		return func(instance *Instance) bool {
 			return instance.Instance.Region == opts.Region
 		}
 	}
@@ -168,7 +178,7 @@ func (opts *Options) regionPickFunc() PickFunc {
 // 区域选择
 func (opts *Options) environmentPickFunc() PickFunc {
 	if opts.Environment != "" {
-		return func(instance *ServiceInstance) bool {
+		return func(instance *Instance) bool {
 			return instance.Instance.Environment == opts.Environment
 		}
 	}
@@ -178,7 +188,7 @@ func (opts *Options) environmentPickFunc() PickFunc {
 // 服务选择
 func (opts *Options) servicePickFunc() PickFunc {
 	if opts.ServiceName != "" {
-		return func(instance *ServiceInstance) bool {
+		return func(instance *Instance) bool {
 			return instance.Instance.Name == opts.ServiceName
 		}
 	}
@@ -188,7 +198,7 @@ func (opts *Options) servicePickFunc() PickFunc {
 // 服务发现中心选择
 func (opts *Options) registryPickFunc() PickFunc {
 	if opts.RegistryName != "" {
-		return func(instance *ServiceInstance) bool {
+		return func(instance *Instance) bool {
 			return instance.DiscoverName == opts.RegistryName
 		}
 	}
@@ -198,9 +208,9 @@ func (opts *Options) registryPickFunc() PickFunc {
 // 协议选择
 func (opts *Options) protocolPickFunc() PickFunc {
 	if opts.Protocol != "" {
-		return func(instance *ServiceInstance) bool {
-			for _, endpoint := range instance.Instance.Endpoints {
-				if endpoint.Protocol == opts.Protocol {
+		return func(instance *Instance) bool {
+			for protocol := range instance.Instance.Endpoints {
+				if protocol == opts.Protocol {
 					return true
 				}
 			}
@@ -213,7 +223,7 @@ func (opts *Options) protocolPickFunc() PickFunc {
 // 版本号选择
 func (opts *Options) versionPickFunc() PickFunc {
 	if opts.Version != "" {
-		return func(instance *ServiceInstance) bool {
+		return func(instance *Instance) bool {
 			return instance.DiscoverName == opts.RegistryName
 		}
 	}
@@ -223,7 +233,7 @@ func (opts *Options) versionPickFunc() PickFunc {
 // 元数据选择， 需要满足所有条件
 func (opts *Options) metadataPickFunc() PickFunc {
 	if opts.MetaData != nil && len(opts.MetaData) != 0 {
-		return func(instance *ServiceInstance) bool {
+		return func(instance *Instance) bool {
 			for wantKey, wantValue := range opts.MetaData {
 				isOk := false
 				for key, value := range instance.Instance.MetaData {

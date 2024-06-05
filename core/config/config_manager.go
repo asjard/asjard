@@ -714,6 +714,15 @@ func GetWithYamlUnmarshal(prefix string, outPtr any, opts ...Option) error {
 	return yaml.Unmarshal(outBytes, outPtr)
 }
 
+// GetKeyValueToMap 解析配置到map中
+// key=a[0]  value=1
+// {"a":[1]}
+func GetKeyValueToMap(key string, value any) map[string]any {
+	return getConfigMap(map[string]any{
+		key: value,
+	})
+}
+
 func getConfigMap(configs map[string]any) map[string]any {
 	result := make(map[string]any)
 	skipKeys := make(map[string]struct{})

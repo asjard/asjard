@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/asjard/asjard/core/bootstrap"
+	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/config"
 	cfgenv "github.com/asjard/asjard/core/config/sources/env"
 	cfgfile "github.com/asjard/asjard/core/config/sources/file"
@@ -91,6 +92,11 @@ func (asd *Asjard) init() error {
 		return err
 	}
 
+	// 客户端初始化
+	if err := client.Init(); err != nil {
+		return err
+	}
+
 	// 服务初始化
 	servers, err := server.Init()
 	if err != nil {
@@ -158,10 +164,7 @@ func (asd *Asjard) startServers() error {
 		}
 		asd.hm.RUnlock()
 		// 补全服务实例详情
-		if err := svc.AddEndpoint(&server.Endpoint{
-			Protocol:  sv.Protocol(),
-			Addresses: sv.ListenAddresses(),
-		}); err != nil {
+		if err := svc.AddEndpoint(sv.Protocol(), sv.ListenAddresses()); err != nil {
 			return fmt.Errorf("server '%s' add endpoint fail[%s]", sv.Protocol(), err.Error())
 		}
 		// 启动服务

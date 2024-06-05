@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v5.27.0
-// source: hello/hello.proto
+// source: examples/protobuf/hello/hello.proto
 
 package hello
 
@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Hello_Say_FullMethodName = "/api.v1.hello.Hello/Say"
+	Hello_Say_FullMethodName  = "/api.v1.hello.Hello/Say"
+	Hello_Call_FullMethodName = "/api.v1.hello.Hello/Call"
 )
 
 // HelloClient is the client API for Hello service.
@@ -28,6 +29,7 @@ const (
 type HelloClient interface {
 	// say something
 	Say(ctx context.Context, in *SayReq, opts ...grpc.CallOption) (*SayReq, error)
+	Call(ctx context.Context, in *SayReq, opts ...grpc.CallOption) (*SayReq, error)
 }
 
 type helloClient struct {
@@ -47,12 +49,22 @@ func (c *helloClient) Say(ctx context.Context, in *SayReq, opts ...grpc.CallOpti
 	return out, nil
 }
 
+func (c *helloClient) Call(ctx context.Context, in *SayReq, opts ...grpc.CallOption) (*SayReq, error) {
+	out := new(SayReq)
+	err := c.cc.Invoke(ctx, Hello_Call_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HelloServer is the server API for Hello service.
 // All implementations must embed UnimplementedHelloServer
 // for forward compatibility
 type HelloServer interface {
 	// say something
 	Say(context.Context, *SayReq) (*SayReq, error)
+	Call(context.Context, *SayReq) (*SayReq, error)
 	mustEmbedUnimplementedHelloServer()
 }
 
@@ -62,6 +74,9 @@ type UnimplementedHelloServer struct {
 
 func (UnimplementedHelloServer) Say(context.Context, *SayReq) (*SayReq, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Say not implemented")
+}
+func (UnimplementedHelloServer) Call(context.Context, *SayReq) (*SayReq, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Call not implemented")
 }
 func (UnimplementedHelloServer) mustEmbedUnimplementedHelloServer() {}
 
@@ -94,6 +109,24 @@ func _Hello_Say_Handler(srv interface{}, ctx context.Context, dec func(interface
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Hello_Call_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SayReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HelloServer).Call(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Hello_Call_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HelloServer).Call(ctx, req.(*SayReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Hello_ServiceDesc is the grpc.ServiceDesc for Hello service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -105,7 +138,11 @@ var Hello_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "Say",
 			Handler:    _Hello_Say_Handler,
 		},
+		{
+			MethodName: "Call",
+			Handler:    _Hello_Call_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "hello/hello.proto",
+	Metadata: "examples/protobuf/hello/hello.proto",
 }

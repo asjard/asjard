@@ -1,9 +1,5 @@
 package registry
 
-import (
-	"github.com/asjard/asjard/core/server"
-)
-
 // EventType 事件类型
 type EventType int
 
@@ -20,8 +16,6 @@ const (
 type Event struct {
 	// 事件类型
 	Type EventType
-	// 注册中心名称
-	RegistryName string
 	// 服务实例详情
-	Instance *server.Instance
+	Instance *Instance
 }

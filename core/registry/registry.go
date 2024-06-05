@@ -107,9 +107,9 @@ func (r *Registry) heartbeat() error {
 // 向注册中心发起心跳表示本服务还存活
 // TODO 添加超时逻辑
 func (r *Registry) doHeartbeat() {
-	for _, register := range r.registers {
-		register.Heartbeat(r.currentInstance)
-	}
+	// for _, register := range r.registers {
+	// register.Heartbeat(r.currentInstance)
+	// }
 }
 
 // 从注册中心删除本服务
@@ -133,7 +133,7 @@ func (r *Registry) discove() error {
 		if err != nil {
 			return err
 		}
-		r.cache.update(discover.Name(), services)
+		r.cache.update(services)
 		discover.Watch(r.watch)
 	}
 	return nil
@@ -142,7 +142,7 @@ func (r *Registry) discove() error {
 func (r *Registry) healthCheck(discoverName string, instance *server.Instance) error {
 	for _, discover := range r.discovers {
 		if discover.Name() == discoverName {
-			return discover.HealthCheck(instance)
+			// return discover.HealthCheck(instance)
 		}
 	}
 	return fmt.Errorf("service '%s(%s)' health check discover '%s' not found",
@@ -161,7 +161,7 @@ func (r *Registry) watch(et *Event) {
 
 // 更新服务
 func (r *Registry) update(event *Event) {
-	r.cache.update(event.RegistryName, []*server.Instance{event.Instance})
+	r.cache.update([]*Instance{event.Instance})
 }
 
 // 删除服务
@@ -169,6 +169,10 @@ func (r *Registry) delete(event *Event) {
 	r.cache.delete(event.Instance)
 }
 
-func (r *Registry) pick(options *Options) []*server.Instance {
+func (r *Registry) pick(options *Options) []*Instance {
 	return r.cache.pick(options)
+}
+
+func (r *Registry) removeListener(name string) {
+	r.cache.removeListener(name)
 }

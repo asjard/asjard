@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/resolver"
 )
 
 // CallOption configures a Call before it starts or extracts information from
@@ -39,7 +40,7 @@ func defaultCallInfo() *callInfo {
 }
 
 // UnaryInvoker is called by UnaryClientInterceptor to complete RPCs.
-type UnaryInvoker func(ctx context.Context, method string, req, reply any, cc *ClientConn, opts ...CallOption) error
+type UnaryInvoker func(ctx context.Context, method string, req, reply any, cc *resolver.ClientConn, opts ...CallOption) error
 
 // UnaryClientInterceptor intercepts the execution of a unary RPC on the client.
 // Unary interceptors can be specified as a DialOption, using
@@ -56,4 +57,4 @@ type UnaryInvoker func(ctx context.Context, method string, req, reply any, cc *C
 // defaults from the ClientConn as well as per-call options.
 //
 // The returned error must be compatible with the status package.
-type UnaryClientInterceptor func(ctx context.Context, method string, req, reply any, cc *ClientConn, invoker UnaryInvoker, opts ...CallOption) error
+type UnaryClientInterceptor func(ctx context.Context, method string, req, reply any, cc *resolver.ClientConn, invoker UnaryInvoker, opts ...CallOption) error

@@ -17,7 +17,7 @@ type Server interface {
 	// 服务提供的协议
 	Protocol() string
 	// 服务监听地址列表
-	ListenAddresses() []*EndpointAddress
+	ListenAddresses() map[string]string
 	// 是否已启用
 	Enabled() bool
 }

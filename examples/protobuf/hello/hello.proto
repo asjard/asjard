@@ -16,6 +16,14 @@ service Hello {
             post : "/v1/region/{region_id}/project/{project_id}/user/{user_id}"
         };
     };
+    rpc Call(SayReq) returns (SayReq) {
+        option (asjard.api.http) = {
+            get : "/v2"
+        };
+        option (asjard.api.http) = {
+            post : "/v2/region/{region_id}/project/{project_id}/user/{user_id}"
+        };
+    };
 }
 
 message SayReq {
