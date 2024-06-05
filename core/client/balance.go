@@ -95,7 +95,9 @@ type RoundRobinPicker struct {
 	next uint32
 }
 
-// Pick .
+// Pick 负载选择
+// TODO 优先选择同区域
+// 如果垮区域应优先使用advertise地址
 func (r *RoundRobinPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 	n := uint32(len(r.scs))
 	if n == 0 {

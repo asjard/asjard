@@ -44,7 +44,7 @@ func NewClient(options *client.ClientOptions) client.ClientInterface {
 	return c
 }
 
-// NewConn .
+// NewConn 获取服务连接
 func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (grpc.ClientConnInterface, error) {
 	u, err := url.Parse(target)
 	if err != nil {
@@ -58,7 +58,8 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (grpc.C
 		balanceName = clientOpts.Balancer.Name()
 	}
 	options = append(options, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}]}`, balanceName)))
-	certFile := config.GetString(fmt.Sprintf("clients.grpc.%s.certFile", serverName), "")
+	certFile := config.GetString(fmt.Sprintf("clients.grpc.%s.certFile", serverName),
+		config.GetString("clients.grpc.certFile", ""))
 	if certFile != "" {
 		certFile = filepath.Join(utils.GetCertDir(), certFile)
 	}
@@ -72,9 +73,12 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (grpc.C
 		options = append(options, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 	options = append(options, grpc.WithKeepaliveParams(keepalive.ClientParameters{
-		Time:                config.GetDuration("clients.grpc.keepalive.Time", time.Second*20),
-		Timeout:             config.GetDuration("client.grpc.keepalive.Timeout", time.Second),
-		PermitWithoutStream: config.GetBool("client.grpc.keepalive.PermitWithoutStream", true),
+		Time: config.GetDuration(fmt.Sprintf("clients.grpc.%s.options.keepalive.Time", serverName),
+			config.GetDuration("clients.grpc.options.keepalive.Time", time.Second*20)),
+		Timeout: config.GetDuration(fmt.Sprintf("client.grpc.%s.options.keepalive.Timeout", serverName),
+			config.GetDuration("client.grpc.options.keepalive.Timeout", time.Second)),
+		PermitWithoutStream: config.GetBool(fmt.Sprintf("client.grpc.%s.options.keepalive.PermitWithoutStream", serverName),
+			config.GetBool("client.grpc.options.keepalive.PermitWithoutStream", true)),
 	}))
 	return grpc.NewClient(target, options...)
 }

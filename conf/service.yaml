@@ -1,12 +1,13 @@
 # 所属项目
 app: asjard
 # 部署环境
-environment: ""
+environment: "dev"
 # 部署区域
-region: ""
+region: "default"
+avaliablezone: "default"
 # 服务实例详情
-instance: 
-  name: default
+instance:
+  name: ${app}
   version: 1.0.0
   # 自定义服务源数据
   metadata:
