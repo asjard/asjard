@@ -14,13 +14,23 @@ const (
 	HeaderResponseRequestID = "x-request-id"
 )
 
+func init() {
+	server.AddInterceptor(NewReadEntityInterceptor)
+	server.AddInterceptor(NewResponseHeaderInterceptor)
+}
+
+// NewReadEntityInterceptor 初始化序列化参数拦截器
+func NewReadEntityInterceptor() server.ServerInterceptor {
+	return &ReadEntity{}
+}
+
+// NewResponseHeaderInterceptor 初始化返回请求头拦截器
+func NewResponseHeaderInterceptor() server.ServerInterceptor {
+	return &ResponseHeader{}
+}
+
 // ReadEntity 解析参数到请求参数中
 type ReadEntity struct{}
-
-func init() {
-	server.AddInterceptor(&ReadEntity{})
-	server.AddInterceptor(&ResponseHeader{})
-}
 
 // Name .
 func (r *ReadEntity) Name() string {

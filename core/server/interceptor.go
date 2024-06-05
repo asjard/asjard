@@ -41,18 +41,21 @@ type ServerInterceptor interface {
 	Interceptor() UnaryServerInterceptor
 }
 
-var serverInterceptors []ServerInterceptor
+type NewServerInterceptor func() ServerInterceptor
+
+var newServerInterceptors []NewServerInterceptor
 
 // AddInterceptor 添加拦截器
-func AddInterceptor(interceptor ServerInterceptor) {
-	serverInterceptors = append(serverInterceptors, interceptor)
+func AddInterceptor(newInterceptor NewServerInterceptor) {
+	newServerInterceptors = append(newServerInterceptors, newInterceptor)
 }
 
 func getServerInterceptors(protocol string) []UnaryServerInterceptor {
 	var interceptors []UnaryServerInterceptor
 	for _, interceptorName := range config.GetStrings(fmt.Sprintf("servers.%s.interceptors", protocol),
 		config.GetStrings("servers.interceptors", []string{})) {
-		for _, interceptor := range serverInterceptors {
+		for _, newInterceptor := range newServerInterceptors {
+			interceptor := newInterceptor()
 			if interceptor.Name() == interceptorName {
 				interceptors = append(interceptors, interceptor.Interceptor())
 			}

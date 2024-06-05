@@ -17,8 +17,12 @@ var _ server.ServerInterceptor = &TestInterceptor{}
 var _ server.ServerInterceptor = &TestInterceptor1{}
 
 func init() {
-	server.AddInterceptor(&TestInterceptor{})
-	server.AddInterceptor(&TestInterceptor1{})
+	server.AddInterceptor(NewTestInterceptor)
+}
+
+// NewTestInterceptor .
+func NewTestInterceptor() server.ServerInterceptor {
+	return &TestInterceptor{}
 }
 
 // Name .
