@@ -101,7 +101,6 @@ func (r *RoundRobinPicker) Pick(info balancer.PickInfo) (balancer.PickResult, er
 	if n == 0 {
 		return balancer.PickResult{}, balancer.ErrNoSubConnAvailable
 	}
-	// TODO 整形溢出
 	next := atomic.AddUint32(&r.next, 1) - 1
 	sc := r.scs[next%n]
 	return balancer.PickResult{
