@@ -1,6 +1,8 @@
 package bootstrap
 
 import (
+	"log/slog"
+
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
 )
@@ -22,7 +24,11 @@ func (l Logger) Bootstrap() error {
 }
 
 func (l Logger) update() {
-	logger.SetLogger(logger.NewDefaultLogger(&logger.LoggerConfig{
+	logger.SetLoggerHandler(l.newLoggerHandler)
+}
+
+func (l Logger) newLoggerHandler() slog.Handler {
+	return logger.GetSlogHandler(&logger.LoggerConfig{
 		FileName:   config.GetString("logger.filePath", "/dev/stdout"),
 		MaxSize:    config.GetInt("logger.maxSize", 100),
 		MaxAge:     config.GetInt("logger.maxAge", 0),
@@ -30,7 +36,7 @@ func (l Logger) update() {
 		Compress:   config.GetBool("logger.compress", true),
 		Level:      config.GetString("logger.level", logger.DEBUG.String()),
 		Format:     config.GetString("logger.format", logger.Json.String()),
-	}))
+	})
 }
 
 func (l Logger) Shutdown() {}
