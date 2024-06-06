@@ -1,7 +1,10 @@
 package logger
 
 import (
+	"context"
 	"log/slog"
+	"runtime"
+	"strconv"
 
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -72,22 +75,32 @@ func getSlogLevel(level string) slog.Level {
 	}
 }
 
+func (dl defaultLogger) log(level slog.Level, msg string, args ...any) {
+	_, f, l, ok := runtime.Caller(3)
+	if !ok {
+		f = "???"
+		l = 0
+	}
+	args = append(args, []any{"source", f + ":" + strconv.Itoa(l)}...)
+	dl.slogger.Log(context.Background(), level, msg, args...)
+}
+
 // Info .
 func (dl defaultLogger) Info(msg string, v ...any) {
-	dl.slogger.Info(msg, v...)
+	dl.log(slog.LevelInfo, msg, v...)
 }
 
 // Debug .
 func (dl defaultLogger) Debug(msg string, v ...any) {
-	dl.slogger.Debug(msg, v...)
+	dl.log(slog.LevelDebug, msg, v...)
 }
 
 // Warn .
 func (dl defaultLogger) Warn(msg string, v ...any) {
-	dl.slogger.Warn(msg, v...)
+	dl.log(slog.LevelWarn, msg, v...)
 }
 
 // Error .
 func (dl defaultLogger) Error(msg string, v ...any) {
-	dl.slogger.Error(msg, v...)
+	dl.log(slog.LevelError, msg, v...)
 }
