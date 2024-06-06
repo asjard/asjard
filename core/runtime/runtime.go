@@ -5,7 +5,6 @@ import (
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
-	"github.com/asjard/asjard/core/logger"
 
 	"github.com/google/uuid"
 )
@@ -32,8 +31,6 @@ var (
 // Init 运行期间的参数初始化
 // 服务一旦启动起来后，这些参数是不会修改的
 func Init() error {
-	logger.Debug("Start init runtime")
-	defer logger.Debug("init runtime Done")
 	once.Do(func() {
 		ServiceID = uuid.NewString()
 		APP = config.GetString("app", constant.Framework)

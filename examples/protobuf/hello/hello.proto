@@ -15,6 +15,9 @@ service Hello {
         option (asjard.api.http) = {
             post : "/v1/region/{region_id}/project/{project_id}/user/{user_id}"
         };
+        option (asjard.api.http) = {
+            get : "/hello"
+        };
     };
     rpc Call(SayReq) returns (SayReq) {
         option (asjard.api.http) = {

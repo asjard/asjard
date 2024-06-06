@@ -54,7 +54,7 @@ var HelloRestServiceDesc = rest.ServiceDesc{
 			MethodName: "Say",
 			Desc:       "say something.",
 			Method:     "GET",
-			Path:       "/v1",
+			Path:       "/hello",
 			Handler:    _Hello_Say_RestHandler,
 		},
 		{

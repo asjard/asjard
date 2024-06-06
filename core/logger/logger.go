@@ -6,7 +6,9 @@ import (
 	"runtime"
 	"strconv"
 
+	"github.com/asjard/asjard/core/constant"
 	"gopkg.in/natefinch/lumberjack.v2"
+	// aruntime "github.com/asjard/asjard/core/runtime"
 )
 
 // Logger 日志
@@ -53,7 +55,7 @@ type LoggerConfig struct {
 }
 
 var defaultLoggerConfig = &LoggerConfig{
-	FileName:   "/dev/stdout",
+	FileName:   "./log/" + constant.Framework + ".log",
 	MaxSize:    100,
 	MaxAge:     0,
 	MaxBackups: 10,

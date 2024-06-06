@@ -1,5 +1,5 @@
 # 所属项目
-app: asjard
+app: projectAsjard
 # 部署环境
 environment: "dev"
 # 部署区域

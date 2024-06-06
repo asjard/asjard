@@ -4,7 +4,7 @@ logger:
   # 日志格式, text或json
   format: json
   # 日志文件
-  filePath: /dev/stdout
+  filePath: ./log/${app}.log
   # 文件大小, 单位MB
   maxSize: 100
   # 文件最大保留天数

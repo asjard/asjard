@@ -37,7 +37,7 @@ servers:
         # The current default value is 20 seconds.
         Timeout: !!str 1s
   pprof:
-    enabled: false
+    enabled: true
     addresses:
       listen: 127.0.0.1:9081
   rest1:

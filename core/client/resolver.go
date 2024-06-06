@@ -15,10 +15,6 @@ type ClientBuilder struct{}
 
 var _ resolver.Builder = &ClientBuilder{}
 
-// func init() {
-// 	resolver.Register(&ClientBuilder{})
-// }
-
 // Build .
 // target: asjard://grpc/serviceName
 func (c *ClientBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
@@ -31,8 +27,6 @@ func (c *ClientBuilder) Build(target resolver.Target, cc resolver.ClientConn, op
 	cr.ResolveNow(resolver.ResolveNowOptions{})
 	return cr, nil
 }
-
-func (*ClientBuilder) watch() {}
 
 // Scheme 解析器名称
 func (*ClientBuilder) Scheme() string {
@@ -66,10 +60,8 @@ func (r *clientResolver) listenerName() string {
 }
 
 func (r *clientResolver) update(instances []*registry.Instance) {
-	// var endpoints []resolver.Endpoint
 	var addresses []resolver.Address
 	for _, instance := range instances {
-		// var addresses []resolver.Address
 		attr := attributes.New(constant.DiscoverNameKey, instance.DiscoverName)
 		for mkey, mvalue := range instance.Instance.MetaData {
 			attr.WithValue(mkey, mvalue)
@@ -92,10 +84,6 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 				})
 			}
 		}
-		// endpoints = append(endpoints, resolver.Endpoint{
-		// 	Addresses:  addresses,
-		// 	Attributes: attr,
-		// })
 	}
 	r.cc.UpdateState(resolver.State{
 		Addresses: addresses,
