@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/asjard/asjard"
-	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
@@ -66,10 +65,8 @@ func (Hello) GrpcServiceDesc() *grpc.ServiceDesc {
 
 func main() {
 	server := asjard.New()
-	helloClient := &Hello{}
-	bootstrap.AddBootstrap(helloClient)
-	server.AddHandler(rest.Protocol, helloClient)
-	server.AddHandler(mgrpc.Protocol, helloClient)
+	server.AddHandler(rest.Protocol, &Hello{})
+	server.AddHandler(mgrpc.Protocol, &Hello{})
 	if err := server.Start(); err != nil {
 		log.Println(err.Error())
 	}

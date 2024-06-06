@@ -24,7 +24,7 @@ import (
 type Asjard struct {
 	// 注册的服务列表
 	servers  []server.Server
-	handlers map[string][]interface{}
+	handlers map[string][]any
 	hm       sync.RWMutex
 	startErr chan error
 }
@@ -32,20 +32,23 @@ type Asjard struct {
 // New 入口
 func New() *Asjard {
 	return &Asjard{
-		handlers: make(map[string][]interface{}),
+		handlers: make(map[string][]any),
 		startErr: make(chan error),
 	}
 }
 
 // AddHandler 添加handler用以处理请求
-func (asd *Asjard) AddHandler(protocol string, handler interface{}) error {
+func (asd *Asjard) AddHandler(protocol string, handler any) error {
 	asd.hm.Lock()
 	if _, ok := asd.handlers[protocol]; ok {
 		asd.handlers[protocol] = append(asd.handlers[protocol], handler)
 	} else {
-		asd.handlers[protocol] = []interface{}{handler}
+		asd.handlers[protocol] = []any{handler}
 	}
 	asd.hm.Unlock()
+	if bootstrapHandler, ok := handler.(bootstrap.BootstrapHandler); ok {
+		bootstrap.AddBootstrap(bootstrapHandler)
+	}
 	return nil
 }
 
