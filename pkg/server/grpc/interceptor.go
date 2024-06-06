@@ -33,7 +33,7 @@ func (TestInterceptor) Name() string {
 // Interceptor .
 func (TestInterceptor) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (any, error) {
-		logger.Debugf("test grpc interceptor")
+		logger.Debug("test grpc interceptor")
 		return handler(ctx, req)
 	}
 }
@@ -46,7 +46,7 @@ func (TestInterceptor1) Name() string {
 // Interceptor .
 func (TestInterceptor1) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (any, error) {
-		logger.Debugf("test grpc interceptor1")
+		logger.Debug("test grpc interceptor1")
 		return handler(ctx, req)
 	}
 }

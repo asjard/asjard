@@ -52,7 +52,8 @@ func GetInstance() *Instance {
 func NewInstance() *Instance {
 	metadata := make(map[string]string)
 	if err := config.GetWithUnmarshal("instance.metadata", &metadata); err != nil {
-		logger.Errorf("get instance fail[%s]", err.Error())
+		logger.Error("get instance metadata fail",
+			"err", err.Error())
 	}
 	return &Instance{
 		App:         runtime.APP,

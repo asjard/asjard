@@ -1,3 +1,17 @@
 logger:
   # 支持DEBUG,INFO,WARN,ERROR,大小写不敏感
-  level: DEBUG
+  level: INFO
+  # 日志格式, text或json
+  format: json
+  # 日志文件
+  filePath: /dev/stdout
+  # 文件大小, 单位MB
+  maxSize: 100
+  # 文件最大保留天数
+  maxAge: 0
+  # 最大备份数量
+  maxBackups: 10
+  # 是否进行压缩
+  compress: true
+  # 是否开启access日志
+  accessEnabled: true

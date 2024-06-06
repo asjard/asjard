@@ -118,8 +118,7 @@ func (c *Context) GetParam(key string) (string, bool) {
 
 // GetPathParam 获取路径参数
 func (c *Context) GetPathParam(key string) (string, bool) {
-	c.readPathParams()
-	values, ok := c.pathParams[key]
+	values, ok := c.ReadPathParams()[key]
 	if !ok {
 		return "", false
 	}
@@ -131,8 +130,7 @@ func (c *Context) GetPathParam(key string) (string, bool) {
 
 // GetHeaderParam 获取请求头参数
 func (c *Context) GetHeaderParam(key string) (string, bool) {
-	c.readHeaderParams()
-	values, ok := c.headerParams[key]
+	values, ok := c.ReadHeaderParams()[key]
 	if !ok {
 		return "", false
 	}
@@ -144,8 +142,7 @@ func (c *Context) GetHeaderParam(key string) (string, bool) {
 
 // GetQueryParam 获取query参数
 func (c *Context) GetQueryParam(key string) (string, bool) {
-	c.readQueryParams()
-	values, ok := c.queryParams[key]
+	values, ok := c.ReadQueryParams()[key]
 	if !ok {
 		return "", false
 	}
@@ -174,22 +171,20 @@ func (c *Context) Close() {
 	contextPool.Put(c)
 }
 
-func (c *Context) readBodyParams() {
+// ReadBodyParams 读取请求体
+func (c *Context) ReadBodyParams() []byte {
 	if !c.postLoaded {
 		c.postBody = c.Request.Body()
 		c.postLoaded = true
 	}
+	return c.postBody
 }
 
 func (c *Context) readBodyParamsToEntity(entity any) error {
-	c.readBodyParams()
 	if entity == nil {
 		return nil
 	}
-	if len(c.postBody) == 0 {
-		return nil
-	}
-	if err := json.Unmarshal(c.postBody, entity); err != nil {
+	if err := json.Unmarshal(c.ReadBodyParams(), entity); err != nil {
 		// 修改下原本返回的错误信息，去掉语言相关内容
 		if e, ok := err.(*json.UnmarshalTypeError); ok {
 			if e.Struct != "" || e.Field != "" {
@@ -204,7 +199,8 @@ func (c *Context) readBodyParamsToEntity(entity any) error {
 	return nil
 }
 
-func (c *Context) readQueryParams() {
+// ReadQueryParams 获取query参数
+func (c *Context) ReadQueryParams() map[string][]string {
 	if !c.queryLoaded {
 		c.QueryArgs().VisitAll(func(key, value []byte) {
 			k := string(key)
@@ -217,20 +213,21 @@ func (c *Context) readQueryParams() {
 		})
 		c.queryLoaded = true
 	}
+	return c.queryParams
 }
 
 func (c *Context) readQueryParamsToEntity(entity any) error {
-	c.readQueryParams()
 	if entity == nil {
 		return nil
 	}
-	if err := mapForm(entity, c.queryParams); err != nil {
+	if err := mapForm(entity, c.ReadQueryParams()); err != nil {
 		return status.Errorf(http.StatusBadRequest, fmt.Sprintf("read query params fail: %s", err.Error()))
 	}
 	return nil
 }
 
-func (c *Context) readHeaderParams() {
+// ReadHeaderParams 读取header请求参数
+func (c *Context) ReadHeaderParams() map[string][]string {
 	if !c.headLoaded {
 		c.Request.Header.VisitAll(func(key, value []byte) {
 			k := string(key)
@@ -243,20 +240,21 @@ func (c *Context) readHeaderParams() {
 		})
 		c.headLoaded = true
 	}
+	return c.headerParams
 }
 
 func (c *Context) readHeaderParamsToEntity(entity any) error {
-	c.readBodyParams()
 	if entity == nil {
 		return nil
 	}
-	if err := mapForm(entity, c.headerParams); err != nil {
+	if err := mapForm(entity, c.ReadHeaderParams()); err != nil {
 		return status.Errorf(http.StatusBadRequest, fmt.Sprintf("read header params fail: %s", err.Error()))
 	}
 	return nil
 }
 
-func (c *Context) readPathParams() {
+// ReadPathParams 读取path请求参数
+func (c *Context) ReadPathParams() map[string][]string {
 	if !c.pathLoaded {
 		c.VisitUserValues(func(key []byte, value any) {
 			keyStr := string(key)
@@ -269,14 +267,14 @@ func (c *Context) readPathParams() {
 		})
 		c.pathLoaded = true
 	}
+	return c.pathParams
 }
 
 func (c *Context) readPathParamsToEntity(entity any) error {
-	c.readPathParams()
 	if entity == nil {
 		return nil
 	}
-	if err := mapForm(entity, c.pathParams); err != nil {
+	if err := mapForm(entity, c.ReadPathParams()); err != nil {
 		return status.Errorf(http.StatusBadRequest, fmt.Sprintf("read path params fail: %s", err.Error()))
 	}
 	return nil

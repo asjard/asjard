@@ -117,7 +117,8 @@ func (s *GrpcServer) Start(startErr chan error) error {
 			startErr <- err
 		}
 	}()
-	logger.Debugf("start grpc server on address: %s", address)
+	logger.Debug("start grpc server",
+		"address", address)
 	return nil
 }
 

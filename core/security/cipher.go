@@ -55,7 +55,8 @@ func Init() error {
 		if err != nil {
 			return err
 		}
-		logger.Debugf("cipher '%s' inited", cph.name)
+		logger.Debug("cipher inited",
+			"cipher_name", cph.name)
 		cpm.add(cph.name, newCipher)
 	}
 	return nil
@@ -72,7 +73,8 @@ func AddCipher(name string, newFunc NewCipherFunc) error {
 		name:    name,
 		newFunc: newFunc,
 	})
-	logger.Debugf("cipher '%s' added", name)
+	logger.Debug("cipher added",
+		"cipher_name", name)
 	return nil
 }
 

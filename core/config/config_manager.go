@@ -102,8 +102,8 @@ func init() {
 //	@param priority 优先级
 //	@return error
 func Load(priority int) error {
-	logger.Debugf("Start load config with priority %d", priority)
-	defer logger.Debugf("load config with priority %d done", priority)
+	logger.Debug("Start load config", "priority", priority)
+	defer logger.Debug("load config done", "priority", priority)
 	return configmanager.load(priority)
 }
 
@@ -132,7 +132,8 @@ func AddSource(name string, priority int, newSourceFunc NewSourceFunc) error {
 	sort.Slice(sources, func(i, j int) bool {
 		return sources[i].priority < sources[j].priority
 	})
-	logger.Debugf("config source %s added", name)
+	logger.Debug("config source added",
+		"source", name)
 	return nil
 }
 
@@ -202,7 +203,9 @@ func (m *ConfigManager) update(event *Event) {
 	}
 	sourcer, ok := m.getSourcer(event.Value.Sourcer.Name())
 	if !ok {
-		logger.Errorf("update config %+v, source '%s' not found", event, event.Value.Sourcer.Name())
+		logger.Error("update config, source not found",
+			"event", event,
+			"source", event.Value.Sourcer.Name())
 		return
 	}
 	if sourcer.Name() == event.Value.Sourcer.Name() {
@@ -237,7 +240,9 @@ func (m *ConfigManager) deleteByKey(event *Event) {
 	}
 	sourcer, ok := m.getSourcer(event.Value.Sourcer.Name())
 	if !ok {
-		logger.Errorf("delete config %s, source '%s' not found", event.Key, event.Value.Sourcer.Name())
+		logger.Error("delete config, source not found",
+			"key", event.Key,
+			"source", event.Value.Sourcer.Name())
 		return
 	}
 	if value.Sourcer.Priority() > sourcer.Priority() {
@@ -248,7 +253,8 @@ func (m *ConfigManager) deleteByKey(event *Event) {
 
 // 根据引用删除
 func (m *ConfigManager) deleteByRef(event *Event) {
-	logger.Debugf("delete by ref: %s", event.Value.Ref)
+	logger.Debug("delete by ref",
+		"ref", event.Value.Ref)
 	for key, value := range m.globalCfgs.getAll() {
 		if value.Sourcer.Name() == event.Value.Sourcer.Name() &&
 			value.Ref == event.Value.Ref {
@@ -263,19 +269,25 @@ func (m *ConfigManager) deleteAndFindNext(key string) {
 	for i := len(sources) - 1; i >= 0; i-- {
 		value, ok := m.sourceCfgs.get(sources[i].name, key)
 		if !ok {
-			logger.Debugf("find key '%s' from source '%s' not found", key, sources[i].name)
+			logger.Debug("find key from source not found",
+				"key", key,
+				"source", sources[i].name)
 			continue
 		}
-		logger.Debugf("delete key '%s' and find next from sourcer '%s'", key, sources[i].name)
+		logger.Debug("delete key and find next from sourcer",
+			"key", key,
+			"source", sources[i].name)
 		m.setConfig(key, value)
 		return
 	}
-	logger.Debugf("delete key '%s'", key)
+	logger.Debug("delete key",
+		"key", key)
 	m.delConfig(key)
 }
 
 func (m *ConfigManager) addSourcer(sourcer Sourcer) {
-	logger.Debugf("add sourcer %s", sourcer.Name())
+	logger.Debug("add sourcer",
+		"source", sourcer.Name())
 	m.sm.Lock()
 	m.sourcers[sourcer.Name()] = sourcer
 	m.sm.Unlock()
@@ -314,11 +326,8 @@ func (m *ConfigManager) delConfig(key string) {
 
 // 获取配置
 func (m *ConfigManager) getValue(key string, opts *Options) any {
-	if opts != nil {
-		// 添加监控
-		if opts.watch != nil {
-			m.listener.watch(key, opts.watch)
-		}
+	if opts != nil && opts.watch != nil {
+		m.listener.watch(key, opts.watch)
 	}
 	value, ok := m.getConfig(key)
 	if !ok {
@@ -327,13 +336,22 @@ func (m *ConfigManager) getValue(key string, opts *Options) any {
 	return m.getValueWithOptions(value.Value, opts)
 }
 
+// 添加配置监听
+func (m *ConfigManager) addListener(key string, opts *Options) {
+	if opts != nil && opts.watch != nil {
+		m.listener.watch(key, opts.watch)
+	}
+}
+
+// 移除监听器
+func (m *ConfigManager) removeListener(key string) {
+	m.listener.remove(key)
+}
+
 // 根据前缀获取配置
 func (m *ConfigManager) getValueByPrefix(prefix string, opts *Options) map[string]any {
-	if opts != nil {
-		// 添加监控
-		if opts.watch != nil {
-			m.listener.watch(prefix, opts.watch)
-		}
+	if opts != nil && opts.watch != nil {
+		m.listener.watch(prefix, opts.watch)
 	}
 	out := make(map[string]any)
 	for key, value := range m.getConfigs() {
@@ -349,7 +367,9 @@ func (m *ConfigManager) getValueWithOptions(value any, opts *Options) any {
 	if opts.cipher {
 		decryptedValue, err := security.Decrypt(cast.ToString(value), security.WithCipherName(opts.cipherName))
 		if err != nil {
-			logger.Errorf("decrypt with cipher '%s' fail[%s]", opts.cipher, err.Error())
+			logger.Error("decrypt fail",
+				"cipher", opts.cipherName,
+				"err", err.Error())
 		} else {
 			value = decryptedValue
 		}
@@ -403,7 +423,10 @@ func (m *ConfigManager) setValueToSource(key, sourceName string, value any) erro
 	if sourceName == "" {
 		m.sm.RLock()
 		for _, sourcer := range m.sourcers {
-			logger.Debugf("set %s to source %s with value %v", key, sourcer.Name(), value)
+			logger.Debug("set key to source",
+				"key", key,
+				"source", sourcer.Name(),
+				"value", value)
 			if err := sourcer.Set(key, value); err != nil {
 				return err
 			}
@@ -425,7 +448,8 @@ func (m *ConfigManager) disconnect() {
 	m.sm.RLock()
 	defer m.sm.RUnlock()
 	for name, sourcer := range m.sourcers {
-		logger.Infof("stop config source '%s'", name)
+		logger.Info("stop config source",
+			"source", name)
 		sourcer.DisConnect()
 	}
 }
@@ -723,6 +747,23 @@ func GetKeyValueToMap(key string, value any) map[string]any {
 	})
 }
 
+// AddListener 添加配置监听
+func AddListener(key string, callback func(*Event)) {
+	options := GetOptions(WithWatch(callback))
+	configmanager.addListener(key, options)
+}
+
+// AddPatternListener 添加匹配监听
+func AddPatternListener(pattern string, callback func(*Event)) {
+	options := GetOptions(WithMatchWatch(pattern, callback))
+	configmanager.addListener(pattern, options)
+}
+
+// RemoveListener 移除监听器
+func RemoveListener(key string) {
+	configmanager.removeListener(key)
+}
+
 func getConfigMap(configs map[string]any) map[string]any {
 	result := make(map[string]any)
 	skipKeys := make(map[string]struct{})
@@ -745,8 +786,10 @@ func mergeConfigMap(from, to map[string]any) {
 					to[key].(map[string]any)[k] = v
 				}
 			default:
-				logger.Warnf("merge from %v, to %v, invalid value %v type want map[string]any",
-					from, to, value)
+				logger.Warn("merge fail, invalid value type want map[string]any",
+					"from", from,
+					"to", to,
+					"value", value)
 			}
 		} else {
 			to[key] = value

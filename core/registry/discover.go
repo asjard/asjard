@@ -94,7 +94,8 @@ func (l *LocalRegistry) getAndWatch() {
 	if err := config.GetWithUnmarshal(l.localDiscoverConfPrefix,
 		&services,
 		config.WithMatchWatch(l.localDiscoverConfPrefix+".*", l.watch)); err != nil {
-		logger.Errorf("get registry.localDiscover fail[%s]", err.Error())
+		logger.Error("get registry.localDiscover fail",
+			"err", err.Error())
 	} else {
 		l.instances = l.getInstances(services)
 	}
@@ -137,7 +138,7 @@ func (l *LocalRegistry) getInstances(services map[string][]string) []*Instance {
 			if err := instance.AddEndpoints(protocol, map[string][]string{
 				constant.ServerListenAddressName: addresses,
 			}); err != nil {
-				logger.Errorf(err.Error())
+				logger.Error(err.Error())
 			}
 		}
 		instances = append(instances, &Instance{

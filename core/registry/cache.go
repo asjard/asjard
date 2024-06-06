@@ -130,7 +130,8 @@ func (c *cache) update(instances []*Instance) {
 
 // 从本地缓存中删除服务实例
 func (c *cache) delete(instance *Instance) {
-	logger.Debugf("delete instance %s", instance.Instance.Name)
+	logger.Debug("delete instance",
+		"instance", instance.Instance.Name)
 	for index, svc := range c.services {
 		if svc.Instance.ID == instance.Instance.ID {
 			c.notify(EventTypeDelete, svc)
@@ -222,7 +223,9 @@ func (c *serviceCache) addOrUpdate(instances []*server.Instance) {
 		if ok {
 			for index, service := range services {
 				if service.ID == instance.ID {
-					logger.Debugf("update instance %s(%s)", instance.Name, instance.ID)
+					logger.Debug("update instance",
+						"instance_name", instance.Name,
+						"instance_id", instance.ID)
 					exist = true
 					c.sm.Lock()
 					c.services[instance.Name][index] = instance
@@ -232,7 +235,9 @@ func (c *serviceCache) addOrUpdate(instances []*server.Instance) {
 			}
 		}
 		if !ok || !exist {
-			logger.Debugf("add instance %s(%s)", instance.Name, instance.ID)
+			logger.Debug("add instance",
+				"instance_name", instance.Name,
+				"instance_id", instance.ID)
 			c.sm.Lock()
 			c.services[instance.Name] = append(c.services[instance.Name], instance)
 			c.sm.Unlock()
@@ -247,7 +252,9 @@ func (c *serviceCache) delete(instance *server.Instance) {
 	if ok {
 		for index, service := range services {
 			if service.ID == instance.ID {
-				logger.Debugf("delete instance %s(%s)", service.Name, service.ID)
+				logger.Debug("delete instance",
+					"instance_name", service.Name,
+					"instance_id", service.ID)
 				// 删除该实例
 				c.sm.Lock()
 				c.services[instance.Name] = append(services[:index], services[index+1:]...)
@@ -264,8 +271,11 @@ func (c *serviceCache) healthCheck(discoverName string, hf healthCheckFunc) []*s
 	for _, instances := range c.services {
 		for _, instance := range instances {
 			if err := hf(discoverName, instance); err != nil {
-				logger.Errorf("health check discover '%s' instance '%s(%s)' fail[%s]",
-					discoverName, instance.Name, instance.ID, err.Error())
+				logger.Error("health check discover instance fail",
+					"discover_name", discoverName,
+					"instance_name", instance.Name,
+					"instance_id", instance.ID,
+					"err", err.Error())
 				notHealthInstances = append(notHealthInstances, instance)
 			}
 		}

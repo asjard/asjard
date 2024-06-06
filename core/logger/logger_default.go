@@ -1,97 +1,93 @@
 package logger
 
 import (
-	"fmt"
-	"log"
-	"sync"
+	"log/slog"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // defaultLogger 默认日志
 type defaultLogger struct {
-	level Level
+	slogger *slog.Logger
 }
 
-var bufferPool = sync.Pool{New: func() any { return new([]byte) }}
-
-func getBuffer() *[]byte {
-	p := bufferPool.Get().(*[]byte)
-	*p = (*p)[:0]
-	return p
-}
-func putBuffer(p *[]byte) {
-	// Proper usage of a sync.Pool requires each entry to have approximately
-	// the same memory cost. To obtain this property when the stored type
-	// contains a variably-sized buffer, we add a hard limit on the maximum buffer
-	// to place back in the pool.
-	//
-	// See https://go.dev/issue/23199
-	if cap(*p) > 64<<10 {
-		*p = nil
-	}
-	bufferPool.Put(p)
+// LoggerConfig 日志配置
+type LoggerConfig struct {
+	FileName   string
+	MaxSize    int
+	MaxAge     int
+	MaxBackups int
+	Compress   bool
+	Level      string
+	Format     string
 }
 
-func (dl defaultLogger) info(level Level, v ...interface{}) {
-	if dl.level <= level {
-		log.SetPrefix("[" + level.String() + "] ")
-		// log.Println(v...)
-		buf := getBuffer()
-		defer putBuffer(buf)
-		fmt.Appendln(*buf, v...)
-		log.Output(4, string(fmt.Appendln(*buf, v...)))
+var defaultLoggerConfig = &LoggerConfig{
+	FileName:   "/dev/stdout",
+	MaxSize:    100,
+	MaxAge:     0,
+	MaxBackups: 10,
+	Compress:   true,
+	Level:      DEBUG.String(),
+	Format:     Text.String(),
+}
+
+// NewDefaultLogger .
+func NewDefaultLogger(cfg *LoggerConfig) *defaultLogger {
+	return &defaultLogger{
+		slogger: slog.New(getSlogHandler(cfg)),
 	}
 }
 
-func (dl defaultLogger) infof(level Level, format string, v ...interface{}) {
-	if dl.level <= level {
-		log.SetPrefix("[" + level.String() + "] ")
-		// log.Printf(format, v...)
-		log.Output(4, fmt.Sprintf(format, v...))
+func getSlogHandler(cfg *LoggerConfig) slog.Handler {
+	writer := &lumberjack.Logger{
+		Filename:   cfg.FileName,
+		MaxSize:    cfg.MaxSize,
+		MaxAge:     cfg.MaxAge,
+		MaxBackups: cfg.MaxBackups,
+	}
+	handlerOptions := &slog.HandlerOptions{
+		Level: getSlogLevel(cfg.Level),
+	}
+	switch cfg.Format {
+	case Text.String():
+		return slog.NewTextHandler(writer, handlerOptions)
+	default:
+		return slog.NewJSONHandler(writer, handlerOptions)
+	}
+}
+
+func getSlogLevel(level string) slog.Level {
+	switch level {
+	case DEBUG.String():
+		return slog.LevelDebug
+	case INFO.String():
+		return slog.LevelInfo
+	case WARN.String():
+		return slog.LevelWarn
+	case ERROR.String():
+		return slog.LevelError
+	default:
+		return slog.LevelDebug
 	}
 }
 
 // Info .
-func (dl defaultLogger) Info(v ...interface{}) {
-	dl.info(INFO, v...)
-}
-
-// Infof .
-func (dl defaultLogger) Infof(format string, v ...interface{}) {
-	dl.infof(INFO, format, v...)
-
+func (dl defaultLogger) Info(msg string, v ...any) {
+	dl.slogger.Info(msg, v...)
 }
 
 // Debug .
-func (dl defaultLogger) Debug(v ...interface{}) {
-	dl.info(DEBUG, v...)
-}
-
-// Debugf .
-func (dl defaultLogger) Debugf(format string, v ...interface{}) {
-	dl.infof(DEBUG, format, v...)
+func (dl defaultLogger) Debug(msg string, v ...any) {
+	dl.slogger.Debug(msg, v...)
 }
 
 // Warn .
-func (dl defaultLogger) Warn(v ...interface{}) {
-	dl.info(WARN, v...)
-}
-
-// Warnf .
-func (dl defaultLogger) Warnf(format string, v ...interface{}) {
-	dl.infof(WARN, format, v...)
+func (dl defaultLogger) Warn(msg string, v ...any) {
+	dl.slogger.Warn(msg, v...)
 }
 
 // Error .
-func (dl defaultLogger) Error(v ...interface{}) {
-	dl.info(ERROR, v...)
-}
-
-// Errorf .
-func (dl defaultLogger) Errorf(format string, v ...interface{}) {
-	dl.infof(ERROR, format, v...)
-}
-
-// SetLevel 设置日志级别
-func (dl *defaultLogger) SetLevel(level Level) {
-	dl.level = level
+func (dl defaultLogger) Error(msg string, v ...any) {
+	dl.slogger.Error(msg, v...)
 }

@@ -1,7 +1,7 @@
 servers:
-  interceptors: ""
+  interceptors: "accessLog"
   grpc:
-    interceptors: "testInterceptor,testInterceptor1"
+    interceptors: "accessLog,testInterceptor,testInterceptor1"
     enabled: true
     # 证书相关配置
     certFile: ""
@@ -9,7 +9,7 @@ servers:
     addresses:
       listen: 127.0.0.1:8081
     options:
-      keepaliveParams: 
+      keepaliveParams:
         # MaxConnectionIdle is a duration for the amount of time after which an
         # idle connection would be closed by sending a GoAway. Idleness duration is
         # defined since the most recent time the number of outstanding RPCs became
@@ -38,18 +38,18 @@ servers:
         Timeout: !!str 1s
   pprof:
     enabled: false
-    addresses: 
+    addresses:
       listen: 127.0.0.1:9081
   rest1:
     interceptors: ${servers.rest.interceptors}
   rest:
-    interceptors: "restReadEntity,restResponseHeader"
+    interceptors: "accessLog,restReadEntity,restResponseHeader"
     enabled: true
     # 证书相关配置
     certFile: ""
     keyFile: ""
     # 文档相关配置
-    doc: 
+    doc:
       # 错误页地址
       errPage: https://www.google.com
     addresses:

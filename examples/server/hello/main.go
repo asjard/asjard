@@ -41,7 +41,8 @@ func (c *Hello) Shutdown() {
 func (c Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 	resp, err := c.conn.Call(ctx, in)
 	if err != nil {
-		logger.Errorf("call fail[%s]", err.Error())
+		logger.Error("call fail",
+			"err", err.Error())
 		return in, nil
 	}
 	return resp, nil

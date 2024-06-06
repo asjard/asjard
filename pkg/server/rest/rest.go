@@ -139,7 +139,10 @@ func (s *RestServer) AddHandler(handler any) error {
 // Start .
 func (s *RestServer) Start(startErr chan error) error {
 	s.server.ErrorHandler = func(ctx *fasthttp.RequestCtx, err error) {
-		logger.Errorf("request %s %s err: %v", ctx.Method(), ctx.Path(), err)
+		logger.Error("request fail",
+			"method", ctx.Method(),
+			"path", ctx.Path(),
+			"err", err)
 		NewContext(ctx).Write(nil, status.ErrInterServerError)
 	}
 	s.router.NotFound = func(ctx *fasthttp.RequestCtx) {
@@ -149,7 +152,11 @@ func (s *RestServer) Start(startErr chan error) error {
 		NewContext(ctx).Write(nil, status.ErrMethodNotAllowed)
 	}
 	s.router.PanicHandler = func(ctx *fasthttp.RequestCtx, err any) {
-		logger.Errorf("request %s %s err: %v\n%s", ctx.Method(), ctx.Path(), err, string(debug.Stack()))
+		logger.Error("request panic",
+			"method", ctx.Method(),
+			"path", ctx.Path(),
+			"err", err,
+			"stack", string(debug.Stack()))
 		NewContext(ctx).Write(nil, status.ErrInterServerError)
 	}
 	s.server.Handler = s.router.Handler
@@ -181,7 +188,8 @@ func (s *RestServer) Start(startErr chan error) error {
 			}
 		}()
 	}
-	logger.Debugf("start rest server on address: %s", address)
+	logger.Debug("start rest server",
+		"address", address)
 	return nil
 }
 

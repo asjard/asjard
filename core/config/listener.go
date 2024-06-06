@@ -43,6 +43,17 @@ func (l *Listener) watch(key string, opt *watchOptions) {
 	}
 }
 
+// 移除监听器
+func (l *Listener) remove(key string) {
+	l.cm.Lock()
+	delete(l.callbacks, key)
+	l.cm.Unlock()
+
+	l.mm.Lock()
+	delete(l.matchCallbacks, key)
+	l.mm.Unlock()
+}
+
 func (l *Listener) notify(event *Event) {
 	l.keyNotify(event)
 	l.matchNotify(event)
@@ -64,7 +75,10 @@ func (l *Listener) matchNotify(event *Event) {
 	for pattern, callbacks := range l.matchCallbacks {
 		ok, err := regexp.MatchString(pattern, event.Key)
 		if err != nil {
-			logger.Errorf("regular expression for key '%s' with pattern '%s' fail[%s]", event.Key, pattern, err.Error())
+			logger.Error("regular expression fail[%s]",
+				"key", event.Key,
+				"pattern", pattern,
+				"err", err.Error())
 			continue
 		}
 		if ok {

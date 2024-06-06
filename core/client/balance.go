@@ -39,7 +39,8 @@ var _ base.PickerBuilder = &BalanceBuilder{}
 // NewBalanceBuilder .
 func NewBalanceBuilder(balanceName string) balancer.Builder {
 	if balanceName == "" {
-		logger.Warnf("loadbalance name is empty, set to default %s", DefaultBalanceRoundRobin)
+		logger.Warn("loadbalance name is empty, set to default",
+			"default", DefaultBalanceRoundRobin)
 		balanceName = DefaultBalanceRoundRobin
 	}
 	balanceBuilder := &BalanceBuilder{}
@@ -52,7 +53,9 @@ func NewBalanceBuilder(balanceName string) balancer.Builder {
 		}
 	}
 	if !exist {
-		logger.Warnf("loadbalance %s not found, set to default %s", balanceName, DefaultBalanceRoundRobin)
+		logger.Warn("loadbalance not found, set to default",
+			"loadbalance", balanceName,
+			"default", DefaultBalanceRoundRobin)
 		balanceBuilder.newPicker = NewRoundRobinPicker
 	}
 	return base.NewBalancerBuilder(balanceName, balanceBuilder, base.Config{HealthCheck: true})

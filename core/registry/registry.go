@@ -41,7 +41,8 @@ func Init() error {
 		if err != nil {
 			return err
 		}
-		logger.Debugf("register '%s' inited", register.Name())
+		logger.Debug("register inited",
+			"register_name", register.Name())
 		registryManager.registers = append(registryManager.registers, register)
 	}
 	for _, newDiscover := range newDiscoverys {
@@ -49,7 +50,8 @@ func Init() error {
 		if err != nil {
 			return err
 		}
-		logger.Debugf("discover '%s' inited", discover.Name())
+		logger.Debug("discover inited",
+			"discover_name", discover.Name())
 		registryManager.discovers = append(registryManager.discovers, discover)
 	}
 	return registryManager.discove()
@@ -122,13 +124,14 @@ func (r *Registry) remove() error {
 
 // 自动发现服务
 func (r *Registry) discove() error {
-	logger.Debugf("Start discover service")
+	logger.Debug("Start discover service")
 	if !config.GetBool("registry.autoDiscove", false) {
 		logger.Warn("registry.autoDiscove not enabled")
 		return nil
 	}
 	for _, discover := range r.discovers {
-		logger.Debugf("Start discove service from discover '%s'", discover.Name())
+		logger.Debug("Start discove service from discover",
+			"discover_name", discover.Name())
 		services, err := discover.GetAll()
 		if err != nil {
 			return err

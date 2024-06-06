@@ -59,7 +59,8 @@ func (s *PprofServer) Start(startErr chan error) error {
 			startErr <- fmt.Errorf("start pprof with adress %s fail %s", address, err.Error())
 		}
 	}()
-	logger.Debugf("start pprof server on address: %s", address)
+	logger.Debug("start pprof server",
+		"address", address)
 	return nil
 }
 

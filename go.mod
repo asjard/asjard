@@ -10,10 +10,10 @@ require (
 	github.com/magiconair/properties v1.8.7
 	github.com/spf13/cast v1.6.0
 	github.com/valyala/fasthttp v1.54.0
-	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.7.0
 	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.1
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -22,7 +22,6 @@ require (
 	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/savsgio/gotils v0.0.0-20240303185622-093b76447511 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

@@ -108,7 +108,9 @@ func (s *File) GetAll() map[string]*config.Value {
 				configs[key] = value
 			}
 		} else {
-			logger.Errorf("read file '%s' fail[%s]", file, err.Error())
+			logger.Error("read file fail",
+				"file", file,
+				"err", err.Error())
 		}
 	}
 	return configs
@@ -201,7 +203,8 @@ func (s *File) doWatch() {
 			if !ok {
 				return
 			}
-			logger.Debugf("file source watch event: %v", event)
+			logger.Debug("file source watch event",
+				"event", event)
 			switch event.Op {
 			case fsnotify.Create, fsnotify.Write:
 				configs, err := s.read(event.Name)
@@ -210,7 +213,9 @@ func (s *File) doWatch() {
 						s.cb(event)
 					}
 				} else {
-					logger.Errorf("read file '%s' fail[%s]", event.Name, err.Error())
+					logger.Error("read file fail",
+						"file", event.Name,
+						"err", err.Error())
 				}
 			case fsnotify.Remove, fsnotify.Rename:
 				s.delConfig(event.Name, "")
@@ -226,7 +231,8 @@ func (s *File) doWatch() {
 			if !ok {
 				return
 			}
-			logger.Errorf("watch err: %v", err)
+			logger.Error("watch err",
+				"err", err)
 		}
 	}
 }

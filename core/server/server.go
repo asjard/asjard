@@ -42,7 +42,8 @@ func Init() ([]Server, error) {
 		if err != nil {
 			return servers, err
 		}
-		logger.Debugf("server '%s' inited", server.Protocol())
+		logger.Debug("server inited",
+			"protocol", server.Protocol())
 		servers = append(servers, server)
 	}
 	return servers, nil

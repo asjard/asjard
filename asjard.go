@@ -13,7 +13,6 @@ import (
 	cfgenv "github.com/asjard/asjard/core/config/sources/env"
 	cfgfile "github.com/asjard/asjard/core/config/sources/file"
 	cfgmem "github.com/asjard/asjard/core/config/sources/mem"
-	"github.com/asjard/asjard/core/handler"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/registry"
 	"github.com/asjard/asjard/core/runtime"
@@ -77,18 +76,8 @@ func (asd *Asjard) init() error {
 		return err
 	}
 
-	// 日志初始化
-	if err := logger.Init(); err != nil {
-		return err
-	}
-
-	// 配置日志初始化后的一些运行期间变量初始化
+	// 一些运行期间变量初始化
 	if err := runtime.Init(); err != nil {
-		return err
-	}
-
-	// handler初始化
-	if err := handler.Init(); err != nil {
 		return err
 	}
 
@@ -113,6 +102,7 @@ func (asd *Asjard) init() error {
 	if err := bootstrap.Start(); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -135,9 +125,11 @@ func (asd *Asjard) Start() error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP, syscall.SIGABRT)
 	select {
 	case s := <-quit:
-		logger.Infof("system get os signal %s start exiting...", s.String())
+		logger.Info("system get os signal start exiting...",
+			"signal", s.String())
 	case err := <-asd.startErr:
-		logger.Errorf("start error: %s", err)
+		logger.Error("start error:",
+			"error", err)
 	}
 	// 系统停止
 	asd.stop()
@@ -154,7 +146,8 @@ func (asd *Asjard) startServers() error {
 		if !sv.Enabled() {
 			continue
 		}
-		logger.Debugf("Start start server '%s'", sv.Protocol())
+		logger.Debug("Start start server",
+			"protocol", sv.Protocol())
 		// 添加handler
 		asd.hm.RLock()
 		for _, handler := range asd.handlers[sv.Protocol()] {
@@ -171,7 +164,8 @@ func (asd *Asjard) startServers() error {
 		if err := sv.Start(asd.startErr); err != nil {
 			return fmt.Errorf("start server '%s' fail[%s]", sv.Protocol(), err.Error())
 		}
-		logger.Debugf("server '%s' started", sv.Protocol())
+		logger.Debug("server started",
+			"protocol", sv.Protocol())
 	}
 	return nil
 }
@@ -181,17 +175,19 @@ func (asd *Asjard) stop() {
 	logger.Info("start remove instance from registry")
 	// 从注册中心删除服务
 	if err := registry.Unregiste(); err != nil {
-		logger.Errorf("unregiste from registry fail[%s]", err.Error())
+		logger.Error("unregiste from registry fail",
+			"error", err.Error())
 	}
 	logger.Info("start stop server")
 	for _, server := range asd.servers {
 		if server.Enabled() {
-			logger.Infof("server '%s' stopped", server.Protocol())
+			logger.Info("server stopped",
+				"protocol", server.Protocol())
 			server.Stop()
 		}
 	}
 	// 配置中心断开连接
 	config.DisConnect()
 	bootstrap.Stop()
-	logger.Info("system exit done")
+	logger.Info("system exited")
 }
