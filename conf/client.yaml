@@ -47,6 +47,5 @@ clients:
       ## 同clients.grpc.options相关配置
       options: {}
   ## rest客户端相关配置
-  ## TODO
   rest:
     ## loadbalance: ""
