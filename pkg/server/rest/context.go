@@ -52,7 +52,8 @@ type Context struct {
 var contextPool = sync.Pool{
 	New: func() any {
 		return &Context{
-			errPage:      config.GetString("servers.rest.doc.errPage", ""),
+			errPage: config.GetString("servers.rest.doc.errPage",
+				config.GetString("website", "")),
 			queryParams:  make(map[string][]string),
 			pathParams:   make(map[string][]string),
 			headerParams: make(map[string][]string),
