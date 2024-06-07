@@ -50,6 +50,7 @@ func AddInterceptor(newInterceptor NewServerInterceptor) {
 	newServerInterceptors = append(newServerInterceptors, newInterceptor)
 }
 
+// TODO 添加默认拦截器
 func getServerInterceptors(protocol string) []UnaryServerInterceptor {
 	var interceptors []UnaryServerInterceptor
 	for _, interceptorName := range config.GetStrings(fmt.Sprintf("servers.%s.interceptors", protocol),

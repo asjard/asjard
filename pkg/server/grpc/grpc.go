@@ -24,10 +24,10 @@ const (
 
 // GrpcServer .
 type GrpcServer struct {
-	addresses   map[string]string
-	enabled     bool
-	server      *grpc.Server
-	interceptor server.UnaryServerInterceptor
+	addresses map[string]string
+	enabled   bool
+	server    *grpc.Server
+	// interceptor server.UnaryServerInterceptor
 }
 
 // Handler .
@@ -97,10 +97,10 @@ func (s *GrpcServer) AddHandler(handler any) error {
 	return nil
 }
 
-// WithChainUnaryInterceptor 设置拦截器
-func (s *GrpcServer) WithChainUnaryInterceptor(interceptor server.UnaryServerInterceptor) {
-	s.interceptor = interceptor
-}
+// // WithChainUnaryInterceptor 设置拦截器
+// func (s *GrpcServer) WithChainUnaryInterceptor(interceptor server.UnaryServerInterceptor) {
+// 	s.interceptor = interceptor
+// }
 
 // Start .
 func (s *GrpcServer) Start(startErr chan error) error {

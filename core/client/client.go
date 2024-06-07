@@ -29,8 +29,10 @@ func Init() error {
 	for protocol, newClient := range newClients {
 		clients[protocol] = newClient(&ClientOptions{
 			Resolver: &ClientBuilder{},
-			Balancer: NewBalanceBuilder(config.GetString(fmt.Sprintf("clients.%s.loadbalance", protocol),
-				config.GetString("clients.loadbalance", DefaultBalanceRoundRobin))),
+			Balancer: NewBalanceBuilder(config.GetString(fmt.Sprintf("clients.%s.loadbalances", protocol),
+				config.GetString("clients.loadbalances", DefaultBalanceRoundRobin))),
+			Interceptor: getChainUnaryInterceptors(config.GetString(fmt.Sprintf("clients.%s.interceptors", protocol),
+				config.GetString("clients.interceptors", DefaultBalanceRoundRobin))),
 		})
 	}
 	return nil
@@ -50,7 +52,8 @@ func (c Client) Conn() (grpc.ClientConnInterface, error) {
 	}
 	// 设置置指定服务的负载均衡
 	options := &ClientOptions{
-		Balancer: NewBalanceBuilder(config.GetString(fmt.Sprintf("clients.%s.%s.loadbalance", c.protocol, c.serverName), "")),
+		Balancer:    NewBalanceBuilder(config.GetString(fmt.Sprintf("clients.%s.%s.loadbalances", c.protocol, c.serverName), "")),
+		Interceptor: getChainUnaryInterceptors(config.GetString(fmt.Sprintf("clients.%s.%s.interceptors", c.protocol, c.serverName), "")),
 	}
 	return cc.NewConn(fmt.Sprintf("%s://%s/%s", constant.Framework, c.protocol, c.serverName), options)
 }

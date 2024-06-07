@@ -1,5 +1,5 @@
 # 所属项目
-app: projectAsjard
+app: projectAsjardExample
 # 部署环境
 environment: "dev"
 # 部署区域
@@ -9,7 +9,7 @@ avaliablezone: "default"
 website: "https://github.com/asjard/asjard"
 # 服务实例详情
 instance:
-  name: example
+  name: exampleService
   version: 1.0.0
   # 自定义服务源数据
   metadata:

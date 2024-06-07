@@ -2,45 +2,32 @@ package client
 
 import (
 	"context"
+	"fmt"
 
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/resolver"
+	"github.com/asjard/asjard/core/config"
+	"google.golang.org/grpc"
 )
 
-// CallOption configures a Call before it starts or extracts information from
-// a Call after it completes.
-type CallOption interface {
-	// before is called before the call is sent to any server.  If before
-	// returns a non-nil error, the RPC fails with that error.
-	before(*callInfo) error
-
-	// after is called after the call has completed.  after cannot return an
-	// error, so any failures should be reported via output parameters.
-	// after(*callInfo, *csAttempt)
+// ClientInterceptor 客户端拦截器需要实现的方法
+type ClientInterceptor interface {
+	// 拦截器名称
+	Name() string
+	// 拦截器
+	Interceptor() UnaryClientInterceptor
 }
 
-// callInfo contains all related configuration and information about an RPC.
-type callInfo struct {
-	compressorType        string
-	failFast              bool
-	maxReceiveMessageSize *int
-	maxSendMessageSize    *int
-	creds                 credentials.PerRPCCredentials
-	contentSubtype        string
-	// codec                 baseCodec
-	maxRetryRPCBufferSize int
-	onFinish              []func(err error)
-}
+// NewClientInterceptor 客户端拦截器初始化方法
+type NewClientInterceptor func() ClientInterceptor
 
-func defaultCallInfo() *callInfo {
-	return &callInfo{
-		failFast:              true,
-		maxRetryRPCBufferSize: 256 * 1024, // 256KB
-	}
+var newClientInterceptors []NewClientInterceptor
+
+// AddInterceptor 添加客户端拦截器
+func AddInterceptor(newInterceptor NewClientInterceptor) {
+	newClientInterceptors = append(newClientInterceptors, newInterceptor)
 }
 
 // UnaryInvoker is called by UnaryClientInterceptor to complete RPCs.
-type UnaryInvoker func(ctx context.Context, method string, req, reply any, cc *resolver.ClientConn, opts ...CallOption) error
+type UnaryInvoker func(ctx context.Context, method string, req, reply any, cc grpc.ClientConnInterface) error
 
 // UnaryClientInterceptor intercepts the execution of a unary RPC on the client.
 // Unary interceptors can be specified as a DialOption, using
@@ -57,4 +44,47 @@ type UnaryInvoker func(ctx context.Context, method string, req, reply any, cc *r
 // defaults from the ClientConn as well as per-call options.
 //
 // The returned error must be compatible with the status package.
-type UnaryClientInterceptor func(ctx context.Context, method string, req, reply any, cc *resolver.ClientConn, invoker UnaryInvoker, opts ...CallOption) error
+type UnaryClientInterceptor func(ctx context.Context, method string, req, reply any, cc grpc.ClientConnInterface, invoker UnaryInvoker) error
+
+func getChainUnaryInterceptors(protocol string) UnaryClientInterceptor {
+	interceptors := getClientInterceptors(protocol)
+	var chainedInt UnaryClientInterceptor
+	if len(interceptors) == 0 {
+		chainedInt = nil
+	} else if len(interceptors) == 1 {
+		chainedInt = interceptors[0]
+	} else {
+		chainedInt = chainUnaryInterceptors(interceptors)
+	}
+	return chainedInt
+}
+
+// TODO 添加默认拦截器
+func getClientInterceptors(protocol string) []UnaryClientInterceptor {
+	var interceptors []UnaryClientInterceptor
+	for _, interceptorName := range config.GetStrings(fmt.Sprintf("clients.%s.interceptors", protocol),
+		config.GetStrings("clients.interceptors", []string{})) {
+		for _, newInterceptor := range newClientInterceptors {
+			interceptor := newInterceptor()
+			if interceptor.Name() == interceptorName {
+				interceptors = append(interceptors, interceptor.Interceptor())
+			}
+		}
+	}
+	return interceptors
+}
+
+func chainUnaryInterceptors(interceptors []UnaryClientInterceptor) UnaryClientInterceptor {
+	return func(ctx context.Context, method string, req, reply any, cc grpc.ClientConnInterface, invoker UnaryInvoker) error {
+		return interceptors[0](ctx, method, req, reply, cc, getChainUnaryInvoker(interceptors, 0, invoker))
+	}
+}
+
+func getChainUnaryInvoker(interceptors []UnaryClientInterceptor, curr int, finalInvoker UnaryInvoker) UnaryInvoker {
+	if curr == len(interceptors)-1 {
+		return finalInvoker
+	}
+	return func(ctx context.Context, method string, req, reply any, cc grpc.ClientConnInterface) error {
+		return interceptors[curr+1](ctx, method, req, reply, cc, getChainUnaryInvoker(interceptors, curr+1, finalInvoker))
+	}
+}

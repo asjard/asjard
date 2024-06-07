@@ -1,7 +1,7 @@
 servers:
   interceptors: "accessLog"
   grpc:
-    interceptors: "accessLog,testInterceptor,testInterceptor1"
+    # interceptors: "accessLog"
     enabled: true
     # 证书相关配置
     certFile: ""

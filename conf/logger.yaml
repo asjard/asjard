@@ -1,10 +1,10 @@
 logger:
   # 支持DEBUG,INFO,WARN,ERROR,大小写不敏感
-  level: INFO
+  level: DEBUG
   # 日志格式, text或json
   format: json
   # 日志文件
-  filePath: ./log/${app}.log
+  filePath: ./log/${instance.name}.log
   # 文件大小, 单位MB
   maxSize: 100
   # 文件最大保留天数
@@ -14,7 +14,7 @@ logger:
   # 是否进行压缩
   compress: true
   # 是否开启access日志
-  accessEnabled: true
+  accessEnabled: false
   # 横幅
   banner:
     # 是否打印横幅

@@ -1,10 +1,14 @@
 clients:
   # 客户端负载均衡, 不存在或者为空，则默认为roundRobin
-  loadbalance: "roundRobin"
+  loadbalances: "roundRobin"
+  # 拦截器
+  interceptors: "sourceInterceptor"
   certFile: ""
   grpc:
     # 一级目录下的所有配置均可在某个服务中配置
-    loadbalance: ""
+    loadbalances: ""
+    # grpc 服务的拦截器
+    interceptors: ""
     certFile: ""
     options:
       keepalive:
@@ -25,7 +29,10 @@ clients:
         PermitWithoutStream: false
 
     helloGrpc:
-      loadbalance: ""
+      # helloGrpc 这个服务的负载均衡
+      loadbalances: ""
       certFile: ""
+      # helloGrpc 这个服务的拦截器
+      interceptors: ""
   rest:
     # loadbalance: ""

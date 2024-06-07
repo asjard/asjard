@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -25,6 +26,8 @@ const (
 // Client .
 type Client struct {
 	balanceName string
+	// 全局拦截器
+	interceptor client.UnaryClientInterceptor
 }
 
 func init() {
@@ -40,6 +43,9 @@ func NewClient(options *client.ClientOptions) client.ClientInterface {
 	if options.Balancer != nil {
 		balancer.Register(options.Balancer)
 		c.balanceName = options.Balancer.Name()
+	}
+	if options.Interceptor != nil {
+		c.interceptor = options.Interceptor
 	}
 	return c
 }
@@ -80,5 +86,16 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (grpc.C
 		PermitWithoutStream: config.GetBool(fmt.Sprintf("client.grpc.%s.options.keepalive.PermitWithoutStream", serverName),
 			config.GetBool("client.grpc.options.keepalive.PermitWithoutStream", true)),
 	}))
+	interceptor := c.interceptor
+	if clientOpts.Interceptor != nil {
+		interceptor = clientOpts.Interceptor
+	}
+	if interceptor != nil {
+		options = append(options, grpc.WithUnaryInterceptor(func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+			return interceptor(ctx, method, req, reply, cc, func(ctx context.Context, method string, req, reply any, cc grpc.ClientConnInterface) error {
+				return invoker(ctx, method, req, reply, cc.(*grpc.ClientConn))
+			})
+		}))
+	}
 	return grpc.NewClient(target, options...)
 }
