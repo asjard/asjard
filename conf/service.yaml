@@ -5,9 +5,11 @@ environment: "dev"
 # 部署区域
 region: "default"
 avaliablezone: "default"
+# 站点
+website: "https://github.com/asjard/asjard"
 # 服务实例详情
 instance:
-  name: ${app}
+  name: example
   version: 1.0.0
   # 自定义服务源数据
   metadata:

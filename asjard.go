@@ -13,6 +13,7 @@ import (
 	cfgenv "github.com/asjard/asjard/core/config/sources/env"
 	cfgfile "github.com/asjard/asjard/core/config/sources/file"
 	cfgmem "github.com/asjard/asjard/core/config/sources/mem"
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/registry"
 	"github.com/asjard/asjard/core/runtime"
@@ -21,12 +22,20 @@ import (
 )
 
 const (
+	website = "https//github.com/asjard/asjard"
+	// http://patorjk.com/software/taag/#p=display&f=Small%20Slant&t=ASJARD
 	banner = `
-    _    ____      _   _    ____  ____
-   / \  / ___|    | | / \  |  _ \|  _ \
-  / _ \ \___ \ _  | |/ _ \ | |_) | | | |
- / ___ \ ___) | |_| / ___ \|  _ <| |_| |
-/_/   \_\____/ \___/_/   \_\_| \_\____/`
+                                       App:      %s
+                                       Env:      %s
+    _   ___    _  _   ___ ___          Region:   %s
+   /_\ / __|_ | |/_\ | _ \   \         Az:       %s
+  / _ \\__ \ || / _ \|   / |) |
+ /_/ \_\___/\__/_/ \_\_|_\___/ %s
+                                       ID:       %s
+                                       Name:     %s
+                                       Version:  %s
+                                       Website:  %s
+ `
 )
 
 // Asjard .
@@ -208,5 +217,14 @@ func (asd *Asjard) stop() {
 }
 
 func (asd *Asjard) printBanner() {
-	fmt.Println(banner)
+	fmt.Printf(banner,
+		runtime.APP,
+		runtime.Environment,
+		runtime.Region,
+		runtime.AZ,
+		constant.FrameworkVersion,
+		runtime.ServiceID,
+		runtime.Name,
+		runtime.Version,
+		config.GetString("website", website))
 }
