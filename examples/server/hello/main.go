@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"sync/atomic"
 
 	"github.com/asjard/asjard"
 	"github.com/asjard/asjard/core/client"
@@ -13,6 +14,7 @@ import (
 	mgrpc "github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 // Hello .
@@ -22,6 +24,8 @@ type Hello struct {
 }
 
 var _ pb.HelloServer = &Hello{}
+
+var count int32 = 0
 
 // Bootstrap .
 func (c *Hello) Bootstrap() error {
@@ -37,18 +41,32 @@ func (c *Hello) Shutdown() {
 }
 
 // Say .
-func (c Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
+func (c *Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
+	logger.Debug("----------------", "count", count)
+	if atomic.LoadInt32(&count) >= 3 {
+		atomic.StoreInt32(&count, 0)
+		return in, nil
+	}
 	resp, err := c.conn.Call(ctx, in)
 	if err != nil {
 		logger.Error("call fail",
 			"err", err.Error())
 		return in, nil
 	}
+	atomic.AddInt32(&count, 1)
 	return resp, nil
 }
 
 // Call .
-func (Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
+func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	logger.Debug("---------------", "md", md, "ok", ok)
+	// _, err := c.conn.Say(ctx, in)
+	// if err != nil {
+	// 	logger.Error("call fail",
+	// 		"err", err.Error())
+	// 	return in, nil
+	// }
 	in.RegionId = "changed by call " + config.GetString("testEnv", "")
 	return in, nil
 }

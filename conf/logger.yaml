@@ -14,7 +14,7 @@ logger:
   # 是否进行压缩
   compress: true
   # 是否开启access日志
-  accessEnabled: false
+  accessEnabled: true
   # 横幅
   banner:
     # 是否打印横幅

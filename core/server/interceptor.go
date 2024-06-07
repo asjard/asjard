@@ -7,6 +7,13 @@ import (
 	"github.com/asjard/asjard/core/config"
 )
 
+var (
+	// DefaultServerHeadInterceptors 默认服务端头部拦截器
+	DefaultServerHeadInterceptors = []string{"accessLog"}
+	// DefaultServerTailInterceptors 默认服务器尾部拦截器
+	DefaultServerTailInterceptors = []string{}
+)
+
 // UnaryServerInfo consists of various information about a unary RPC on
 // server side. All per-rpc information may be mutated by the interceptor.
 type UnaryServerInfo struct {
@@ -53,10 +60,29 @@ func AddInterceptor(newInterceptor NewServerInterceptor) {
 // TODO 添加默认拦截器
 func getServerInterceptors(protocol string) []UnaryServerInterceptor {
 	var interceptors []UnaryServerInterceptor
+	for _, newInterceptor := range newServerInterceptors {
+		interceptor := newInterceptor()
+		// 添加默认拦截器
+		for _, interceptorName := range DefaultServerHeadInterceptors {
+			if interceptor.Name() == interceptorName {
+				interceptors = append(interceptors, interceptor.Interceptor())
+			}
+		}
+	}
+	// 自定义拦截器
 	for _, interceptorName := range config.GetStrings(fmt.Sprintf("servers.%s.interceptors", protocol),
 		config.GetStrings("servers.interceptors", []string{})) {
 		for _, newInterceptor := range newServerInterceptors {
 			interceptor := newInterceptor()
+			if interceptor.Name() == interceptorName {
+				interceptors = append(interceptors, interceptor.Interceptor())
+			}
+		}
+	}
+	for _, newInterceptor := range newServerInterceptors {
+		interceptor := newInterceptor()
+		// 添加默认拦截器
+		for _, interceptorName := range DefaultServerTailInterceptors {
 			if interceptor.Name() == interceptorName {
 				interceptors = append(interceptors, interceptor.Interceptor())
 			}
