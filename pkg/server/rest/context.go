@@ -65,7 +65,6 @@ func NewContext(ctx *fasthttp.RequestCtx, options ...Option) *Context {
 	c := contextPool.Get().(*Context)
 	c.RequestCtx = ctx
 	c.errPage = config.GetString("servers.rest.doc.errPage", "")
-	c.write = defaultWriter
 	for _, opt := range options {
 		opt(c)
 	}
@@ -154,8 +153,17 @@ func (c *Context) GetQueryParam(key string) (string, bool) {
 
 // Write 请求返回
 func (c *Context) Write(data any, err error) {
-	c.write(c, data, err)
+	if c.write == nil {
+		DefaultWriter(c, data, err)
+	} else {
+		c.write(c, data, err)
+	}
 	c.Close()
+}
+
+// SetWriter 设置writer方法
+func (c *Context) SetWriter(writer Writer) {
+	c.write = writer
 }
 
 // Close .
@@ -168,6 +176,7 @@ func (c *Context) Close() {
 	c.pathLoaded = false
 	c.postBody = []byte{}
 	c.postLoaded = false
+	c.write = nil
 	contextPool.Put(c)
 }
 

@@ -17,7 +17,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-// Hello .
+// Hello 同一个方法既可以当做GRPC的handler，也可以当做http的handler
 type Hello struct {
 	pb.UnimplementedHelloServer
 	conn pb.HelloClient
@@ -37,16 +37,12 @@ func (c *Hello) Bootstrap() error {
 	return nil
 }
 
-func (c *Hello) Shutdown() {
-}
+// Shutdown
+func (c *Hello) Shutdown() {}
 
 // Say .
 func (c *Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
-	logger.Debug("----------------", "count", count)
-	if atomic.LoadInt32(&count) >= 3 {
-		atomic.StoreInt32(&count, 0)
-		return in, nil
-	}
+	// HTTP 调用GRPC
 	resp, err := c.conn.Call(ctx, in)
 	if err != nil {
 		logger.Error("call fail",
@@ -61,12 +57,6 @@ func (c *Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	logger.Debug("---------------", "md", md, "ok", ok)
-	// _, err := c.conn.Say(ctx, in)
-	// if err != nil {
-	// 	logger.Error("call fail",
-	// 		"err", err.Error())
-	// 	return in, nil
-	// }
 	in.RegionId = "changed by call " + config.GetString("testEnv", "")
 	return in, nil
 }

@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-rest v1.3.0
 // - protoc             v5.27.0
-// source: examples/protobuf/hello/hello.proto
+// source: hello.proto
 
 package hello
 
@@ -54,7 +54,7 @@ var HelloRestServiceDesc = rest.ServiceDesc{
 			MethodName: "Say",
 			Desc:       "say something.",
 			Method:     "GET",
-			Path:       "/hello",
+			Path:       "/v1",
 			Handler:    _Hello_Say_RestHandler,
 		},
 		{
@@ -62,6 +62,13 @@ var HelloRestServiceDesc = rest.ServiceDesc{
 			Desc:       "say something.",
 			Method:     "POST",
 			Path:       "/v1/region/{region_id}/project/{project_id}/user/{user_id}",
+			Handler:    _Hello_Say_RestHandler,
+		},
+		{
+			MethodName: "Say",
+			Desc:       "say something.",
+			Method:     "GET",
+			Path:       "/hello",
 			Handler:    _Hello_Say_RestHandler,
 		},
 		{

@@ -52,23 +52,12 @@ type RestServer struct {
 
 var _ server.Server = &RestServer{}
 
-var defaultWriter Writer = DefaultWriter
-
 func init() {
 	server.AddServer(Protocol, New)
 }
 
-// // SetResponse 设置返回内容
-// func SetResponse(nsp NewResponse) {
-// 	newResponse = nsp
-// }
-
-// SetWriter 设置输出
-func SetWriter(wrt Writer) {
-	defaultWriter = wrt
-}
-
-// New .
+// New 初始化服务
+// TODO 使用options的方式带参数, 配置写在结构体中，并通过GetWithUnmarshal反序列化进去
 func New(interceptor server.UnaryServerInterceptor) (server.Server, error) {
 	addressesMap := make(map[string]string)
 	if err := config.GetWithUnmarshal("servers.rest.addresses", &addressesMap); err != nil {
