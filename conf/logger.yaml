@@ -15,3 +15,7 @@ logger:
   compress: true
   # 是否开启access日志
   accessEnabled: true
+  # 横幅
+  banner:
+    # 是否打印横幅
+    enabled: true

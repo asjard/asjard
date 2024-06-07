@@ -20,6 +20,15 @@ import (
 	"github.com/asjard/asjard/core/server"
 )
 
+const (
+	banner = `
+    _    ____      _   _    ____  ____
+   / \  / ___|    | | / \  |  _ \|  _ \
+  / _ \ \___ \ _  | |/ _ \ | |_) | | | |
+ / ___ \ ___) | |_| / ___ \|  _ <| |_| |
+/_/   \_\____/ \___/_/   \_\_| \_\____/`
+)
+
 // Asjard .
 type Asjard struct {
 	// 注册的服务列表
@@ -123,6 +132,9 @@ func (asd *Asjard) Start() error {
 		return err
 	}
 	logger.Info("System Started")
+	if config.GetBool("logger.banner.enabled", true) {
+		asd.printBanner()
+	}
 	// 优雅退出
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP, syscall.SIGABRT)
@@ -193,4 +205,8 @@ func (asd *Asjard) stop() {
 	config.DisConnect()
 	bootstrap.Stop()
 	logger.Info("system exited")
+}
+
+func (asd *Asjard) printBanner() {
+	fmt.Println(banner)
 }
