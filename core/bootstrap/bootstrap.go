@@ -12,9 +12,14 @@ type BootstrapHandler interface {
 
 var bootstrapHandlers []BootstrapHandler
 
+var bootstrapedMap = make(map[BootstrapHandler]struct{})
+
 // AddBootstrap 添加启动方法
 func AddBootstrap(handler BootstrapHandler) {
-	bootstrapHandlers = append(bootstrapHandlers, handler)
+	if _, ok := bootstrapedMap[handler]; !ok {
+		bootstrapHandlers = append(bootstrapHandlers, handler)
+		bootstrapedMap[handler] = struct{}{}
+	}
 }
 
 // Start 系统启动

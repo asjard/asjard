@@ -73,8 +73,9 @@ func (Hello) GrpcServiceDesc() *grpc.ServiceDesc {
 
 func main() {
 	server := asjard.New()
-	server.AddHandler(rest.Protocol, &Hello{})
-	server.AddHandler(mgrpc.Protocol, &Hello{})
+	helloServer := &Hello{}
+	server.AddHandler(rest.Protocol, helloServer)
+	server.AddHandler(mgrpc.Protocol, helloServer)
 	if err := server.Start(); err != nil {
 		log.Println(err.Error())
 	}
