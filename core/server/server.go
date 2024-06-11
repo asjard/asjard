@@ -25,7 +25,7 @@ type Server interface {
 }
 
 // NewServerFunc .
-type NewServerFunc func(interceptor UnaryServerInterceptor) (Server, error)
+type NewServerFunc func(options *ServerOptions) (Server, error)
 
 var (
 	newServerFuncs = make(map[string]NewServerFunc)
@@ -38,7 +38,9 @@ func Init() ([]Server, error) {
 	defer logger.Debug("init server done")
 	var servers []Server
 	for protocol, newServer := range newServerFuncs {
-		server, err := newServer(getChainUnaryInterceptors(protocol))
+		server, err := newServer(&ServerOptions{
+			Interceptor: getChainUnaryInterceptors(protocol),
+		})
 		if err != nil {
 			return servers, err
 		}

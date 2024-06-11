@@ -58,7 +58,7 @@ func init() {
 
 // New 初始化服务
 // TODO 使用options的方式带参数, 配置写在结构体中，并通过GetWithUnmarshal反序列化进去
-func New(interceptor server.UnaryServerInterceptor) (server.Server, error) {
+func New(options *server.ServerOptions) (server.Server, error) {
 	addressesMap := make(map[string]string)
 	if err := config.GetWithUnmarshal("servers.rest.addresses", &addressesMap); err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func New(interceptor server.UnaryServerInterceptor) (server.Server, error) {
 		certFile:    certFile,
 		keyFile:     keyFile,
 		enabled:     config.GetBool("servers.rest.enabled", false),
-		interceptor: interceptor,
+		interceptor: options.Interceptor,
 		server: fasthttp.Server{
 			Name:            runtime.APP,
 			Concurrency:     config.GetInt("servers.rest.options.Concurrency", fasthttp.DefaultConcurrency),

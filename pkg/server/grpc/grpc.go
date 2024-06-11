@@ -42,7 +42,7 @@ func init() {
 }
 
 // New .
-func New(interceptor server.UnaryServerInterceptor) (server.Server, error) {
+func New(options *server.ServerOptions) (server.Server, error) {
 	addressesMap := make(map[string]string)
 	if err := config.GetWithUnmarshal("servers.grpc.addresses", &addressesMap); err != nil {
 		return nil, err
@@ -69,8 +69,8 @@ func New(interceptor server.UnaryServerInterceptor) (server.Server, error) {
 		Timeout:           config.GetDuration("servers.grpc.options.Timeout", time.Second),
 	}))
 	opts = append(opts, grpc.ChainUnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
-		if interceptor != nil {
-			return interceptor(ctx, req, &server.UnaryServerInfo{
+		if options.Interceptor != nil {
+			return options.Interceptor(ctx, req, &server.UnaryServerInfo{
 				Server:     info.Server,
 				FullMethod: info.FullMethod,
 				Protocol:   Protocol,
@@ -96,11 +96,6 @@ func (s *GrpcServer) AddHandler(handler any) error {
 	s.server.RegisterService(h.GrpcServiceDesc(), handler)
 	return nil
 }
-
-// // WithChainUnaryInterceptor 设置拦截器
-// func (s *GrpcServer) WithChainUnaryInterceptor(interceptor server.UnaryServerInterceptor) {
-// 	s.interceptor = interceptor
-// }
 
 // Start .
 func (s *GrpcServer) Start(startErr chan error) error {

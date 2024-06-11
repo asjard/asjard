@@ -43,6 +43,7 @@ func (c *Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 	if err != nil {
 		logger.Error("call call fail",
 			"err", err.Error())
+		return in, err
 	}
 	return resp, err
 }
@@ -50,11 +51,7 @@ func (c *Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 // Call .
 func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 	in.RegionId = "changed by call " + config.GetString("testEnv", "")
-	resp, err := c.conn.Call(ctx, in)
-	if err != nil {
-		logger.Error("call say fail", "err", err.Error())
-	}
-	return resp, err
+	return in, nil
 }
 
 // RestServiceDesc .

@@ -32,7 +32,7 @@ func init() {
 }
 
 // New .
-func New(interceptor server.UnaryServerInterceptor) (server.Server, error) {
+func New(options *server.ServerOptions) (server.Server, error) {
 	server := &PprofServer{
 		addresses: make(map[string]string),
 		enabled:   config.GetBool("servers.pprof.enabled", false),
