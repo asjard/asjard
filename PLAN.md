@@ -7,6 +7,7 @@
 - [ ] [安全管理](./core/security/README.md)
 - [ ] [服务管理](./core/server/README.md)
 - [ ] 添加循环调用检测, 熔断，限速，监控，链路追踪拦截器
+- [ ] 添加metrics
 - [ ] 添加rest服务返回自定义拦截器
 - [ ] server new方法使用options方式传参
 - [ ] 添加测试用例，文档，cli工具

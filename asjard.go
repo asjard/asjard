@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -35,16 +36,21 @@ const (
                                        Name:     %s
                                        Version:  %s
                                        Website:  %s
+                                       Servers:  %s
  `
 )
 
 // Asjard .
 type Asjard struct {
 	// 注册的服务列表
-	servers  []server.Server
+	servers []server.Server
+	// 每个协议的handlers
 	handlers map[string][]any
 	hm       sync.RWMutex
+	// 服务启动需在后台启动，如果启动出错通过此channel返回错误
 	startErr chan error
+	// 已启动的服务
+	startedServers []string
 }
 
 // New 入口
@@ -188,6 +194,7 @@ func (asd *Asjard) startServers() error {
 		if err := sv.Start(asd.startErr); err != nil {
 			return fmt.Errorf("start server '%s' fail[%s]", sv.Protocol(), err.Error())
 		}
+		asd.startedServers = append(asd.startedServers, sv.Protocol())
 		logger.Debug("server started",
 			"protocol", sv.Protocol())
 	}
@@ -226,5 +233,6 @@ func (asd *Asjard) printBanner() {
 		runtime.ServiceID,
 		runtime.Name,
 		runtime.Version,
-		config.GetString("website", website))
+		config.GetString("website", website),
+		strings.Join(asd.startedServers, ","))
 }
