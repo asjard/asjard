@@ -3,7 +3,7 @@ module github.com/asjard/asjard
 go 1.21.6
 
 require (
-	github.com/asjard/genproto v0.0.0-20240529102018-e60e3c5a3989
+	github.com/asjard/genproto v0.0.0-20240611074423-28c1b750341c
 	github.com/fasthttp/router v1.5.1
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/google/uuid v1.6.0

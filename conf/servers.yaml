@@ -4,6 +4,8 @@ servers:
   ## 协议无关的服务端拦截器列表,多个拦截器以英文逗号(,)分隔
   ## 默认为为accessLog
   interceptors: "accessLog"
+  ##  默认服务请求处理
+  # defaultHandlers: "health"
   ## grpc相依相关配置
   grpc:
     ## grpc协议相关拦截器配置，如果不配置则使用全局拦截器,多个拦截器配置方式同全局拦截器配置

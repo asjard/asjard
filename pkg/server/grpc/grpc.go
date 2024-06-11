@@ -24,10 +24,10 @@ const (
 
 // GrpcServer .
 type GrpcServer struct {
-	addresses map[string]string
-	enabled   bool
-	server    *grpc.Server
-	// interceptor server.UnaryServerInterceptor
+	addresses    map[string]string
+	enabled      bool
+	server       *grpc.Server
+	addHealthAPI bool
 }
 
 // Handler .
@@ -81,9 +81,10 @@ func New(options *server.ServerOptions) (server.Server, error) {
 		return handler(ctx, req)
 	}))
 	return &GrpcServer{
-		addresses: addressesMap,
-		enabled:   config.GetBool("servers.grpc.enabled", false),
-		server:    grpc.NewServer(opts...),
+		addresses:    addressesMap,
+		enabled:      config.GetBool("servers.grpc.enabled", false),
+		server:       grpc.NewServer(opts...),
+		addHealthAPI: config.GetBool("servers.grpc.addHealthAPI", false),
 	}, nil
 }
 
@@ -99,6 +100,11 @@ func (s *GrpcServer) AddHandler(handler any) error {
 
 // Start .
 func (s *GrpcServer) Start(startErr chan error) error {
+	if s.addHealthAPI {
+		// if err := s.AddHandler(&Health{}); err != nil {
+		// return err
+		// }
+	}
 	address, ok := s.addresses[constant.ServerListenAddressName]
 	if !ok {
 		return errors.New("config servers.grpc.addresses.listen not found")

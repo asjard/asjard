@@ -40,6 +40,7 @@ func Init() ([]Server, error) {
 	for protocol, newServer := range newServerFuncs {
 		server, err := newServer(&ServerOptions{
 			Interceptor: getChainUnaryInterceptors(protocol),
+			// HealthCheckHanlder: &handlers.Health{},
 		})
 		if err != nil {
 			return servers, err

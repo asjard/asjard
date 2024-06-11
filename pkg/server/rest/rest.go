@@ -41,13 +41,15 @@ type Writer func(ctx *Context, data any, err error)
 
 // RestServer .
 type RestServer struct {
-	addresses   map[string]string
-	router      *router.Router
-	server      fasthttp.Server
-	certFile    string
-	keyFile     string
-	enabled     bool
-	interceptor server.UnaryServerInterceptor
+	addresses          map[string]string
+	router             *router.Router
+	server             fasthttp.Server
+	certFile           string
+	keyFile            string
+	enabled            bool
+	interceptor        server.UnaryServerInterceptor
+	healthCheckHandler any
+	addHealAPI         bool
 }
 
 var _ server.Server = &RestServer{}
@@ -78,6 +80,7 @@ func New(options *server.ServerOptions) (server.Server, error) {
 		keyFile:     keyFile,
 		enabled:     config.GetBool("servers.rest.enabled", false),
 		interceptor: options.Interceptor,
+		addHealAPI:  config.GetBool("servers.rest.addHealthAPI", true),
 		server: fasthttp.Server{
 			Name:            runtime.APP,
 			Concurrency:     config.GetInt("servers.rest.options.Concurrency", fasthttp.DefaultConcurrency),
@@ -127,6 +130,11 @@ func (s *RestServer) AddHandler(handler any) error {
 
 // Start .
 func (s *RestServer) Start(startErr chan error) error {
+	if s.addHealAPI && s.healthCheckHandler != nil {
+		if err := s.AddHandler(s.healthCheckHandler); err != nil {
+			return err
+		}
+	}
 	s.server.ErrorHandler = func(ctx *fasthttp.RequestCtx, err error) {
 		logger.Error("request fail",
 			"method", ctx.Method(),

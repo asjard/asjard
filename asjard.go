@@ -20,6 +20,7 @@ import (
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/security"
 	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/core/server/handlers"
 )
 
 const (
@@ -186,6 +187,13 @@ func (asd *Asjard) startServers() error {
 			}
 		}
 		asd.hm.RUnlock()
+		// 添加默认handler
+		for _, handler := range handlers.GetServerDefaultHandlers(sv.Protocol()) {
+			if err := sv.AddHandler(handler); err != nil {
+				return fmt.Errorf("server %s add default handler fail[%s]", sv.Protocol(), err.Error())
+			}
+		}
+
 		// 补全服务实例详情
 		if err := svc.AddEndpoint(sv.Protocol(), sv.ListenAddresses()); err != nil {
 			return fmt.Errorf("server '%s' add endpoint fail[%s]", sv.Protocol(), err.Error())
