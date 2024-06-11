@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"sync/atomic"
 
 	"github.com/asjard/asjard"
 	"github.com/asjard/asjard/core/client"
@@ -14,7 +13,6 @@ import (
 	mgrpc "github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 // Hello 同一个方法既可以当做GRPC的handler，也可以当做http的handler
@@ -24,8 +22,6 @@ type Hello struct {
 }
 
 var _ pb.HelloServer = &Hello{}
-
-var count int32 = 0
 
 // Bootstrap .
 func (c *Hello) Bootstrap() error {
@@ -45,20 +41,20 @@ func (c *Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 	// HTTP 调用GRPC
 	resp, err := c.conn.Call(ctx, in)
 	if err != nil {
-		logger.Error("call fail",
+		logger.Error("call call fail",
 			"err", err.Error())
-		return in, nil
 	}
-	atomic.AddInt32(&count, 1)
-	return resp, nil
+	return resp, err
 }
 
 // Call .
 func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	logger.Debug("---------------", "md", md, "ok", ok)
 	in.RegionId = "changed by call " + config.GetString("testEnv", "")
-	return in, nil
+	resp, err := c.conn.Call(ctx, in)
+	if err != nil {
+		logger.Error("call say fail", "err", err.Error())
+	}
+	return resp, err
 }
 
 // RestServiceDesc .

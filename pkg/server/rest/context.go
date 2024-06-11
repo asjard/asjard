@@ -1,15 +1,18 @@
 package rest
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/pkg/status"
 	"github.com/spf13/cast"
 	"github.com/valyala/fasthttp"
+	"google.golang.org/grpc/metadata"
 )
 
 const (
@@ -94,62 +97,19 @@ func (c *Context) ReadEntity(entityPtr any) error {
 	return c.readPathParamsToEntity(entityPtr)
 }
 
-// ReadAndWrite 解析请求参数并返回
-func (c *Context) ReadAndWrite(handler func(ctx *Context, in any) (any, error), entityPtr any) {
-	if err := c.ReadEntity(entityPtr); err != nil {
-		c.Write(nil, err)
-		return
-	}
-	c.Write(handler(c, entityPtr))
-}
-
-// GetParam 获取参数
-// 获取顺序 path -> header -> query
-// 返回获取到的第一个
-func (c *Context) GetParam(key string) (string, bool) {
-	if value, ok := c.GetPathParam(key); ok {
-		return value, ok
-	}
-	if value, ok := c.GetHeaderParam(key); ok {
-		return value, ok
-	}
-	return c.GetQueryParam(key)
-}
-
 // GetPathParam 获取路径参数
-func (c *Context) GetPathParam(key string) (string, bool) {
-	values, ok := c.ReadPathParams()[key]
-	if !ok {
-		return "", false
-	}
-	if len(values) == 0 {
-		return "", true
-	}
-	return values[0], true
+func (c *Context) GetPathParam(key string) []string {
+	return c.ReadPathParams()[strings.ToLower(key)]
 }
 
 // GetHeaderParam 获取请求头参数
-func (c *Context) GetHeaderParam(key string) (string, bool) {
-	values, ok := c.ReadHeaderParams()[key]
-	if !ok {
-		return "", false
-	}
-	if len(values) == 0 {
-		return "", true
-	}
-	return values[0], true
+func (c *Context) GetHeaderParam(key string) []string {
+	return c.ReadHeaderParams()[strings.ToLower(key)]
 }
 
 // GetQueryParam 获取query参数
-func (c *Context) GetQueryParam(key string) (string, bool) {
-	values, ok := c.ReadQueryParams()[key]
-	if !ok {
-		return "", false
-	}
-	if len(values) == 0 {
-		return "", true
-	}
-	return values[0], true
+func (c *Context) GetQueryParam(key string) []string {
+	return c.ReadQueryParams()[strings.ToLower(key)]
 }
 
 // Write 请求返回
@@ -160,6 +120,16 @@ func (c *Context) Write(data any, err error) {
 		c.write(c, data, err)
 	}
 	c.Close()
+}
+
+// NewOutgoingContext .
+func (c *Context) NewOutgoingContext() context.Context {
+	return metadata.NewOutgoingContext(c, c.ReadHeaderParams())
+}
+
+// FromIncomingContext .
+func (c *Context) FromIncomingContext() map[string][]string {
+	return c.ReadHeaderParams()
 }
 
 // SetWriter 设置writer方法
@@ -240,7 +210,7 @@ func (c *Context) readQueryParamsToEntity(entity any) error {
 func (c *Context) ReadHeaderParams() map[string][]string {
 	if !c.headLoaded {
 		c.Request.Header.VisitAll(func(key, value []byte) {
-			k := string(key)
+			k := strings.ToLower(string(key))
 			v := string(value)
 			if _, ok := c.headerParams[k]; !ok {
 				c.headerParams[k] = []string{v}
