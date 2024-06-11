@@ -13,6 +13,7 @@ import (
 	mgrpc "github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 // Hello 同一个方法既可以当做GRPC的handler，也可以当做http的handler
@@ -39,6 +40,7 @@ func (c *Hello) Shutdown() {}
 // Say .
 func (c *Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 	// HTTP 调用GRPC
+	logger.Debug("=============xxxxxxx==========")
 	resp, err := c.conn.Call(ctx, in)
 	if err != nil {
 		logger.Error("call call fail",
@@ -50,8 +52,14 @@ func (c *Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 
 // Call .
 func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	logger.Debug("===========", "md", md, "ok", ok)
 	in.RegionId = "changed by call " + config.GetString("testEnv", "")
-	return in, nil
+	resp, err := c.conn.Say(ctx, in)
+	if err != nil {
+		return in, err
+	}
+	return resp, nil
 }
 
 // RestServiceDesc .

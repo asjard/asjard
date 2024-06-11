@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/asjard/asjard/core/client"
-	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -16,11 +15,15 @@ import (
 const (
 	// HeaderRequestChain 调用链 {protocol}://{app}/{serviceName}/{method}
 	HeaderRequestChain = "x-request-chain"
+	// HeaderRequestDest 请求目的地
+	HeaderRequestDest = "x-request-dest"
+	// HeaderRequestApp 请求应用
+	HeaderRequestApp = "x-request-app"
 )
 
 // CycleChainInterceptor 循环调用拦截器
+// 依赖loadbalance在上下文注入x-request-dest和x-request-app
 type CycleChainInterceptor struct {
-	currentServiceName string
 }
 
 func init() {
@@ -29,9 +32,7 @@ func init() {
 
 // CycleChainInterceptor 初始化来源拦截器
 func NewCycleChainInterceptor() client.ClientInterceptor {
-	return &CycleChainInterceptor{
-		currentServiceName: runtime.APP + "/" + runtime.Name,
-	}
+	return &CycleChainInterceptor{}
 }
 
 // Name 拦截器名称
@@ -48,20 +49,22 @@ func (s CycleChainInterceptor) Interceptor() client.UnaryClientInterceptor {
 		if _, ok := cc.(*grpc.ClientConn); !ok {
 			return invoker(ctx, method, req, reply, cc)
 		}
-		md := make(map[string][]string)
+		md := make(metadata.MD)
 		if rctx, ok := ctx.(*rest.Context); ok {
 			// 来源为rest
 			md[HeaderRequestChain] = rctx.GetHeaderParam(HeaderRequestChain)
+			md[HeaderRequestApp] = rctx.GetHeaderParam(HeaderRequestApp)
+			md[HeaderRequestDest] = rctx.GetHeaderParam(HeaderRequestDest)
 		} else {
 			md, _ = metadata.FromIncomingContext(ctx)
 		}
-		currentRequestMethod := "grpc://" + s.currentServiceName + "/" + strings.ReplaceAll(strings.Trim(method, "/"), "/", ".")
+		currentRequestMethod := "grpc://" + strings.ReplaceAll(strings.Trim(method, "/"), "/", ".")
 		// 目的地当前只支持grpc
 		if requestChains, ok := md[HeaderRequestChain]; ok {
 			for _, requestMethod := range requestChains {
 				if requestMethod == currentRequestMethod {
 					requestChains = append(requestChains, currentRequestMethod)
-					return status.Errorf(codes.Aborted, "cycle call, chains: %s", strings.Join(requestChains, " -> "))
+					return status.Errorf(codes.Canceled, "cycle call, chains: %s", strings.Join(requestChains, " -> "))
 				}
 			}
 			md[HeaderRequestChain] = append(md[HeaderRequestChain], currentRequestMethod)

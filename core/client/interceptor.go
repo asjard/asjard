@@ -59,11 +59,11 @@ func getChainUnaryInterceptors(protocol string) UnaryClientInterceptor {
 	return chainedInt
 }
 
-// TODO 添加默认拦截器
+// 添加默认拦截器
 func getClientInterceptors(protocol string) []UnaryClientInterceptor {
 	var interceptors []UnaryClientInterceptor
 	for _, interceptorName := range config.GetStrings(fmt.Sprintf("clients.%s.interceptors", protocol),
-		config.GetStrings("clients.interceptors", []string{})) {
+		config.GetStrings("clients.interceptors", []string{"cycleChainInterceptor"})) {
 		for _, newInterceptor := range newClientInterceptors {
 			interceptor := newInterceptor()
 			if interceptor.Name() == interceptorName {

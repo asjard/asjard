@@ -1,3 +1,0 @@
-logger:
-  # 支持DEBUG,INFO,WARN,ERROR,大小写不敏感
-  level: DEBUG

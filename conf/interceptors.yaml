@@ -3,11 +3,25 @@
 interceptors:
   ## 客户端拦截器
   client:
-    ## 拦截器名称
-    xx:
-      ## 拦截器相关配置
-      a: 1
-      b: 2
+    ## 断路器相关配置
+    ## 服务
+    circuitBreaker:
+      ## 全局超时时间
+      timeout: 10
+      maxConcurrentRequests: 10
+      requestVolumeThreshold: 10
+      sleepWindow: 10
+      errPercentThreshold: 25
+      ## 服务自定义配置
+      services:
+        helloGrpc:
+          timeout: 1
+      ## 方法自定义配置
+      methods:
+        api.v1.hello.Hello.Call:
+          timeout: 1
+        api.v1.hello.Hello.Say:
+          timeout: 2
   ## 服务端拦截器
   server:
     ## 拦截器名称

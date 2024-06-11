@@ -3,15 +3,25 @@ package client
 import (
 	"sync/atomic"
 
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/runtime"
+	"github.com/asjard/asjard/utils/cast"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/resolver"
 )
 
 const (
 	// DefaultBalanceRoundRobin 默认负载均衡器roundrobin
 	DefaultBalanceRoundRobin = "roundRobin"
+	// HeaderRequestSource 请求源服务
+	HeaderRequestSource = "x-request-source"
+	// HeaderRequestDest 请求目的地
+	HeaderRequestDest = "x-request-dest"
+	// HeaderRequestApp 请求应用
+	HeaderRequestApp = "x-request-app"
 )
 
 // NewBalancerPicker .
@@ -111,5 +121,10 @@ func (r *RoundRobinPicker) Pick(info balancer.PickInfo) (balancer.PickResult, er
 	return balancer.PickResult{
 		SubConn: sc.conn,
 		Done:    func(info balancer.DoneInfo) {},
+		Metadata: metadata.New(map[string]string{
+			HeaderRequestSource: runtime.Name,
+			HeaderRequestDest:   cast.ToString(sc.address.Attributes.Value(constant.ServiceNameKey)),
+			HeaderRequestApp:    cast.ToString(sc.address.Attributes.Value(constant.ServiceAppKey)),
+		}),
 	}, nil
 }
