@@ -8,21 +8,21 @@
 ├── CHANGELOG.md
 ├── Makefile
 ├── README.md
-├── asjard.go
+├── asjard.go ## 框架入口
 ├── cmd
-├── conf
+├── conf_example ## 配置目录
 │   ├── README.md
-│   ├── cache.yaml
-│   ├── certs
-│   ├── cipher.yaml
-│   ├── client.yaml
-│   ├── config.yaml
-│   ├── database.yaml
-│   ├── interceptors.yaml
-│   ├── logger.yaml
-│   ├── registry.yaml
-│   ├── servers.yaml
-│   └── service.yaml
+│   ├── cache.yaml ## 缓存相关配置
+│   ├── certs ## 证书配置
+│   ├── cipher.yaml ## 加解密组件配置
+│   ├── client.yaml ## 客户端配置
+│   ├── config.yaml ## 配置中心配置
+│   ├── database.yaml ## 数据库配置
+│   ├── interceptors.yaml ## 拦截器配置
+│   ├── logger.yaml ## 日志配置
+│   ├── registry.yaml ## 注册发现中心配置
+│   ├── servers.yaml ## 服务协议配置
+│   └── service.yaml ## 实例配置
 ├── core ## 框架规范及默认实现
 │   ├── bootstrap ## 系统启动规范
 │   ├── client ## 客户端规范
@@ -53,7 +53,7 @@
 │   ├── server
 │   └── status
 ├── utils ## 工具包
-│   ├── cast
+│   ├── cast ## 对github.com/spf13/cast库的扩展
 │   ├── file.go
 │   ├── ip.go
 │   ├── utils.go
@@ -71,7 +71,7 @@
 
 ## [变更日志](CHANGELOG.md)
 
-## 开发列表
+## 开发日志
 
 - [x] [系统启动](./core/bootstrap/README.md)
 - [x] [客户端管理](./core/client/README.md)
