@@ -85,7 +85,11 @@ func (al AccessLog) Interceptor() server.UnaryServerInterceptor {
 		fields = append(fields, []any{"req", req}...)
 		fields = append(fields, []any{"success", err == nil}...)
 		fields = append(fields, []any{"err", err}...)
-		logger.Info("access log", fields...)
+		if err != nil {
+			logger.Error("access log", fields...)
+		} else {
+			logger.Info("access log", fields...)
+		}
 		return resp, err
 	}
 }

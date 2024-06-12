@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/asjard/asjard"
 	"github.com/asjard/asjard/core/client"
@@ -58,10 +59,10 @@ func (c *Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 
 // Call .
 func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
-	// time.Sleep(2 * time.Millisecond)
+	time.Sleep(config.GetDuration("sleep", 2*time.Millisecond))
 	md, ok := metadata.FromIncomingContext(ctx)
 	logger.Debug("===========", "md", md, "ok", ok)
-	in.RegionId = "changed by call " + config.GetString("testEnv", "")
+	in.RegionId = "timeout: " + config.GetString("sleep", "")
 	// resp, err := c.conn.Say(ctx, in)
 	// if err != nil {
 	// 	return in, err

@@ -39,3 +39,4 @@ interceptors:
         ## - "grpc:api.v1.hello.Hello.Call"
         ## - "api.v1.hello.Hello.Call"
         - "grpc"
+        - "rest:asjard.api.health.Health.Check"

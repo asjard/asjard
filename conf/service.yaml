@@ -20,4 +20,4 @@ instance:
   version: 1.0.0
   ## 自定义服务源数据
   metadata:
-    tenantName: default
+    tenantName: ${app}
