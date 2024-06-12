@@ -523,6 +523,20 @@ func GetStrings(key string, defaultValue []string, opts ...Option) []string {
 	return value
 }
 
+// GetByte .
+func GetByte(key string, defaultValue []byte, opts ...Option) []byte {
+	options := GetOptions(opts...)
+	v := Get(key, options)
+	if v == nil {
+		return defaultValue
+	}
+	value, err := cast.ToStringE(v)
+	if err != nil {
+		return defaultValue
+	}
+	return []byte(value)
+}
+
 // GetBool 获取配置并转化为bool类型
 // 除了true, false 布尔类型外
 // 如果为字符串，转换为小写字符后,如果不为false或no均为true

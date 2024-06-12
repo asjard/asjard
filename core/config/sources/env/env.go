@@ -1,3 +1,4 @@
+// Package env 环境变量配置源
 package env
 
 import (
@@ -33,7 +34,7 @@ func New() (config.Sourcer, error) {
 func (s *Env) GetAll() map[string]*config.Value {
 	configmap := make(map[string]*config.Value)
 	for _, value := range os.Environ() {
-		keyValue := strings.Split(value, "=")
+		keyValue := strings.SplitN(value, "=", 2)
 		if len(keyValue) >= 2 {
 			envKey := strings.Trim(strings.ReplaceAll(keyValue[0], "_", "."), ".")
 			if envKey != "" {

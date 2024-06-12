@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/asjard/asjard/core/constant"
-	"github.com/asjard/asjard/core/logger"
 )
 
 // Cipher 加解密需要实现的接口
@@ -35,7 +34,8 @@ type cipherManager struct {
 
 var (
 	cpm        *cipherManager
-	newCiphers []*cipher
+	newCiphers = make(map[string]NewCipherFunc)
+	ncm        sync.RWMutex
 )
 
 func init() {
@@ -47,35 +47,16 @@ func init() {
 }
 
 // Init 加解密组件初始化
+// 使用时初始化
 func Init() error {
-	logger.Debug("Start init cipher")
-	defer logger.Debug("init cipher done")
-	for _, cph := range newCiphers {
-		newCipher, err := cph.newFunc()
-		if err != nil {
-			return err
-		}
-		logger.Debug("cipher inited",
-			"cipher_name", cph.name)
-		cpm.add(cph.name, newCipher)
-	}
 	return nil
 }
 
 // AddCipher 添加加解密组件
-func AddCipher(name string, newFunc NewCipherFunc) error {
-	for _, cph := range newCiphers {
-		if cph.name == name {
-			return fmt.Errorf("cipher '%s' already exist", name)
-		}
-	}
-	newCiphers = append(newCiphers, &cipher{
-		name:    name,
-		newFunc: newFunc,
-	})
-	logger.Debug("cipher added",
-		"cipher_name", name)
-	return nil
+func AddCipher(name string, newFunc NewCipherFunc) {
+	ncm.Lock()
+	newCiphers[name] = newFunc
+	ncm.Unlock()
 }
 
 // GetCipher 获取加解密组件
@@ -104,7 +85,18 @@ func (c *cipherManager) get(name string) (Cipher, error) {
 	cph, ok := c.ciphers[name]
 	c.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("cipher '%s' not found", name)
+		ncm.Lock()
+		newCipherFunc, ok := newCiphers[name]
+		ncm.Unlock()
+		if !ok {
+			return nil, fmt.Errorf("cipher '%s' not found", name)
+		}
+		newCipher, err := newCipherFunc()
+		if err != nil {
+			return nil, err
+		}
+		c.add(name, newCipher)
+		return newCipher, nil
 	}
 	return cph, nil
 }

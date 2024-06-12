@@ -12,3 +12,10 @@ func Uint32Len(x uint32) uint32 {
 	}
 	return count
 }
+
+// GetDeviceID 获取设备ID
+// TODO
+// cpu，硬盘，主板
+func GetDeviceID16(offset int) string {
+	return ""
+}
