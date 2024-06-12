@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/asjard/asjard/core/client"
@@ -30,6 +31,13 @@ type Client struct {
 	interceptor client.UnaryClientInterceptor
 }
 
+// ClientConn 客户端连接
+type ClientConn struct {
+	*grpc.ClientConn
+	serviceName string
+	protocol    string
+}
+
 func init() {
 	client.AddClient(Protocol, NewClient)
 }
@@ -50,13 +58,29 @@ func NewClient(options *client.ClientOptions) client.ClientInterface {
 	return c
 }
 
+// ServiceName 客户端连接的服务名称
+func (c ClientConn) ServiceName() string {
+	return c.serviceName
+}
+
+// Protocol 客户端连接的协议
+func (c ClientConn) Protocol() string {
+	return c.protocol
+}
+
+// Conn .
+func (c ClientConn) Conn() grpc.ClientConnInterface {
+	return c.ClientConn
+}
+
 // NewConn 获取服务连接
-func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (grpc.ClientConnInterface, error) {
+// targe: ajard://grpc/{ServerName}
+func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (client.ClientConnInterface, error) {
 	u, err := url.Parse(target)
 	if err != nil {
 		return nil, err
 	}
-	serverName := u.Path
+	serviceName := strings.Trim(u.Path, "/")
 	var options []grpc.DialOption
 	balanceName := c.balanceName
 	if clientOpts.Balancer != nil && balancer.Get(clientOpts.Balancer.Name()) != nil {
@@ -64,13 +88,13 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (grpc.C
 		balanceName = clientOpts.Balancer.Name()
 	}
 	options = append(options, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}]}`, balanceName)))
-	certFile := config.GetString(fmt.Sprintf("clients.grpc.%s.certFile", serverName),
+	certFile := config.GetString(fmt.Sprintf("clients.grpc.%s.certFile", serviceName),
 		config.GetString("clients.grpc.certFile", ""))
 	if certFile != "" {
 		certFile = filepath.Join(utils.GetCertDir(), certFile)
 	}
 	if certFile != "" {
-		creds, err := credentials.NewClientTLSFromFile(certFile, serverName)
+		creds, err := credentials.NewClientTLSFromFile(certFile, serviceName)
 		if err != nil {
 			return nil, err
 		}
@@ -79,11 +103,11 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (grpc.C
 		options = append(options, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 	options = append(options, grpc.WithKeepaliveParams(keepalive.ClientParameters{
-		Time: config.GetDuration(fmt.Sprintf("clients.grpc.%s.options.keepalive.Time", serverName),
+		Time: config.GetDuration(fmt.Sprintf("clients.grpc.%s.options.keepalive.Time", serviceName),
 			config.GetDuration("clients.grpc.options.keepalive.Time", time.Second*20)),
-		Timeout: config.GetDuration(fmt.Sprintf("client.grpc.%s.options.keepalive.Timeout", serverName),
+		Timeout: config.GetDuration(fmt.Sprintf("client.grpc.%s.options.keepalive.Timeout", serviceName),
 			config.GetDuration("client.grpc.options.keepalive.Timeout", time.Second)),
-		PermitWithoutStream: config.GetBool(fmt.Sprintf("client.grpc.%s.options.keepalive.PermitWithoutStream", serverName),
+		PermitWithoutStream: config.GetBool(fmt.Sprintf("client.grpc.%s.options.keepalive.PermitWithoutStream", serviceName),
 			config.GetBool("client.grpc.options.keepalive.PermitWithoutStream", true)),
 	}))
 	interceptor := c.interceptor
@@ -91,11 +115,20 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (grpc.C
 		interceptor = clientOpts.Interceptor
 	}
 	if interceptor != nil {
-		options = append(options, grpc.WithUnaryInterceptor(func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-			return interceptor(ctx, method, req, reply, cc, func(ctx context.Context, method string, req, reply any, cc grpc.ClientConnInterface) error {
-				return invoker(ctx, method, req, reply, cc.(*grpc.ClientConn))
-			})
-		}))
+		options = append(options,
+			grpc.WithUnaryInterceptor(func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+				return interceptor(ctx, method, req, reply, &ClientConn{ClientConn: cc, serviceName: serviceName, protocol: Protocol}, func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface) error {
+					return invoker(ctx, method, req, reply, cc.Conn().(*grpc.ClientConn))
+				})
+			}))
 	}
-	return grpc.NewClient(target, options...)
+	conn, err := grpc.NewClient(target, options...)
+	if err != nil {
+		return nil, err
+	}
+	return &ClientConn{
+		ClientConn:  conn,
+		serviceName: serviceName,
+		protocol:    Protocol,
+	}, nil
 }

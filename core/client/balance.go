@@ -109,7 +109,9 @@ type RoundRobinPicker struct {
 }
 
 // Pick 负载选择
-// TODO 优先选择同区域
+// TODO
+// 优先同app，region,metadata
+// 优先选择同区域
 // 如果垮区域应优先使用advertise地址
 func (r *RoundRobinPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 	n := uint32(len(r.scs))

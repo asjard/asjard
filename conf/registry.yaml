@@ -28,6 +28,9 @@ registry:
     helloGrpc:
       - grpc://127.0.0.1:8081
       - grpc://127.0.0.1:9081
+    # helloGrpc1:
+    #   - grpc://127.0.0.1:8081
+    #   - grpc://127.0.0.1:9081
 
   ## etcd注册发现中心相关配置
   etcd:

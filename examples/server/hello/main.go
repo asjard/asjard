@@ -19,7 +19,8 @@ import (
 // Hello 同一个方法既可以当做GRPC的handler，也可以当做http的handler
 type Hello struct {
 	pb.UnimplementedHelloServer
-	conn pb.HelloClient
+	conn  pb.HelloClient
+	conn1 pb.HelloClient
 }
 
 var _ pb.HelloServer = &Hello{}
@@ -31,6 +32,11 @@ func (c *Hello) Bootstrap() error {
 		return err
 	}
 	c.conn = pb.NewHelloClient(conn)
+	conn1, err := client.NewClient(mgrpc.Protocol, "helloGrpc1").Conn()
+	if err != nil {
+		return err
+	}
+	c.conn1 = pb.NewHelloClient(conn1)
 	return nil
 }
 
@@ -45,21 +51,22 @@ func (c *Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 	if err != nil {
 		logger.Error("call call fail",
 			"err", err.Error())
-		return in, err
+		return nil, err
 	}
 	return resp, err
 }
 
 // Call .
 func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
+	// time.Sleep(2 * time.Millisecond)
 	md, ok := metadata.FromIncomingContext(ctx)
 	logger.Debug("===========", "md", md, "ok", ok)
 	in.RegionId = "changed by call " + config.GetString("testEnv", "")
-	resp, err := c.conn.Say(ctx, in)
-	if err != nil {
-		return in, err
-	}
-	return resp, nil
+	// resp, err := c.conn.Say(ctx, in)
+	// if err != nil {
+	// 	return in, err
+	// }
+	return in, nil
 }
 
 // RestServiceDesc .

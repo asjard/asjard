@@ -10,7 +10,18 @@ import (
 
 type ClientInterface interface {
 	// target format asjard://grpc/serviceName
-	NewConn(target string, options *ClientOptions) (grpc.ClientConnInterface, error)
+	NewConn(target string, options *ClientOptions) (ClientConnInterface, error)
+}
+
+// ClientConnInterface 客户端需要实现的接口
+// 对grpc.ClientConnInterface扩展
+type ClientConnInterface interface {
+	grpc.ClientConnInterface
+	// 客户端连接的服务名称
+	ServiceName() string
+	// 客户端连接的协议
+	Protocol() string
+	Conn() grpc.ClientConnInterface
 }
 
 // NewClientFunc 初始化客户端的方法

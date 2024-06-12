@@ -6,6 +6,7 @@ import (
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/registry"
+	"github.com/asjard/asjard/core/runtime"
 	"google.golang.org/grpc/attributes"
 	"google.golang.org/grpc/resolver"
 )
@@ -44,10 +45,11 @@ func (r *clientResolver) Close() {
 	registry.RemoveListener(r.listenerName())
 }
 
-// ResolveNow .
+// ResolveNow 从服务发现中心获取服务列表
 func (r *clientResolver) ResolveNow(_ resolver.ResolveNowOptions) {
 	instances := registry.PickServices(registry.WithServiceName(r.serviceName),
 		registry.WithProtocol(r.protocol),
+		registry.WithEnvironment(runtime.Environment),
 		registry.WithWatch(r.listenerName(), r.watch))
 	r.update(instances)
 }
@@ -87,7 +89,6 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 	}
 	r.cc.UpdateState(resolver.State{
 		Addresses: addresses,
-		// Endpoints: endpoints,
 	})
 }
 

@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/asjard/asjard/core/client"
+	"github.com/asjard/asjard/pkg/client/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -45,7 +45,7 @@ func (CycleChainInterceptor) Name() string {
 // 如果出现循环服务则拦截
 // 当前只支持目的地为grpc的 rest -> grpc -> grpc
 func (s CycleChainInterceptor) Interceptor() client.UnaryClientInterceptor {
-	return func(ctx context.Context, method string, req, reply any, cc grpc.ClientConnInterface, invoker client.UnaryInvoker) error {
+	return func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
 		if _, ok := cc.(*grpc.ClientConn); !ok {
 			return invoker(ctx, method, req, reply, cc)
 		}

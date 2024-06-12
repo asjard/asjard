@@ -10,6 +10,8 @@ servers:
   grpc:
     ## grpc协议相关拦截器配置，如果不配置则使用全局拦截器,多个拦截器配置方式同全局拦截器配置
     ## interceptors: "accessLog"
+    ##  默认服务请求处理
+    # defaultHandlers: "health"
     ## 是否启用grpc服务
     enabled: true
     ## 证书文件名称, 相对于配置所在目录的certs目录下文件路径名称
@@ -67,6 +69,8 @@ servers:
   rest:
     ## 同grpc拦截器相关配置
     interceptors: "accessLog,restReadEntity,restResponseHeader"
+    ##  默认服务请求处理
+    # defaultHandlers: "health"
     ## 同grpc相关配置
     enabled: true
     ## 同grpc相关配置
@@ -77,7 +81,7 @@ servers:
     doc:
       ## 错误页地址, 如果错误返回，默认可以解决错误的文档地址
       ## 如果不配置则使用website配置
-      errPage: https://www.google.com
+      errPage: ""
     ## 同grpc相关配置
     addresses:
       listen: 127.0.0.1:8080
