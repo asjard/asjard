@@ -182,8 +182,8 @@ func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 }
 
 // RestServiceDesc rest服务描述, 如果提供rest服务，则必须提供此方法
-func (Hello) RestServiceDesc() rest.ServiceDesc {
-	return pb.HelloRestServiceDesc
+func (Hello) RestServiceDesc() *rest.ServiceDesc {
+	return &pb.HelloRestServiceDesc
 }
 
 // GrpcServiceDesc grpc服务描述, 如果提供grpc服务, 则必须提供此方法
@@ -194,7 +194,9 @@ func (Hello) GrpcServiceDesc() *grpc.ServiceDesc {
 func main() {
 	server := asjard.New()
 	helloServer := &Hello{}
+	// 添加rest服务方法
 	server.AddHandler(rest.Protocol, helloServer)
+	// 添加grpc服务方法
 	server.AddHandler(mgrpc.Protocol, helloServer)
 	if err := server.Start(); err != nil {
 		log.Println(err.Error())
@@ -223,6 +225,7 @@ func main() {
 - [ ] rest添加metrics接口
 - [ ] stream支持
 - [ ] rest添加swagger
+- [ ] 用rest生成rpc的gateway
 - [x] 所有协议添加health接口
 - [ ] 添加rest服务返回自定义拦截器
 - [x] server new方法使用options方式传参
