@@ -11,7 +11,7 @@ region: "default"
 ## 表示同一区域内，或者同一个机房内，可以内网互通
 avaliablezone: "default"
 ## 站点地址
-website: "https://github.com/asjard/asjard"
+website: "https://github.com/${app}/${instance.name}"
 ## 服务实例详情
 instance:
   ## 服务名称
