@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/asjard/asjard/pkg/security"
 )
@@ -32,7 +33,7 @@ Options:
 func main() {
 	flag.BoolVar(&h, "h", false, "this help")
 	flag.StringVar(&f, "f", "", "encrypt or decrypt file")
-	flag.BoolVar(&d, "d", false, "is encrypt")
+	flag.BoolVar(&d, "d", false, "decrypt")
 	flag.StringVar(&o, "o", "", "output file, default f's value + '_encrypted' or '_decrypted'")
 	flag.StringVar(&t, "t", "", "encryp or decrypt text")
 	flag.StringVar(&k, "k", "", "key, base64 encoded, length 16 or 24 or 32")
@@ -72,12 +73,14 @@ func main() {
 		}
 	}
 
+	encryptedFileNamePrefix := "encrypted_" + security.AESCipherName + "_"
+	decryptedFileNamePrefix := "decrypted_" + security.AESCipherName + "_"
 	if f != "" {
 		if !d {
 			if o == "" {
 				dir := filepath.Dir(f)
 				fileName := filepath.Base(f)
-				o = filepath.Join(dir, fileName+"_encrypted")
+				o = filepath.Join(dir, encryptedFileNamePrefix+fileName)
 			}
 			content, err := os.ReadFile(f)
 			if err != nil {
@@ -98,7 +101,11 @@ func main() {
 			if o == "" {
 				dir := filepath.Dir(f)
 				fileName := filepath.Base(f)
-				o = filepath.Join(dir, fileName+"_decrypted")
+				if strings.HasPrefix(fileName, encryptedFileNamePrefix) {
+					o = filepath.Join(dir, strings.TrimPrefix(fileName, encryptedFileNamePrefix))
+				} else {
+					o = filepath.Join(dir, decryptedFileNamePrefix+fileName)
+				}
 			}
 			content, err := os.ReadFile(f)
 			if err != nil {
