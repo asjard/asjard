@@ -9,6 +9,8 @@ import (
 	"github.com/afex/hystrix-go/hystrix"
 	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/config"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -77,21 +79,31 @@ func (ccb *CircuitBreaker) Interceptor() client.UnaryClientInterceptor {
 		methodName := strings.ReplaceAll(strings.ReplaceAll(strings.Trim(method, "/"), "/", "."), ".", "_")
 		ccb.cm.RLock()
 		defer ccb.cm.RUnlock()
+		commandConfigName := DefaultCommandConfigName
 		// method
 		if _, ok := ccb.commandConfig[methodName]; ok {
-			return hystrix.Do(methodName, func() error {
-				return invoker(ctx, method, req, reply, cc)
-			}, nil)
+			commandConfigName = methodName
 		}
 		// service
 		if _, ok := ccb.commandConfig[cc.ServiceName()]; ok {
-			return hystrix.Do(cc.ServiceName(), func() error {
-				return invoker(ctx, method, req, reply, cc)
-			}, nil)
+			commandConfigName = cc.ServiceName()
 		}
-		// 全局
-		return hystrix.Do(DefaultCommandConfigName, func() error {
-			return invoker(ctx, method, req, reply, cc)
-		}, nil)
+		return ccb.do(ctx, commandConfigName, method, req, reply, cc, invoker)
 	}
 }
+
+func (ccb *CircuitBreaker) do(ctx context.Context, commandConfigName, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
+	if err := hystrix.DoC(ctx, commandConfigName, func(ctx context.Context) error {
+		return invoker(ctx, method, req, reply, cc)
+	}, nil); err != nil {
+		if _, ok := err.(hystrix.CircuitError); ok {
+			return status.Error(codes.Internal, err.Error())
+		}
+		return err
+	}
+	return nil
+}
+
+// func (ccb *CircuitBreaker) fallback(ctx context.Context, err error) error {
+// 	return err
+// }

@@ -15,16 +15,16 @@ interceptors:
       sleepWindow: 5000
       errorPercentThreshold: 50
       ## 服务自定义配置
-      services:
-        helloGrpc:
-          timeout: 1
-      ## 方法自定义配置
-      ## 用下划线分隔
-      methods:
-        api_v1_hello_Hello_Call:
-          timeout: 1
-        api_v1_hello_Hello_Say:
-          timeout: 2
+      # services:
+      #   helloGrpc:
+      #     timeout: 1
+      # ## 方法自定义配置
+      # ## 用下划线分隔
+      # methods:
+      #   api_v1_hello_Hello_Call:
+      #     timeout: 1
+      #   api_v1_hello_Hello_Say:
+      #     timeout: 2
   ## 服务端拦截器
   server:
     ## 拦截器名称
