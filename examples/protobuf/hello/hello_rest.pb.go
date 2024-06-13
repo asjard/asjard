@@ -42,6 +42,21 @@ func _Hello_Call_RestHandler(ctx *rest.Context, srv any, interceptor server.Unar
 	}
 	return interceptor(ctx, in, info, handler)
 }
+func _Hello_CipherExample_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+	in := new(CipherExampleReq)
+	if interceptor == nil {
+		return srv.(HelloServer).CipherExample(ctx, in)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "api.v1.hello.Hello.CipherExample",
+		Protocol:   rest.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(HelloServer).CipherExample(ctx, in)
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 // HelloRestServiceDesc is the rest.ServiceDesc for Hello service.
 // It's only intended for direct use with rest.AddHandler,
@@ -84,6 +99,13 @@ var HelloRestServiceDesc = rest.ServiceDesc{
 			Method:     "POST",
 			Path:       "/v2/region/{region_id}/project/{project_id}/user/{user_id}",
 			Handler:    _Hello_Call_RestHandler,
+		},
+		{
+			MethodName: "CipherExample",
+			Desc:       "加解密示例.",
+			Method:     "GET",
+			Path:       "/v1/examples/cipher",
+			Handler:    _Hello_CipherExample_RestHandler,
 		},
 	},
 }

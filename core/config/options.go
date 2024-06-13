@@ -85,9 +85,9 @@ func WithSource(sourceName string) func(opts *Options) {
 }
 
 // WithCipher 加解密
-func WithCipher(cipher bool, cipherName string) func(opts *Options) {
+func WithCipher(cipherName string) func(opts *Options) {
 	return func(opts *Options) {
-		opts.cipher = cipher
+		opts.cipher = true
 		opts.cipherName = cipherName
 	}
 }

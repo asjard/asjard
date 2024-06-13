@@ -9,7 +9,7 @@ import (
 
 func TestAES(t *testing.T) {
 	config.Load(-1)
-	cipher, err := NewAESCipher()
+	cipher, err := NewAESCipher(AESCipherName)
 	if err != nil {
 		t.Error(err.Error())
 

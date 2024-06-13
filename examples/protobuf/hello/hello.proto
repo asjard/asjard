@@ -27,6 +27,24 @@ service Hello {
             post : "/v2/region/{region_id}/project/{project_id}/user/{user_id}"
         };
     };
+    // 加解密示例
+    rpc CipherExample(CipherExampleReq) returns (CipherExampleResp) {
+        option (asjard.api.http) = {
+            get : "/v1/examples/cipher"
+        };
+    };
+}
+
+// 加解密示例请求
+message CipherExampleReq {}
+
+// 加解密示例返回
+message CipherExampleResp {
+    string aes_encrypt_value_in_plain_file          = 1;
+    string base64_encrypt_value_in_plain_file       = 2;
+    string plain_value_in_aes_encrypt_file          = 3;
+    string aes_encrypt_value_in_aes_encrypt_file    = 4;
+    string base64_encrypt_value_in_aes_encrypt_file = 5;
 }
 
 message SayReq {
