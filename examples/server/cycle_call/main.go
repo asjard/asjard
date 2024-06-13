@@ -58,8 +58,8 @@ func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 }
 
 // RestServiceDesc .
-func (Hello) RestServiceDesc() rest.ServiceDesc {
-	return pb.HelloRestServiceDesc
+func (Hello) RestServiceDesc() *rest.ServiceDesc {
+	return &pb.HelloRestServiceDesc
 }
 
 // GrpcServiceDesc .

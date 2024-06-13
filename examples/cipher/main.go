@@ -35,8 +35,8 @@ func (ExampleCipher) CipherExample(ctx context.Context, in *pb.CipherExampleReq)
 	}, nil
 }
 
-func (ExampleCipher) RestServiceDesc() rest.ServiceDesc {
-	return pb.HelloRestServiceDesc
+func (ExampleCipher) RestServiceDesc() *rest.ServiceDesc {
+	return &pb.HelloRestServiceDesc
 }
 
 func main() {
