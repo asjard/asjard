@@ -1,11 +1,15 @@
 package security
 
 // DefaultCipher 默认加解密组件
-type DefaultCipher struct{}
+type DefaultCipher struct {
+	name string
+}
 
 // NewDefaultCipher 初始化默认加解密组件
-func NewDefaultCipher() (Cipher, error) {
-	return &DefaultCipher{}, nil
+func NewDefaultCipher(name string) (Cipher, error) {
+	return &DefaultCipher{
+		name: name,
+	}, nil
 }
 
 // Encrypt 加密实现

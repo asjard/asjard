@@ -16,7 +16,7 @@ type Cipher interface {
 }
 
 // NewCipherFunc 加解密组件初始化方法
-type NewCipherFunc func() (Cipher, error)
+type NewCipherFunc func(name string) (Cipher, error)
 
 type cipher struct {
 	name    string
@@ -91,7 +91,7 @@ func (c *cipherManager) get(name string) (Cipher, error) {
 		if !ok {
 			return nil, fmt.Errorf("cipher '%s' not found", name)
 		}
-		newCipher, err := newCipherFunc()
+		newCipher, err := newCipherFunc(name)
 		if err != nil {
 			return nil, err
 		}

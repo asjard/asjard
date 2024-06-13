@@ -16,12 +16,13 @@ const (
 	// AESCipherName aes加解密组件名称
 	AESCipherName = "aesCBCPkcs5padding"
 	// AESKeyName 密钥key名称
-	AESKeyName = "cipher.aesCBCPkcs5padding.base64Key"
-	AESIVName  = "cipher.aesCBCPkcs5padding.base64Iv"
+	AESKeyName = "cipher.%s.base64Key"
+	AESIVName  = "cipher.%s.base64Iv"
 )
 
 // AESCipher aes加解密
 type AESCipher struct {
+	name  string
 	block cipher.Block
 	key   []byte
 	iv    []byte
@@ -32,34 +33,43 @@ func init() {
 }
 
 // NewAESCipher 加解密初始化
-func NewAESCipher() (security.Cipher, error) {
-	// openssl rand -base64 16
-	// openssl rand -base64 24
-	// openssl rand -base64 32
-	keyStr := config.GetString(AESKeyName, "")
-	if keyStr == "" {
-		return nil, fmt.Errorf("config %s not found", AESCipherName)
-	}
-	key, err := base64.StdEncoding.DecodeString(keyStr)
+// openssl rand -base64 16
+// openssl rand -base64 24
+// openssl rand -base64 32
+func NewAESCipher(name string) (security.Cipher, error) {
+	cipher, err := MustNewAESCipher(config.GetString(fmt.Sprintf(AESKeyName, name), ""),
+		config.GetString(fmt.Sprintf(AESIVName, name), ""))
 	if err != nil {
-		return nil, fmt.Errorf("base64 decode %s value fail[%s]", AESKeyName, err.Error())
+		return nil, err
+	}
+	cipher.name = name
+	return cipher, nil
+}
+
+// NewAESCipherWithConfig 根据配置初始化
+func MustNewAESCipher(base64Key, base64Iv string) (*AESCipher, error) {
+	if base64Key == "" {
+		return nil, errors.New("aes base64Key not found")
+	}
+	key, err := base64.StdEncoding.DecodeString(base64Key)
+	if err != nil {
+		return nil, fmt.Errorf("base64 decode '%s' value fail[%s]", base64Key, err.Error())
 	}
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, fmt.Errorf("new aes cipher fail[%s]", err.Error())
 	}
-	ivStr := config.GetString(AESIVName, "")
 	var iv []byte
-	if ivStr == "" {
+	if base64Iv == "" {
 		iv = key[:block.BlockSize()]
 	} else {
-		iv, err = base64.StdEncoding.DecodeString(ivStr)
+		iv, err = base64.StdEncoding.DecodeString(base64Iv)
 		if err != nil {
-			return nil, fmt.Errorf("base64 decode %s value fail[%s]", AESIVName, err.Error())
+			return nil, fmt.Errorf("base64 decode '%s' value fail[%s]", base64Iv, err.Error())
 		}
-		if len(iv) != block.BlockSize() {
-			return nil, fmt.Errorf("%s length must be %d", AESIVName, block.BlockSize())
-		}
+	}
+	if len(iv) != block.BlockSize() {
+		return nil, fmt.Errorf("iv length must be %d", block.BlockSize())
 	}
 	return &AESCipher{
 		block: block,
@@ -69,17 +79,23 @@ func NewAESCipher() (security.Cipher, error) {
 }
 
 // Encrypt 加密
+// 明文加密返回base64编码后的数据
 func (c *AESCipher) Encrypt(data string, options *security.Options) (string, error) {
 	out, err := c.encrypt([]byte(data))
 	if err != nil {
 		return "", err
 	}
-	return string(out), nil
+	return base64.StdEncoding.EncodeToString(out), nil
 }
 
 // Decrypt 解密
-func (c *AESCipher) Decrypt(data string, options *security.Options) (string, error) {
-	out, err := c.decrypt([]byte(data))
+// base64编码后的秘文解密返回明文
+func (c *AESCipher) Decrypt(base64Data string, options *security.Options) (string, error) {
+	data, err := base64.StdEncoding.DecodeString(base64Data)
+	if err != nil {
+		return "", err
+	}
+	out, err := c.decrypt(data)
 	if err != nil {
 		return "", err
 	}
