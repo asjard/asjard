@@ -33,7 +33,7 @@ const (
 
 // Handler .
 type Handler interface {
-	RestServiceDesc() ServiceDesc
+	RestServiceDesc() *ServiceDesc
 }
 
 // Writer 结果输出
@@ -204,6 +204,9 @@ func (s *RestServer) ListenAddresses() map[string]string {
 
 func (s *RestServer) addRouter(handler Handler) error {
 	desc := handler.RestServiceDesc()
+	if desc == nil {
+		return nil
+	}
 	for _, method := range desc.Methods {
 		if method.Method != "" && method.Path != "" && method.Handler != nil {
 			ht := reflect.TypeOf(desc.HandlerType).Elem()

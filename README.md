@@ -1,4 +1,4 @@
-> protobuf文件驱动插件式的微服务框架,通过简单的配置即可实现相应功能或者变更程序逻辑,插件式按需加载自己想要的功能或者定制自己的插件以满足业务需求
+> protobuf驱动插件式的微服务框架,通过简单的配置即可实现相应功能或者变更程序逻辑,插件式按需加载自己想要的功能或者定制自己的插件以满足业务需求
 
 ## 背景
 
@@ -69,6 +69,140 @@
 
 > 更多示例请参考[examples](./examples)
 
+### 编写proto协议文件
+
+```proto
+syntax = "proto3";
+
+package api.v1.hello;
+
+option go_package = "github.com/asjard/asjard/examples/protobuf/hello;hello";
+
+import "github.com/asjard/protobuf/http.proto";
+
+// 服务注释
+service Hello {
+    // 注释
+    // 后续swagger中会被使用到
+    rpc Say(SayReq) returns (SayReq) {
+        // rest路由配置
+        // 可以有多个
+        option (asjard.api.http) = {
+            get : "/v1"
+        };
+        option (asjard.api.http) = {
+            post : "/v1/region/{region_id}/project/{project_id}/user/{user_id}"
+        };
+    };
+}
+message SayReq {
+    string          region_id  = 1;
+    string          project_id = 2;
+    int64           user_id    = 3;
+    repeated string str_list   = 4;
+    repeated int64  int_list   = 5;
+    SayObj          obj        = 6;
+    repeated SayObj objs       = 7;
+}
+
+message SayObj {
+    int32  field_int = 1;
+    string field_str = 2;
+}
+```
+
+### 按需生成
+
+```sh
+protoc --go_out=${GOPATH}/src -I${GOPATH}/src -I. ./*.proto
+
+# 生成grpc需要的文件
+protoc --go-grpc_out=${GOPATH}/src -I${GOPATH}/src -I. ./*.proto
+
+# 生成resp需要的文件, rest依赖grpc生成的文件
+protoc --go-rest_out=${GOPATH}/src -I${GOPATH}/src -I. ./*.proto
+```
+
+### 编写服务
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"time"
+
+	"github.com/asjard/asjard"
+	"github.com/asjard/asjard/core/client"
+	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/logger"
+	pb "github.com/asjard/asjard/examples/protobuf/hello"
+	_ "github.com/asjard/asjard/pkg/client/grpc"
+	mgrpc "github.com/asjard/asjard/pkg/server/grpc"
+	"github.com/asjard/asjard/pkg/server/rest"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+)
+
+// Hello 同一个方法既可以当做GRPC的handler，也可以当做http的handler
+type Hello struct {
+	pb.UnimplementedHelloServer
+	conn pb.HelloClient
+}
+
+var _ pb.HelloServer = &Hello{}
+
+// Bootstrap grpc客户端初始化
+func (c *Hello) Bootstrap() error {
+	conn, err := client.NewClient(mgrpc.Protocol, "helloGrpc").Conn()
+	if err != nil {
+		return err
+	}
+	c.conn = pb.NewHelloClient(conn)
+	return nil
+}
+
+// Shutdown
+func (c *Hello) Shutdown() {}
+
+// Say .
+func (c *Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
+	resp, err := c.conn.Call(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// Call .
+func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
+	in.RegionId = "timeout: " + config.GetString("sleep", "")
+	return in, nil
+}
+
+// RestServiceDesc rest服务描述, 如果提供rest服务，则必须提供此方法
+func (Hello) RestServiceDesc() rest.ServiceDesc {
+	return pb.HelloRestServiceDesc
+}
+
+// GrpcServiceDesc grpc服务描述, 如果提供grpc服务, 则必须提供此方法
+func (Hello) GrpcServiceDesc() *grpc.ServiceDesc {
+	return &pb.Hello_ServiceDesc
+}
+
+func main() {
+	server := asjard.New()
+	helloServer := &Hello{}
+	server.AddHandler(rest.Protocol, helloServer)
+	server.AddHandler(mgrpc.Protocol, helloServer)
+	if err := server.Start(); err != nil {
+		log.Println(err.Error())
+	}
+}
+
+```
+
 ## [变更日志](CHANGELOG.md)
 
 ## 开发日志
@@ -84,9 +218,11 @@
 - [x] 添加循环调用拦截器
 - [x] 熔断拦截器
 - [ ] 拦截器配置自动更新，无需重启
-- [ ] accesslog拦截器按错误级别输出日志
+- [x] accesslog拦截器按错误级别输出日志
 - [ ] 限速，监控，链路追踪拦截器
 - [ ] rest添加metrics接口
+- [ ] stream支持
+- [ ] rest添加swagger
 - [x] 所有协议添加health接口
 - [ ] 添加rest服务返回自定义拦截器
 - [x] server new方法使用options方式传参

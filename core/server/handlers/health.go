@@ -23,8 +23,8 @@ func (Health) Check(ctx context.Context, in *pb.HealthCheckRequest) (*pb.HealthC
 	}, nil
 }
 
-func (Health) RestServiceDesc() rest.ServiceDesc {
-	return pb.HealthRestServiceDesc
+func (Health) RestServiceDesc() *rest.ServiceDesc {
+	return &pb.HealthRestServiceDesc
 }
 
 func (Health) GrpcServiceDesc() *grpc.ServiceDesc {

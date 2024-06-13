@@ -20,8 +20,7 @@ import (
 // Hello 同一个方法既可以当做GRPC的handler，也可以当做http的handler
 type Hello struct {
 	pb.UnimplementedHelloServer
-	conn  pb.HelloClient
-	conn1 pb.HelloClient
+	conn pb.HelloClient
 }
 
 var _ pb.HelloServer = &Hello{}
@@ -33,11 +32,6 @@ func (c *Hello) Bootstrap() error {
 		return err
 	}
 	c.conn = pb.NewHelloClient(conn)
-	conn1, err := client.NewClient(mgrpc.Protocol, "helloGrpc1").Conn()
-	if err != nil {
-		return err
-	}
-	c.conn1 = pb.NewHelloClient(conn1)
 	return nil
 }
 
@@ -71,8 +65,8 @@ func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 }
 
 // RestServiceDesc .
-func (Hello) RestServiceDesc() rest.ServiceDesc {
-	return pb.HelloRestServiceDesc
+func (Hello) RestServiceDesc() *rest.ServiceDesc {
+	return &pb.HelloRestServiceDesc
 }
 
 // GrpcServiceDesc .
