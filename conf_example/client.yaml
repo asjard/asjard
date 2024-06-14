@@ -4,7 +4,7 @@ clients:
   ## 客户端负载均衡, 不存在或者为空，则默认为roundRobin
   loadbalances: "roundRobin"
   ## 同servers.interceptors配置
-  interceptors: "cycleChainInterceptor,circuitBreaker"
+  interceptors: "rest2RpcContext,cycleChainInterceptor,circuitBreaker"
   ## 同servers.certFile配置
   certFile: ""
   ## grpc客户端相关配置
@@ -13,7 +13,7 @@ clients:
     ## 一级目录下的所有配置均可在某个服务中配置
     loadbalances: ""
     ## grpc客户端拦截器
-    interceptors: ""
+    # interceptors: ""
     ## grpc客户端证书配置, 路径同servers.certFile配置
     certFile: ""
     ## grpc客户端相关参数

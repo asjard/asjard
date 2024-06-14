@@ -25,6 +25,11 @@ interceptors:
       #     timeout: 1
       #   api_v1_hello_Hello_Say:
       #     timeout: 2
+    rest2RpcContext:
+      allowHeaders:
+        - x-request-id
+        - x-request-az
+        - x-forward-for
   ## 服务端拦截器
   server:
     ## 拦截器名称

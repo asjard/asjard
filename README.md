@@ -119,7 +119,7 @@ protoc --go_out=${GOPATH}/src -I${GOPATH}/src -I. ./*.proto
 # 生成grpc需要的文件
 protoc --go-grpc_out=${GOPATH}/src -I${GOPATH}/src -I. ./*.proto
 
-# 生成resp需要的文件, rest依赖grpc生成的文件
+# 生成rest需要的文件, rest依赖grpc生成的文件
 protoc --go-rest_out=${GOPATH}/src -I${GOPATH}/src -I. ./*.proto
 ```
 
@@ -230,3 +230,5 @@ func main() {
 - [ ] 添加rest服务返回自定义拦截器
 - [x] server new方法使用options方式传参
 - [ ] 添加测试用例，文档，cli工具
+- [ ] 添加etcd服务发现注册中心
+- [ ] 添加远程配置中心(低优先级,实际环境中远程配置中心变更维护复杂)
