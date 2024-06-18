@@ -39,7 +39,8 @@ type DBManager struct {
 
 // DBConn 数据库连接
 type DBConn struct {
-	db *gorm.DB
+	name string
+	db   *gorm.DB
 	// 是否可以连接
 	ok bool
 	// 无法连接错误原因
@@ -140,8 +141,9 @@ func (m *DBManager) conn(dbConfs map[string]*DBConf) error {
 		sqlDB.SetConnMaxIdleTime(config.GetDuration(ConfigOptionsKey+".connMaxIdleTime", 10*time.Second))
 		sqlDB.SetConnMaxLifetime(config.GetDuration(ConfigOptionsKey+".connMaxLifeTime", 1*time.Hour))
 		conn := &DBConn{
-			db: db,
-			ok: true,
+			name: dbName,
+			db:   db,
+			ok:   true,
 		}
 		go conn.ping()
 		m.dbs.Store(dbName, conn)
@@ -184,15 +186,16 @@ func (m *DBManager) watch(event *config.Event) {
 
 func (m *DBConn) ping() {
 	for {
-		sqlDB, err := m.db.DB()
-		if err != nil {
-			m.err = err
-			m.ok = false
-		}
-		if err := sqlDB.Ping(); err != nil {
-			m.err = err
-			m.ok = false
-		}
+		// sqlDB, err := m.db.DB()
+		// if err != nil {
+		// 	m.err = err
+		// 	m.ok = false
+		// }
+		// if err := sqlDB.Ping(); err != nil {
+		// 	logger.Error("connet to db fail", "db", m.name, "err", err.Error())
+		// 	m.err = errors.New("Internal server error")
+		// 	m.ok = false
+		// }
 		time.Sleep(10 * time.Second)
 	}
 }
