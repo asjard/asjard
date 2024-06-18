@@ -39,18 +39,25 @@ type Options struct {
 	toLower bool
 }
 
+// ListenFunc 监听方法，如果返回true则调用回调函数
+type ListenFunc func(*Event) bool
+
+// ListenCallback 监听回调
+type ListenCallback func(*Event)
+
 type watchOptions struct {
 	// 正则匹配
 	pattern string
 	// 回调方法，当配置发生变化后通过此回调方法回调
-	callback func(event *Event)
+	callback ListenCallback
+	f        ListenFunc
 }
 
 // Option .
 type Option func(*Options)
 
 // WithWatch 监听配置
-func WithWatch(callback func(*Event)) func(opts *Options) {
+func WithWatch(callback ListenCallback) func(opts *Options) {
 	return func(opts *Options) {
 		opts.watch = &watchOptions{
 			callback: callback,
@@ -59,7 +66,7 @@ func WithWatch(callback func(*Event)) func(opts *Options) {
 }
 
 // WithMatchWatch 匹配监听
-func WithMatchWatch(pattern string, callback func(*Event)) func(opts *Options) {
+func WithMatchWatch(pattern string, callback ListenCallback) func(opts *Options) {
 	return func(opts *Options) {
 		if pattern == "" {
 			return
@@ -70,6 +77,16 @@ func WithMatchWatch(pattern string, callback func(*Event)) func(opts *Options) {
 		}
 	}
 }
+
+// WithFuncWatch 方法监听
+// func WithFuncWatch(f WatchFunc, callback func(*Event)) func(opts *Options) {
+// 	return func(opts *Options) {
+// 		opts.watch = &watchOptions{
+// 			f:        f,
+// 			callback: callback,
+// 		}
+// 	}
+// }
 
 // WithSource 添加多个配置源
 func WithSource(sourceName string) func(opts *Options) {

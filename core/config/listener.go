@@ -13,8 +13,15 @@ type Listener struct {
 	callbacks map[string][]func(*Event)
 	// 正则匹配回调
 	matchCallbacks map[string][]func(*Event)
-	cm             sync.RWMutex
-	mm             sync.RWMutex
+	// funcCallbacks  map[*WatchFunc][]func(*Event)
+	cm     sync.RWMutex
+	mm     sync.RWMutex
+	watchs []*watch
+}
+
+type watch struct {
+	f ListenFunc
+	c ListenCallback
 }
 
 func newListener() *Listener {
@@ -28,6 +35,9 @@ func (l *Listener) watch(key string, opt *watchOptions) {
 	if opt == nil || opt.callback == nil {
 		return
 	}
+	// if opt.f != nil {
+
+	// }
 	// 正则匹配
 	if opt.pattern != "" {
 		l.mm.Lock()

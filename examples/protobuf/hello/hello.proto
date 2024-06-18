@@ -4,39 +4,49 @@ package api.v1.hello;
 
 option go_package = "github.com/asjard/asjard/examples/protobuf/hello;hello";
 
-import "github.com/asjard/protobuf/http.proto";
+import "github.com/asjard/asjard/core/protobuf/http.proto";
 
 service Hello {
     // say something
     rpc Say(SayReq) returns (SayReq) {
         option (asjard.api.http) = {
-            get : "/v1"
-        };
-        option (asjard.api.http) = {
-            post : "/v1/region/{region_id}/project/{project_id}/user/{user_id}"
-        };
-        option (asjard.api.http) = {
-            get : "/hello"
+            post : "/region/{region_id}/project/{project_id}/user/{user_id}"
         };
     };
     rpc Call(SayReq) returns (SayReq) {
         option (asjard.api.http) = {
-            get : "/v2"
-        };
-        option (asjard.api.http) = {
-            post : "/v2/region/{region_id}/project/{project_id}/user/{user_id}"
+            post : "/call/region/{region_id}/project/{project_id}/user/{user_id}"
         };
     };
     // 加解密示例
     rpc CipherExample(CipherExampleReq) returns (CipherExampleResp) {
         option (asjard.api.http) = {
-            get : "/v1/examples/cipher"
+            get : "/examples/cipher"
+        };
+    };
+    // mysql数据库示例
+    rpc MysqlExample(MysqlExampleReq) returns (MysqlExampleResp) {
+        option (asjard.api.http) = {
+            post : "/examples/mysql"
         };
     };
 }
 
 // 加解密示例请求
 message CipherExampleReq {}
+
+message MysqlExampleReq {
+    string name = 1;
+    uint32 age  = 2;
+}
+
+message MysqlExampleResp {
+    int64  id         = 1;
+    string name       = 2;
+    uint32 age        = 3;
+    string created_at = 4;
+    string updated_at = 5;
+}
 
 // 加解密示例返回
 message CipherExampleResp {

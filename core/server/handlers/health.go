@@ -3,8 +3,8 @@ package handlers
 import (
 	"context"
 
+	pb "github.com/asjard/asjard/pkg/protobuf/health"
 	"github.com/asjard/asjard/pkg/server/rest"
-	pb "github.com/asjard/genproto/health"
 	"google.golang.org/grpc"
 )
 
