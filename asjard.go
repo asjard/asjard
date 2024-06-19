@@ -136,7 +136,6 @@ func (asd *Asjard) init() error {
 
 // Start 系统启动
 func (asd *Asjard) Start() error {
-	logger.Debug("System Starting...")
 	if err := asd.init(); err != nil {
 		return err
 	}

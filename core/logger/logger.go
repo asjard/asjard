@@ -60,7 +60,7 @@ var defaultLoggerConfig = &LoggerConfig{
 	MaxBackups: 10,
 	Compress:   true,
 	Level:      DEBUG.String(),
-	Format:     Text.String(),
+	Format:     Json.String(),
 }
 
 // NewLogger .

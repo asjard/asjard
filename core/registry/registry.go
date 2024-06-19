@@ -32,8 +32,6 @@ func init() {
 // Init 服务注册中心初始化
 // 只发现服务，不注册服务，等服务启动后再注册服务
 func Init() error {
-	// logger.Debug("Start init registry")
-	// defer logger.Debug("init registry Done")
 	registryManager.currentInstance = server.GetInstance()
 	registryManager.cache = newCache(registryManager.healthCheck)
 	for _, newRegister := range newRegisters {
@@ -41,8 +39,6 @@ func Init() error {
 		if err != nil {
 			return err
 		}
-		logger.Debug("register inited",
-			"register_name", register.Name())
 		registryManager.registers = append(registryManager.registers, register)
 	}
 	for _, newDiscover := range newDiscoverys {
@@ -50,8 +46,6 @@ func Init() error {
 		if err != nil {
 			return err
 		}
-		logger.Debug("discover inited",
-			"discover_name", discover.Name())
 		registryManager.discovers = append(registryManager.discovers, discover)
 	}
 	return registryManager.discove()
@@ -124,14 +118,11 @@ func (r *Registry) remove() error {
 
 // 自动发现服务
 func (r *Registry) discove() error {
-	logger.Debug("Start discover service")
 	if !config.GetBool("registry.autoDiscove", false) {
 		logger.Warn("registry.autoDiscove not enabled")
 		return nil
 	}
 	for _, discover := range r.discovers {
-		logger.Debug("Start discove service from discover",
-			"discover_name", discover.Name())
 		services, err := discover.GetAll()
 		if err != nil {
 			return err

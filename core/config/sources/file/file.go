@@ -196,7 +196,6 @@ func (s *File) watch() error {
 }
 
 func (s *File) doWatch() {
-	logger.Debug("start watch file")
 	for {
 		select {
 		case event, ok := <-s.watcher.Events:
