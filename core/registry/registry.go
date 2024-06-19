@@ -32,8 +32,8 @@ func init() {
 // Init 服务注册中心初始化
 // 只发现服务，不注册服务，等服务启动后再注册服务
 func Init() error {
-	logger.Debug("Start init registry")
-	defer logger.Debug("init registry Done")
+	// logger.Debug("Start init registry")
+	// defer logger.Debug("init registry Done")
 	registryManager.currentInstance = server.GetInstance()
 	registryManager.cache = newCache(registryManager.healthCheck)
 	for _, newRegister := range newRegisters {

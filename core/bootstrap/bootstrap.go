@@ -1,7 +1,5 @@
 package bootstrap
 
-import "github.com/asjard/asjard/core/logger"
-
 // BootstrapHandler 启动引导需实现的方法
 type BootstrapHandler interface {
 	// 启动时执行
@@ -24,8 +22,8 @@ func AddBootstrap(handler BootstrapHandler) {
 
 // Start 系统启动
 func Start() error {
-	logger.Debug("bootstrap Start")
-	defer logger.Debug("bootstrap Done")
+	// logger.Debug("bootstrap Start")
+	// defer logger.Debug("bootstrap Done")
 	for _, handler := range bootstrapHandlers {
 		if err := handler.Bootstrap(); err != nil {
 			return err

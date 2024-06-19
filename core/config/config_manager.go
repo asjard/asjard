@@ -102,8 +102,8 @@ func init() {
 //	@param priority 优先级
 //	@return error
 func Load(priority int) error {
-	logger.Debug("Start load config", "priority", priority)
-	defer logger.Debug("load config done", "priority", priority)
+	// logger.Debug("Start load config", "priority", priority)
+	// defer logger.Debug("load config done", "priority", priority)
 	return configmanager.load(priority)
 }
 
@@ -132,8 +132,8 @@ func AddSource(name string, priority int, newSourceFunc NewSourceFunc) error {
 	sort.Slice(sources, func(i, j int) bool {
 		return sources[i].priority < sources[j].priority
 	})
-	logger.Debug("config source added",
-		"source", name)
+	// logger.Debug("config source added",
+	// "source", name)
 	return nil
 }
 
@@ -286,8 +286,8 @@ func (m *ConfigManager) deleteAndFindNext(key string) {
 }
 
 func (m *ConfigManager) addSourcer(sourcer Sourcer) {
-	logger.Debug("add sourcer",
-		"source", sourcer.Name())
+	// logger.Debug("add sourcer",
+	// "source", sourcer.Name())
 	m.sm.Lock()
 	m.sourcers[sourcer.Name()] = sourcer
 	m.sm.Unlock()

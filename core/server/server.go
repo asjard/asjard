@@ -2,8 +2,6 @@ package server
 
 import (
 	"fmt"
-
-	"github.com/asjard/asjard/core/logger"
 )
 
 // Server 每个协议需要实现的内容
@@ -34,8 +32,8 @@ var (
 // Init 服务初始化
 // 初始化所有注册的服务
 func Init() ([]Server, error) {
-	logger.Debug("start init server")
-	defer logger.Debug("init server done")
+	// logger.Debug("start init server")
+	// defer logger.Debug("init server done")
 	var servers []Server
 	for protocol, newServer := range newServerFuncs {
 		server, err := newServer(&ServerOptions{
@@ -44,8 +42,8 @@ func Init() ([]Server, error) {
 		if err != nil {
 			return servers, err
 		}
-		logger.Debug("server inited",
-			"protocol", server.Protocol())
+		// logger.Debug("server inited",
+		// "protocol", server.Protocol())
 		servers = append(servers, server)
 	}
 	return servers, nil
