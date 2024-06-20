@@ -215,7 +215,6 @@ func (m *DBManager) dialector(cfg DBConnConfig) gorm.Dialector {
 }
 
 func (m *DBManager) watch(event *config.Event) {
-	logger.Debug("----config changed", "cfg", config.GetWithPrefix(ConfigKey))
 }
 
 func defaultOptions() *DBOptions {

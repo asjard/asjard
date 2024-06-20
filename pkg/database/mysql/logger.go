@@ -34,6 +34,7 @@ func (l mysqlLogger) Warn(ctx context.Context, format string, v ...any) {
 	logger.Warn(fmt.Sprintf(format, v...), "db", l.name)
 }
 func (l mysqlLogger) Error(ctx context.Context, format string, v ...any) {
+	logger.Debug("---------------------")
 	logger.Error(fmt.Sprintf(format, v...), "db", l.name)
 }
 func (l mysqlLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {

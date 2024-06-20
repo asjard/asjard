@@ -7,6 +7,7 @@ require (
 	github.com/fasthttp/router v1.5.1
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/google/uuid v1.6.0
+	github.com/lib/pq v1.0.0
 	github.com/magiconair/properties v1.8.7
 	github.com/spf13/cast v1.6.0
 	github.com/valyala/fasthttp v1.54.0
