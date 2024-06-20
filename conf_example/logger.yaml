@@ -5,7 +5,7 @@ logger:
   ## 日志格式, text或json,修改立即生效
   format: json
   ## 日志文件,修改立即生效
-  filePath: ./log/${instance.name}.log
+  filePath: /dev/stdout
   ## 日志防爆相关配置
   ## 文件大小, 单位MB,修改立即生效
   maxSize: 100

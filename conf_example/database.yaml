@@ -16,8 +16,12 @@ database:
     ## 数据库连接配置
     options:
       maxIdleConns: 10
-      maxOpenConns: 100
-      connMaxLifeTime: 1h
+      maxOpenConns: 1001
+      # connMaxIdleTime: 10
+      # connMaxLifeTime: 2h
+      ignoreRecordNotFoundError: false
+      slowThreshold: 200ms
+      debug: false
   redis:
     host: 127.0.0.1
     port: 6379

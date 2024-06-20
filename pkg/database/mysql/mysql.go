@@ -8,6 +8,7 @@ import (
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/driver/clickhouse"
@@ -22,8 +23,8 @@ const (
 	// ConfigKey 配置key
 	ConfigKey = "database.mysql"
 	// ConfigOptionsKey .
-	ConfigOptionsKey            = ConfigKey + ".options"
-	DbConfigKey                 = ConfigKey + ".dbs"
+	// ConfigOptionsKey            = ConfigKey + ".options"
+	// DbConfigKey                 = ConfigKey + ".dbs"
 	postgresDefaultDriverName   = "postgres"
 	mysqlDefaultDriverName      = "mysql"
 	sqliteDefaultDriverName     = "sqlite"
@@ -39,31 +40,49 @@ type DBManager struct {
 
 // DBConn 数据库连接
 type DBConn struct {
-	name string
-	db   *gorm.DB
-	// 是否可以连接
-	ok bool
-	// 无法连接错误原因
-	err error
+	name  string
+	db    *gorm.DB
+	debug bool
 }
 
-// DBConf 数据库配置
-type DBConf struct {
+// Config 数据库配置
+type Config struct {
+	Dbs     map[string]DBConnConfig `json:"dbs"`
+	Options Options                 `json:"options"`
+}
+
+type Options struct {
+	MaxIdleConns              int            `json:"maxIdleConns"`
+	MaxOpenConns              int            `json:"maxOpenConns"`
+	ConnMaxIdleTime           utils.Duration `json:"connMaxIdleTime"`
+	ConnMaxLifeTime           utils.Duration `json:"connMaxLifeTime"`
+	Debug                     bool           `json:"debug"`
+	IgnoreRecordNotFoundError bool           `json:"ignoreRecordNotFoundError"`
+	SlowThreshold             utils.Duration `json:"slowThreshold"`
+}
+
+// DBConnConfig 数据库连接配置
+type DBConnConfig struct {
 	// 数据库连接配置
 	Dsn string `json:"dsn"`
 	// 驱动名称
 	Driver string `json:"driver"`
 	// 驱动自定义配置
-	Options map[string]string `json:"options"`
+	Options DBConnOptions `json:"options"`
 }
 
-// Options .
-type Options struct {
+// DBConnOptions 数据库连接自定义配置
+type DBConnOptions struct {
+	CustomeDriverName string `json:"driverName"`
+}
+
+// DBOptions .
+type DBOptions struct {
 	connName string
 }
 
 // Option .
-type Option func(*Options)
+type Option func(*DBOptions)
 
 var dbManager *DBManager
 
@@ -73,8 +92,8 @@ func init() {
 }
 
 // WithConnName .
-func WithConnName(connName string) func(*Options) {
-	return func(opt *Options) {
+func WithConnName(connName string) func(*DBOptions) {
+	return func(opt *DBOptions) {
 		opt.connName = connName
 	}
 }
@@ -82,11 +101,22 @@ func WithConnName(connName string) func(*Options) {
 // 连接到数据库
 func (m *DBManager) Bootstrap() error {
 	logger.Debug("database mysql bootstrap")
-	dbConfs := make(map[string]*DBConf)
-	if err := config.GetWithUnmarshal(DbConfigKey, &dbConfs, config.WithMatchWatch(ConfigKey+".*", m.watch)); err != nil {
+	cfg := Config{
+		Dbs: make(map[string]DBConnConfig),
+		Options: Options{
+			MaxIdleConns:              10,
+			MaxOpenConns:              100,
+			ConnMaxIdleTime:           utils.Duration{Duration: 10 * time.Second},
+			ConnMaxLifeTime:           utils.Duration{Duration: time.Hour},
+			Debug:                     false,
+			IgnoreRecordNotFoundError: true,
+			SlowThreshold:             utils.Duration{Duration: 200 * time.Millisecond},
+		},
+	}
+	if err := config.GetWithUnmarshal(ConfigKey, &cfg, config.WithMatchWatch(ConfigKey+".*", m.watch)); err != nil {
 		return err
 	}
-	return m.conn(dbConfs)
+	return m.conn(cfg)
 }
 
 // Shutdown 和数据库断开连接
@@ -117,17 +147,21 @@ func DB(opts ...Option) (*gorm.DB, error) {
 	if !ok {
 		return nil, status.Error(codes.Internal, "invalid db")
 	}
-	if !db.ok && db.err != nil {
-		return nil, status.Error(codes.Internal, db.err.Error())
+	if db.debug {
+		return db.db.Debug(), nil
 	}
 	return db.db, nil
 }
 
-func (m *DBManager) conn(dbConfs map[string]*DBConf) error {
-	for dbName, cfg := range dbConfs {
+func (m *DBManager) conn(dbCfg Config) error {
+	for dbName, cfg := range dbCfg.Dbs {
 		logger.Debug("connect to database", "database", dbName, "config", cfg)
-		db, err := gorm.Open(m.dialector(dbName, cfg), &gorm.Config{
-			Logger: &mysqlLogger{},
+		db, err := gorm.Open(m.dialector(cfg), &gorm.Config{
+			Logger: &mysqlLogger{
+				ignoreRecordNotFoundError: dbCfg.Options.IgnoreRecordNotFoundError,
+				slowThreshold:             dbCfg.Options.SlowThreshold.Duration,
+				name:                      dbName,
+			},
 		})
 		if err != nil {
 			return fmt.Errorf("connect to %s fail[%s]", dbName, err.Error())
@@ -136,72 +170,56 @@ func (m *DBManager) conn(dbConfs map[string]*DBConf) error {
 		if err != nil {
 			return err
 		}
-		sqlDB.SetMaxIdleConns(config.GetInt(ConfigOptionsKey+".maxIdleConns", 10))
-		sqlDB.SetMaxOpenConns(config.GetInt(ConfigOptionsKey+".maxOpenConns", 100))
-		sqlDB.SetConnMaxIdleTime(config.GetDuration(ConfigOptionsKey+".connMaxIdleTime", 10*time.Second))
-		sqlDB.SetConnMaxLifetime(config.GetDuration(ConfigOptionsKey+".connMaxLifeTime", 1*time.Hour))
+		sqlDB.SetMaxIdleConns(dbCfg.Options.MaxIdleConns)
+		sqlDB.SetMaxOpenConns(dbCfg.Options.MaxOpenConns)
+		sqlDB.SetConnMaxIdleTime(dbCfg.Options.ConnMaxIdleTime.Duration)
+		sqlDB.SetConnMaxLifetime(dbCfg.Options.ConnMaxLifeTime.Duration)
 		conn := &DBConn{
-			name: dbName,
-			db:   db,
-			ok:   true,
+			name:  dbName,
+			db:    db,
+			debug: dbCfg.Options.Debug,
 		}
-		go conn.ping()
 		m.dbs.Store(dbName, conn)
 	}
 	return nil
 }
 
-func (m *DBManager) dialector(name string, cfg *DBConf) gorm.Dialector {
+func (m *DBManager) dialector(cfg DBConnConfig) gorm.Dialector {
 	switch cfg.Driver {
 	case postgresDefaultDriverName:
 		return postgres.New(postgres.Config{
-			DriverName: config.GetString(fmt.Sprintf("%s.%s.options.driverName", ConfigKey, name), ""),
+			DriverName: cfg.Options.CustomeDriverName,
 			DSN:        cfg.Dsn,
 		})
 	case sqliteDefaultDriverName:
 		return sqlite.New(sqlite.Config{
-			DriverName: config.GetString(fmt.Sprintf("%s.%s.options.driverName", ConfigKey, name), ""),
+			DriverName: cfg.Options.CustomeDriverName,
 			DSN:        cfg.Dsn,
 		})
 	case sqlserverDefaultDrierName:
 		return sqlserver.New(sqlserver.Config{
-			DriverName: config.GetString(fmt.Sprintf("%s.%s.options.driverName", ConfigKey, name), ""),
+			DriverName: cfg.Options.CustomeDriverName,
 			DSN:        cfg.Dsn,
 		})
 	case clickhouseDefaultDriverName:
 		return clickhouse.New(clickhouse.Config{
-			DriverName: config.GetString(fmt.Sprintf("%s.%s.options.driverName", ConfigKey, name), ""),
+			DriverName: cfg.Options.CustomeDriverName,
 			DSN:        cfg.Dsn,
 		})
 	default:
 		return mysql.New(mysql.Config{
-			DriverName: config.GetString(fmt.Sprintf("%s.%s.options.driverName", ConfigKey, name), ""),
+			DriverName: cfg.Options.CustomeDriverName,
 			DSN:        cfg.Dsn,
 		})
 	}
 }
 
 func (m *DBManager) watch(event *config.Event) {
+	logger.Debug("----config changed", "cfg", config.GetWithPrefix(ConfigKey))
 }
 
-func (m *DBConn) ping() {
-	for {
-		// sqlDB, err := m.db.DB()
-		// if err != nil {
-		// 	m.err = err
-		// 	m.ok = false
-		// }
-		// if err := sqlDB.Ping(); err != nil {
-		// 	logger.Error("connet to db fail", "db", m.name, "err", err.Error())
-		// 	m.err = errors.New("Internal server error")
-		// 	m.ok = false
-		// }
-		time.Sleep(10 * time.Second)
-	}
-}
-
-func defaultOptions() *Options {
-	return &Options{
+func defaultOptions() *DBOptions {
+	return &DBOptions{
 		connName: defaultConnectName,
 	}
 }

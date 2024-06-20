@@ -781,6 +781,7 @@ func getConfigMap(configs map[string]any) map[string]any {
 			continue
 		}
 		mergeConfigMap(getConfigValue(0, keyList, value, configs, skipKeys), result)
+
 	}
 	return result
 }
@@ -788,11 +789,9 @@ func getConfigMap(configs map[string]any) map[string]any {
 func mergeConfigMap(from, to map[string]any) {
 	for key, value := range from {
 		if _, ok := to[key]; ok {
-			switch value.(type) {
+			switch v := value.(type) {
 			case map[string]any:
-				for k, v := range value.(map[string]any) {
-					to[key].(map[string]any)[k] = v
-				}
+				mergeConfigMap(v, to[key].(map[string]any))
 			default:
 				logger.Warn("merge fail, invalid value type want map[string]any",
 					"from", from,
