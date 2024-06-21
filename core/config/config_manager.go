@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -608,7 +609,24 @@ func GetInt64(key string, defaultValue int64, opts ...Option) int64 {
 
 // GetInt64s TODO 获取配置并转化为[]int64类型
 func GetInt64s(key string, defaultValue []int64, opts ...Option) []int64 {
-	return defaultValue
+	options := GetOptions(opts...)
+	v := Get(key, options)
+	if v == nil {
+		return defaultValue
+	}
+	valueStrs, err := ccast.ToStringSliceE(v, options.delimiter)
+	if err != nil {
+		return defaultValue
+	}
+	var value []int64
+	for _, v := range valueStrs {
+		vi, err := strconv.Atoi(v)
+		if err != nil {
+			return defaultValue
+		}
+		value = append(value, int64(vi))
+	}
+	return value
 }
 
 // GetInt32 获取配置并转化为int32类型
@@ -626,7 +644,24 @@ func GetInt32(key string, defaultValue int32, opts ...Option) int32 {
 
 // GetInt32s TODO 获取配置并转化为[]int32类型
 func GetInt32s(key string, defaultValue []int32, opts ...Option) []int32 {
-	return defaultValue
+	options := GetOptions(opts...)
+	v := Get(key, options)
+	if v == nil {
+		return defaultValue
+	}
+	valueStrs, err := ccast.ToStringSliceE(v, options.delimiter)
+	if err != nil {
+		return defaultValue
+	}
+	var value []int32
+	for _, v := range valueStrs {
+		vi, err := strconv.Atoi(v)
+		if err != nil {
+			return defaultValue
+		}
+		value = append(value, int32(vi))
+	}
+	return value
 }
 
 // GetFloat64 获取配置并转化为float64

@@ -14,6 +14,8 @@ avaliablezone: "default"
 website: "https://github.com/${app}/${instance.name}"
 ## 服务实例详情
 instance:
+  ##
+  code: 0
   ## 服务名称
   name: exampleService
   ## 服务版本
