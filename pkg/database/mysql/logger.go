@@ -22,7 +22,10 @@ var _ gormLogger.Interface = &mysqlLogger{}
 
 func (l *mysqlLogger) LogMode(level gormLogger.LogLevel) gormLogger.Interface {
 	return &mysqlLogger{
-		logLevel: level,
+		logLevel:                  level,
+		ignoreRecordNotFoundError: l.ignoreRecordNotFoundError,
+		slowThreshold:             l.slowThreshold,
+		name:                      l.name,
 	}
 }
 
