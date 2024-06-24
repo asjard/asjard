@@ -4,7 +4,7 @@ package api.v1.hello;
 
 option go_package = "github.com/asjard/asjard/examples/protobuf/hello;hello";
 
-import "github.com/asjard/asjard/core/protobuf/http.proto";
+import "github.com/asjard/protobuf/http.proto";
 
 service Hello {
     // say something
