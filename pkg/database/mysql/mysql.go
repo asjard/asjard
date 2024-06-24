@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -134,7 +135,7 @@ func (m *DBManager) Shutdown() {
 }
 
 // DB 数据库连接地址
-func DB(opts ...Option) (*gorm.DB, error) {
+func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 	options := defaultOptions()
 	for _, opt := range opts {
 		opt(options)
@@ -148,9 +149,9 @@ func DB(opts ...Option) (*gorm.DB, error) {
 		return nil, status.Error(codes.Internal, "invalid db")
 	}
 	if db.debug {
-		return db.db.Debug(), nil
+		return db.db.Debug().WithContext(ctx), nil
 	}
-	return db.db, nil
+	return db.db.WithContext(ctx), nil
 }
 
 func (m *DBManager) conn(dbCfg Config) error {
