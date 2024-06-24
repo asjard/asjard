@@ -61,14 +61,14 @@ func (r *ReqWithPage) GormScope() func(*gorm.DB) *gorm.DB {
 		db.Offset(int(r.Page * r.Size)).
 			Limit(int(r.Size))
 		if r.Sort != "" {
-			db.Order(r.orderSql())
+			db.Order(r.gormOrderStr())
 		}
 		return db
 	}
 }
 
-func (r *ReqWithPage) orderSql() string {
-	sql := "ORDER BY "
+func (r *ReqWithPage) gormOrderStr() string {
+	sql := ""
 	for index, sortField := range strings.Split(r.Sort, sortDelimiter) {
 		if index != 0 {
 			sql += ","

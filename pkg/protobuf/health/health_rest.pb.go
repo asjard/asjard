@@ -4,7 +4,7 @@
 // - protoc             v5.27.0
 // source: health.proto
 
-package health
+package healthpb
 
 import (
 	context "context"
