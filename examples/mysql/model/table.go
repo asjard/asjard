@@ -31,7 +31,7 @@ func (ExampleTable) TableName() string {
 
 // 添加数据
 func (t ExampleTable) AddOrUpdate(ctx context.Context, in *pb.MysqlExampleReq) (*pb.MysqlExampleResp, error) {
-	db, err := mysql.DB()
+	db, err := mysql.DB(ctx)
 	if err != nil {
 		return nil, err
 	}
