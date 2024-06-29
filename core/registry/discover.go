@@ -68,7 +68,7 @@ type LocalRegistry struct {
 // NewLocalDiscover .
 func NewLocalDiscover() (Discovery, error) {
 	localDiscover := &LocalRegistry{
-		localDiscoverConfPrefix: "registry.localDiscover",
+		localDiscoverConfPrefix: constant.ConfigRegistryLocalDiscoverPrefix,
 	}
 	localDiscover.getAndWatch()
 	return localDiscover, nil
@@ -103,7 +103,9 @@ func (l *LocalRegistry) getAndWatch() {
 }
 func (l *LocalRegistry) watch(event *config.Event) {
 	services := make(map[string][]string)
-	config.GetWithUnmarshal(l.localDiscoverConfPrefix, &services)
+	if err := config.GetWithUnmarshal(l.localDiscoverConfPrefix, &services); err != nil {
+		logger.Error("get local discover conf fail", "err", err)
+	}
 	instances := l.getInstances(services)
 	for _, instance := range l.instances {
 		l.cb(&Event{

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
 )
@@ -53,7 +54,7 @@ func Init() error {
 
 func (r *Registry) registe() error {
 	// 延迟注册
-	if delay := config.GetString("registry.delayRegiste", ""); delay != "" {
+	if delay := config.GetString(constant.ConfigRegistryDelayRegiste, ""); delay != "" {
 		return r.delayRegiste(delay)
 	}
 	return r.doRegiste()
@@ -86,7 +87,7 @@ func (r *Registry) doRegiste() error {
 // 注册中心心跳
 // 当开启了心跳后，心跳时间向所有注册中心发起心跳
 func (r *Registry) heartbeat() error {
-	duration, err := time.ParseDuration(config.GetString("registry.heartbeatInterval", "5s"))
+	duration, err := time.ParseDuration(config.GetString(constant.ConfigRegistryHeartbeatInterval, "5s"))
 	if err != nil {
 		return err
 	}
@@ -118,7 +119,7 @@ func (r *Registry) remove() error {
 
 // 自动发现服务
 func (r *Registry) discove() error {
-	if !config.GetBool("registry.autoDiscove", false) {
+	if !config.GetBool(constant.CofigRegistryAutoDiscove, false) {
 		logger.Warn("registry.autoDiscove not enabled")
 		return nil
 	}

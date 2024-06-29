@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/pkg/server/rest"
@@ -29,12 +30,12 @@ func init() {
 // NewAccessLogInterceptor .
 func NewAccessLogInterceptor() server.ServerInterceptor {
 	accessLog := &AccessLog{
-		enabled: config.GetBool("logger.accessEnabled", false),
+		enabled: config.GetBool(constant.ConfigLoggerAccessEnabled, false),
 		cfg: &accessLogConfig{
 			skipMethodsMap: make(map[string]struct{}),
 		},
 	}
-	if err := config.GetWithUnmarshal("interceptors.server.accessLog", accessLog.cfg); err == nil {
+	if err := config.GetWithUnmarshal(constant.ConfigInterceptorServerAccessLogPrefix, accessLog.cfg); err == nil {
 		for _, method := range accessLog.cfg.SkipMethods {
 			accessLog.cfg.skipMethodsMap[method] = struct{}{}
 		}

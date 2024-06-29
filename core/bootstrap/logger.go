@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 )
 
@@ -28,15 +29,11 @@ func (l Logger) update() {
 }
 
 func (l Logger) newLoggerHandler() slog.Handler {
-	return logger.GetSlogHandler(&logger.LoggerConfig{
-		FileName:   config.GetString("logger.filePath", "/dev/stdout"),
-		MaxSize:    config.GetInt("logger.maxSize", 100),
-		MaxAge:     config.GetInt("logger.maxAge", 0),
-		MaxBackups: config.GetInt("logger.maxBackups", 10),
-		Compress:   config.GetBool("logger.compress", true),
-		Level:      config.GetString("logger.level", logger.DEBUG.String()),
-		Format:     config.GetString("logger.format", logger.Json.String()),
-	})
+	var loggerConfig logger.LoggerConfig
+	if err := config.GetWithUnmarshal(constant.ConfigLoggerPrefix, &loggerConfig); err != nil {
+		logger.Error("get with unmarshal asjard.logger fail", "err", err)
+	}
+	return logger.GetSlogHandler(&loggerConfig)
 }
 
 func (l Logger) Shutdown() {}

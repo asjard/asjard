@@ -1,11 +1,5 @@
 package server
 
-import (
-	"fmt"
-
-	"github.com/asjard/asjard/core/config"
-)
-
 // Service .
 type Service struct {
 	// 服务名称
@@ -21,7 +15,7 @@ func NewService(name, protocol string) *Service {
 	return &Service{
 		Name:     name,
 		Protocol: protocol,
-		LoadBalance: config.GetString(fmt.Sprintf("loadbalance.services.%s.strategy", name),
-			config.GetString("loadbalance.strategy", "")),
+		// LoadBalance: config.GetString(fmt.Sprintf("loadbalance.services.%s.strategy", name),
+		// config.GetString("loadbalance.strategy", "")),
 	}
 }

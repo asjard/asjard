@@ -147,7 +147,7 @@ func (asd *Asjard) Start() error {
 		return err
 	}
 	logger.Info("System Started")
-	if config.GetBool("logger.banner.enabled", true) {
+	if config.GetBool(constant.ConfigLoggerBannerEnabled, true) {
 		asd.printBanner()
 	}
 	// 优雅退出
@@ -225,7 +225,7 @@ func (asd *Asjard) stop() {
 		}
 	}
 	// 配置中心断开连接
-	config.DisConnect()
+	config.Disconnect()
 	bootstrap.Stop()
 	logger.Info("system exited")
 }
@@ -240,6 +240,6 @@ func (asd *Asjard) printBanner() {
 		runtime.ServiceID,
 		runtime.Name,
 		runtime.Version,
-		config.GetString("website", website),
+		config.GetString(constant.ConfigWebsite, website),
 		strings.Join(asd.startedServers, ","))
 }

@@ -9,6 +9,8 @@ import (
 	"github.com/afex/hystrix-go/hystrix"
 	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
+	"github.com/asjard/asjard/core/logger"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -25,6 +27,16 @@ type CircuitBreaker struct {
 	cm            sync.RWMutex
 }
 
+var (
+	defaultConfig = hystrix.CommandConfig{
+		Timeout:                hystrix.DefaultTimeout,
+		MaxConcurrentRequests:  hystrix.DefaultMaxConcurrent,
+		RequestVolumeThreshold: hystrix.DefaultVolumeThreshold,
+		SleepWindow:            hystrix.DefaultSleepWindow,
+		ErrorPercentThreshold:  hystrix.DefaultErrorPercentThreshold,
+	}
+)
+
 func init() {
 	client.AddInterceptor(NewCircuitBreaker)
 }
@@ -32,34 +44,33 @@ func init() {
 // NewCircuitBreaker 拦截器初始化
 func NewCircuitBreaker() client.ClientInterceptor {
 	commandConfig := make(map[string]hystrix.CommandConfig)
-	defaultCommandConfig := hystrix.CommandConfig{
-		Timeout:                config.GetInt("interceptors.client.circuitBreaker.timeout", hystrix.DefaultTimeout),
-		MaxConcurrentRequests:  config.GetInt("interceptors.client.circuitBreaker.maxConcurrentRequests", hystrix.DefaultMaxConcurrent),
-		RequestVolumeThreshold: config.GetInt("interceptors.client.circuitBreaker.requestVolumeThreshold", hystrix.DefaultVolumeThreshold),
-		SleepWindow:            config.GetInt("interceptors.client.circuitBreaker.sleepWindow", hystrix.DefaultSleepWindow),
-		ErrorPercentThreshold:  config.GetInt("interceptors.client.circuitBreaker.errorPercentThreshold", hystrix.DefaultErrorPercentThreshold),
+	defaultCommandConfig := defaultConfig
+	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientCircuitBreakerPrefix, &defaultCommandConfig); err != nil {
+		logger.Error("get default circuit breaker fail", "err", err)
 	}
 	serviceConfig := make(map[string]any)
-	config.GetWithUnmarshal("interceptors.client.circuitBreaker.services", &serviceConfig)
+	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientCircuitBreakerServicePrefix, &serviceConfig); err != nil {
+		logger.Error("get service circuit breaker fail", "err", err)
+	}
 	for name := range serviceConfig {
-		commandConfig[name] = hystrix.CommandConfig{
-			Timeout:                config.GetInt(fmt.Sprintf("interceptors.client.circuitBreaker.services.%s.timeout", name), defaultCommandConfig.Timeout),
-			MaxConcurrentRequests:  config.GetInt(fmt.Sprintf("interceptors.client.circuitBreaker.services.%s.maxConcurrentRequests", name), defaultCommandConfig.MaxConcurrentRequests),
-			RequestVolumeThreshold: config.GetInt(fmt.Sprintf("interceptors.client.circuitBreaker.services.%s.requestVolumeThreshold", name), defaultCommandConfig.RequestVolumeThreshold),
-			SleepWindow:            config.GetInt(fmt.Sprintf("interceptors.client.circuitBreaker.services.%s.sleepWindow", name), defaultCommandConfig.SleepWindow),
-			ErrorPercentThreshold:  config.GetInt(fmt.Sprintf("interceptors.client.circuitBreaker.services.%s.errorPercentThreshold", name), defaultCommandConfig.ErrorPercentThreshold),
+		serviceCommandConfig := defaultCommandConfig
+		if err := config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigInterceptorClientCircuitBreakerWithServicePrefix, name),
+			&serviceCommandConfig); err != nil {
+			logger.Error("get service circuit breaker fail", "service", name, "err", err)
 		}
+		commandConfig[name] = serviceCommandConfig
 	}
 	methodsConfig := make(map[string]any)
-	config.GetWithUnmarshal("interceptors.client.circuitBreaker.methods", &methodsConfig)
+	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientCircuitBreakerMethodPrefix, &methodsConfig); err != nil {
+		logger.Error("get method circuit breaker fail", "err", err)
+	}
 	for name := range methodsConfig {
-		commandConfig[name] = hystrix.CommandConfig{
-			Timeout:                config.GetInt(fmt.Sprintf("interceptors.client.circuitBreaker.methods.%s.timeout", name), defaultCommandConfig.Timeout),
-			MaxConcurrentRequests:  config.GetInt(fmt.Sprintf("interceptors.client.circuitBreaker.methods.%s.maxConcurrentRequests", name), defaultCommandConfig.MaxConcurrentRequests),
-			RequestVolumeThreshold: config.GetInt(fmt.Sprintf("interceptors.client.circuitBreaker.methods.%s.requestVolumeThreshold", name), defaultCommandConfig.RequestVolumeThreshold),
-			SleepWindow:            config.GetInt(fmt.Sprintf("interceptors.client.circuitBreaker.methods.%s.sleepWindow", name), defaultCommandConfig.SleepWindow),
-			ErrorPercentThreshold:  config.GetInt(fmt.Sprintf("interceptors.client.circuitBreaker.methods.%s.errorPercentThreshold", name), defaultCommandConfig.ErrorPercentThreshold),
+		methodCommandConfig := defaultCommandConfig
+		if err := config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigInterceptorClientCircuitBreakerWithMethodPrefix, name),
+			&methodCommandConfig); err != nil {
+			logger.Error("get method circuit breaker fail", "method", name, "err", err)
 		}
+		commandConfig[name] = methodCommandConfig
 	}
 	commandConfig[DefaultCommandConfigName] = defaultCommandConfig
 	hystrix.Configure(commandConfig)

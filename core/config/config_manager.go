@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -134,8 +133,8 @@ func AddSource(name string, priority int, newSourceFunc NewSourceFunc) error {
 	return nil
 }
 
-// DisConnect 和配置中心断开连接
-func DisConnect() {
+// Disconnect 和配置中心断开连接
+func Disconnect() {
 	configmanager.disconnect()
 }
 
@@ -305,6 +304,16 @@ func (m *ConfigManager) getConfig(key string) (*Value, bool) {
 	return m.globalCfgs.get(key)
 }
 
+func (m *ConfigManager) getConfigByChain(keys []string) (value *Value, ok bool) {
+	for _, key := range keys {
+		value, ok = m.getConfig(key)
+		if ok {
+			return
+		}
+	}
+	return
+}
+
 func (m *ConfigManager) getConfigs() map[string]*Value {
 	return m.globalCfgs.getAll()
 }
@@ -324,7 +333,7 @@ func (m *ConfigManager) getValue(key string, opts *Options) any {
 	if opts != nil && opts.watch != nil {
 		m.listener.watch(key, opts.watch)
 	}
-	value, ok := m.getConfig(key)
+	value, ok := m.getConfigByChain(append([]string{key}, opts.keys...))
 	if !ok {
 		return nil
 	}
@@ -349,9 +358,12 @@ func (m *ConfigManager) getValueByPrefix(prefix string, opts *Options) map[strin
 		m.listener.watch(prefix, opts.watch)
 	}
 	out := make(map[string]any)
-	for key, value := range m.getConfigs() {
-		if strings.HasPrefix(key, prefix) {
-			out[strings.TrimPrefix(key, prefix+constant.ConfigDelimiter)] = m.getValueWithOptions(value.Value, opts)
+	configs := m.getConfigs()
+	for _, p := range append([]string{prefix}, opts.keys...) {
+		for key, value := range configs {
+			if strings.HasPrefix(key, p) {
+				out[strings.TrimPrefix(key, p+constant.ConfigDelimiter)] = m.getValueWithOptions(value.Value, opts)
+			}
 		}
 	}
 	return out
@@ -547,7 +559,10 @@ func GetBool(key string, defaultValue bool, opts ...Option) bool {
 	if v == nil {
 		return defaultValue
 	}
-	value, _ := ccast.ToBoolE(v)
+	value, err := ccast.ToBoolE(v)
+	if err != nil {
+		return defaultValue
+	}
 	return value
 }
 
@@ -558,7 +573,24 @@ func GetBool(key string, defaultValue bool, opts ...Option) bool {
 //	@param opts 可选参数WithDelimiter, 默认分隔符空格
 //	@return []bool
 func GetBools(key string, defaultValue []bool, opts ...Option) []bool {
-	return defaultValue
+	options := GetOptions(opts...)
+	v := Get(key, options)
+	if v == nil {
+		return defaultValue
+	}
+	valueStrs, err := ccast.ToStringSliceE(v, options.delimiter)
+	if err != nil {
+		return defaultValue
+	}
+	var value []bool
+	for _, v := range valueStrs {
+		vi, err := cast.ToBoolE(v)
+		if err != nil {
+			return defaultValue
+		}
+		value = append(value, vi)
+	}
+	return value
 }
 
 // GetInt 获取配置并转化为int类型
@@ -586,7 +618,24 @@ func GetInt(key string, defaultValue int, opts ...Option) int {
 //	@param opts 可选参数 WithDelimiter
 //	@return []int
 func GetInts(key string, defaultValue []int, opts ...Option) []int {
-	return defaultValue
+	options := GetOptions(opts...)
+	v := Get(key, options)
+	if v == nil {
+		return defaultValue
+	}
+	valueStrs, err := ccast.ToStringSliceE(v, options.delimiter)
+	if err != nil {
+		return defaultValue
+	}
+	var value []int
+	for _, v := range valueStrs {
+		vi, err := cast.ToIntE(v)
+		if err != nil {
+			return defaultValue
+		}
+		value = append(value, vi)
+	}
+	return value
 }
 
 // GetInt64 获取配置并转化为int64类型
@@ -620,11 +669,11 @@ func GetInt64s(key string, defaultValue []int64, opts ...Option) []int64 {
 	}
 	var value []int64
 	for _, v := range valueStrs {
-		vi, err := strconv.Atoi(v)
+		vi, err := cast.ToInt64E(v)
 		if err != nil {
 			return defaultValue
 		}
-		value = append(value, int64(vi))
+		value = append(value, vi)
 	}
 	return value
 }
@@ -655,7 +704,7 @@ func GetInt32s(key string, defaultValue []int32, opts ...Option) []int32 {
 	}
 	var value []int32
 	for _, v := range valueStrs {
-		vi, err := strconv.Atoi(v)
+		vi, err := cast.ToInt32E(v)
 		if err != nil {
 			return defaultValue
 		}
@@ -679,7 +728,24 @@ func GetFloat64(key string, defaultValue float64, opts ...Option) float64 {
 
 // GetFloat64s TODO 获取配置并转化为[]float64类型
 func GetFloat64s(key string, defaultValue []float64, opts ...Option) []float64 {
-	return defaultValue
+	options := GetOptions(opts...)
+	v := Get(key, options)
+	if v == nil {
+		return defaultValue
+	}
+	valueStrs, err := ccast.ToStringSliceE(v, options.delimiter)
+	if err != nil {
+		return defaultValue
+	}
+	var value []float64
+	for _, v := range valueStrs {
+		vi, err := cast.ToFloat64E(v)
+		if err != nil {
+			return defaultValue
+		}
+		value = append(value, vi)
+	}
+	return value
 }
 
 // GetFloat32 获取配置并转化为float32

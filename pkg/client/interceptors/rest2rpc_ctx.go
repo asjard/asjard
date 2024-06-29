@@ -5,13 +5,10 @@ import (
 
 	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
+	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"google.golang.org/grpc/metadata"
-)
-
-const (
-	// 配置前缀
-	configPrefix = "interceptors.client.rest2RpcContext"
 )
 
 // Rest2RpcContext rest协议的context转换为rpc的Context
@@ -34,9 +31,11 @@ func NewRest2RpcContext() client.ClientInterceptor {
 	rest2RpcContext := &Rest2RpcContext{
 		cfg: &rest2RpcContextConfig{},
 	}
-	config.GetWithUnmarshal(configPrefix,
+	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientRest2RpcContextPrefix,
 		rest2RpcContext.cfg,
-		config.WithMatchWatch(configPrefix+".*", rest2RpcContext.watch))
+		config.WithMatchWatch(constant.ConfigInterceptorClientRest2RpcContextPrefix+".*", rest2RpcContext.watch)); err != nil {
+		logger.Error("get interceptor config fail", "interceptor", "rest2RpcContext", "err", err)
+	}
 	return rest2RpcContext
 }
 
@@ -68,7 +67,7 @@ func (r *Rest2RpcContext) Interceptor() client.UnaryClientInterceptor {
 
 func (r *Rest2RpcContext) watch(event *config.Event) {
 	var cfg rest2RpcContextConfig
-	if err := config.GetWithUnmarshal(configPrefix, &cfg); err == nil {
+	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientRest2RpcContextPrefix, &cfg); err == nil {
 		r.cfg = &cfg
 	}
 }

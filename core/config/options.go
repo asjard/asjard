@@ -37,6 +37,8 @@ type Options struct {
 	toUpper bool
 	// 转换为小写
 	toLower bool
+	// key列表，按顺序获取,如果获取不到则获取下一个
+	keys []string
 }
 
 // ListenFunc 监听方法，如果返回true则调用回调函数
@@ -148,6 +150,13 @@ func WithToUpper() func(opts *Options) {
 func WithToLower() func(opts *Options) {
 	return func(opts *Options) {
 		opts.toLower = true
+	}
+}
+
+// WithChain 链式获取
+func WithChain(keys []string) func(opts *Options) {
+	return func(opts *Options) {
+		opts.keys = keys
 	}
 }
 

@@ -33,12 +33,12 @@ var (
 func Init() error {
 	once.Do(func() {
 		ServiceID = uuid.NewString()
-		APP = config.GetString("app", constant.Framework)
-		Region = config.GetString("region", "default")
-		AZ = config.GetString("avaliablezone", "default")
-		Environment = config.GetString("environment", "dev")
-		Version = config.GetString("instance.version", "1.0.0")
-		Name = config.GetString("instance.name", constant.Framework)
+		APP = config.GetString(constant.ConfigApp, constant.Framework)
+		Region = config.GetString(constant.ConfigRegion, "default")
+		AZ = config.GetString(constant.ConfigAvaliablezone, "default")
+		Environment = config.GetString(constant.ConfigEnvironment, "dev")
+		Version = config.GetString(constant.ConfigVersion, "1.0.0")
+		Name = config.GetString(constant.ConfigName, constant.Framework)
 	})
 	return nil
 }

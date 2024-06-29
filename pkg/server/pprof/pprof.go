@@ -35,9 +35,9 @@ func init() {
 func New(options *server.ServerOptions) (server.Server, error) {
 	server := &PprofServer{
 		addresses: make(map[string]string),
-		enabled:   config.GetBool("servers.pprof.enabled", false),
+		enabled:   config.GetBool(fmt.Sprintf(constant.ConfigServerEnabled, Protocol), false),
 	}
-	if err := config.GetWithUnmarshal("servers.pprof.addresses", &server.addresses); err != nil {
+	if err := config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigServerAddress, Protocol), &server.addresses); err != nil {
 		return server, err
 	}
 	return server, nil

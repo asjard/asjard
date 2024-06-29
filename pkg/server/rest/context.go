@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/pkg/status"
 	"github.com/spf13/cast"
 	"github.com/valyala/fasthttp"
@@ -55,8 +56,8 @@ type Context struct {
 var contextPool = sync.Pool{
 	New: func() any {
 		return &Context{
-			errPage: config.GetString("servers.rest.doc.errPage",
-				config.GetString("website", "")),
+			errPage: config.GetString(constant.ConfigServerRestDocErrPage,
+				config.GetString(constant.ConfigWebsite, "")),
 			queryParams:  make(map[string][]string),
 			pathParams:   make(map[string][]string),
 			headerParams: make(map[string][]string),
@@ -68,7 +69,7 @@ var contextPool = sync.Pool{
 func NewContext(ctx *fasthttp.RequestCtx, options ...Option) *Context {
 	c := contextPool.Get().(*Context)
 	c.RequestCtx = ctx
-	c.errPage = config.GetString("servers.rest.doc.errPage", "")
+	c.errPage = config.GetString(constant.ConfigServerRestDocErrPage, "")
 	for _, opt := range options {
 		opt(c)
 	}

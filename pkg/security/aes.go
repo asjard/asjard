@@ -9,15 +9,13 @@ import (
 	"fmt"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/security"
 )
 
 const (
 	// AESCipherName aes加解密组件名称
 	AESCipherName = "aesCBCPkcs5padding"
-	// AESKeyName 密钥key名称
-	AESKeyName = "cipher.%s.base64Key"
-	AESIVName  = "cipher.%s.base64Iv"
 )
 
 // AESCipher aes加解密
@@ -37,8 +35,8 @@ func init() {
 // openssl rand -base64 24
 // openssl rand -base64 32
 func NewAESCipher(name string) (security.Cipher, error) {
-	cipher, err := MustNewAESCipher(config.GetString(fmt.Sprintf(AESKeyName, name), ""),
-		config.GetString(fmt.Sprintf(AESIVName, name), ""))
+	cipher, err := MustNewAESCipher(config.GetString(fmt.Sprintf(constant.ConfigCipherAESKey, name), ""),
+		config.GetString(fmt.Sprintf(constant.ConfigCipherAESIV, name), ""))
 	if err != nil {
 		return nil, err
 	}

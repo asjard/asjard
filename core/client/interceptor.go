@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
 )
 
 // ClientInterceptor 客户端拦截器需要实现的方法
@@ -61,8 +62,8 @@ func getChainUnaryInterceptors(protocol string) UnaryClientInterceptor {
 // 添加默认拦截器
 func getClientInterceptors(protocol string) []UnaryClientInterceptor {
 	var interceptors []UnaryClientInterceptor
-	for _, interceptorName := range config.GetStrings(fmt.Sprintf("clients.%s.interceptors", protocol),
-		config.GetStrings("clients.interceptors", []string{"cycleChainInterceptor"})) {
+	for _, interceptorName := range config.GetStrings(fmt.Sprintf(constant.ConfigClientInterceptorWithProtocol, protocol),
+		config.GetStrings(constant.ConfigClientInterceptor, []string{"cycleChainInterceptor"})) {
 		for _, newInterceptor := range newClientInterceptors {
 			interceptor := newInterceptor()
 			if interceptor.Name() == interceptorName {

@@ -44,13 +44,13 @@ type defaultLogger struct {
 
 // LoggerConfig 日志配置
 type LoggerConfig struct {
-	FileName   string
-	MaxSize    int
-	MaxAge     int
-	MaxBackups int
-	Compress   bool
-	Level      string
-	Format     string
+	FileName   string `json:"filepath"`
+	MaxSize    int    `json:"maxSize"`
+	MaxAge     int    `json:"maxAge"`
+	MaxBackups int    `json:"maxBackups"`
+	Compress   bool   `json:"compress"`
+	Level      string `json:"level"`
+	Format     string `json:"format"`
 }
 
 var defaultLoggerConfig = &LoggerConfig{

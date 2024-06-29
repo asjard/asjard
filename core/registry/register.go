@@ -2,6 +2,7 @@ package registry
 
 import (
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/server"
 )
 
@@ -30,7 +31,7 @@ func AddRegister(newFunc NewRegisterFunc) error {
 
 // Registe 注册服务到注册中心
 func Registe() error {
-	if !config.GetBool("registry.autoRegiste", true) {
+	if !config.GetBool(constant.ConfigRegistryAutoRegiste, true) {
 		return nil
 	}
 	return registryManager.registe()
@@ -38,7 +39,7 @@ func Registe() error {
 
 // Unregiste 从注册中心删除服务
 func Unregiste() error {
-	if !config.GetBool("registry.autoRegiste", true) {
+	if !config.GetBool(constant.ConfigRegistryAutoRegiste, true) {
 		return nil
 	}
 	return registryManager.remove()

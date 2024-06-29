@@ -8,6 +8,7 @@ import (
 
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/utils"
 	"google.golang.org/grpc/codes"
@@ -21,11 +22,6 @@ import (
 )
 
 const (
-	// ConfigKey 配置key
-	ConfigKey = "database.mysql"
-	// ConfigOptionsKey .
-	// ConfigOptionsKey            = ConfigKey + ".options"
-	// DbConfigKey                 = ConfigKey + ".dbs"
 	postgresDefaultDriverName   = "postgres"
 	mysqlDefaultDriverName      = "mysql"
 	sqliteDefaultDriverName     = "sqlite"
@@ -114,7 +110,9 @@ func (m *DBManager) Bootstrap() error {
 			SlowThreshold:             utils.Duration{Duration: 200 * time.Millisecond},
 		},
 	}
-	if err := config.GetWithUnmarshal(ConfigKey, &cfg, config.WithMatchWatch(ConfigKey+".*", m.watch)); err != nil {
+	if err := config.GetWithUnmarshal(constant.ConfigDatabaseMysqlPrefix,
+		&cfg,
+		config.WithMatchWatch(constant.ConfigDatabaseMysqlPrefix+".*", m.watch)); err != nil {
 		return err
 	}
 	return m.conn(cfg)

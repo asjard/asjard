@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
 )
@@ -57,12 +58,12 @@ type serviceCache struct {
 // 初始化一个本地缓存用以维护发现的服务实例
 func newCache(hf healthCheckFunc) *cache {
 	c := &cache{
-		failureThreshold:  config.GetInt("registry.failureThreshold", 1),
+		failureThreshold:  config.GetInt(constant.ConfigRegistryFailureThreshold, 1),
 		healthCheckFunc:   hf,
 		failureThresholds: map[string]int{},
 		listeners:         map[string]*listener{},
 	}
-	if config.GetBool("registry.healthCheck", true) {
+	if config.GetBool(constant.ConfigRegistryHealthCheck, true) {
 		go c.healthCheck()
 	}
 	return c
@@ -155,7 +156,7 @@ func (c *cache) notify(eventType EventType, instance *Instance) {
 
 // 服务健康检查
 func (c *cache) healthCheck() {
-	duration, err := time.ParseDuration(config.GetString("registry.healthCheckInterval", "10s"))
+	duration, err := time.ParseDuration(config.GetString(constant.ConfigRegistryHealthCheckInterval, "10s"))
 	if err != nil {
 		duration = 10 * time.Second
 	}

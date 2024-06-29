@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/utils"
@@ -51,7 +52,7 @@ func GetInstance() *Instance {
 // NewInstance .
 func NewInstance() *Instance {
 	metadata := make(map[string]string)
-	if err := config.GetWithUnmarshal("instance.metadata", &metadata); err != nil {
+	if err := config.GetWithUnmarshal(constant.ConfigMetadata, &metadata); err != nil {
 		logger.Error("get instance metadata fail",
 			"err", err.Error())
 	}

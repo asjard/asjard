@@ -60,14 +60,14 @@ func init() {
 // TODO 使用options的方式带参数, 配置写在结构体中，并通过GetWithUnmarshal反序列化进去
 func New(options *server.ServerOptions) (server.Server, error) {
 	addressesMap := make(map[string]string)
-	if err := config.GetWithUnmarshal("servers.rest.addresses", &addressesMap); err != nil {
+	if err := config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigServerAddress, Protocol), &addressesMap); err != nil {
 		return nil, err
 	}
-	certFile := config.GetString("servers.rest.certFile", "")
+	certFile := config.GetString(fmt.Sprintf(constant.ConfigServerCertfile, Protocol), "")
 	if certFile != "" {
 		certFile = filepath.Join(utils.GetCertDir(), certFile)
 	}
-	keyFile := config.GetString("servers.rest.keyFile", "")
+	keyFile := config.GetString(fmt.Sprintf(constant.ConfigServerKeyFile, Protocol), "")
 	if keyFile != "" {
 		keyFile = filepath.Join(utils.GetCertDir(), keyFile)
 	}
@@ -76,37 +76,37 @@ func New(options *server.ServerOptions) (server.Server, error) {
 		router:      router.New(),
 		certFile:    certFile,
 		keyFile:     keyFile,
-		enabled:     config.GetBool("servers.rest.enabled", false),
+		enabled:     config.GetBool(fmt.Sprintf(constant.ConfigServerEnabled, Protocol), false),
 		interceptor: options.Interceptor,
 		server: fasthttp.Server{
 			Name:            runtime.APP,
-			Concurrency:     config.GetInt("servers.rest.options.Concurrency", fasthttp.DefaultConcurrency),
-			ReadBufferSize:  config.GetInt("servers.rest.options.ReadBufferSize", defaultReadBufferSize),
-			WriteBufferSize: config.GetInt("servers.rest.options.ReadBufferSize", defaultWriteBufferSize),
-			ReadTimeout:     config.GetDuration("servers.rest.options.ReadTimeout", time.Second*3),
-			WriteTimeout:    config.GetDuration("servers.rest.options.WriteTimeout", time.Second*3),
-			IdleTimeout: config.GetDuration("servers.rest.options.WriteTimeout",
-				config.GetDuration("servers.rest.options.ReadTimeout", time.Second*3)),
-			MaxConnsPerIP:                      config.GetInt("servers.rest.options.WriteTimeout", 0),
-			MaxRequestsPerConn:                 config.GetInt("servers.rest.options.MaxRequestsPerConn", 0),
-			MaxIdleWorkerDuration:              config.GetDuration("servers.rest.options.MaxIdleWorkerDuration", time.Minute*10),
-			TCPKeepalivePeriod:                 config.GetDuration("servers.rest.options.TCPKeepalivePeriod", 0),
-			MaxRequestBodySize:                 config.GetInt("servers.rest.options.MaxRequestBodySize", fasthttp.DefaultMaxRequestBodySize),
-			DisableKeepalive:                   config.GetBool("servers.rest.options.DisableKeepalive", false),
-			TCPKeepalive:                       config.GetBool("servers.rest.options.TCPKeepalive", false),
-			ReduceMemoryUsage:                  config.GetBool("servers.rest.options.ReduceMemoryUsage", false),
-			GetOnly:                            config.GetBool("servers.rest.options.GetOnly", false),
-			DisablePreParseMultipartForm:       config.GetBool("servers.rest.options.DisablePreParseMultipartForm", true),
-			LogAllErrors:                       config.GetBool("servers.rest.options.LogAllErrors", false),
-			SecureErrorLogMessage:              config.GetBool("servers.rest.options.SecureErrorLogMessage", false),
-			DisableHeaderNamesNormalizing:      config.GetBool("servers.rest.options.DisableHeaderNamesNormalizing", false),
-			SleepWhenConcurrencyLimitsExceeded: config.GetDuration("servers.rest.options.SleepWhenConcurrencyLimitsExceeded", 0),
-			NoDefaultServerHeader:              config.GetBool("servers.rest.options.NoDefaultServerHeader", false),
-			NoDefaultDate:                      config.GetBool("servers.rest.options.NoDefaultDate", false),
-			NoDefaultContentType:               config.GetBool("servers.rest.options.NoDefaultContentType", false),
-			KeepHijackedConns:                  config.GetBool("servers.rest.options.KeepHijackedConns", false),
-			CloseOnShutdown:                    config.GetBool("servers.rest.options.CloseOnShutdown", false),
-			StreamRequestBody:                  config.GetBool("servers.rest.options.StreamRequestBody", false),
+			Concurrency:     config.GetInt("asjard.servers.rest.options.Concurrency", fasthttp.DefaultConcurrency),
+			ReadBufferSize:  config.GetInt("asjard.servers.rest.options.ReadBufferSize", defaultReadBufferSize),
+			WriteBufferSize: config.GetInt("asjard.servers.rest.options.ReadBufferSize", defaultWriteBufferSize),
+			ReadTimeout:     config.GetDuration("asjard.servers.rest.options.ReadTimeout", time.Second*3),
+			WriteTimeout:    config.GetDuration("asjard.servers.rest.options.WriteTimeout", time.Second*3),
+			IdleTimeout: config.GetDuration("asjard.servers.rest.options.WriteTimeout",
+				config.GetDuration("asjard.servers.rest.options.ReadTimeout", time.Second*3)),
+			MaxConnsPerIP:                      config.GetInt("asjard.servers.rest.options.WriteTimeout", 0),
+			MaxRequestsPerConn:                 config.GetInt("asjard.servers.rest.options.MaxRequestsPerConn", 0),
+			MaxIdleWorkerDuration:              config.GetDuration("asjard.servers.rest.options.MaxIdleWorkerDuration", time.Minute*10),
+			TCPKeepalivePeriod:                 config.GetDuration("asjard.servers.rest.options.TCPKeepalivePeriod", 0),
+			MaxRequestBodySize:                 config.GetInt("asjard.servers.rest.options.MaxRequestBodySize", fasthttp.DefaultMaxRequestBodySize),
+			DisableKeepalive:                   config.GetBool("asjard.servers.rest.options.DisableKeepalive", false),
+			TCPKeepalive:                       config.GetBool("asjard.servers.rest.options.TCPKeepalive", false),
+			ReduceMemoryUsage:                  config.GetBool("asjard.servers.rest.options.ReduceMemoryUsage", false),
+			GetOnly:                            config.GetBool("asjard.servers.rest.options.GetOnly", false),
+			DisablePreParseMultipartForm:       config.GetBool("asjard.servers.rest.options.DisablePreParseMultipartForm", true),
+			LogAllErrors:                       config.GetBool("asjard.servers.rest.options.LogAllErrors", false),
+			SecureErrorLogMessage:              config.GetBool("asjard.servers.rest.options.SecureErrorLogMessage", false),
+			DisableHeaderNamesNormalizing:      config.GetBool("asjard.servers.rest.options.DisableHeaderNamesNormalizing", false),
+			SleepWhenConcurrencyLimitsExceeded: config.GetDuration("asjard.servers.rest.options.SleepWhenConcurrencyLimitsExceeded", 0),
+			NoDefaultServerHeader:              config.GetBool("asjard.servers.rest.options.NoDefaultServerHeader", false),
+			NoDefaultDate:                      config.GetBool("asjard.servers.rest.options.NoDefaultDate", false),
+			NoDefaultContentType:               config.GetBool("asjard.servers.rest.options.NoDefaultContentType", false),
+			KeepHijackedConns:                  config.GetBool("asjard.servers.rest.options.KeepHijackedConns", false),
+			CloseOnShutdown:                    config.GetBool("asjard.servers.rest.options.CloseOnShutdown", false),
+			StreamRequestBody:                  config.GetBool("asjard.servers.rest.options.StreamRequestBody", false),
 			Logger:                             &Logger{},
 		},
 	}
