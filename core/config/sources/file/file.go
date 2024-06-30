@@ -63,7 +63,7 @@ type File struct {
 	// 记录每个文件key
 	// 用来处理回调事件中的事件类型
 	// 如果没有此处记录，无法在回调事件中处理删除事件
-	configs map[string]map[string]struct{}
+	configs map[string]map[string]any
 	// configs的锁
 	cm sync.RWMutex
 	// 文件监听
@@ -80,7 +80,7 @@ func init() {
 // 监听文件的变化.
 func New() (config.Sourcer, error) {
 	fsource := &File{
-		configs: make(map[string]map[string]struct{}),
+		configs: make(map[string]map[string]any),
 	}
 
 	confDir := utils.GetConfDir()
@@ -106,6 +106,7 @@ func (s *File) GetAll() map[string]*config.Value {
 		if err == nil {
 			for key, value := range fileConfigs {
 				configs[key] = value
+				s.setConfig(file, key, value.Value)
 			}
 		} else {
 			logger.Error("read file fail",
@@ -175,7 +176,6 @@ func (s *File) read(file string) (map[string]*config.Value, error) {
 			Value:   value,
 			Ref:     file,
 		}
-		s.setConfig(file, key)
 	}
 	return configs, nil
 }
@@ -202,10 +202,10 @@ func (s *File) doWatch() {
 			if !ok {
 				return
 			}
-			logger.Debug("file source watch event",
-				"event", event)
 			switch event.Op {
 			case fsnotify.Create, fsnotify.Write:
+				logger.Debug("file source watch event",
+					"event", event, "op", event.Op.String())
 				configs, err := s.read(event.Name)
 				if err == nil {
 					for _, event := range s.getUpdateEvents(event.Name, configs) {
@@ -217,6 +217,8 @@ func (s *File) doWatch() {
 						"err", err.Error())
 				}
 			case fsnotify.Remove, fsnotify.Rename:
+				logger.Debug("file source watch event",
+					"event", event, "op", event.Op.String())
 				s.delConfig(event.Name, "")
 				s.cb(&config.Event{
 					Type: config.EventTypeDelete,
@@ -251,12 +253,12 @@ func (s *File) walk(dir string) error {
 	return nil
 }
 
-func (s *File) setConfig(file, key string) {
+func (s *File) setConfig(file, key string, value any) {
 	s.cm.Lock()
 	if _, ok := s.configs[file]; !ok {
-		s.configs[file] = make(map[string]struct{})
+		s.configs[file] = make(map[string]any)
 	}
-	s.configs[file][key] = struct{}{}
+	s.configs[file][key] = value
 	s.cm.Unlock()
 }
 
@@ -265,7 +267,7 @@ func (s *File) getUpdateEvents(file string, configs map[string]*config.Value) []
 	s.cm.Lock()
 	defer s.cm.Unlock()
 	if _, ok := s.configs[file]; !ok {
-		s.configs[file] = make(map[string]struct{})
+		s.configs[file] = make(map[string]any)
 	}
 
 	for key := range s.configs[file] {
@@ -278,14 +280,35 @@ func (s *File) getUpdateEvents(file string, configs map[string]*config.Value) []
 				},
 			})
 			delete(s.configs[file], key)
+		} else {
+
 		}
 	}
 	for key, value := range configs {
-		events = append(events, &config.Event{
-			Type:  config.EventTypeCreate,
-			Key:   key,
-			Value: value,
-		})
+		keyExist := false
+		for oldKey, oldValue := range s.configs[file] {
+			if oldKey == key {
+				keyExist = true
+				if value.Value != oldValue {
+					logger.Debug("------", "key", key, "value", value.Value,
+						"old_key", oldKey, "old_value", oldValue)
+					events = append(events, &config.Event{
+						Type:  config.EventTypeUpdate,
+						Key:   key,
+						Value: value,
+					})
+					s.configs[file][key] = value.Value
+				}
+			}
+		}
+		if !keyExist {
+			events = append(events, &config.Event{
+				Type:  config.EventTypeCreate,
+				Key:   key,
+				Value: value,
+			})
+			s.configs[file][key] = value.Value
+		}
 	}
 	return events
 }

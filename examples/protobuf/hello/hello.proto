@@ -65,7 +65,10 @@ message SayReq {
     repeated int64  int_list   = 5;
     SayObj          obj        = 6;
     repeated SayObj objs       = 7;
+    Configs         configs    = 8;
 }
+
+message Configs { string timeout = 1; }
 
 message SayObj {
     int32  field_int = 1;

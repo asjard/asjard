@@ -236,3 +236,4 @@ func main() {
 - [ ] 配置监听添加方法监听
 - [ ] protoc-gen-rest-go支持自定义api类型和version(api: "api", version:"v1")
 - [ ] 修复文件配置源更新事件问题
+- [ ] 修复文件配置源同一个配置在不同配置文件中优先级问题
