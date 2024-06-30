@@ -3,13 +3,13 @@ package handlers
 import (
 	"context"
 
-	pb "github.com/asjard/asjard/pkg/protobuf/health"
+	"github.com/asjard/asjard/pkg/protobuf/healthpb"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"google.golang.org/grpc"
 )
 
 type Health struct {
-	pb.UnimplementedHealthServer
+	healthpb.UnimplementedHealthServer
 }
 
 func init() {
@@ -17,16 +17,16 @@ func init() {
 }
 
 // Check 健康检查
-func (Health) Check(ctx context.Context, in *pb.HealthCheckRequest) (*pb.HealthCheckResponse, error) {
-	return &pb.HealthCheckResponse{
-		Status: pb.HealthCheckResponse_SERVING,
+func (Health) Check(ctx context.Context, in *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
+	return &healthpb.HealthCheckResponse{
+		Status: healthpb.HealthCheckResponse_SERVING,
 	}, nil
 }
 
 func (Health) RestServiceDesc() *rest.ServiceDesc {
-	return &pb.HealthRestServiceDesc
+	return &healthpb.HealthRestServiceDesc
 }
 
 func (Health) GrpcServiceDesc() *grpc.ServiceDesc {
-	return &pb.Health_ServiceDesc
+	return &healthpb.Health_ServiceDesc
 }

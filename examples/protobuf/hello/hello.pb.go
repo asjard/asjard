@@ -7,7 +7,7 @@
 package hello
 
 import (
-	_ "github.com/asjard/asjard/pkg/protobuf/annotations"
+	_ "github.com/asjard/asjard/pkg/protobuf/httppb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"

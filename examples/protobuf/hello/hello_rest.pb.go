@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-rest v1.3.0
 // - protoc             v5.27.0
-// source: hello/hello.proto
+// source: examples/protobuf/hello/hello.proto
 
 package hello
 
