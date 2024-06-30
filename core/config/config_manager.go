@@ -39,7 +39,7 @@ type Sourcer interface {
 	// 通过此回调方法通知config_manager进行配置变更
 	Watch(func(event *Event)) error
 	// 和配置中心断开连接
-	DisConnect()
+	Disconnect()
 	// 配置中心的优先级
 	Priority() int
 	// 配置源名称
@@ -458,7 +458,7 @@ func (m *ConfigManager) disconnect() {
 	for name, sourcer := range m.sourcers {
 		logger.Info("stop config source",
 			"source", name)
-		sourcer.DisConnect()
+		sourcer.Disconnect()
 	}
 }
 

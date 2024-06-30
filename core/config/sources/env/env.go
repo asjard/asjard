@@ -73,7 +73,7 @@ func (s *Env) Watch(cb func(*config.Event)) error {
 }
 
 // DisConnect 停止监听
-func (s *Env) DisConnect() {}
+func (s *Env) Disconnect() {}
 
 // Priority 返回优先级
 func (s *Env) Priority() int {

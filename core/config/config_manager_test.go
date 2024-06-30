@@ -63,7 +63,7 @@ func (s *testSource) Watch(callback func(event *Event)) error {
 	return nil
 }
 
-func (s *testSource) DisConnect() {}
+func (s *testSource) Disconnect() {}
 
 func (s *testSource) Priority() int {
 	return testSourcePriority

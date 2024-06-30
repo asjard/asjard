@@ -64,8 +64,8 @@ func (m *Mem) Watch(callback func(event *config.Event)) error {
 	return nil
 }
 
-// DisConnect .
-func (m *Mem) DisConnect() {}
+// Disconnect .
+func (m *Mem) Disconnect() {}
 
 // Priority .
 func (m *Mem) Priority() int {

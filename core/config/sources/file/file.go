@@ -130,7 +130,7 @@ func (s *File) Watch(cb func(event *config.Event)) error {
 }
 
 // DisConnect 停止监听
-func (s *File) DisConnect() {
+func (s *File) Disconnect() {
 	if s.watcher != nil {
 		s.watcher.Close()
 	}

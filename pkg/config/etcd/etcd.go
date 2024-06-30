@@ -56,5 +56,5 @@ func (s *Etcd) Name() string {
 }
 
 // DisConnect 断开连接
-func (s *Etcd) DisConnect() {
+func (s *Etcd) Disconnect() {
 }
