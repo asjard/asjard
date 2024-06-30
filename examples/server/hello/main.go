@@ -58,7 +58,9 @@ func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 	if in.Configs == nil {
 		in.Configs = &pb.Configs{}
 	}
-	in.Configs.Timeout = config.GetString("timeout", "")
+	in.Configs.Timeout = config.GetString("examples.timeout", "")
+	in.Configs.FieldInDifferentFileUnderSameSection = config.GetString("examples.fieldInDifferentFileUnderSameSection", "")
+	in.Configs.AnotherFieldInDifferentFileUnderSameSection = config.GetString("examples.anotherFieldInDifferentFileUnderSameSection", "")
 	return in, nil
 }
 

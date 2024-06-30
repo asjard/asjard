@@ -68,7 +68,11 @@ message SayReq {
     Configs         configs    = 8;
 }
 
-message Configs { string timeout = 1; }
+message Configs {
+    string timeout                                            = 1;
+    string field_in_different_file_under_same_section         = 2;
+    string another_field_in_different_file_under_same_section = 3;
+}
 
 message SayObj {
     int32  field_int = 1;

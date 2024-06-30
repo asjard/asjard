@@ -5,6 +5,9 @@ testMultiLine: |
   this is second line
   this is third line
 
+examples:
+  anotherFieldInDifferentFileUnderSameSection: this is value in test.yml
+
 a: 1
 jsonContent: |
   {"a": 1, "b": 2}
