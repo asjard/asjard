@@ -325,6 +325,16 @@ func genServiceDesc(_ *protogen.File, g *protogen.GeneratedFile, serviceDescVar 
 	g.P("ServiceName: ", strconv.Quote(string(service.Desc.FullName())), ",")
 	g.P("HandlerType: (*", serverType, ")(nil),")
 	g.P("Methods: []", restPackage.Ident("MethodDesc"), "{")
+	apiGroup := ""
+	apiClassify := ""
+	apiVersion := ""
+	if serviceHttpOption, ok := proto.GetExtension(service.Desc.Options(), httppb.E_ServiceHttp).(*httppb.Http); ok {
+		if serviceHttpOption != nil && serviceHttpOption.Group != "" {
+			apiGroup = serviceHttpOption.Group
+			apiClassify = serviceHttpOption.Api
+			apiVersion = serviceHttpOption.Version
+		}
+	}
 	for i, method := range service.Methods {
 		if method.Desc.IsStreamingClient() || method.Desc.IsStreamingServer() {
 			continue
@@ -372,11 +382,43 @@ func genServiceDesc(_ *protogen.File, g *protogen.GeneratedFile, serviceDescVar 
 				// api.v1.xxx
 				// 第一部分为接口类型
 				// 第二部分为接口版本
-				serviceFullNameList := strings.Split(string(service.Desc.FullName()), ".")
-				if len(serviceFullNameList) < 2 {
-					panic("invalid package name")
+				apiClassify = httpOption.Api
+				apiVersion = httpOption.Version
+				if apiClassify == "" || apiVersion == "" {
+					serviceFullNameList := strings.Split(string(service.Desc.FullName()), ".")
+					if len(serviceFullNameList) < 2 {
+						panic("invalid package name")
+					}
+					if apiClassify == "" {
+						apiClassify = serviceFullNameList[0]
+					}
+					if apiVersion == "" {
+						apiVersion = serviceFullNameList[1]
+					}
 				}
-				fullPath := "/" + serviceFullNameList[0] + "/" + serviceFullNameList[1] + "/" + strings.TrimPrefix(optionPath, "/")
+				if httpOption.Group != "" {
+					apiGroup = httpOption.Group
+				}
+				fullPath := ""
+				apiClassify = strings.Trim(apiClassify, "/")
+				if apiClassify != "" {
+					fullPath += "/" + apiClassify
+				}
+				apiVersion = strings.Trim(apiVersion, "/")
+				if apiVersion != "" {
+					fullPath += "/" + apiVersion
+				}
+				apiGroup = strings.Trim(apiGroup, "/")
+				if apiGroup != "" {
+					fullPath += "/" + apiGroup
+				}
+				optionPath = strings.Trim(optionPath, "/")
+				if optionPath != "" {
+					fullPath += "/" + optionPath
+				}
+				if fullPath == "" {
+					fullPath = "/"
+				}
 				g.P("Path:", strconv.Quote(fullPath), ",")
 				g.P("Handler: ", handlerNames[i], ",")
 				g.P("},")

@@ -37,9 +37,9 @@ var HealthRestServiceDesc = rest.ServiceDesc{
 	Methods: []rest.MethodDesc{
 		{
 			MethodName: "Check",
-			Desc:       ".",
+			Desc:       "healthCheck.",
 			Method:     "GET",
-			Path:       "/asjard/api/health",
+			Path:       "/health",
 			Handler:    _Health_Check_RestHandler,
 		},
 	},

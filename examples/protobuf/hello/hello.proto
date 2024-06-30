@@ -7,6 +7,10 @@ option go_package = "github.com/asjard/asjard/examples/protobuf/hello;hello";
 import "github.com/asjard/protobuf/http.proto";
 
 service Hello {
+    // option (asjard.api.serviceHttp) = {
+    //     group : "hello"
+    // };
+
     // say something
     rpc Say(SayReq) returns (SayReq) {
         option (asjard.api.http) = {
