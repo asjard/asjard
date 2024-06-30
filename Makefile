@@ -1,5 +1,12 @@
 all: help
 
+##env 是否根据protobuf文件生成*.pb.go文件
+GEN_PROTO_GO ?= true
+##env 是否根据protobuf文件生成*_grpc.pb.go文件
+GEN_PROTO_GO_GRPC ?= true
+##env 是否根据protobuf文件生成*_rest.pb.go文件
+GEN_PROTO_GO_REST ?= true
+
 help: ## 使用帮助
 	@echo "Commands:"
 	@echo "$$(grep -hE '^\S+:.*##' $(MAKEFILE_LIST) | sed -e 's/:.*##\s*/:/' -e 's/^\(.\+\):\(.*\)/  \\033[35m\1\\033[m:\2/' | column -c2 -t -s :)"
@@ -18,6 +25,9 @@ update: .gitmodules ## 更新本地代码
 
 gen_example_proto: ## 生成examples目录下的协议
 	/bin/bash scripts/gen_example_proto.sh
+
+gen_proto: ## 生成pkg/protobuf下的协议文件
+	/bin/bash third_party/protobuf/build.sh
 
 build_gen_go_rest: ## 生成protoc-gen-go-rest命令
 	go build -o $(GOPATH)/bin/protoc-gen-go-rest ./cmd/protoc-gen-go-rest/*.go
