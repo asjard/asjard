@@ -290,8 +290,6 @@ func (s *File) getUpdateEvents(file string, configs map[string]*config.Value) []
 			if oldKey == key {
 				keyExist = true
 				if value.Value != oldValue {
-					logger.Debug("------", "key", key, "value", value.Value,
-						"old_key", oldKey, "old_value", oldValue)
 					events = append(events, &config.Event{
 						Type:  config.EventTypeUpdate,
 						Key:   key,
