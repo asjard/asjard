@@ -12,7 +12,7 @@ asjard:
   ## 表示同一区域内，或者同一个机房内，可以内网互通
   avaliablezone: "default"
   ## 站点地址
-  website: "https://github.com/${app}/${instance.name}"
+  website: "https://github.com/${asjard.app}/${asjard.instance.name}"
   ## 服务实例详情
   instance:
     ##
@@ -23,4 +23,4 @@ asjard:
     version: 1.0.0
     ## 自定义服务源数据
     metadata:
-      tenantName: ${app}
+      tenantName: ${asjard.app}
