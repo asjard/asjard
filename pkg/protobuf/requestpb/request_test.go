@@ -20,7 +20,7 @@ func TestSortSql(t *testing.T) {
 	}
 	for _, data := range datas {
 		req := &ReqWithPage{Sort: data.sort}
-		if sql := req.gormOrderStr(); sql != data.sql {
+		if sql := gormOrderStr(req.Sort); sql != data.sql {
 			t.Errorf("sort %s get sql fail, want: %s, get: %s", data.sort, data.sql, sql)
 			t.FailNow()
 		}

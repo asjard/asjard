@@ -57,19 +57,24 @@ func (r *ReqWithPage) IsValid(defaultSize int32, supportSortFields []string) err
 
 // db.Scopes(in.GormScope())
 func (r *ReqWithPage) GormScope() func(*gorm.DB) *gorm.DB {
+	return ReqWithPageGormScope(r.Page, r.Size, r.Sort)
+}
+
+// ReqWithPageGormScope gorm分页查询
+func ReqWithPageGormScope(page, size int32, sort string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		db.Offset(int(r.Page * r.Size)).
-			Limit(int(r.Size))
-		if r.Sort != "" {
-			db.Order(r.gormOrderStr())
+		db.Offset(int(page * size)).
+			Limit(int(size))
+		if sort != "" {
+			db.Order(gormOrderStr(sort))
 		}
 		return db
 	}
 }
 
-func (r *ReqWithPage) gormOrderStr() string {
+func gormOrderStr(sort string) string {
 	sql := ""
-	for index, sortField := range strings.Split(r.Sort, sortDelimiter) {
+	for index, sortField := range strings.Split(sort, sortDelimiter) {
 		if index != 0 {
 			sql += ","
 		}
