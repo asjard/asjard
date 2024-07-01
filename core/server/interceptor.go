@@ -56,7 +56,7 @@ func getServerInterceptors(protocol string) []UnaryServerInterceptor {
 	var interceptors []UnaryServerInterceptor
 	// 自定义拦截器
 	for _, interceptorName := range config.GetStrings(fmt.Sprintf(constant.ConfigServerInterceptorWithProtocol, protocol),
-		config.GetStrings(constant.ConfigServerInterceptorWithProtocol, []string{})) {
+		config.GetStrings(constant.ConfigServerInterceptor, []string{})) {
 		for _, newInterceptor := range newServerInterceptors {
 			interceptor := newInterceptor()
 			if interceptor.Name() == interceptorName {
