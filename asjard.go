@@ -237,7 +237,7 @@ func (asd *Asjard) printBanner() {
 		runtime.Region,
 		runtime.AZ,
 		constant.FrameworkVersion,
-		runtime.ServiceID,
+		runtime.InstanceID,
 		runtime.Name,
 		runtime.Version,
 		config.GetString(constant.ConfigWebsite, website),

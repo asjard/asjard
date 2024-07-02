@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	// ServiceID 服务ID
-	ServiceID string
+	// InstanceID 实例ID
+	InstanceID string
 	// APP 项目名称
 	APP string
 	// Region 所属区域
@@ -32,7 +32,7 @@ var (
 // 服务一旦启动起来后，这些参数是不会修改的
 func Init() error {
 	once.Do(func() {
-		ServiceID = uuid.NewString()
+		InstanceID = uuid.NewString()
 		APP = config.GetString(constant.ConfigApp, constant.Framework)
 		Region = config.GetString(constant.ConfigRegion, "default")
 		AZ = config.GetString(constant.ConfigAvaliablezone, "default")

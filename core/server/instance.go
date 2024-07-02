@@ -60,7 +60,7 @@ func NewInstance() *Instance {
 		App:         runtime.APP,
 		Environment: runtime.Environment,
 		Region:      runtime.Region,
-		ID:          runtime.ServiceID,
+		ID:          runtime.InstanceID,
 		Name:        runtime.Name,
 		Version:     runtime.Version,
 		Endpoints:   make(map[string]map[string][]string),
