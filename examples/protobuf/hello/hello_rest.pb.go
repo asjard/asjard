@@ -88,6 +88,13 @@ var HelloRestServiceDesc = rest.ServiceDesc{
 			Handler:    _Hello_Say_RestHandler,
 		},
 		{
+			MethodName: "Say",
+			Desc:       "say something.",
+			Method:     "GET",
+			Path:       "/api/v1/region/{region_id}/project/{project_id}/user/{user_id}",
+			Handler:    _Hello_Say_RestHandler,
+		},
+		{
 			MethodName: "Call",
 			Desc:       ".",
 			Method:     "POST",

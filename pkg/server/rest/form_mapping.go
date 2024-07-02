@@ -2,7 +2,6 @@ package rest
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -21,14 +20,11 @@ func mapForm(ptr any, form map[string][]string) error {
 		}
 
 		structFieldKind := structField.Kind()
-		inputFieldName := typeField.Tag.Get("form")
-		if inputFieldName == "" {
-			jsonFieldName := typeField.Tag.Get("json")
-			if jsonFieldName != "" {
-				fieldNameList := strings.Split(jsonFieldName, ",")
-				if len(fieldNameList) > 0 {
-					inputFieldName = strings.TrimSpace(fieldNameList[0])
-				}
+		inputFieldName := typeField.Tag.Get("json")
+		if inputFieldName != "" {
+			fieldNameList := strings.Split(inputFieldName, ",")
+			if len(fieldNameList) > 0 {
+				inputFieldName = strings.TrimSpace(fieldNameList[0])
 			}
 		}
 		if inputFieldName == "" {
@@ -70,7 +66,7 @@ func mapForm(ptr any, form map[string][]string) error {
 			if typeField.Type.Kind() == reflect.Ptr {
 				instance := reflect.New(typeField.Type.Elem())
 				ptr := instance.Interface()
-				if !strings.HasPrefix(inputValue[0], `"`) {
+				if typeField.Type == reflect.TypeOf((*string)(nil)) && !strings.HasPrefix(inputValue[0], `"`) {
 					inputValue[0] = fmt.Sprintf(`"%s"`, inputValue[0])
 				}
 				if err := json.Unmarshal([]byte(inputValue[0]), ptr); err != nil {
@@ -170,7 +166,7 @@ func setFloatField(val string, bitSize int, field reflect.Value) error {
 func setTimeField(val string, structField reflect.StructField, value reflect.Value) error {
 	timeFormat := structField.Tag.Get("time_format")
 	if timeFormat == "" {
-		return errors.New("blank time format")
+		timeFormat = time.RFC3339
 	}
 
 	if val == "" {
