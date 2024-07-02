@@ -61,10 +61,13 @@ func (r *ReqWithPage) GormScope() func(*gorm.DB) *gorm.DB {
 }
 
 // ReqWithPageGormScope gorm分页查询
+// size 小于0不分页
 func ReqWithPageGormScope(page, size int32, sort string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		db.Offset(int(page * size)).
-			Limit(int(size))
+		if size > 0 {
+			db.Offset(int(page * size)).
+				Limit(int(size))
+		}
 		if sort != "" {
 			db.Order(gormOrderStr(sort))
 		}
