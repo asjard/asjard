@@ -77,6 +77,15 @@ func (asd *Asjard) AddHandler(protocol string, handler any) error {
 	return nil
 }
 
+func (asd *Asjard) AddHandlerV2(handler any, protocols ...string) error {
+	for _, protocol := range protocols {
+		if err := asd.AddHandler(protocol, handler); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // 系统初始化
 func (asd *Asjard) init() error {
 	// 环境变量配置加载
