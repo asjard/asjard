@@ -21,6 +21,7 @@ import (
 	"github.com/asjard/asjard/core/security"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/core/server/handlers"
+	"github.com/asjard/asjard/utils"
 )
 
 const (
@@ -38,6 +39,7 @@ const (
                                        Version:  %s
                                        Website:  %s
                                        Servers:  %s
+                                       ConfDir:  %s
  `
 )
 
@@ -250,5 +252,6 @@ func (asd *Asjard) printBanner() {
 		runtime.Name,
 		runtime.Version,
 		config.GetString(constant.ConfigWebsite, website),
-		strings.Join(asd.startedServers, ","))
+		strings.Join(asd.startedServers, ","),
+		utils.GetConfDir())
 }
