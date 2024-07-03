@@ -65,20 +65,22 @@ message CipherExampleResp {
 }
 
 message SayReq {
-    string                   region_id              = 1;
-    string                   project_id             = 2;
-    int64                    user_id                = 3;
-    repeated string          str_list               = 4;
-    repeated int64           int_list               = 5;
-    SayObj                   obj                    = 6;
-    repeated SayObj          objs                   = 7;
-    Configs                  configs                = 8;
-    int32                    page                   = 9;
-    int32                    size                   = 10;
-    string                   sort                   = 11;
-    optional bool            ok                     = 12;
-    optional int32           int_optional_value     = 13;
-    optional string          string_optional_value  = 14;
+    string          region_id             = 1;
+    string          project_id            = 2;
+    int64           user_id               = 3;
+    repeated string str_list              = 4;
+    repeated int64  int_list              = 5;
+    SayObj          obj                   = 6;
+    repeated SayObj objs                  = 7;
+    Configs         configs               = 8;
+    int32           page                  = 9;
+    int32           size                  = 10;
+    string          sort                  = 11;
+    optional bool   ok                    = 12;
+    optional int32  int_optional_value    = 13;
+    optional string string_optional_value = 14;
+    optional Kind   kind                  = 15;
+    repeated Kind   kinds                 = 16;
 }
 
 message Configs {
@@ -90,4 +92,9 @@ message Configs {
 message SayObj {
     int32  field_int = 1;
     string field_str = 2;
+}
+
+enum Kind {
+    K_A = 0;
+    K_B = 1;
 }
