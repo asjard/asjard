@@ -81,10 +81,14 @@ func (serviceGenerateHelper) generateServerFunctions(gen *protogen.Plugin, file 
 	// Server handler implementations.
 	handlerNames := make([]string, 0, len(service.Methods))
 	for _, method := range service.Methods {
-		hname := genServerMethod(gen, file, g, method, serverType, func(hname string) string {
-			return hname
-		})
-		handlerNames = append(handlerNames, hname)
+		if httpOptions, ok := proto.GetExtension(method.Desc.Options(), httppb.E_Http).([]*httppb.Http); ok && len(httpOptions) != 0 {
+			hname := genServerMethod(gen, file, g, method, serverType, func(hname string) string {
+				return hname
+			})
+			handlerNames = append(handlerNames, hname)
+		} else {
+			handlerNames = append(handlerNames, "")
+		}
 	}
 	genServiceDesc(file, g, serviceDescVar, serverType, service, handlerNames)
 }
