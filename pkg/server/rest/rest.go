@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -84,7 +85,7 @@ func New(options *server.ServerOptions) (server.Server, error) {
 			ReadBufferSize:  config.GetInt("asjard.servers.rest.options.ReadBufferSize", defaultReadBufferSize),
 			WriteBufferSize: config.GetInt("asjard.servers.rest.options.ReadBufferSize", defaultWriteBufferSize),
 			ReadTimeout:     config.GetDuration("asjard.servers.rest.options.ReadTimeout", time.Second*3),
-			WriteTimeout:    config.GetDuration("asjard.servers.rest.options.WriteTimeout", time.Second*3),
+			WriteTimeout:    config.GetDuration("asjard.servers.rest.options.WriteTimeout", time.Hour),
 			IdleTimeout: config.GetDuration("asjard.servers.rest.options.WriteTimeout",
 				config.GetDuration("asjard.servers.rest.options.ReadTimeout", time.Second*3)),
 			MaxConnsPerIP:                      config.GetInt("asjard.servers.rest.options.WriteTimeout", 0),
@@ -105,7 +106,7 @@ func New(options *server.ServerOptions) (server.Server, error) {
 			NoDefaultDate:                      config.GetBool("asjard.servers.rest.options.NoDefaultDate", false),
 			NoDefaultContentType:               config.GetBool("asjard.servers.rest.options.NoDefaultContentType", false),
 			KeepHijackedConns:                  config.GetBool("asjard.servers.rest.options.KeepHijackedConns", false),
-			CloseOnShutdown:                    config.GetBool("asjard.servers.rest.options.CloseOnShutdown", false),
+			CloseOnShutdown:                    config.GetBool("asjard.servers.rest.options.CloseOnShutdown", true),
 			StreamRequestBody:                  config.GetBool("asjard.servers.rest.options.StreamRequestBody", false),
 			Logger:                             &Logger{},
 		},
@@ -184,7 +185,9 @@ func (s *RestServer) Start(startErr chan error) error {
 
 // Stop .
 func (s *RestServer) Stop() {
-	s.server.Shutdown()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	s.server.ShutdownWithContext(ctx)
 }
 
 // Protocol .

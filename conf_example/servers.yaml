@@ -123,7 +123,7 @@ asjard:
         ## writes of the response. It is reset after the request handler
         ## has returned.
         ##
-        WriteTimeout: !!str 3s
+        WriteTimeout: !!str 1h
 
         ## IdleTimeout is the maximum amount of time to wait for the
         ## next request when keep-alive is enabled. If IdleTimeout
@@ -275,7 +275,7 @@ asjard:
         KeepHijackedConns: !!bool false
 
         ## CloseOnShutdown when true adds a `Connection: close` header when the server is shutting down.
-        CloseOnShutdown: !!bool false
+        CloseOnShutdown: !!bool true
 
         ## StreamRequestBody enables request body streaming,
         ## and calls the handler sooner when given body is

@@ -227,12 +227,12 @@ func (asd *Asjard) stop() {
 		logger.Error("unregiste from registry fail",
 			"error", err.Error())
 	}
-	logger.Info("start stop server")
 	for _, server := range asd.servers {
 		if server.Enabled() {
+			logger.Info("start stop server", "protocol", server.Protocol())
+			server.Stop()
 			logger.Info("server stopped",
 				"protocol", server.Protocol())
-			server.Stop()
 		}
 	}
 	// 配置中心断开连接

@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -21,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	Hello_Say_FullMethodName           = "/api.v1.hello.Hello/Say"
 	Hello_Call_FullMethodName          = "/api.v1.hello.Hello/Call"
+	Hello_Log_FullMethodName           = "/api.v1.hello.Hello/Log"
 	Hello_CipherExample_FullMethodName = "/api.v1.hello.Hello/CipherExample"
 	Hello_MysqlExample_FullMethodName  = "/api.v1.hello.Hello/MysqlExample"
 )
@@ -32,6 +34,8 @@ type HelloClient interface {
 	// say something
 	Say(ctx context.Context, in *SayReq, opts ...grpc.CallOption) (*SayReq, error)
 	Call(ctx context.Context, in *SayReq, opts ...grpc.CallOption) (*SayReq, error)
+	// 获取日志
+	Log(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// 加解密示例
 	CipherExample(ctx context.Context, in *CipherExampleReq, opts ...grpc.CallOption) (*CipherExampleResp, error)
 	// mysql数据库示例
@@ -64,6 +68,15 @@ func (c *helloClient) Call(ctx context.Context, in *SayReq, opts ...grpc.CallOpt
 	return out, nil
 }
 
+func (c *helloClient) Log(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, Hello_Log_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *helloClient) CipherExample(ctx context.Context, in *CipherExampleReq, opts ...grpc.CallOption) (*CipherExampleResp, error) {
 	out := new(CipherExampleResp)
 	err := c.cc.Invoke(ctx, Hello_CipherExample_FullMethodName, in, out, opts...)
@@ -89,6 +102,8 @@ type HelloServer interface {
 	// say something
 	Say(context.Context, *SayReq) (*SayReq, error)
 	Call(context.Context, *SayReq) (*SayReq, error)
+	// 获取日志
+	Log(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	// 加解密示例
 	CipherExample(context.Context, *CipherExampleReq) (*CipherExampleResp, error)
 	// mysql数据库示例
@@ -105,6 +120,9 @@ func (UnimplementedHelloServer) Say(context.Context, *SayReq) (*SayReq, error) {
 }
 func (UnimplementedHelloServer) Call(context.Context, *SayReq) (*SayReq, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Call not implemented")
+}
+func (UnimplementedHelloServer) Log(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Log not implemented")
 }
 func (UnimplementedHelloServer) CipherExample(context.Context, *CipherExampleReq) (*CipherExampleResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CipherExample not implemented")
@@ -161,6 +179,24 @@ func _Hello_Call_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Hello_Log_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HelloServer).Log(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Hello_Log_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HelloServer).Log(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Hello_CipherExample_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CipherExampleReq)
 	if err := dec(in); err != nil {
@@ -211,6 +247,10 @@ var Hello_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Call",
 			Handler:    _Hello_Call_Handler,
+		},
+		{
+			MethodName: "Log",
+			Handler:    _Hello_Log_Handler,
 		},
 		{
 			MethodName: "CipherExample",

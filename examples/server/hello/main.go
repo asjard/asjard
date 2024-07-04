@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/asjard/asjard"
 	"github.com/asjard/asjard/core/client"
@@ -14,7 +16,10 @@ import (
 	mgrpc "github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // Hello 同一个方法既可以当做GRPC的handler，也可以当做http的handler
@@ -62,6 +67,28 @@ func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 	in.Configs.FieldInDifferentFileUnderSameSection = config.GetString("examples.fieldInDifferentFileUnderSameSection", "")
 	in.Configs.AnotherFieldInDifferentFileUnderSameSection = config.GetString("examples.anotherFieldInDifferentFileUnderSameSection", "")
 	return in, nil
+}
+
+func (c *Hello) Log(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
+	logger.Debug("------is stream request-------")
+	rtx, ok := ctx.(*rest.Context)
+	if !ok {
+		return nil, status.Error(codes.Unimplemented, "unsupport protocol")
+	}
+	rtx.SetContentType("text/event-stream")
+	rtx.SetBodyStreamWriter(func(w *bufio.Writer) {
+		for {
+			w.Write([]byte(fmt.Sprintf("data: %s\n\n", time.Now())))
+
+			if err := w.Flush(); err != nil {
+				logger.Debug("client disconnected", "err", err)
+				return
+			}
+
+			time.Sleep(time.Second)
+		}
+	})
+	return nil, nil
 }
 
 // RestServiceDesc .

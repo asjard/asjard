@@ -10,6 +10,7 @@ import (
 	context "context"
 	server "github.com/asjard/asjard/core/server"
 	rest "github.com/asjard/asjard/pkg/server/rest"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 func _Hello_Say_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
@@ -39,6 +40,21 @@ func _Hello_Call_RestHandler(ctx *rest.Context, srv any, interceptor server.Unar
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(HelloServer).Call(ctx, in)
+	}
+	return interceptor(ctx, in, info, handler)
+}
+func _Hello_Log_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+	in := new(emptypb.Empty)
+	if interceptor == nil {
+		return srv.(HelloServer).Log(ctx, in)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "api.v1.hello.Hello.Log",
+		Protocol:   rest.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(HelloServer).Log(ctx, in)
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -100,6 +116,13 @@ var HelloRestServiceDesc = rest.ServiceDesc{
 			Method:     "POST",
 			Path:       "/api/v1/call/region/{region_id}/project/{project_id}/user/{user_id}",
 			Handler:    _Hello_Call_RestHandler,
+		},
+		{
+			MethodName: "Log",
+			Desc:       "获取日志.",
+			Method:     "GET",
+			Path:       "/api/v1/log",
+			Handler:    _Hello_Log_RestHandler,
 		},
 		{
 			MethodName: "CipherExample",
