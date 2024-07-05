@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -85,4 +86,23 @@ func IsDir(dir string) bool {
 // IsFile 是否为文件
 func IsFile(file string) bool {
 	return !IsDir(file)
+}
+
+// CopyFile 拷贝文件
+func CopyFile(srcPath, destPath string) error {
+	s, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+
+	d, err := os.OpenFile(destPath, os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	if _, err := io.Copy(d, s); err != nil {
+		return err
+	}
+	return nil
 }
