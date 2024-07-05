@@ -109,6 +109,9 @@ func CopyFile(srcPath, destPath string) error {
 
 // CopyDir 拷贝目录
 func CopyDir(srcDir, destDir string) error {
+	if srcDir == destDir {
+		return nil
+	}
 	items, err := os.ReadDir(srcDir)
 	if err != nil {
 		return err
