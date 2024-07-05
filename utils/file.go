@@ -113,7 +113,7 @@ func CopyDir(srcDir, destDir string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(destDir, os.ModeDir); err != nil {
+	if err := os.MkdirAll(destDir, 0750); err != nil {
 		return err
 	}
 	for _, item := range items {
