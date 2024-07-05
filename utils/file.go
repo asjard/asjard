@@ -113,6 +113,9 @@ func CopyDir(srcDir, destDir string) error {
 	if err != nil {
 		return err
 	}
+	if err := os.MkdirAll(destDir, os.ModeDir); err != nil {
+		return err
+	}
 	for _, item := range items {
 		if !item.IsDir() {
 			if err := CopyFile(filepath.Join(srcDir, item.Name()), filepath.Join(destDir, item.Name())); err != nil {
