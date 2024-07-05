@@ -106,3 +106,26 @@ func CopyFile(srcPath, destPath string) error {
 	}
 	return nil
 }
+
+// CopyDir 拷贝目录
+func CopyDir(srcDir, destDir string) error {
+	items, err := os.ReadDir(srcDir)
+	if err != nil {
+		return err
+	}
+	for _, item := range items {
+		if !item.IsDir() {
+			if err := CopyFile(filepath.Join(srcDir, item.Name()), filepath.Join(destDir, item.Name())); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := os.MkdirAll(filepath.Join(destDir, item.Name()), os.ModePerm); err != nil {
+			return err
+		}
+		if err := CopyDir(filepath.Join(srcDir, item.Name()), filepath.Join(destDir, item.Name())); err != nil {
+			return err
+		}
+	}
+	return nil
+}
