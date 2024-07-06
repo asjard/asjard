@@ -54,6 +54,8 @@ type Asjard struct {
 	startErr chan error
 	// 已启动的服务
 	startedServers []string
+	// 退出信号
+	exit chan struct{}
 }
 
 // New 入口
@@ -61,6 +63,7 @@ func New() *Asjard {
 	return &Asjard{
 		handlers: make(map[string][]any),
 		startErr: make(chan error),
+		exit:     make(chan struct{}),
 	}
 }
 
@@ -172,9 +175,17 @@ func (asd *Asjard) Start() error {
 		logger.Error("start error:",
 			"error", err)
 	}
+	asd.exit <- struct{}{}
+	close(asd.exit)
+	close(quit)
 	// 系统停止
 	asd.stop()
 	return nil
+}
+
+// Exit 退出信号
+func (asd *Asjard) Exit() chan struct{} {
+	return asd.exit
 }
 
 // 启动所有服务
@@ -231,8 +242,7 @@ func (asd *Asjard) stop() {
 		if server.Enabled() {
 			logger.Info("start stop server", "protocol", server.Protocol())
 			server.Stop()
-			logger.Info("server stopped",
-				"protocol", server.Protocol())
+			logger.Info("server stopped", "protocol", server.Protocol())
 		}
 	}
 	// 配置中心断开连接

@@ -26,6 +26,7 @@ import (
 type Hello struct {
 	pb.UnimplementedHelloServer
 	conn pb.HelloClient
+	exit chan struct{}
 }
 
 var _ pb.HelloServer = &Hello{}
@@ -78,14 +79,19 @@ func (c *Hello) Log(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, err
 	rtx.SetContentType("text/event-stream")
 	rtx.SetBodyStreamWriter(func(w *bufio.Writer) {
 		for {
-			w.Write([]byte(fmt.Sprintf("data: %s\n\n", time.Now())))
-
-			if err := w.Flush(); err != nil {
-				logger.Debug("client disconnected", "err", err)
+			select {
+			case <-c.exit:
 				return
-			}
+			default:
+				w.Write([]byte(fmt.Sprintf("data: %s\n\n", time.Now())))
 
-			time.Sleep(time.Second)
+				if err := w.Flush(); err != nil {
+					logger.Debug("client disconnected", "err", err)
+					return
+				}
+
+				time.Sleep(time.Second)
+			}
 		}
 	})
 	return nil, nil
@@ -103,7 +109,9 @@ func (Hello) GrpcServiceDesc() *grpc.ServiceDesc {
 
 func main() {
 	server := asjard.New()
-	helloServer := &Hello{}
+	helloServer := &Hello{
+		exit: server.Exit(),
+	}
 	server.AddHandler(rest.Protocol, helloServer)
 	server.AddHandler(mgrpc.Protocol, helloServer)
 	if err := server.Start(); err != nil {
