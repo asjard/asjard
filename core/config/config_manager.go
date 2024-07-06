@@ -176,7 +176,7 @@ func (m *ConfigManager) load(priority int) error {
 
 // 监听配置变化
 func (m *ConfigManager) watch(event *Event) {
-	logger.Debug("config changed", "event", event)
+	// logger.Debug("config changed", "event", event)
 	switch event.Type {
 	case EventTypeCreate, EventTypeUpdate:
 		m.update(event)

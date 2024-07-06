@@ -26,7 +26,7 @@ import (
 type Hello struct {
 	pb.UnimplementedHelloServer
 	conn pb.HelloClient
-	exit chan struct{}
+	exit <-chan struct{}
 }
 
 var _ pb.HelloServer = &Hello{}
@@ -81,6 +81,7 @@ func (c *Hello) Log(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, err
 		for {
 			select {
 			case <-c.exit:
+				logger.Debug("------server done----------")
 				return
 			default:
 				w.Write([]byte(fmt.Sprintf("data: %s\n\n", time.Now())))
@@ -110,7 +111,7 @@ func (Hello) GrpcServiceDesc() *grpc.ServiceDesc {
 func main() {
 	server := asjard.New()
 	helloServer := &Hello{
-		exit: server.Exit(),
+		exit: server.Done(),
 	}
 	server.AddHandler(rest.Protocol, helloServer)
 	server.AddHandler(mgrpc.Protocol, helloServer)

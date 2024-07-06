@@ -55,7 +55,7 @@ type Asjard struct {
 	// 已启动的服务
 	startedServers []string
 	// 退出信号
-	exit chan struct{}
+	done chan struct{}
 }
 
 // New 入口
@@ -63,7 +63,7 @@ func New() *Asjard {
 	return &Asjard{
 		handlers: make(map[string][]any),
 		startErr: make(chan error),
-		exit:     make(chan struct{}),
+		done:     make(chan struct{}),
 	}
 }
 
@@ -166,7 +166,8 @@ func (asd *Asjard) Start() error {
 	}
 	// 优雅退出
 	quit := make(chan os.Signal)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP, syscall.SIGABRT)
+	defer close(quit)
+	signal.Notify(quit, syscall.SIGKILL, syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP, syscall.SIGABRT)
 	select {
 	case s := <-quit:
 		logger.Info("system get os signal start exiting...",
@@ -175,17 +176,15 @@ func (asd *Asjard) Start() error {
 		logger.Error("start error:",
 			"error", err)
 	}
-	asd.exit <- struct{}{}
-	close(asd.exit)
-	close(quit)
+	close(asd.done)
 	// 系统停止
 	asd.stop()
 	return nil
 }
 
 // Exit 退出信号
-func (asd *Asjard) Exit() chan struct{} {
-	return asd.exit
+func (asd *Asjard) Done() <-chan struct{} {
+	return asd.done
 }
 
 // 启动所有服务

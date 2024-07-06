@@ -26,7 +26,7 @@ asjard:
         ## 本机监听地址
         ## 如果配置为"0.0.0.0"的IPv4地址或者"::"的IPv6地址,注册到注册中的地址会被修改为
         ## 网卡中读取到的第一个IPv4地址，或者第一个IPv6地址
-        listen: 127.0.0.1:8081
+        listen: 127.0.0.1:7010
         ## 垮区域访问地址,可以为IP地址加端口，或者域名
         advertise: 47.121.0.5:8080
       ## 服务启动相关参数配置
@@ -65,7 +65,7 @@ asjard:
       enabled: false
       ## 同grpc相关配置
       addresses:
-        listen: 127.0.0.1:9081
+        listen: 127.0.0.1:7020
     ## rest(HTTP)协议相关配置
     rest:
       ## 同grpc拦截器相关配置
@@ -85,8 +85,8 @@ asjard:
         errPage: ""
       ## 同grpc相关配置
       addresses:
-        listen: 127.0.0.1:8080
-        advertise: 127.0.0.1:8082
+        listen: 127.0.0.1:7030
+        # advertise: 127.0.0.1:7030
       ## 服务启动相关配置
       options:
         ## The maximum number of concurrent connections the server may serve.
