@@ -47,7 +47,6 @@ func (c *Hello) Shutdown() {}
 // Say .
 func (c *Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 	// HTTP 调用GRPC
-	logger.Debug("=============xxxxxxx==========", "T", fmt.Sprintf("%T", ctx))
 	resp, err := c.conn.Call(ctx, in)
 	if err != nil {
 		logger.Error("call call fail",
@@ -111,7 +110,7 @@ func (Hello) GrpcServiceDesc() *grpc.ServiceDesc {
 func main() {
 	server := asjard.New()
 	helloServer := &Hello{
-		exit: server.Done(),
+		exit: server.Exit(),
 	}
 	server.AddHandler(rest.Protocol, helloServer)
 	server.AddHandler(mgrpc.Protocol, helloServer)

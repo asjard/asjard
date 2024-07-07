@@ -3,8 +3,10 @@ package logger
 import (
 	"context"
 	"log/slog"
+	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"gopkg.in/natefinch/lumberjack.v2"
 	// aruntime "github.com/asjard/asjard/core/runtime"
@@ -113,6 +115,10 @@ func (dl defaultLogger) log(level slog.Level, msg string, args ...any) {
 	if !ok {
 		f = "???"
 		l = 0
+	} else {
+		fdir := filepath.Base(filepath.Dir(f))
+		fname := strings.TrimSuffix(filepath.Base(f), filepath.Ext(f))
+		f = filepath.Join(fdir, fname)
 	}
 	args = append(args, []any{"source", f + ":" + strconv.Itoa(l)}...)
 	dl.slogger.Log(context.Background(), level, msg, args...)
