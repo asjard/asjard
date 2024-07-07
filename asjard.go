@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	website = "https//github.com/asjard/asjard"
+	website = "https://github.com/asjard/asjard"
 	// http://patorjk.com/software/taag/#p=display&f=Small%20Slant&t=ASJARD
 	banner = `
                                        App:      %s
@@ -58,7 +58,7 @@ type Asjard struct {
 	exit chan struct{}
 }
 
-// New 入口
+// New 框架初始化
 func New() *Asjard {
 	return &Asjard{
 		handlers: make(map[string][]any),
@@ -67,7 +67,7 @@ func New() *Asjard {
 	}
 }
 
-// AddHandler 添加handler用以处理请求
+// AddHandler 添加协议可以处理的handler方法
 func (asd *Asjard) AddHandler(protocol string, handler any) error {
 	asd.hm.Lock()
 	if _, ok := asd.handlers[protocol]; ok {
@@ -82,69 +82,13 @@ func (asd *Asjard) AddHandler(protocol string, handler any) error {
 	return nil
 }
 
+// AddHandlerV2 同AddHandler方法，可以让一个handler支持多个协议
 func (asd *Asjard) AddHandlerV2(handler any, protocols ...string) error {
 	for _, protocol := range protocols {
 		if err := asd.AddHandler(protocol, handler); err != nil {
 			return err
 		}
 	}
-	return nil
-}
-
-// 系统初始化
-func (asd *Asjard) init() error {
-	// 环境变量配置加载
-	if err := config.Load(cfgenv.Priority); err != nil {
-		return err
-	}
-
-	// 安全组件初始化
-	if err := security.Init(); err != nil {
-		return err
-	}
-
-	// 文件配置加载
-	if err := config.Load(cfgfile.Priority); err != nil {
-		return err
-	}
-
-	// 内存配置源加载
-	if err := config.Load(cfgmem.Priority); err != nil {
-		return err
-	}
-
-	// 其他配置加载
-	if err := config.Load(-1); err != nil {
-		return err
-	}
-
-	// 一些运行期间变量初始化
-	if err := runtime.Init(); err != nil {
-		return err
-	}
-
-	// 客户端初始化
-	if err := client.Init(); err != nil {
-		return err
-	}
-
-	// 服务初始化
-	servers, err := server.Init()
-	if err != nil {
-		return err
-	}
-	asd.servers = servers
-
-	// 注册中心初始化
-	if err := registry.Init(); err != nil {
-		return err
-	}
-
-	// 系统启动
-	if err := bootstrap.Start(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -183,8 +127,68 @@ func (asd *Asjard) Start() error {
 }
 
 // Exit 退出信号
+// 如果系统退出则会触发此信号, 可以在stream请求或其他地方监听此信号，用以平滑退出服务
 func (asd *Asjard) Exit() <-chan struct{} {
 	return asd.exit
+}
+
+// 系统初始化
+func (asd *Asjard) init() error {
+	// 环境变量配置源加载
+	if err := config.Load(cfgenv.Priority); err != nil {
+		return err
+	}
+
+	// 安全组件初始化
+	// 需要支持配置文件加密，所以在加载配置文件前需要加载加解密组件
+	if err := security.Init(); err != nil {
+		return err
+	}
+
+	// 文件配置源加载
+	if err := config.Load(cfgfile.Priority); err != nil {
+		return err
+	}
+
+	// 内存配置源加载
+	// config.Set方法默认使用内存配置源,系统运行期间存在，系统退出后消失
+	if err := config.Load(cfgmem.Priority); err != nil {
+		return err
+	}
+
+	// 其他配置加载
+	if err := config.Load(-1); err != nil {
+		return err
+	}
+
+	// 一些运行期间变量初始化
+	if err := runtime.Init(); err != nil {
+		return err
+	}
+
+	// 客户端初始化
+	if err := client.Init(); err != nil {
+		return err
+	}
+
+	// 服务初始化
+	servers, err := server.Init()
+	if err != nil {
+		return err
+	}
+	asd.servers = servers
+
+	// 注册中心初始化
+	if err := registry.Init(); err != nil {
+		return err
+	}
+
+	// 系统启动
+	if err := bootstrap.Start(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // 启动所有服务
