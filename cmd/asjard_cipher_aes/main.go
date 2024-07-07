@@ -18,6 +18,7 @@ var (
 	t string // encrypt or decrypt text
 	k string
 	v string
+	q bool
 )
 
 func usage() {
@@ -38,6 +39,7 @@ func main() {
 	flag.StringVar(&t, "t", "", "encryp or decrypt text")
 	flag.StringVar(&k, "k", "", "key, base64 encoded, length 16 or 24 or 32")
 	flag.StringVar(&v, "v", "", "offset, base64 encoded, default k's value")
+	flag.BoolVar(&q, "q", false, "quite output")
 	flag.Usage = usage
 	flag.Parse()
 	if h {
@@ -61,14 +63,22 @@ func main() {
 				fmt.Println(err)
 				os.Exit(1)
 			}
-			fmt.Println("encrypt text SUCCESS, base64 output:", result)
+			if q {
+				fmt.Print(result)
+			} else {
+				fmt.Println("encrypt text SUCCESS, base64 output:", result)
+			}
 		} else {
 			result, err := c.Decrypt(t, nil)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 			}
-			fmt.Println("decrypt text SUCCESS, output:", result)
+			if q {
+				fmt.Print(result)
+			} else {
+				fmt.Println("decrypt text SUCCESS, output:", result)
+			}
 
 		}
 	}
@@ -96,7 +106,9 @@ func main() {
 				fmt.Println("write file", o, "fail", err.Error())
 				os.Exit(1)
 			}
-			fmt.Println("encrypt file", f, "SUCCESS, output:", o)
+			if !q {
+				fmt.Println("encrypt file", f, "SUCCESS, output:", o)
+			}
 		} else {
 			if o == "" {
 				dir := filepath.Dir(f)
@@ -121,7 +133,9 @@ func main() {
 				fmt.Println("write file", o, "fail", err.Error())
 				os.Exit(1)
 			}
-			fmt.Println("decrypt file", f, "SUCCESS, output:", o)
+			if !q {
+				fmt.Println("decrypt file", f, "SUCCESS, output:", o)
+			}
 		}
 	}
 }

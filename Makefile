@@ -29,5 +29,8 @@ gen_example_proto: ## 生成examples目录下的协议
 gen_proto: ## 生成pkg/protobuf下的协议文件
 	/bin/bash third_party/protobuf/build.sh
 
+build_cipher_aes: ## 生成asjard_cipher_aes命令
+	go build -o $(GOPATH)/bin/asjard_cipher_aes -ldflags '-w -s' ./cmd/asjard_cipher_aes/*.go
+
 build_gen_go_rest: ## 生成protoc-gen-go-rest命令
-	go build -o $(GOPATH)/bin/protoc-gen-go-rest ./cmd/protoc-gen-go-rest/*.go
+	go build -o $(GOPATH)/bin/protoc-gen-go-rest -ldflags '-w -s' ./cmd/protoc-gen-go-rest/*.go
