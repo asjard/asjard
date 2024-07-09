@@ -260,22 +260,22 @@ func NewGoogleRpcStatusSchema(name string, any_name string) *v3.NamedSchemaOrRef
 								},
 							},
 							{
-								Name: "details",
+								Name: "data",
 								Value: &v3.SchemaOrReference{
 									Oneof: &v3.SchemaOrReference_Schema{
 										Schema: &v3.Schema{
-											Type: "array",
-											Items: &v3.ItemsItem{
-												SchemaOrReference: []*v3.SchemaOrReference{
-													{
-														Oneof: &v3.SchemaOrReference_Reference{
-															Reference: &v3.Reference{
-																XRef: "#/components/schemas/" + any_name,
-															},
-														},
-													},
-												},
-											},
+											Type: "object",
+											// Items: &v3.ItemsItem{
+											// 	SchemaOrReference: []*v3.SchemaOrReference{
+											// 		{
+											// 			Oneof: &v3.SchemaOrReference_Reference{
+											// 				Reference: &v3.Reference{
+											// 					XRef: "#/components/schemas/" + any_name,
+											// 				},
+											// 			},
+											// 		},
+											// 	},
+											// },
 											Description: "A list of messages that carry the error details.  There is a common set of message types for APIs to use.",
 										},
 									},
