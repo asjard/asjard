@@ -32,7 +32,10 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type HelloClient interface {
 	// say something
+	// 这里是say方法的第二行注释
 	Say(ctx context.Context, in *SayReq, opts ...grpc.CallOption) (*SayReq, error)
+	// 这里是call方法的注释
+	// 这里是call方法的第二行注释
 	Call(ctx context.Context, in *SayReq, opts ...grpc.CallOption) (*SayReq, error)
 	// 获取日志
 	Log(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -100,7 +103,10 @@ func (c *helloClient) MysqlExample(ctx context.Context, in *MysqlExampleReq, opt
 // for forward compatibility
 type HelloServer interface {
 	// say something
+	// 这里是say方法的第二行注释
 	Say(context.Context, *SayReq) (*SayReq, error)
+	// 这里是call方法的注释
+	// 这里是call方法的第二行注释
 	Call(context.Context, *SayReq) (*SayReq, error)
 	// 获取日志
 	Log(context.Context, *emptypb.Empty) (*emptypb.Empty, error)

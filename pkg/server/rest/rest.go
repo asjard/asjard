@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -19,7 +20,9 @@ import (
 	"github.com/asjard/asjard/pkg/status"
 	"github.com/asjard/asjard/utils"
 	"github.com/fasthttp/router"
+	openapi_v3 "github.com/google/gnostic/openapiv3"
 	"github.com/valyala/fasthttp"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -42,13 +45,15 @@ type Writer func(ctx *Context, data any, err error)
 
 // RestServer .
 type RestServer struct {
-	addresses   map[string]string
-	router      *router.Router
-	server      fasthttp.Server
-	certFile    string
-	keyFile     string
-	enabled     bool
-	interceptor server.UnaryServerInterceptor
+	addresses      map[string]string
+	router         *router.Router
+	server         fasthttp.Server
+	certFile       string
+	keyFile        string
+	enabled        bool
+	openapiEnabled bool
+	openapi        *openapi_v3.Document
+	interceptor    server.UnaryServerInterceptor
 }
 
 var _ server.Server = &RestServer{}
@@ -58,7 +63,6 @@ func init() {
 }
 
 // New 初始化服务
-// TODO 使用options的方式带参数, 配置写在结构体中，并通过GetWithUnmarshal反序列化进去
 func New(options *server.ServerOptions) (server.Server, error) {
 	addressesMap := make(map[string]string)
 	if err := config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigServerAddress, Protocol), &addressesMap); err != nil {
@@ -73,12 +77,14 @@ func New(options *server.ServerOptions) (server.Server, error) {
 		keyFile = filepath.Join(utils.GetCertDir(), keyFile)
 	}
 	server := &RestServer{
-		addresses:   addressesMap,
-		router:      router.New(),
-		certFile:    certFile,
-		keyFile:     keyFile,
-		enabled:     config.GetBool(fmt.Sprintf(constant.ConfigServerEnabled, Protocol), false),
-		interceptor: options.Interceptor,
+		addresses:      addressesMap,
+		router:         router.New(),
+		certFile:       certFile,
+		keyFile:        keyFile,
+		enabled:        config.GetBool(fmt.Sprintf(constant.ConfigServerEnabled, Protocol), false),
+		openapiEnabled: config.GetBool(constant.ConfigServerRestOpenAPIEnabled, false),
+		openapi:        &openapi_v3.Document{},
+		interceptor:    options.Interceptor,
 		server: fasthttp.Server{
 			Name:            runtime.APP,
 			Concurrency:     config.GetInt("asjard.servers.rest.options.Concurrency", fasthttp.DefaultConcurrency),
@@ -149,6 +155,14 @@ func (s *RestServer) Start(startErr chan error) error {
 			"stack", string(debug.Stack()))
 		NewContext(ctx).Write(nil, status.ErrInterServerError)
 	}
+	s.router.GlobalOPTIONS = func(ctx *fasthttp.RequestCtx) {
+		ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
+		ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", ctx.Request.Header.Peek("Origin"))
+	}
+	if s.openapiEnabled {
+		// 合并openapi并且
+		s.addOpenapiHandler()
+	}
 	s.server.Handler = s.router.Handler
 	address, ok := s.addresses[constant.ServerListenAddressName]
 	if !ok {
@@ -210,6 +224,13 @@ func (s *RestServer) addRouter(handler Handler) error {
 	if desc == nil {
 		return nil
 	}
+	if s.openapiEnabled && len(desc.OpenAPI) != 0 {
+		document := &openapi_v3.Document{}
+		if err := proto.Unmarshal(desc.OpenAPI, document); err != nil {
+			return err
+		}
+		proto.Merge(s.openapi, document)
+	}
 	for _, method := range desc.Methods {
 		if method.Method != "" && method.Path != "" && method.Handler != nil {
 			ht := reflect.TypeOf(desc.HandlerType).Elem()
@@ -228,5 +249,38 @@ func (s *RestServer) addRouterHandler(method string, methodDesc MethodDesc, svc 
 		cc := NewContext(ctx)
 		reply, err := methodDesc.Handler(cc, svc, s.interceptor)
 		cc.Write(reply, err)
+	})
+}
+
+func (s *RestServer) addOpenapiHandler() {
+	s.openapi.Info = &openapi_v3.Info{
+		Title:       runtime.APP,
+		Description: config.GetString(constant.ConfigDesc, ""),
+		Version:     runtime.Version,
+	}
+	props := make([]*openapi_v3.NamedSchemaOrReference, 0, len(s.openapi.Components.Schemas.AdditionalProperties))
+	propMap := make(map[string]struct{})
+	for _, prop := range s.openapi.Components.Schemas.AdditionalProperties {
+		if _, ok := propMap[prop.Name]; !ok {
+			props = append(props, prop)
+		}
+		propMap[prop.Name] = struct{}{}
+	}
+	s.openapi.Components.Schemas.AdditionalProperties = props
+	s.router.Handle(http.MethodGet, "/openapi.yml", func(ctx *fasthttp.RequestCtx) {
+		b, err := s.openapi.YAMLValue("")
+		if err != nil {
+			return
+		}
+		ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
+		ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", ctx.Request.Header.Peek("Origin"))
+		ctx.Write(b)
+	})
+	address := s.addresses[constant.ServerAdvertiseAddressName]
+	if address == "" {
+		address = s.addresses[constant.ServerListenAddressName]
+	}
+	s.router.Handle(http.MethodGet, "/openapi", func(ctx *fasthttp.RequestCtx) {
+		ctx.Redirect(fmt.Sprintf("https://authress-engineering.github.io/openapi-explorer/?url=http://%s/openapi.yml#?route=overview", address), http.StatusMovedPermanently)
 	})
 }

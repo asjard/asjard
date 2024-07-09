@@ -12,6 +12,7 @@ type ServiceDesc struct {
 	HandlerType any
 	ErrPage     string
 	Writer      Writer
+	OpenAPI     []byte
 	Methods     []MethodDesc
 }
 

@@ -79,6 +79,7 @@ const (
 	ConfigServerGrpcOptionsTime             = "asjard.servers.grpc.options.Time"
 	ConfigServerGrpcOptionsTimeout          = "asjard.servers.grpc.options.Timeout"
 	ConfigServerRestDocErrPage              = "asjard.servers.rest.doc.errPage"
+	ConfigServerRestOpenAPIEnabled          = "asjard.servers.rest.openapi"
 
 	ConfigRegistryFailureThreshold    = "asjard.registry.failureThreshold"
 	ConfigRegistryHealthCheck         = "asjard.registry.healthCheck"
@@ -107,6 +108,7 @@ const (
 	ConfigAvaliablezone = "asjard.avaliablezone"
 	ConfigEnvironment   = "asjard.environment"
 	ConfigWebsite       = "asjard.website"
+	ConfigDesc          = "asjard.desc"
 	ConfigVersion       = "asjard.instance.version"
 	ConfigName          = "asjard.instance.name"
 	ConfigMetadata      = "asjard.instance.metadata"

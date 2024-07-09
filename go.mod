@@ -7,12 +7,15 @@ require (
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/fasthttp/router v1.5.1
 	github.com/fsnotify/fsnotify v1.7.0
+	github.com/google/gnostic v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.0.0
 	github.com/magiconair/properties v1.8.7
 	github.com/spf13/cast v1.6.0
 	github.com/valyala/fasthttp v1.54.0
 	golang.org/x/sync v0.7.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20240318140521-94a12d6c2237
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237
 	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.1
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -34,6 +37,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
+	github.com/google/gnostic-models v0.6.9-0.20230804172637-c7be7c783f49 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
@@ -58,6 +62,5 @@ require (
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

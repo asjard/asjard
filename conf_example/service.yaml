@@ -13,6 +13,9 @@ asjard:
   avaliablezone: "default"
   ## 站点地址
   website: "https://github.com/${asjard.app}/${asjard.instance.name}"
+  ## 服务描述
+  desc: |
+    这里是服务描述
   ## 服务实例详情
   instance:
     ##

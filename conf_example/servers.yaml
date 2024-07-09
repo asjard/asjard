@@ -83,6 +83,8 @@ asjard:
         ## 错误页地址, 如果错误返回，默认可以解决错误的文档地址
         ## 如果不配置则使用website配置
         errPage: ""
+      ## 是否开启openapi
+      openapi: true
       ## 同grpc相关配置
       addresses:
         listen: 127.0.0.1:7030

@@ -37,38 +37,21 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/asjard/asjard/cmd/protoc-gen-go-rest/openapi"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-const (
-	version = "1.3.0"
-	name    = "protoc-gen-go-rest"
-)
+const version = "1.3.0"
 
 var requireUnimplemented *bool
 var useGenericStreams *bool
-var flags flag.FlagSet
 
 func main() {
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
 	if *showVersion {
-		fmt.Printf("%s %v\n", name, version)
+		fmt.Printf("protoc-gen-go-rest %v\n", version)
 		return
-	}
-
-	conf := openapi.Configuration{
-		Version:         flags.String("version", "0.0.1", "version number text, e.g. 1.2.3"),
-		Title:           flags.String("title", "", "name of the API"),
-		Description:     flags.String("description", "", "description of the API"),
-		Naming:          flags.String("naming", "json", `naming convention. Use "proto" for passing names directly from the proto files`),
-		FQSchemaNaming:  flags.Bool("fq_schema_naming", false, `schema naming convention. If "true", generates fully-qualified schema names by prefixing them with the proto message package name`),
-		EnumType:        flags.String("enum_type", "integer", `type for enum serialization. Use "string" for string-based serialization`),
-		CircularDepth:   flags.Int("depth", 2, "depth of recursion for circular messages"),
-		DefaultResponse: flags.Bool("default_response", true, `add default response. If "true", automatically adds a default response to operations which use the google.rpc.Status message. Useful if you use envoy or grpc-gateway to transcode as they use this type for their default error responses.`),
-		OutputMode:      flags.String("output_mode", "merged", `output generation mode. By default, a single openapi.yaml is generated at the out folder. Use "source_relative' to generate a separate '[inputfile].openapi.yaml' next to each '[inputfile].proto'.`),
 	}
 
 	var flags flag.FlagSet
@@ -83,10 +66,8 @@ func main() {
 			if !f.Generate {
 				continue
 			}
-			NewRestGenerator(gen, conf, f).Run()
+			generateFile(gen, f)
 		}
-		// outputFile := gen.NewGeneratedFile("openapi.yaml", "")
-		// return openapi.NewOpenAPIv3Generator(gen, conf, gen.Files).Run(outputFile)
 		return nil
 	})
 }

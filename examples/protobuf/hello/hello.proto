@@ -7,12 +7,14 @@ option go_package = "github.com/asjard/asjard/examples/protobuf/hello;hello";
 import "github.com/asjard/protobuf/http.proto";
 import "google/protobuf/empty.proto";
 
+// hello 相关接口
 service Hello {
     // option (asjard.api.serviceHttp) = {
     //     group : "hello"
     // };
 
     // say something
+    // 这里是say方法的第二行注释
     rpc Say(SayReq) returns (SayReq) {
         option (asjard.api.http) = {
             post : "/region/{region_id}/project/{project_id}/user/{user_id}"
@@ -21,6 +23,8 @@ service Hello {
             get : "/region/{region_id}/project/{project_id}/user/{user_id}"
         };
     };
+    // 这里是call方法的注释
+    // 这里是call方法的第二行注释
     rpc Call(SayReq) returns (SayReq) {
         option (asjard.api.http) = {
             post : "/call/region/{region_id}/project/{project_id}/user/{user_id}"
@@ -74,21 +78,37 @@ message CipherExampleResp {
 }
 
 message SayReq {
-    string          region_id             = 1;
-    string          project_id            = 2;
+    // 区域ID
+    string region_id = 1;
+    // 项目ID
+    string project_id = 2;
+    // 用户ID
     int64           user_id               = 3;
+    // 字符串列表
     repeated string str_list              = 4;
+    // 数字列表
     repeated int64  int_list              = 5;
+    // 对象
     SayObj          obj                   = 6;
+    // 对象列表
     repeated SayObj objs                  = 7;
+    // 配置
     Configs         configs               = 8;
+    // 分页
     int32           page                  = 9;
+    // 每页大小
     int32           size                  = 10;
+    // 排序
     string          sort                  = 11;
+    // 布尔类型
     optional bool   ok                    = 12;
+    // 可选整形参数
     optional int32  int_optional_value    = 13;
+    // 可选字符串参数
     optional string string_optional_value = 14;
+    // 可选枚举参数
     optional Kind   kind                  = 15;
+    // 枚举列表
     repeated Kind   kinds                 = 16;
 }
 

@@ -326,22 +326,38 @@ type SayReq struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	RegionId            string    `protobuf:"bytes,1,opt,name=region_id,json=regionId,proto3" json:"region_id"`
-	ProjectId           string    `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id"`
-	UserId              int64     `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id"`
-	StrList             []string  `protobuf:"bytes,4,rep,name=str_list,json=strList,proto3" json:"str_list"`
-	IntList             []int64   `protobuf:"varint,5,rep,packed,name=int_list,json=intList,proto3" json:"int_list"`
-	Obj                 *SayObj   `protobuf:"bytes,6,opt,name=obj,proto3" json:"obj"`
-	Objs                []*SayObj `protobuf:"bytes,7,rep,name=objs,proto3" json:"objs"`
-	Configs             *Configs  `protobuf:"bytes,8,opt,name=configs,proto3" json:"configs"`
-	Page                int32     `protobuf:"varint,9,opt,name=page,proto3" json:"page"`
-	Size                int32     `protobuf:"varint,10,opt,name=size,proto3" json:"size"`
-	Sort                string    `protobuf:"bytes,11,opt,name=sort,proto3" json:"sort"`
-	Ok                  *bool     `protobuf:"varint,12,opt,name=ok,proto3,oneof" json:"ok"`
-	IntOptionalValue    *int32    `protobuf:"varint,13,opt,name=int_optional_value,json=intOptionalValue,proto3,oneof" json:"int_optional_value"`
-	StringOptionalValue *string   `protobuf:"bytes,14,opt,name=string_optional_value,json=stringOptionalValue,proto3,oneof" json:"string_optional_value"`
-	Kind                *Kind     `protobuf:"varint,15,opt,name=kind,proto3,enum=api.v1.hello.Kind,oneof" json:"kind"`
-	Kinds               []Kind    `protobuf:"varint,16,rep,packed,name=kinds,proto3,enum=api.v1.hello.Kind" json:"kinds"`
+	// 区域ID
+	RegionId string `protobuf:"bytes,1,opt,name=region_id,json=regionId,proto3" json:"region_id"`
+	// 项目ID
+	ProjectId string `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id"`
+	// 用户ID
+	UserId int64 `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id"`
+	// 字符串列表
+	StrList []string `protobuf:"bytes,4,rep,name=str_list,json=strList,proto3" json:"str_list"`
+	// 数字列表
+	IntList []int64 `protobuf:"varint,5,rep,packed,name=int_list,json=intList,proto3" json:"int_list"`
+	// 对象
+	Obj *SayObj `protobuf:"bytes,6,opt,name=obj,proto3" json:"obj"`
+	// 对象列表
+	Objs []*SayObj `protobuf:"bytes,7,rep,name=objs,proto3" json:"objs"`
+	// 配置
+	Configs *Configs `protobuf:"bytes,8,opt,name=configs,proto3" json:"configs"`
+	// 分页
+	Page int32 `protobuf:"varint,9,opt,name=page,proto3" json:"page"`
+	// 每页大小
+	Size int32 `protobuf:"varint,10,opt,name=size,proto3" json:"size"`
+	// 排序
+	Sort string `protobuf:"bytes,11,opt,name=sort,proto3" json:"sort"`
+	// 布尔类型
+	Ok *bool `protobuf:"varint,12,opt,name=ok,proto3,oneof" json:"ok"`
+	// 可选整形参数
+	IntOptionalValue *int32 `protobuf:"varint,13,opt,name=int_optional_value,json=intOptionalValue,proto3,oneof" json:"int_optional_value"`
+	// 可选字符串参数
+	StringOptionalValue *string `protobuf:"bytes,14,opt,name=string_optional_value,json=stringOptionalValue,proto3,oneof" json:"string_optional_value"`
+	// 可选枚举参数
+	Kind *Kind `protobuf:"varint,15,opt,name=kind,proto3,enum=api.v1.hello.Kind,oneof" json:"kind"`
+	// 枚举列表
+	Kinds []Kind `protobuf:"varint,16,rep,packed,name=kinds,proto3,enum=api.v1.hello.Kind" json:"kinds"`
 }
 
 func (x *SayReq) Reset() {
