@@ -14,12 +14,17 @@ const (
 type ServerConfig struct {
 	server.ServerConfig
 	Doc     ServerDocConfig     `json:"doc"`
-	Openapi bool                `json:"openapi"`
+	Openapi ServerOpenapiConfig `json:"openapi"`
 	Options ServerOptionsConfig `json:"options"`
 }
 
 type ServerDocConfig struct {
 	ErrPage string `json:"errPage"`
+}
+
+type ServerOpenapiConfig struct {
+	Enabled bool   `json:"enabled"`
+	Page    string `json:"page"`
 }
 
 type ServerOptionsConfig struct {
@@ -51,10 +56,11 @@ type ServerOptionsConfig struct {
 	StreamRequestBody                  bool               `json:"streamRequestBody"`
 }
 
-var defaultConfig ServerConfig = ServerConfig{
-	ServerConfig: server.ServerConfig{
-		Enabled: false,
-	},
-	Doc:     ServerDocConfig{},
-	Options: ServerOptionsConfig{},
+func defaultConfig() ServerConfig {
+	return ServerConfig{
+		ServerConfig: server.GetConfigWithProtocol(Protocol),
+		Doc:          ServerDocConfig{},
+		Openapi:      ServerOpenapiConfig{},
+		Options:      ServerOptionsConfig{},
+	}
 }

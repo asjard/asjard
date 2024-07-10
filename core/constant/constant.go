@@ -5,6 +5,7 @@ const (
 	Framework = "asjard"
 	// FrameworkVersion 框架版本号
 	FrameworkVersion = "1.0.0"
+	FrameworkGithub  = "https://github.com/asjard/asjard"
 	// DefaultDelimiter 默认分隔符
 	DefaultDelimiter = ","
 	// ConfigDelimiter 配置分隔符
@@ -48,6 +49,9 @@ const (
 	ConfigServerPporfPrefix        = "asjard.servers.pprof"
 	ConfigServerPrefix             = "asjard.servers"
 	ConfigServerWithProtocolPrefix = "asjard.servers.%s"
+
+	// ConfigServerInterceptorPrefix 服务端拦截器前缀
+	ConfigServerInterceptorPrefix = "asjard.interceptors.server"
 
 	// ConfigLoggerPrefix 配置前缀
 	ConfigLoggerPrefix        = "asjard.logger"

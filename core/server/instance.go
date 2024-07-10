@@ -31,7 +31,7 @@ type Instance struct {
 	// 服务端口列表
 	// key为协议名称
 	// value-key 监听地址名称
-	// value-value 监听地址列表
+	// value-value 监听地址列表，有可能有多个实例列表所以是个列表
 	Endpoints map[string]map[string][]string
 	// 服务元数据
 	MetaData map[string]string

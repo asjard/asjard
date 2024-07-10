@@ -39,7 +39,6 @@ func init() {
 }
 
 func MustNew(conf ServerConfig, options *server.ServerOptions) (server.Server, error) {
-	logger.Debug("--------", "conf", conf)
 	var opts []grpc.ServerOption
 	if conf.CertFile != "" && conf.KeyFile != "" {
 		creds, err := credentials.NewServerTLSFromFile(conf.CertFile, conf.KeyFile)
@@ -73,7 +72,7 @@ func MustNew(conf ServerConfig, options *server.ServerOptions) (server.Server, e
 
 // New .
 func New(options *server.ServerOptions) (server.Server, error) {
-	conf := defaultConfig
+	conf := defaultConfig()
 	if err := config.GetWithUnmarshal(constant.ConfigServerGrpcPrefix, &conf); err != nil {
 		return nil, err
 	}

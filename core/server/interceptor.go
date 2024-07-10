@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"sync"
 )
 
 // UnaryServerInfo consists of various information about a unary RPC on
@@ -40,20 +41,43 @@ type ServerInterceptor interface {
 
 type NewServerInterceptor func() ServerInterceptor
 
-var newServerInterceptors []NewServerInterceptor
+const (
+	// ALLProtocols 所有协议都支持的拦截器
+	ALLProtocols = "*"
+)
+
+var (
+	newServerInterceptors = make(map[string][]NewServerInterceptor)
+	nsm                   sync.RWMutex
+)
 
 // AddInterceptor 添加拦截器
-func AddInterceptor(newInterceptor NewServerInterceptor) {
-	newServerInterceptors = append(newServerInterceptors, newInterceptor)
+func AddInterceptor(newInterceptor NewServerInterceptor, supportProtocols ...string) {
+	nsm.Lock()
+	if len(supportProtocols) == 0 {
+		supportProtocols = []string{ALLProtocols}
+	}
+	for _, protocol := range supportProtocols {
+		if _, ok := newServerInterceptors[protocol]; !ok {
+			newServerInterceptors[protocol] = []NewServerInterceptor{newInterceptor}
+		} else {
+			newServerInterceptors[protocol] = append(newServerInterceptors[protocol], newInterceptor)
+		}
+	}
+	nsm.Unlock()
 }
 
-// TODO 添加默认拦截器
+// 获取协议拦截器
 func getServerInterceptors(protocol string) []UnaryServerInterceptor {
 	var interceptors []UnaryServerInterceptor
+	nsm.RLock()
+	newInterceptors := newServerInterceptors[protocol]
+	newInterceptors = append(newInterceptors, newServerInterceptors[ALLProtocols]...)
+	nsm.RUnlock()
 	conf := GetConfigWithProtocol(protocol)
 	// 自定义拦截器
 	for _, interceptorName := range conf.Interceptors {
-		for _, newInterceptor := range newServerInterceptors {
+		for _, newInterceptor := range newInterceptors {
 			interceptor := newInterceptor()
 			if interceptor.Name() == interceptorName {
 				interceptors = append(interceptors, interceptor.Interceptor())

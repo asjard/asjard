@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -53,6 +52,7 @@ func init() {
 	server.AddServer(Protocol, New)
 }
 
+// MustNew 配置文件初始化
 func MustNew(conf ServerConfig, options *server.ServerOptions) (server.Server, error) {
 	return &RestServer{
 		router:      router.New(),
@@ -94,7 +94,7 @@ func MustNew(conf ServerConfig, options *server.ServerOptions) (server.Server, e
 
 // New 初始化服务
 func New(options *server.ServerOptions) (server.Server, error) {
-	conf := defaultConfig
+	conf := defaultConfig()
 	if err := config.GetWithUnmarshal(constant.ConfigServerRestPrefix, &conf); err != nil {
 		return nil, err
 	}
@@ -113,10 +113,7 @@ func (s *RestServer) AddHandler(handler any) error {
 	if !ok {
 		return fmt.Errorf("invlaid handler, %v must implement *rest.Handler", reflect.TypeOf(handler))
 	}
-	if err := s.addRouter(h); err != nil {
-		return err
-	}
-	return nil
+	return s.addRouter(h)
 }
 
 // Start .
@@ -148,9 +145,9 @@ func (s *RestServer) Start(startErr chan error) error {
 		ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
 		ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", ctx.Request.Header.Peek("Origin"))
 	}
-	if s.conf.Openapi {
+	if s.conf.Openapi.Enabled {
 		// 合并openapi并且
-		s.addOpenapiHandler()
+		s.AddHandler(NewOpenAPI(s.openapi))
 	}
 	s.server.Handler = s.router.Handler
 	address, ok := s.conf.Addresses[constant.ServerListenAddressName]
@@ -213,7 +210,7 @@ func (s *RestServer) addRouter(handler Handler) error {
 	if desc == nil {
 		return nil
 	}
-	if s.conf.Openapi && len(desc.OpenAPI) != 0 {
+	if s.conf.Openapi.Enabled && len(desc.OpenAPI) != 0 {
 		document := &openapi_v3.Document{}
 		if err := proto.Unmarshal(desc.OpenAPI, document); err != nil {
 			return err
@@ -241,35 +238,36 @@ func (s *RestServer) addRouterHandler(method string, methodDesc MethodDesc, svc 
 	})
 }
 
-func (s *RestServer) addOpenapiHandler() {
-	s.openapi.Info = &openapi_v3.Info{
-		Title:       runtime.APP,
-		Description: config.GetString(constant.ConfigDesc, ""),
-		Version:     runtime.Version,
-	}
-	props := make([]*openapi_v3.NamedSchemaOrReference, 0, len(s.openapi.Components.Schemas.AdditionalProperties))
-	propMap := make(map[string]struct{})
-	for _, prop := range s.openapi.Components.Schemas.AdditionalProperties {
-		if _, ok := propMap[prop.Name]; !ok {
-			props = append(props, prop)
-		}
-		propMap[prop.Name] = struct{}{}
-	}
-	s.openapi.Components.Schemas.AdditionalProperties = props
-	s.router.Handle(http.MethodGet, "/openapi.yml", func(ctx *fasthttp.RequestCtx) {
-		b, err := s.openapi.YAMLValue("")
-		if err != nil {
-			return
-		}
-		ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
-		ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", ctx.Request.Header.Peek("Origin"))
-		ctx.Write(b)
-	})
-	address := s.conf.Addresses[constant.ServerAdvertiseAddressName]
-	if address == "" {
-		address = s.conf.Addresses[constant.ServerListenAddressName]
-	}
-	s.router.Handle(http.MethodGet, "/openapi", func(ctx *fasthttp.RequestCtx) {
-		ctx.Redirect(fmt.Sprintf("https://authress-engineering.github.io/openapi-explorer/?url=http://%s/openapi.yml#?route=overview", address), http.StatusMovedPermanently)
-	})
-}
+// func (s *RestServer) addOpenapiHandler() {
+// 	s.openapi.Info = &openapi_v3.Info{
+// 		Title:       runtime.APP,
+// 		Description: config.GetString(constant.ConfigDesc, ""),
+// 		Version:     runtime.Version,
+// 	}
+// 	props := make([]*openapi_v3.NamedSchemaOrReference, 0, len(s.openapi.Components.Schemas.AdditionalProperties))
+// 	propMap := make(map[string]struct{})
+// 	for _, prop := range s.openapi.Components.Schemas.AdditionalProperties {
+// 		if _, ok := propMap[prop.Name]; !ok {
+// 			props = append(props, prop)
+// 		}
+// 		propMap[prop.Name] = struct{}{}
+// 	}
+// 	s.openapi.Components.Schemas.AdditionalProperties = props
+
+// 	s.router.Handle(http.MethodGet, "/openapi.yml", func(ctx *fasthttp.RequestCtx) {
+// 		b, err := s.openapi.YAMLValue("")
+// 		if err != nil {
+// 			return
+// 		}
+// 		ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
+// 		ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", ctx.Request.Header.Peek("Origin"))
+// 		ctx.Write(b)
+// 	})
+// 	address := s.conf.Addresses[constant.ServerAdvertiseAddressName]
+// 	if address == "" {
+// 		address = s.conf.Addresses[constant.ServerListenAddressName]
+// 	}
+// 	s.router.Handle(http.MethodGet, "/openapi", func(ctx *fasthttp.RequestCtx) {
+// 		ctx.Redirect(fmt.Sprintf("https://authress-engineering.github.io/openapi-explorer/?url=http://%s/openapi.yml#?route=overview", address), http.StatusMovedPermanently)
+// 	})
+// }

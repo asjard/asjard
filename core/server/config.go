@@ -17,13 +17,14 @@ type ServerConfig struct {
 	KeyFile         string            `json:"keyFile"`
 }
 
-var defaultConfig ServerConfig = ServerConfig{
+var DefaultConfig ServerConfig = ServerConfig{
 	Interceptors:    utils.JSONStrings{"accessLog"},
 	DefaultHandlers: utils.JSONStrings{"health"},
 }
 
+// GetConfigWithProtocol 根据协议获取配置
 func GetConfigWithProtocol(protocol string) ServerConfig {
-	conf := defaultConfig
+	conf := DefaultConfig
 	config.GetWithUnmarshal(constant.ConfigServerPrefix, &conf)
 	config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigServerWithProtocolPrefix, protocol), &conf)
 	return conf
