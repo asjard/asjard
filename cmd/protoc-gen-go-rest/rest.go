@@ -20,11 +20,11 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/asjard/asjard/cmd/protoc-gen-go-rest/openapi"
+	"github.com/asjard/asjard/cmd/protoc-gen-go-rest/utils"
 	"github.com/asjard/asjard/pkg/protobuf/httppb"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
@@ -146,16 +146,6 @@ func (g *RestGenerator) genServiceDesc(service *protogen.Service, serverType str
 		g.gen.P("OpenAPI: ", g.openapiVar, ",")
 	}
 	g.gen.P("Methods: []", restPackage.Ident("MethodDesc"), "{")
-	apiGroup := ""
-	apiClassify := ""
-	apiVersion := ""
-	if serviceHttpOption, ok := proto.GetExtension(service.Desc.Options(), httppb.E_ServiceHttp).(*httppb.Http); ok {
-		if serviceHttpOption != nil && serviceHttpOption.Group != "" {
-			apiGroup = serviceHttpOption.Group
-			apiClassify = serviceHttpOption.Api
-			apiVersion = serviceHttpOption.Version
-		}
-	}
 	for i, method := range service.Methods {
 		if method.Desc.IsStreamingClient() || method.Desc.IsStreamingServer() {
 			continue
@@ -177,69 +167,8 @@ func (g *RestGenerator) genServiceDesc(service *protogen.Service, serverType str
 				g.gen.P("{")
 				g.gen.P("MethodName: ", strconv.Quote(string(method.Desc.Name())), ",")
 				g.gen.P("Desc: ", strconv.Quote(string(methodDesc)), ",")
-				var optionMethod, optionPath string
-				switch httpOption.GetPattern().(type) {
-				case *httppb.Http_Get:
-					optionMethod = http.MethodGet
-					optionPath = httpOption.GetGet()
-				case *httppb.Http_Put:
-					optionMethod = http.MethodPut
-					optionPath = httpOption.GetPut()
-				case *httppb.Http_Post:
-					optionMethod = http.MethodPost
-					optionPath = httpOption.GetPost()
-				case *httppb.Http_Delete:
-					optionMethod = http.MethodDelete
-					optionPath = httpOption.GetDelete()
-				case *httppb.Http_Patch:
-					optionMethod = http.MethodPatch
-					optionPath = httpOption.GetPatch()
-				case *httppb.Http_Head:
-					optionMethod = http.MethodHead
-					optionPath = httpOption.GetHead()
-				}
+				fullPath, optionMethod, _ := utils.ParseMethodOption(service, httpOption)
 				g.gen.P("Method:", strconv.Quote(optionMethod), ",")
-				// 根据package名称解析
-				// api.v1.xxx
-				// 第一部分为接口类型
-				// 第二部分为接口版本
-				apiClassify = httpOption.Api
-				apiVersion = httpOption.Version
-				if apiClassify == "" || apiVersion == "" {
-					serviceFullNameList := strings.Split(string(service.Desc.FullName()), ".")
-					if len(serviceFullNameList) < 2 {
-						panic("invalid package name")
-					}
-					if apiClassify == "" {
-						apiClassify = serviceFullNameList[0]
-					}
-					if apiVersion == "" {
-						apiVersion = serviceFullNameList[1]
-					}
-				}
-				if httpOption.Group != "" {
-					apiGroup = httpOption.Group
-				}
-				fullPath := ""
-				apiClassify = strings.Trim(apiClassify, "/")
-				if apiClassify != "" {
-					fullPath += "/" + apiClassify
-				}
-				apiVersion = strings.Trim(apiVersion, "/")
-				if apiVersion != "" {
-					fullPath += "/" + apiVersion
-				}
-				apiGroup = strings.Trim(apiGroup, "/")
-				if apiGroup != "" {
-					fullPath += "/" + apiGroup
-				}
-				optionPath = strings.Trim(optionPath, "/")
-				if optionPath != "" {
-					fullPath += "/" + optionPath
-				}
-				if fullPath == "" {
-					fullPath = "/"
-				}
 				g.gen.P("Path:", strconv.Quote(fullPath), ",")
 				g.gen.P("Handler: ", handlerNames[i], ",")
 				g.gen.P("},")

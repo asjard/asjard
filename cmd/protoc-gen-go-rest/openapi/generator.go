@@ -32,6 +32,7 @@ import (
 	any_pb "google.golang.org/protobuf/types/known/anypb"
 
 	wk "github.com/asjard/asjard/cmd/protoc-gen-go-rest/openapi/wellknown"
+	"github.com/asjard/asjard/cmd/protoc-gen-go-rest/utils"
 	"github.com/asjard/asjard/pkg/protobuf/httppb"
 	v3 "github.com/google/gnostic/openapiv3"
 )
@@ -701,52 +702,44 @@ func (g *OpenAPIv3Generator) addOperationToDocumentV3(d *v3.Document, op *v3.Ope
 func (g *OpenAPIv3Generator) addPathsToDocumentV3(d *v3.Document, services []*protogen.Service) {
 	for _, service := range services {
 		annotationsCount := 0
-
 		for _, method := range service.Methods {
 			comment := g.filterCommentString(method.Comments.Leading)
 			inputMessage := method.Input
 			outputMessage := method.Output
 			operationID := string(service.Desc.FullName()) + "." + method.GoName
 
-			// rules := make([]*annotations.HttpRule, 0)
-
 			extHTTPs, ok := proto.GetExtension(method.Desc.Options(), httppb.E_Http).([]*httppb.Http)
-			// if extHTTP != nil && extHTTP != annotations.E_Http.InterfaceOf(annotations.E_Http.Zero()) {
-			// 	annotationsCount++
-
-			// 	rule := extHTTP.(*annotations.HttpRule)
-			// 	rules = append(rules, rule)
-			// 	rules = append(rules, rule.AdditionalBindings...)
-			// }
 			if ok {
 				for index, rule := range extHTTPs {
-					var path string
-					var methodName string
-					var body string
+					// var path string
+					// var methodName string
+					// var body string
+
+					path, methodName, body := utils.ParseMethodOption(service, rule)
 
 					// body = rule.Body
-					switch pattern := rule.Pattern.(type) {
-					case *httppb.Http_Get:
-						path = pattern.Get
-						methodName = "GET"
-					case *httppb.Http_Post:
-						path = pattern.Post
-						methodName = "POST"
-						body = "*"
-					case *httppb.Http_Put:
-						path = pattern.Put
-						methodName = "PUT"
-						body = "*"
-					case *httppb.Http_Delete:
-						path = pattern.Delete
-						methodName = "DELETE"
-					case *httppb.Http_Patch:
-						path = pattern.Patch
-						methodName = "PATCH"
-						body = "*"
-					default:
-						path = "unknown-unsupported"
-					}
+					// switch pattern := rule.Pattern.(type) {
+					// case *httppb.Http_Get:
+					// 	path = pattern.Get
+					// 	methodName = "GET"
+					// case *httppb.Http_Post:
+					// 	path = pattern.Post
+					// 	methodName = "POST"
+					// 	body = "*"
+					// case *httppb.Http_Put:
+					// 	path = pattern.Put
+					// 	methodName = "PUT"
+					// 	body = "*"
+					// case *httppb.Http_Delete:
+					// 	path = pattern.Delete
+					// 	methodName = "DELETE"
+					// case *httppb.Http_Patch:
+					// 	path = pattern.Patch
+					// 	methodName = "PATCH"
+					// 	body = "*"
+					// default:
+					// 	path = "unknown-unsupported"
+					// }
 
 					if methodName != "" {
 						defaultHost := proto.GetExtension(service.Desc.Options(), annotations.E_DefaultHost).(string)
