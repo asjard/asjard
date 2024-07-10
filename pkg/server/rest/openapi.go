@@ -30,7 +30,16 @@ func (api *OpenAPI) Yaml(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 	api.document.Info = &openapi_v3.Info{
 		Title:       runtime.APP,
 		Description: config.GetString(constant.ConfigDesc, ""),
-		Version:     runtime.Version,
+		Contact: &openapi_v3.Contact{
+			Name: runtime.APP,
+			Url:  config.GetString(constant.ConfigWebsite, ""),
+		},
+		TermsOfService: config.GetString("asjard.servers.rest.openapi.termsOfService", ""),
+		Version:        runtime.Version,
+		License: &openapi_v3.License{
+			Name: config.GetString("asjard.servers.rest.openapi.license.name", ""),
+			Url:  config.GetString("asjard.servers.rest.openapi.license.url", ""),
+		},
 	}
 	props := make([]*openapi_v3.NamedSchemaOrReference, 0, len(api.document.Components.Schemas.AdditionalProperties))
 	propMap := make(map[string]struct{})
