@@ -225,7 +225,8 @@ func main() {
 - [ ] 限速，监控，链路追踪拦截器
 - [ ] rest添加metrics接口
 - [ ] stream支持
-- [ ] rest添加swagger
+- [x] rest添加swagger
+- [ ] openapi更新default response
 - [ ] 用rest生成rpc的gateway
 - [x] 所有协议添加health接口
 - [ ] 添加rest服务返回自定义拦截器

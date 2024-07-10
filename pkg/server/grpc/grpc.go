@@ -3,10 +3,8 @@ package grpc
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"path/filepath"
-	"time"
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
@@ -25,9 +23,8 @@ const (
 
 // GrpcServer .
 type GrpcServer struct {
-	addresses map[string]string
-	enabled   bool
-	server    *grpc.Server
+	server *grpc.Server
+	conf   ServerConfig
 }
 
 // Handler .
@@ -41,32 +38,20 @@ func init() {
 	server.AddServer(Protocol, New)
 }
 
-// New .
-func New(options *server.ServerOptions) (server.Server, error) {
-	addressesMap := make(map[string]string)
-	if err := config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigServerAddress, Protocol), &addressesMap); err != nil {
-		return nil, err
-	}
+func MustNew(conf ServerConfig, options *server.ServerOptions) (server.Server, error) {
+	logger.Debug("--------", "conf", conf)
 	var opts []grpc.ServerOption
-	certFile := config.GetString(fmt.Sprintf(constant.ConfigServerCertfile, Protocol), "")
-	if certFile != "" {
-		certFile = filepath.Join(utils.GetCertDir(), certFile)
-	}
-	keyFile := config.GetString(fmt.Sprintf(constant.ConfigServerKeyFile, Protocol), "")
-	if keyFile != "" {
-		keyFile = filepath.Join(utils.GetCertDir(), keyFile)
-	}
-	if certFile != "" && keyFile != "" {
-		creds, err := credentials.NewServerTLSFromFile(certFile, keyFile)
+	if conf.CertFile != "" && conf.KeyFile != "" {
+		creds, err := credentials.NewServerTLSFromFile(conf.CertFile, conf.KeyFile)
 		if err != nil {
 			return nil, err
 		}
 		opts = append(opts, grpc.Creds(creds))
 	}
 	opts = append(opts, grpc.KeepaliveParams(keepalive.ServerParameters{
-		MaxConnectionIdle: config.GetDuration(constant.ConfigServerGrpcOptionsMaxConnectIdle, 5*time.Minute),
-		Time:              config.GetDuration(constant.ConfigServerGrpcOptionsTime, 10*time.Second),
-		Timeout:           config.GetDuration(constant.ConfigServerGrpcOptionsTimeout, time.Second),
+		MaxConnectionIdle: conf.Options.KeepaliveParams.MaxConnectionIdle.Duration,
+		Time:              conf.Options.KeepaliveParams.Time.Duration,
+		Timeout:           conf.Options.KeepaliveParams.Timeout.Duration,
 	}))
 	opts = append(opts, grpc.ChainUnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		if options.Interceptor != nil {
@@ -81,10 +66,25 @@ func New(options *server.ServerOptions) (server.Server, error) {
 		return handler(ctx, req)
 	}))
 	return &GrpcServer{
-		addresses: addressesMap,
-		enabled:   config.GetBool(fmt.Sprintf(constant.ConfigServerEnabled, Protocol), false),
-		server:    grpc.NewServer(opts...),
+		server: grpc.NewServer(opts...),
+		conf:   conf,
 	}, nil
+}
+
+// New .
+func New(options *server.ServerOptions) (server.Server, error) {
+	conf := defaultConfig
+	if err := config.GetWithUnmarshal(constant.ConfigServerGrpcPrefix, &conf); err != nil {
+		return nil, err
+	}
+	if conf.KeyFile != "" {
+		conf.KeyFile = filepath.Join(utils.GetCertDir(), conf.KeyFile)
+	}
+	if conf.CertFile != "" {
+		conf.CertFile = filepath.Join(utils.GetCertDir(), conf.CertFile)
+	}
+	return MustNew(conf, options)
+
 }
 
 // AddHandler .
@@ -99,7 +99,7 @@ func (s *GrpcServer) AddHandler(handler any) error {
 
 // Start .
 func (s *GrpcServer) Start(startErr chan error) error {
-	address, ok := s.addresses[constant.ServerListenAddressName]
+	address, ok := s.conf.Addresses[constant.ServerListenAddressName]
 	if !ok {
 		return errors.New("config servers.grpc.addresses.listen not found")
 	}
@@ -131,10 +131,10 @@ func (s *GrpcServer) Protocol() string {
 
 // Enabled .
 func (s *GrpcServer) Enabled() bool {
-	return s.enabled
+	return s.conf.Enabled
 }
 
 // ListenAddresses 监听地址列表
 func (s *GrpcServer) ListenAddresses() map[string]string {
-	return s.addresses
+	return s.conf.Addresses
 }

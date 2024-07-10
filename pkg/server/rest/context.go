@@ -56,8 +56,7 @@ type Context struct {
 var contextPool = sync.Pool{
 	New: func() any {
 		return &Context{
-			errPage: config.GetString(constant.ConfigServerRestDocErrPage,
-				config.GetString(constant.ConfigWebsite, "")),
+			errPage:      config.GetString(constant.ConfigWebsite, ""),
 			queryParams:  make(map[string][]string),
 			pathParams:   make(map[string][]string),
 			headerParams: make(map[string][]string),
@@ -69,7 +68,6 @@ var contextPool = sync.Pool{
 func NewContext(ctx *fasthttp.RequestCtx, options ...Option) *Context {
 	c := contextPool.Get().(*Context)
 	c.RequestCtx = ctx
-	c.errPage = config.GetString(constant.ConfigServerRestDocErrPage, "")
 	for _, opt := range options {
 		opt(c)
 	}

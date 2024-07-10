@@ -30,11 +30,6 @@ const (
 	Protocol = "rest"
 )
 
-const (
-	defaultReadBufferSize  = 4096
-	defaultWriteBufferSize = 4096
-)
-
 // Handler .
 type Handler interface {
 	RestServiceDesc() *ServiceDesc
@@ -45,15 +40,11 @@ type Writer func(ctx *Context, data any, err error)
 
 // RestServer .
 type RestServer struct {
-	addresses      map[string]string
-	router         *router.Router
-	server         fasthttp.Server
-	certFile       string
-	keyFile        string
-	enabled        bool
-	openapiEnabled bool
-	openapi        *openapi_v3.Document
-	interceptor    server.UnaryServerInterceptor
+	router      *router.Router
+	server      fasthttp.Server
+	openapi     *openapi_v3.Document
+	interceptor server.UnaryServerInterceptor
+	conf        ServerConfig
 }
 
 var _ server.Server = &RestServer{}
@@ -62,62 +53,58 @@ func init() {
 	server.AddServer(Protocol, New)
 }
 
-// New 初始化服务
-func New(options *server.ServerOptions) (server.Server, error) {
-	addressesMap := make(map[string]string)
-	if err := config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigServerAddress, Protocol), &addressesMap); err != nil {
-		return nil, err
-	}
-	certFile := config.GetString(fmt.Sprintf(constant.ConfigServerCertfile, Protocol), "")
-	if certFile != "" {
-		certFile = filepath.Join(utils.GetCertDir(), certFile)
-	}
-	keyFile := config.GetString(fmt.Sprintf(constant.ConfigServerKeyFile, Protocol), "")
-	if keyFile != "" {
-		keyFile = filepath.Join(utils.GetCertDir(), keyFile)
-	}
-	server := &RestServer{
-		addresses:      addressesMap,
-		router:         router.New(),
-		certFile:       certFile,
-		keyFile:        keyFile,
-		enabled:        config.GetBool(fmt.Sprintf(constant.ConfigServerEnabled, Protocol), false),
-		openapiEnabled: config.GetBool(constant.ConfigServerRestOpenAPIEnabled, false),
-		openapi:        &openapi_v3.Document{},
-		interceptor:    options.Interceptor,
+func MustNew(conf ServerConfig, options *server.ServerOptions) (server.Server, error) {
+	return &RestServer{
+		router:      router.New(),
+		openapi:     &openapi_v3.Document{},
+		interceptor: options.Interceptor,
+		conf:        conf,
 		server: fasthttp.Server{
-			Name:            runtime.APP,
-			Concurrency:     config.GetInt("asjard.servers.rest.options.Concurrency", fasthttp.DefaultConcurrency),
-			ReadBufferSize:  config.GetInt("asjard.servers.rest.options.ReadBufferSize", defaultReadBufferSize),
-			WriteBufferSize: config.GetInt("asjard.servers.rest.options.ReadBufferSize", defaultWriteBufferSize),
-			ReadTimeout:     config.GetDuration("asjard.servers.rest.options.ReadTimeout", time.Second*3),
-			WriteTimeout:    config.GetDuration("asjard.servers.rest.options.WriteTimeout", time.Hour),
-			IdleTimeout: config.GetDuration("asjard.servers.rest.options.WriteTimeout",
-				config.GetDuration("asjard.servers.rest.options.ReadTimeout", time.Second*3)),
-			MaxConnsPerIP:                      config.GetInt("asjard.servers.rest.options.WriteTimeout", 0),
-			MaxRequestsPerConn:                 config.GetInt("asjard.servers.rest.options.MaxRequestsPerConn", 0),
-			MaxIdleWorkerDuration:              config.GetDuration("asjard.servers.rest.options.MaxIdleWorkerDuration", time.Minute*10),
-			TCPKeepalivePeriod:                 config.GetDuration("asjard.servers.rest.options.TCPKeepalivePeriod", 0),
-			MaxRequestBodySize:                 config.GetInt("asjard.servers.rest.options.MaxRequestBodySize", fasthttp.DefaultMaxRequestBodySize),
-			DisableKeepalive:                   config.GetBool("asjard.servers.rest.options.DisableKeepalive", false),
-			TCPKeepalive:                       config.GetBool("asjard.servers.rest.options.TCPKeepalive", false),
-			ReduceMemoryUsage:                  config.GetBool("asjard.servers.rest.options.ReduceMemoryUsage", false),
-			GetOnly:                            config.GetBool("asjard.servers.rest.options.GetOnly", false),
-			DisablePreParseMultipartForm:       config.GetBool("asjard.servers.rest.options.DisablePreParseMultipartForm", true),
-			LogAllErrors:                       config.GetBool("asjard.servers.rest.options.LogAllErrors", false),
-			SecureErrorLogMessage:              config.GetBool("asjard.servers.rest.options.SecureErrorLogMessage", false),
-			DisableHeaderNamesNormalizing:      config.GetBool("asjard.servers.rest.options.DisableHeaderNamesNormalizing", false),
-			SleepWhenConcurrencyLimitsExceeded: config.GetDuration("asjard.servers.rest.options.SleepWhenConcurrencyLimitsExceeded", 0),
-			NoDefaultServerHeader:              config.GetBool("asjard.servers.rest.options.NoDefaultServerHeader", false),
-			NoDefaultDate:                      config.GetBool("asjard.servers.rest.options.NoDefaultDate", false),
-			NoDefaultContentType:               config.GetBool("asjard.servers.rest.options.NoDefaultContentType", false),
-			KeepHijackedConns:                  config.GetBool("asjard.servers.rest.options.KeepHijackedConns", false),
-			CloseOnShutdown:                    config.GetBool("asjard.servers.rest.options.CloseOnShutdown", true),
-			StreamRequestBody:                  config.GetBool("asjard.servers.rest.options.StreamRequestBody", false),
+			Name:                               runtime.APP,
+			Concurrency:                        conf.Options.Concurrency,
+			ReadBufferSize:                     conf.Options.ReadBufferSize,
+			WriteBufferSize:                    conf.Options.WriteBufferSize,
+			ReadTimeout:                        conf.Options.ReadTimeout.Duration,
+			WriteTimeout:                       conf.Options.WriteTimeout.Duration,
+			IdleTimeout:                        conf.Options.IdleTimeout.Duration,
+			MaxConnsPerIP:                      conf.Options.MaxConnsPerIP,
+			MaxRequestsPerConn:                 conf.Options.MaxRequestsPerConn,
+			MaxIdleWorkerDuration:              conf.Options.MaxIdleWorkerDuration.Duration,
+			TCPKeepalivePeriod:                 conf.Options.TCPKeepalivePeriod.Duration,
+			MaxRequestBodySize:                 conf.Options.MaxRequestBodySize,
+			DisableKeepalive:                   conf.Options.DisableKeepalive,
+			TCPKeepalive:                       conf.Options.TCPKeepalive,
+			ReduceMemoryUsage:                  conf.Options.ReduceMemoryUsage,
+			GetOnly:                            conf.Options.GetOnly,
+			DisablePreParseMultipartForm:       conf.Options.DisablePreParseMultipartForm,
+			LogAllErrors:                       conf.Options.LogAllErrors,
+			SecureErrorLogMessage:              conf.Options.SecureErrorLogMessage,
+			DisableHeaderNamesNormalizing:      conf.Options.DisableHeaderNamesNormalizing,
+			SleepWhenConcurrencyLimitsExceeded: conf.Options.SleepWhenConcurrencyLimitsExceeded.Duration,
+			NoDefaultServerHeader:              conf.Options.NoDefaultServerHeader,
+			NoDefaultDate:                      conf.Options.NoDefaultDate,
+			NoDefaultContentType:               conf.Options.NoDefaultContentType,
+			KeepHijackedConns:                  conf.Options.KeepHijackedConns,
+			CloseOnShutdown:                    conf.Options.CloseOnShutdown,
+			StreamRequestBody:                  conf.Options.StreamRequestBody,
 			Logger:                             &Logger{},
 		},
+	}, nil
+}
+
+// New 初始化服务
+func New(options *server.ServerOptions) (server.Server, error) {
+	conf := defaultConfig
+	if err := config.GetWithUnmarshal(constant.ConfigServerRestPrefix, &conf); err != nil {
+		return nil, err
 	}
-	return server, nil
+	if conf.CertFile != "" {
+		conf.CertFile = filepath.Join(utils.GetCertDir(), conf.CertFile)
+	}
+	if conf.KeyFile != "" {
+		conf.KeyFile = filepath.Join(utils.GetCertDir(), conf.KeyFile)
+	}
+	return MustNew(conf, options)
 }
 
 // AddHandler .
@@ -138,6 +125,7 @@ func (s *RestServer) Start(startErr chan error) error {
 		logger.Error("request fail",
 			"method", ctx.Method(),
 			"path", ctx.Path(),
+			"header", ctx.Request.Header.String(),
 			"err", err)
 		NewContext(ctx).Write(nil, status.ErrInterServerError)
 	}
@@ -151,6 +139,7 @@ func (s *RestServer) Start(startErr chan error) error {
 		logger.Error("request panic",
 			"method", ctx.Method(),
 			"path", ctx.Path(),
+			"header", ctx.Request.Header.String(),
 			"err", err,
 			"stack", string(debug.Stack()))
 		NewContext(ctx).Write(nil, status.ErrInterServerError)
@@ -159,12 +148,12 @@ func (s *RestServer) Start(startErr chan error) error {
 		ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
 		ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", ctx.Request.Header.Peek("Origin"))
 	}
-	if s.openapiEnabled {
+	if s.conf.Openapi {
 		// 合并openapi并且
 		s.addOpenapiHandler()
 	}
 	s.server.Handler = s.router.Handler
-	address, ok := s.addresses[constant.ServerListenAddressName]
+	address, ok := s.conf.Addresses[constant.ServerListenAddressName]
 	if !ok {
 		return errors.New("config servces.rest.addresses.listen not found")
 	}
@@ -175,9 +164,9 @@ func (s *RestServer) Start(startErr chan error) error {
 					address, err.Error())
 			}
 		}()
-	} else if s.certFile != "" && s.keyFile != "" {
+	} else if s.conf.CertFile != "" && s.conf.KeyFile != "" {
 		go func() {
-			if err := s.server.ListenAndServeTLS(address, s.certFile, s.keyFile); err != nil {
+			if err := s.server.ListenAndServeTLS(address, s.conf.CertFile, s.conf.KeyFile); err != nil {
 				startErr <- fmt.Errorf("start rest server with address %s fail %s",
 					address, err.Error())
 			}
@@ -211,12 +200,12 @@ func (s *RestServer) Protocol() string {
 
 // Enabled .
 func (s *RestServer) Enabled() bool {
-	return s.enabled
+	return s.conf.Enabled
 }
 
 // ListenAddresses 监听地址列表
 func (s *RestServer) ListenAddresses() map[string]string {
-	return s.addresses
+	return s.conf.Addresses
 }
 
 func (s *RestServer) addRouter(handler Handler) error {
@@ -224,7 +213,7 @@ func (s *RestServer) addRouter(handler Handler) error {
 	if desc == nil {
 		return nil
 	}
-	if s.openapiEnabled && len(desc.OpenAPI) != 0 {
+	if s.conf.Openapi && len(desc.OpenAPI) != 0 {
 		document := &openapi_v3.Document{}
 		if err := proto.Unmarshal(desc.OpenAPI, document); err != nil {
 			return err
@@ -246,7 +235,7 @@ func (s *RestServer) addRouter(handler Handler) error {
 
 func (s *RestServer) addRouterHandler(method string, methodDesc MethodDesc, svc Handler) {
 	s.router.Handle(method, methodDesc.Path, func(ctx *fasthttp.RequestCtx) {
-		cc := NewContext(ctx)
+		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
 		reply, err := methodDesc.Handler(cc, svc, s.interceptor)
 		cc.Write(reply, err)
 	})
@@ -276,9 +265,9 @@ func (s *RestServer) addOpenapiHandler() {
 		ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", ctx.Request.Header.Peek("Origin"))
 		ctx.Write(b)
 	})
-	address := s.addresses[constant.ServerAdvertiseAddressName]
+	address := s.conf.Addresses[constant.ServerAdvertiseAddressName]
 	if address == "" {
-		address = s.addresses[constant.ServerListenAddressName]
+		address = s.conf.Addresses[constant.ServerListenAddressName]
 	}
 	s.router.Handle(http.MethodGet, "/openapi", func(ctx *fasthttp.RequestCtx) {
 		ctx.Redirect(fmt.Sprintf("https://authress-engineering.github.io/openapi-explorer/?url=http://%s/openapi.yml#?route=overview", address), http.StatusMovedPermanently)

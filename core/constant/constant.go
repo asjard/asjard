@@ -41,6 +41,14 @@ const (
 )
 
 const (
+	// ConfigServerRestPrefix rest服务配置前缀
+	ConfigServerRestPrefix = "asjard.servers.rest"
+	// ConfigServerGrpcPrefix grpc服务配置前缀
+	ConfigServerGrpcPrefix         = "asjard.servers.grpc"
+	ConfigServerPporfPrefix        = "asjard.servers.pprof"
+	ConfigServerPrefix             = "asjard.servers"
+	ConfigServerWithProtocolPrefix = "asjard.servers.%s"
+
 	// ConfigLoggerPrefix 配置前缀
 	ConfigLoggerPrefix        = "asjard.logger"
 	ConfigLoggerAccessEnabled = "asjard.logger.accessEnabled"
@@ -66,20 +74,6 @@ const (
 	ConfigClientGrpcOptionsKeepaliveTimeout                        = "clients.grpc.options.keepalive.Timeout"
 	ConfigClientGrpcOptionsKeepalivePermitWithoutStreamWithService = "asjard.clients.grpc.%s.options.keepalive.PermitWithoutStream"
 	ConfigClientGrpcOptionsKeepalivePermitWithoutStream            = "clients.grpc.options.keepalive.PermitWithoutStream"
-
-	ConfigServerDefaultHandlersWithProtocol = "asjard.servers.%s.defaultHandlers"
-	ConfigServerDefaultHandlers             = "asjard.servers.defaultHandlers"
-	ConfigServerInterceptorWithProtocol     = "asjard.servers.%s.interceptors"
-	ConfigServerInterceptor                 = "asjard.servers.interceptors"
-	ConfigServerAddress                     = "asjard.servers.%s.addresses"
-	ConfigServerCertfile                    = "asjard.servers.%s.certFile"
-	ConfigServerKeyFile                     = "asjard.servers.%s.keyFile"
-	ConfigServerEnabled                     = "asjard.servers.%s.enabled"
-	ConfigServerGrpcOptionsMaxConnectIdle   = "asjard.servers.grpc.options.MaxConnectionIdle"
-	ConfigServerGrpcOptionsTime             = "asjard.servers.grpc.options.Time"
-	ConfigServerGrpcOptionsTimeout          = "asjard.servers.grpc.options.Timeout"
-	ConfigServerRestDocErrPage              = "asjard.servers.rest.doc.errPage"
-	ConfigServerRestOpenAPIEnabled          = "asjard.servers.rest.openapi"
 
 	ConfigRegistryFailureThreshold    = "asjard.registry.failureThreshold"
 	ConfigRegistryHealthCheck         = "asjard.registry.healthCheck"

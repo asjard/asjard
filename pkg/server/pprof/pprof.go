@@ -21,8 +21,7 @@ const (
 
 // PprofServer .
 type PprofServer struct {
-	addresses map[string]string
-	enabled   bool
+	conf server.ServerConfig
 }
 
 var _ server.Server = &PprofServer{}
@@ -31,16 +30,19 @@ func init() {
 	server.AddServer(Protocol, New)
 }
 
+func MustNew(conf server.ServerConfig, options *server.ServerOptions) (server.Server, error) {
+	return &PprofServer{
+		conf: conf,
+	}, nil
+}
+
 // New .
 func New(options *server.ServerOptions) (server.Server, error) {
-	server := &PprofServer{
-		addresses: make(map[string]string),
-		enabled:   config.GetBool(fmt.Sprintf(constant.ConfigServerEnabled, Protocol), false),
+	conf := server.ServerConfig{}
+	if err := config.GetWithUnmarshal(constant.ConfigServerPporfPrefix, &conf); err != nil {
+		return nil, err
 	}
-	if err := config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigServerAddress, Protocol), &server.addresses); err != nil {
-		return server, err
-	}
-	return server, nil
+	return MustNew(conf, options)
 }
 
 // AddHandler .
@@ -50,7 +52,7 @@ func (s *PprofServer) AddHandler(_ any) error {
 
 // Start .
 func (s *PprofServer) Start(startErr chan error) error {
-	address, ok := s.addresses[constant.ServerListenAddressName]
+	address, ok := s.conf.Addresses[constant.ServerListenAddressName]
 	if !ok {
 		return errors.New("config servers.pprof.addresses.listen not found")
 	}
@@ -74,10 +76,10 @@ func (s *PprofServer) Protocol() string {
 
 // Enabled .
 func (s *PprofServer) Enabled() bool {
-	return s.enabled
+	return s.conf.Enabled
 }
 
 // ListenAddresses .
 func (s *PprofServer) ListenAddresses() map[string]string {
-	return s.addresses
+	return s.conf.Addresses
 }

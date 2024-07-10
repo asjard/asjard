@@ -2,10 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
 )
 
 // UnaryServerInfo consists of various information about a unary RPC on
@@ -54,9 +50,9 @@ func AddInterceptor(newInterceptor NewServerInterceptor) {
 // TODO 添加默认拦截器
 func getServerInterceptors(protocol string) []UnaryServerInterceptor {
 	var interceptors []UnaryServerInterceptor
+	conf := GetConfigWithProtocol(protocol)
 	// 自定义拦截器
-	for _, interceptorName := range config.GetStrings(fmt.Sprintf(constant.ConfigServerInterceptorWithProtocol, protocol),
-		config.GetStrings(constant.ConfigServerInterceptor, []string{})) {
+	for _, interceptorName := range conf.Interceptors {
 		for _, newInterceptor := range newServerInterceptors {
 			interceptor := newInterceptor()
 			if interceptor.Name() == interceptorName {
