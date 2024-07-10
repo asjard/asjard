@@ -49,13 +49,13 @@ type Config struct {
 }
 
 type Options struct {
-	MaxIdleConns              int            `json:"maxIdleConns"`
-	MaxOpenConns              int            `json:"maxOpenConns"`
-	ConnMaxIdleTime           utils.Duration `json:"connMaxIdleTime"`
-	ConnMaxLifeTime           utils.Duration `json:"connMaxLifeTime"`
-	Debug                     bool           `json:"debug"`
-	IgnoreRecordNotFoundError bool           `json:"ignoreRecordNotFoundError"`
-	SlowThreshold             utils.Duration `json:"slowThreshold"`
+	MaxIdleConns              int                `json:"maxIdleConns"`
+	MaxOpenConns              int                `json:"maxOpenConns"`
+	ConnMaxIdleTime           utils.JSONDuration `json:"connMaxIdleTime"`
+	ConnMaxLifeTime           utils.JSONDuration `json:"connMaxLifeTime"`
+	Debug                     bool               `json:"debug"`
+	IgnoreRecordNotFoundError bool               `json:"ignoreRecordNotFoundError"`
+	SlowThreshold             utils.JSONDuration `json:"slowThreshold"`
 }
 
 // DBConnConfig 数据库连接配置
@@ -103,11 +103,11 @@ func (m *DBManager) Bootstrap() error {
 		Options: Options{
 			MaxIdleConns:              10,
 			MaxOpenConns:              100,
-			ConnMaxIdleTime:           utils.Duration{Duration: 10 * time.Second},
-			ConnMaxLifeTime:           utils.Duration{Duration: time.Hour},
+			ConnMaxIdleTime:           utils.JSONDuration{Duration: 10 * time.Second},
+			ConnMaxLifeTime:           utils.JSONDuration{Duration: time.Hour},
 			Debug:                     false,
 			IgnoreRecordNotFoundError: true,
-			SlowThreshold:             utils.Duration{Duration: 200 * time.Millisecond},
+			SlowThreshold:             utils.JSONDuration{Duration: 200 * time.Millisecond},
 		},
 	}
 	if err := config.GetWithUnmarshal(constant.ConfigDatabaseMysqlPrefix,

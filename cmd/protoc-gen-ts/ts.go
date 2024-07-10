@@ -160,7 +160,7 @@ func genMessage(g *protogen.GeneratedFile, message *protogen.Message) {
 	g.P("// -----------")
 	g.P("export interface ", message.GoIdent, "{")
 	for _, field := range message.Fields {
-		g.P("//", field.Desc.Name(), ":", field.Desc.Kind(), field.Desc.)
+		// g.P("//", field.Desc.Name(), ":", field.Desc.Kind(), field.Desc.)
 		g.P("    ", field.Desc.Name(), ": ", tsKindString(field.Desc.Kind()), ";")
 
 	}
