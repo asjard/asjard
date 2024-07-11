@@ -28,7 +28,8 @@ asjard:
       ## 是否开启openapi
       openapi:
         enabled: true
-        page: "https://petstore.swagger.io/?url=http://%s/openapi.yml"
+        # page: "https://petstore.swagger.io/?url=http://%s/openapi.yml"
+        page: https://authress-engineering.github.io/openapi-explorer/?url=http://%s/openapi.yml
         ## 服务条款, 是个地址
         termsOfService: "http://github.com/asjard/asjard"
         license:
@@ -37,3 +38,4 @@ asjard:
       ## 同grpc相关配置
       addresses:
         listen: 127.0.0.1:7030
+        advertise: 0.0.0.0:7030
