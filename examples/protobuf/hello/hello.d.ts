@@ -80,6 +80,8 @@ export interface SayReq{
     kind: ;
 //kinds:enum
     kinds: ;
+//bytes_value:bytes
+    bytes_value: ;
 }
 // -----------
 export interface Configs{

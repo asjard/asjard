@@ -83,33 +83,34 @@ message SayReq {
     // 项目ID
     string project_id = 2;
     // 用户ID
-    int64           user_id               = 3;
+    int64 user_id = 3;
     // 字符串列表
-    repeated string str_list              = 4;
+    repeated string str_list = 4;
     // 数字列表
-    repeated int64  int_list              = 5;
+    repeated int64 int_list = 5;
     // 对象
-    SayObj          obj                   = 6;
+    SayObj obj = 6;
     // 对象列表
-    repeated SayObj objs                  = 7;
+    repeated SayObj objs = 7;
     // 配置
-    Configs         configs               = 8;
+    Configs configs = 8;
     // 分页
-    int32           page                  = 9;
+    int32 page = 9;
     // 每页大小
-    int32           size                  = 10;
+    int32 size = 10;
     // 排序
-    string          sort                  = 11;
+    string sort = 11;
     // 布尔类型
-    optional bool   ok                    = 12;
+    optional bool ok = 12;
     // 可选整形参数
-    optional int32  int_optional_value    = 13;
+    optional int32 int_optional_value = 13;
     // 可选字符串参数
     optional string string_optional_value = 14;
     // 可选枚举参数
-    optional Kind   kind                  = 15;
+    optional Kind kind = 15;
     // 枚举列表
-    repeated Kind   kinds                 = 16;
+    repeated Kind kinds       = 16;
+    bytes         bytes_value = 17;
 }
 
 message Configs {

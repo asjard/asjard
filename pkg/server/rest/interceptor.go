@@ -43,7 +43,9 @@ func (r *ReadEntity) Name() string {
 func (r *ReadEntity) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
 		rc := ctx.(*Context)
-		rc.ReadEntity(req)
+		if err := rc.ReadEntity(req); err != nil {
+			return nil, err
+		}
 		return handler(ctx, req)
 	}
 }
