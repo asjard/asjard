@@ -20,10 +20,10 @@ asjard:
     rest:
       ## 同grpc拦截器相关配置
       interceptors:
+        - cors
         - accessLog
         - restReadEntity
         - restResponseHeader
-        - cors
       ## 同grpc相关配置
       enabled: true
       ## 是否开启openapi

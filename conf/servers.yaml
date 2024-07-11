@@ -80,7 +80,8 @@ asjard:
         ## 如果不配置则使用website配置
         errPage: ""
       ## 是否开启openapi
-      openapi: true
+      openapi:
+        enabled: false
       ## 同grpc相关配置
       addresses:
         listen: 127.0.0.1:7030

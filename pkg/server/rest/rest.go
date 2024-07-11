@@ -39,11 +39,12 @@ type Writer func(ctx *Context, data any, err error)
 
 // RestServer .
 type RestServer struct {
-	router      *router.Router
-	server      fasthttp.Server
-	openapi     *openapi_v3.Document
-	interceptor server.UnaryServerInterceptor
-	conf        ServerConfig
+	corsMiddleware *CorsMiddleware
+	router         *router.Router
+	server         fasthttp.Server
+	openapi        *openapi_v3.Document
+	interceptor    server.UnaryServerInterceptor
+	conf           Config
 }
 
 var _ server.Server = &RestServer{}
@@ -53,12 +54,31 @@ func init() {
 }
 
 // MustNew 配置文件初始化
-func MustNew(conf ServerConfig, options *server.ServerOptions) (server.Server, error) {
+func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) {
+	r := router.New()
+	r.NotFound = func(ctx *fasthttp.RequestCtx) {
+		NewContext(ctx).Write(nil, status.ErrNotFound)
+	}
+	r.MethodNotAllowed = func(ctx *fasthttp.RequestCtx) {
+		NewContext(ctx).Write(nil, status.ErrMethodNotAllowed)
+	}
+	r.PanicHandler = func(ctx *fasthttp.RequestCtx, err any) {
+		logger.Error("request panic",
+			"method", ctx.Method(),
+			"path", ctx.Path(),
+			"header", ctx.Request.Header.String(),
+			"err", err,
+			"stack", string(debug.Stack()))
+		NewContext(ctx).Write(nil, status.ErrInterServerError)
+	}
+	corsMiddleware := NewCorsMiddleware(conf.Cors)
+	r.GlobalOPTIONS = corsMiddleware.Handler(func(ctx *fasthttp.RequestCtx) {})
 	return &RestServer{
-		router:      router.New(),
-		openapi:     &openapi_v3.Document{},
-		interceptor: options.Interceptor,
-		conf:        conf,
+		router:         r,
+		openapi:        &openapi_v3.Document{},
+		interceptor:    options.Interceptor,
+		conf:           conf,
+		corsMiddleware: corsMiddleware,
 		server: fasthttp.Server{
 			Name:                               runtime.APP,
 			Concurrency:                        conf.Options.Concurrency,
@@ -88,6 +108,14 @@ func MustNew(conf ServerConfig, options *server.ServerOptions) (server.Server, e
 			CloseOnShutdown:                    conf.Options.CloseOnShutdown,
 			StreamRequestBody:                  conf.Options.StreamRequestBody,
 			Logger:                             &Logger{},
+			ErrorHandler: func(ctx *fasthttp.RequestCtx, err error) {
+				logger.Error("request fail",
+					"method", ctx.Method(),
+					"path", ctx.Path(),
+					"header", ctx.Request.Header.String(),
+					"err", err)
+				NewContext(ctx).Write(nil, status.ErrInterServerError)
+			},
 		},
 	}, nil
 }
@@ -118,36 +146,9 @@ func (s *RestServer) AddHandler(handler any) error {
 
 // Start .
 func (s *RestServer) Start(startErr chan error) error {
-	s.server.ErrorHandler = func(ctx *fasthttp.RequestCtx, err error) {
-		logger.Error("request fail",
-			"method", ctx.Method(),
-			"path", ctx.Path(),
-			"header", ctx.Request.Header.String(),
-			"err", err)
-		NewContext(ctx).Write(nil, status.ErrInterServerError)
-	}
-	s.router.NotFound = func(ctx *fasthttp.RequestCtx) {
-		NewContext(ctx).Write(nil, status.ErrNotFound)
-	}
-	s.router.MethodNotAllowed = func(ctx *fasthttp.RequestCtx) {
-		NewContext(ctx).Write(nil, status.ErrMethodNotAllowed)
-	}
-	s.router.PanicHandler = func(ctx *fasthttp.RequestCtx, err any) {
-		logger.Error("request panic",
-			"method", ctx.Method(),
-			"path", ctx.Path(),
-			"header", ctx.Request.Header.String(),
-			"err", err,
-			"stack", string(debug.Stack()))
-		NewContext(ctx).Write(nil, status.ErrInterServerError)
-	}
-	s.router.GlobalOPTIONS = func(ctx *fasthttp.RequestCtx) {
-		ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
-		ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", ctx.Request.Header.Peek("Origin"))
-	}
 	if s.conf.Openapi.Enabled {
-		// 合并openapi并且
-		s.AddHandler(NewOpenAPI(s.openapi))
+		// 添加openapi接口
+		s.AddHandler(NewOpenAPI(s.conf.Openapi, s.openapi))
 	}
 	s.server.Handler = s.router.Handler
 	address, ok := s.conf.Addresses[constant.ServerListenAddressName]
@@ -231,43 +232,13 @@ func (s *RestServer) addRouter(handler Handler) error {
 }
 
 func (s *RestServer) addRouterHandler(method string, methodDesc MethodDesc, svc Handler) {
-	s.router.Handle(method, methodDesc.Path, func(ctx *fasthttp.RequestCtx) {
-		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
-		reply, err := methodDesc.Handler(cc, svc, s.interceptor)
-		cc.Write(reply, err)
-	})
+	s.router.Handle(method, methodDesc.Path, s.corsMiddleware.Handler(s.newHandler(methodDesc.Handler, svc)))
 }
 
-// func (s *RestServer) addOpenapiHandler() {
-// 	s.openapi.Info = &openapi_v3.Info{
-// 		Title:       runtime.APP,
-// 		Description: config.GetString(constant.ConfigDesc, ""),
-// 		Version:     runtime.Version,
-// 	}
-// 	props := make([]*openapi_v3.NamedSchemaOrReference, 0, len(s.openapi.Components.Schemas.AdditionalProperties))
-// 	propMap := make(map[string]struct{})
-// 	for _, prop := range s.openapi.Components.Schemas.AdditionalProperties {
-// 		if _, ok := propMap[prop.Name]; !ok {
-// 			props = append(props, prop)
-// 		}
-// 		propMap[prop.Name] = struct{}{}
-// 	}
-// 	s.openapi.Components.Schemas.AdditionalProperties = props
-
-// 	s.router.Handle(http.MethodGet, "/openapi.yml", func(ctx *fasthttp.RequestCtx) {
-// 		b, err := s.openapi.YAMLValue("")
-// 		if err != nil {
-// 			return
-// 		}
-// 		ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
-// 		ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", ctx.Request.Header.Peek("Origin"))
-// 		ctx.Write(b)
-// 	})
-// 	address := s.conf.Addresses[constant.ServerAdvertiseAddressName]
-// 	if address == "" {
-// 		address = s.conf.Addresses[constant.ServerListenAddressName]
-// 	}
-// 	s.router.Handle(http.MethodGet, "/openapi", func(ctx *fasthttp.RequestCtx) {
-// 		ctx.Redirect(fmt.Sprintf("https://authress-engineering.github.io/openapi-explorer/?url=http://%s/openapi.yml#?route=overview", address), http.StatusMovedPermanently)
-// 	})
-// }
+func (s *RestServer) newHandler(methodHandler methodHandler, svc Handler) fasthttp.RequestHandler {
+	return func(ctx *fasthttp.RequestCtx) {
+		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
+		reply, err := methodHandler(cc, svc, s.interceptor)
+		cc.Write(reply, err)
+	}
+}

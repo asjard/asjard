@@ -8,7 +8,7 @@ import (
 	"github.com/asjard/asjard/utils"
 )
 
-type ServerConfig struct {
+type Config struct {
 	Enabled         bool              `json:"enabled"`
 	Interceptors    utils.JSONStrings `json:"interceptors"`
 	DefaultHandlers utils.JSONStrings `json:"defaultHandlers"`
@@ -17,13 +17,13 @@ type ServerConfig struct {
 	KeyFile         string            `json:"keyFile"`
 }
 
-var DefaultConfig ServerConfig = ServerConfig{
+var DefaultConfig Config = Config{
 	Interceptors:    utils.JSONStrings{"accessLog"},
 	DefaultHandlers: utils.JSONStrings{"health"},
 }
 
 // GetConfigWithProtocol 根据协议获取配置
-func GetConfigWithProtocol(protocol string) ServerConfig {
+func GetConfigWithProtocol(protocol string) Config {
 	conf := DefaultConfig
 	config.GetWithUnmarshal(constant.ConfigServerPrefix, &conf)
 	config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigServerWithProtocolPrefix, protocol), &conf)

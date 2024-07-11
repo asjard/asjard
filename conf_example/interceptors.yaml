@@ -46,5 +46,5 @@ asjard:
           ## - "api.v1.hello.Hello.Call"
           - "grpc"
           - "rest:asjard.api.health.Health.Check"
-      cors:
-        allowHeaders: []
+      # cors:
+      # allowHeaders: []

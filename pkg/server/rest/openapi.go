@@ -17,12 +17,14 @@ import (
 
 type OpenAPI struct {
 	document *openapi_v3.Document
+	conf     OpenapiConfig
 	UnimplementedOpenAPIServer
 }
 
-func NewOpenAPI(document *openapi_v3.Document) *OpenAPI {
+func NewOpenAPI(conf OpenapiConfig, document *openapi_v3.Document) *OpenAPI {
 	return &OpenAPI{
 		document: document,
+		conf:     conf,
 	}
 }
 
@@ -34,11 +36,11 @@ func (api *OpenAPI) Yaml(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 			Name: runtime.APP,
 			Url:  config.GetString(constant.ConfigWebsite, ""),
 		},
-		TermsOfService: config.GetString("asjard.servers.rest.openapi.termsOfService", ""),
+		TermsOfService: api.conf.TermsOfService,
 		Version:        runtime.Version,
 		License: &openapi_v3.License{
-			Name: config.GetString("asjard.servers.rest.openapi.license.name", ""),
-			Url:  config.GetString("asjard.servers.rest.openapi.license.url", ""),
+			Name: api.conf.License.Name,
+			Url:  api.conf.License.Url,
 		},
 	}
 	props := make([]*openapi_v3.NamedSchemaOrReference, 0, len(api.document.Components.Schemas.AdditionalProperties))
@@ -75,12 +77,7 @@ func (api *OpenAPI) Page(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 				address = addresses[0]
 			}
 		}
-		// https://petstore.swagger.io/?url=http://%s/openapi.yml
-		// https://petstore.swagger.io/?url=http://127.0.0.1:7030/openapi.yml
-		// https://authress-engineering.github.io/openapi-explorer/?url=http://%s/openapi.yml
-		// https://authress-engineering.github.io/openapi-explorer/?url=http://127.0.0.1:7030/openapi.yml
-		redirectUrl := fmt.Sprintf(config.GetString("asjard.servers.rest.openapi.page", "https://authress-engineering.github.io/openapi-explorer/?url=http://%s/openapi.yml"), address)
-		rtx.Redirect(redirectUrl, http.StatusMovedPermanently)
+		rtx.Redirect(fmt.Sprintf(api.conf.Page, address), http.StatusMovedPermanently)
 		return nil, nil
 	}
 	return &emptypb.Empty{}, nil

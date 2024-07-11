@@ -21,7 +21,7 @@ const (
 
 // PprofServer .
 type PprofServer struct {
-	conf server.ServerConfig
+	conf server.Config
 }
 
 var _ server.Server = &PprofServer{}
@@ -30,7 +30,7 @@ func init() {
 	server.AddServer(Protocol, New)
 }
 
-func MustNew(conf server.ServerConfig, options *server.ServerOptions) (server.Server, error) {
+func MustNew(conf server.Config, options *server.ServerOptions) (server.Server, error) {
 	return &PprofServer{
 		conf: conf,
 	}, nil
@@ -38,7 +38,7 @@ func MustNew(conf server.ServerConfig, options *server.ServerOptions) (server.Se
 
 // New .
 func New(options *server.ServerOptions) (server.Server, error) {
-	conf := server.ServerConfig{}
+	conf := server.Config{}
 	if err := config.GetWithUnmarshal(constant.ConfigServerPporfPrefix, &conf); err != nil {
 		return nil, err
 	}

@@ -24,7 +24,7 @@ const (
 // GrpcServer .
 type GrpcServer struct {
 	server *grpc.Server
-	conf   ServerConfig
+	conf   Config
 }
 
 // Handler .
@@ -38,7 +38,7 @@ func init() {
 	server.AddServer(Protocol, New)
 }
 
-func MustNew(conf ServerConfig, options *server.ServerOptions) (server.Server, error) {
+func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) {
 	var opts []grpc.ServerOption
 	if conf.CertFile != "" && conf.KeyFile != "" {
 		creds, err := credentials.NewServerTLSFromFile(conf.CertFile, conf.KeyFile)

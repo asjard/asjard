@@ -7,12 +7,12 @@ import (
 	"github.com/asjard/asjard/utils"
 )
 
-type ServerConfig struct {
-	server.ServerConfig
-	Options ServerOptionsConfig `json:"options"`
+type Config struct {
+	server.Config
+	Options OptionsConfig `json:"options"`
 }
 
-type ServerOptionsConfig struct {
+type OptionsConfig struct {
 	KeepaliveParams ServerKeepaliveParams `json:"keepaliveParams"`
 }
 
@@ -24,10 +24,10 @@ type ServerKeepaliveParams struct {
 	Timeout               utils.JSONDuration `json:"timeout"`
 }
 
-func defaultConfig() ServerConfig {
-	return ServerConfig{
-		ServerConfig: server.GetConfigWithProtocol(Protocol),
-		Options: ServerOptionsConfig{
+func defaultConfig() Config {
+	return Config{
+		Config: server.GetConfigWithProtocol(Protocol),
+		Options: OptionsConfig{
 			KeepaliveParams: ServerKeepaliveParams{
 				MaxConnectionIdle: utils.JSONDuration{Duration: time.Minute * 5},
 				Time:              utils.JSONDuration{Duration: time.Second * 10},

@@ -42,6 +42,9 @@ func ParseMethodOption(service *protogen.Service, httpOption *httppb.Http) (path
 	case *httppb.Http_Head:
 		method = http.MethodHead
 		path = httpOption.GetHead()
+	case *httppb.Http_Options:
+		method = http.MethodOptions
+		path = httpOption.GetOptions()
 	}
 	// 根据package名称解析
 	// api.v1.xxx
