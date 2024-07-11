@@ -18,7 +18,7 @@ func init() {
 // Bootstrap 监听日志变化
 func (l Logger) Bootstrap() error {
 	l.update()
-	config.AddPatternListener("logger.*", func(*config.Event) {
+	config.AddPatternListener(constant.ConfigLoggerPrefix+".*", func(*config.Event) {
 		l.update()
 	})
 	return nil
