@@ -17,7 +17,7 @@ type Config struct {
 	KeyFile         string            `json:"keyFile"`
 }
 
-var DefaultConfig Config = Config{
+var DefaultConfig = Config{
 	Interceptors:    utils.JSONStrings{"accessLog"},
 	DefaultHandlers: utils.JSONStrings{"health"},
 }

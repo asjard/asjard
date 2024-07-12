@@ -60,13 +60,20 @@ const (
 	// 客户端服务配置前缀
 	ConfigClientWithSevicePrefix = ConfigClientWithProtocolPrefix + ".%s"
 
-	// ConfigServerInterceptorPrefix 服务端拦截器前缀
-	ConfigServerInterceptorPrefix = "asjard.interceptors.server"
+	// 拦截器配置前缀
+	ConfigInterceptorPrefix = Framework + ".interceptors"
+	// 服务端拦截器配置前缀
+	ConfigInterceptorServerPrefix         = ConfigInterceptorPrefix + ".server"
+	ConfigInterceptorServerWithNamePrefix = ConfigInterceptorServerPrefix + ".%s"
+	// 客户端拦截器配置前缀
+	ConfigInterceptorClientPrefix         = ConfigInterceptorPrefix + ".client"
+	ConfigInterceptorClientWithNamePrefix = ConfigInterceptorClientPrefix + ".%s"
 
 	// ConfigLoggerPrefix 日志配置前缀
 	ConfigLoggerPrefix = Framework + ".logger"
+	// 是否开启access_log
+	ConfigLoggerAccessEnabled = ConfigLoggerPrefix + ".accessEnabled"
 
-	ConfigLoggerAccessEnabled = "asjard.logger.accessEnabled"
 	ConfigLoggerBannerEnabled = "asjard.logger.banner.enabled"
 
 	ConfigRegistryFailureThreshold    = "asjard.registry.failureThreshold"

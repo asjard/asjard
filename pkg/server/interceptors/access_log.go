@@ -2,6 +2,7 @@ package interceptors
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -10,17 +11,32 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/utils"
+)
+
+const (
+	// accessLog拦截器名称
+	AccessLogInterceptorName = "accessLog"
 )
 
 // AccessLog access日志拦截器
 type AccessLog struct {
 	enabled bool
-	cfg     *accessLogConfig
+	cfg     accessLogConfig
 }
 
 type accessLogConfig struct {
-	SkipMethods    []string `json:"skipMethods"`
+	// 配置格式: [protocol://]{fullMethod}
+	// 例如grpc协议的某个方法: grpc://api.v1.hello.Hello.Call
+	// 或者协议无关的某个方法: api.v1.hello.Hello.Call
+	// 拦截协议的所有方法: grpc
+	SkipMethods    utils.JSONStrings `json:"skipMethods"`
 	skipMethodsMap map[string]struct{}
+}
+
+var defaultAccessLogConfig = accessLogConfig{
+	SkipMethods:    utils.JSONStrings{"grpc", "asjard.api.health.Health.Check"},
+	skipMethodsMap: make(map[string]struct{}),
 }
 
 func init() {
@@ -29,25 +45,21 @@ func init() {
 
 // NewAccessLogInterceptor .
 func NewAccessLogInterceptor() server.ServerInterceptor {
+	conf := defaultAccessLogConfig
+	config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigInterceptorServerWithNamePrefix, AccessLogInterceptorName), &conf)
+	for _, skipMethod := range conf.SkipMethods {
+		conf.skipMethodsMap[skipMethod] = struct{}{}
+	}
 	accessLog := &AccessLog{
 		enabled: config.GetBool(constant.ConfigLoggerAccessEnabled, false),
-		cfg: &accessLogConfig{
-			skipMethodsMap: make(map[string]struct{}),
-		},
-	}
-	if err := config.GetWithUnmarshal(constant.ConfigInterceptorServerAccessLogPrefix, accessLog.cfg); err == nil {
-		for _, method := range accessLog.cfg.SkipMethods {
-			accessLog.cfg.skipMethodsMap[method] = struct{}{}
-		}
-	} else {
-		logger.Error("get interceptors.server.accessLog fail", "err", err.Error())
+		cfg:     conf,
 	}
 	return accessLog
 }
 
 // Name 日志拦截器名称
 func (AccessLog) Name() string {
-	return "accessLog"
+	return AccessLogInterceptorName
 }
 
 // Interceptor 拦截器实现
@@ -58,16 +70,16 @@ func (al AccessLog) Interceptor() server.UnaryServerInterceptor {
 			return handler(ctx, req)
 		}
 		fullMethod := strings.ReplaceAll(strings.Trim(info.FullMethod, "/"), "/", ".")
+		// 是否拦截协议
+		if _, ok := al.cfg.skipMethodsMap[info.Protocol]; ok {
+			return handler(ctx, req)
+		}
 		// 是否拦截方法
 		if _, ok := al.cfg.skipMethodsMap[fullMethod]; ok {
 			return handler(ctx, req)
 		}
 		// 是否拦截协议方法
-		if _, ok := al.cfg.skipMethodsMap[info.Protocol+":"+fullMethod]; ok {
-			return handler(ctx, req)
-		}
-		// 是否拦截协议
-		if _, ok := al.cfg.skipMethodsMap[info.Protocol]; ok {
+		if _, ok := al.cfg.skipMethodsMap[info.Protocol+"://"+fullMethod]; ok {
 			return handler(ctx, req)
 		}
 		now := time.Now()
