@@ -163,8 +163,10 @@ func (r *OpenAPIv3Reflector) schemaOrReferenceForMessage(message protoreflect.Me
 	case ".google.protobuf.Int32Value", ".google.protobuf.UInt32Value":
 		return wk.NewIntegerSchema(getValueKind(message))
 
-	case ".google.protobuf.StringValue", ".google.protobuf.Int64Value", ".google.protobuf.UInt64Value":
+	case ".google.protobuf.StringValue":
 		return wk.NewStringSchema()
+	case ".google.protobuf.Int64Value", ".google.protobuf.UInt64Value":
+		return wk.NewIntegerStringSchema()
 
 	case ".google.protobuf.FloatValue", ".google.protobuf.DoubleValue":
 		return wk.NewNumberSchema(getValueKind(message))
