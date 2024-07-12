@@ -2,10 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
 )
 
 // ClientInterceptor 客户端拦截器需要实现的方法
@@ -46,8 +42,8 @@ type UnaryInvoker func(ctx context.Context, method string, req, reply any, cc Cl
 // The returned error must be compatible with the status package.
 type UnaryClientInterceptor func(ctx context.Context, method string, req, reply any, cc ClientConnInterface, invoker UnaryInvoker) error
 
-func getChainUnaryInterceptors(protocol string) UnaryClientInterceptor {
-	interceptors := getClientInterceptors(protocol)
+func getChainUnaryInterceptors(conf Config) UnaryClientInterceptor {
+	interceptors := getClientInterceptors(conf)
 	var chainedInt UnaryClientInterceptor
 	if len(interceptors) == 0 {
 		chainedInt = nil
@@ -60,10 +56,9 @@ func getChainUnaryInterceptors(protocol string) UnaryClientInterceptor {
 }
 
 // 添加默认拦截器
-func getClientInterceptors(protocol string) []UnaryClientInterceptor {
+func getClientInterceptors(conf Config) []UnaryClientInterceptor {
 	var interceptors []UnaryClientInterceptor
-	for _, interceptorName := range config.GetStrings(fmt.Sprintf(constant.ConfigClientInterceptorWithProtocol, protocol),
-		config.GetStrings(constant.ConfigClientInterceptor, []string{"cycleChainInterceptor"})) {
+	for _, interceptorName := range conf.Interceptors {
 		for _, newInterceptor := range newClientInterceptors {
 			interceptor := newInterceptor()
 			if interceptor.Name() == interceptorName {

@@ -6,11 +6,8 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/asjard/asjard/core/client"
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
@@ -89,13 +86,12 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (client
 		balanceName = clientOpts.Balancer.Name()
 	}
 	options = append(options, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}]}`, balanceName)))
-	certFile := config.GetString(fmt.Sprintf(constant.ConfigClientCertFileWithProtocolAndService, Protocol, serviceName),
-		config.GetString(fmt.Sprintf(constant.ConfigClientCertFileWithProtocol, Protocol), ""))
-	if certFile != "" {
-		certFile = filepath.Join(utils.GetCertDir(), certFile)
+	conf := serviceConfig(serviceName)
+	if conf.CertFile != "" {
+		conf.CertFile = filepath.Join(utils.GetCertDir(), conf.CertFile)
 	}
-	if certFile != "" {
-		creds, err := credentials.NewClientTLSFromFile(certFile, serviceName)
+	if conf.CertFile != "" {
+		creds, err := credentials.NewClientTLSFromFile(conf.CertFile, serviceName)
 		if err != nil {
 			return nil, err
 		}
@@ -104,12 +100,9 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (client
 		options = append(options, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 	options = append(options, grpc.WithKeepaliveParams(keepalive.ClientParameters{
-		Time: config.GetDuration(fmt.Sprintf(constant.ConfigClientGrpcOptionsKeepaliveTimeWithService, serviceName),
-			config.GetDuration(constant.ConfigClientGrpcOptionsKeepaliveTime, time.Second*20)),
-		Timeout: config.GetDuration(fmt.Sprintf(constant.ConfigClientGrpcOptionsKeepaliveTimeoutWithService, serviceName),
-			config.GetDuration(constant.ConfigClientGrpcOptionsKeepaliveTimeout, time.Second)),
-		PermitWithoutStream: config.GetBool(fmt.Sprintf(constant.ConfigClientGrpcOptionsKeepalivePermitWithoutStreamWithService, serviceName),
-			config.GetBool(constant.ConfigClientGrpcOptionsKeepalivePermitWithoutStream, true)),
+		Time:                conf.Options.Keepalive.Time.Duration,
+		Timeout:             conf.Options.Keepalive.Timeout.Duration,
+		PermitWithoutStream: conf.Options.Keepalive.PermitWithoutStream,
 	}))
 	interceptor := c.interceptor
 	if clientOpts.Interceptor != nil {

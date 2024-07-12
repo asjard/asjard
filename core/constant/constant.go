@@ -45,10 +45,20 @@ const (
 	// ConfigServerRestPrefix rest服务配置前缀
 	ConfigServerRestPrefix = "asjard.servers.rest"
 	// ConfigServerGrpcPrefix grpc服务配置前缀
-	ConfigServerGrpcPrefix         = "asjard.servers.grpc"
-	ConfigServerPporfPrefix        = "asjard.servers.pprof"
-	ConfigServerPrefix             = "asjard.servers"
-	ConfigServerWithProtocolPrefix = "asjard.servers.%s"
+	ConfigServerGrpcPrefix  = "asjard.servers.grpc"
+	ConfigServerPporfPrefix = "asjard.servers.pprof"
+
+	// 服务配置前缀
+	ConfigServerPrefix = Framework + ".servers"
+	// 协议配置前缀
+	ConfigServerWithProtocolPrefix = ConfigServerPrefix + ".%s"
+
+	// 客户端配置前缀
+	ConfigClientPrefix = Framework + ".clients"
+	// 客户端协议配置前缀
+	ConfigClientWithProtocolPrefix = ConfigClientPrefix + ".%s"
+	// 客户端服务配置前缀
+	ConfigClientWithSevicePrefix = ConfigClientWithProtocolPrefix + ".%s"
 
 	// ConfigServerInterceptorPrefix 服务端拦截器前缀
 	ConfigServerInterceptorPrefix = "asjard.interceptors.server"
@@ -57,27 +67,6 @@ const (
 	ConfigLoggerPrefix        = "asjard.logger"
 	ConfigLoggerAccessEnabled = "asjard.logger.accessEnabled"
 	ConfigLoggerBannerEnabled = "asjard.logger.banner.enabled"
-
-	// ConfigBalanceWithProtocol 负载协议相关配置
-	ConfigBalanceWithProtocol = "asjard.clients.%s.loadbalances"
-	// ConfigBalanceWithProtocolAndService 负载均衡服相关配置
-	ConfigBalanceWithProtocolAndService = "asjard.clients.%s.%s.loadbalances"
-	// ConfigBalance 负载通用配置
-	ConfigBalance = "asjard.clients.loadbalances"
-
-	// ConfigClientInterceptorWithProtocol 客户端协议相关拦截器配置
-	ConfigClientInterceptorWithProtocol           = "asjard.clients.%s.interceptors"
-	ConfigClientInterceptorWithProtocolAndService = "asjard.clients.%s.%s.interceptors"
-	// ConfigClientInterceptor 客户端通用拦截器配置
-	ConfigClientInterceptor                                        = "asjard.clients.interceptors"
-	ConfigClientCertFileWithProtocol                               = "asjard.clients.%s.certFile"
-	ConfigClientCertFileWithProtocolAndService                     = "asjard.clients.%s.%s.certFile"
-	ConfigClientGrpcOptionsKeepaliveTimeWithService                = "asjard.clients.grpc.%s.options.keepalive.Time"
-	ConfigClientGrpcOptionsKeepaliveTime                           = "clients.grpc.options.keepalive.Time"
-	ConfigClientGrpcOptionsKeepaliveTimeoutWithService             = "asjard.clients.grpc.%s.options.keepalive.Timeout"
-	ConfigClientGrpcOptionsKeepaliveTimeout                        = "clients.grpc.options.keepalive.Timeout"
-	ConfigClientGrpcOptionsKeepalivePermitWithoutStreamWithService = "asjard.clients.grpc.%s.options.keepalive.PermitWithoutStream"
-	ConfigClientGrpcOptionsKeepalivePermitWithoutStream            = "clients.grpc.options.keepalive.PermitWithoutStream"
 
 	ConfigRegistryFailureThreshold    = "asjard.registry.failureThreshold"
 	ConfigRegistryHealthCheck         = "asjard.registry.healthCheck"

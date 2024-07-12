@@ -3,7 +3,6 @@ package client
 import (
 	"fmt"
 
-	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
 	"google.golang.org/grpc"
 )
@@ -38,12 +37,11 @@ func AddClient(protocol string, newClient NewClientFunc) {
 // Init 客户端初始化
 func Init() error {
 	for protocol, newClient := range newClients {
+		conf := GetConfigWithProtocol(protocol)
 		clients[protocol] = newClient(&ClientOptions{
-			Resolver: &ClientBuilder{},
-			Balancer: NewBalanceBuilder(config.GetString(fmt.Sprintf(constant.ConfigBalanceWithProtocol, protocol),
-				config.GetString(constant.ConfigBalance, DefaultBalanceRoundRobin))),
-			Interceptor: getChainUnaryInterceptors(config.GetString(fmt.Sprintf(constant.ConfigClientInterceptorWithProtocol, protocol),
-				config.GetString(constant.ConfigClientInterceptor, DefaultBalanceRoundRobin))),
+			Resolver:    &ClientBuilder{},
+			Balancer:    NewBalanceBuilder(conf.Loadbalances),
+			Interceptor: getChainUnaryInterceptors(conf),
 		})
 	}
 	return nil
@@ -53,6 +51,7 @@ func Init() error {
 type Client struct {
 	protocol   string
 	serverName string
+	conf       Config
 }
 
 // Conn 链接地址
@@ -61,10 +60,11 @@ func (c Client) Conn() (grpc.ClientConnInterface, error) {
 	if !ok {
 		return nil, fmt.Errorf("protocol %s client not found", c.protocol)
 	}
+	conf := serviceConfig(c.protocol, c.serverName)
 	// 设置置指定服务的负载均衡
 	options := &ClientOptions{
-		Balancer:    NewBalanceBuilder(config.GetString(fmt.Sprintf(constant.ConfigBalanceWithProtocolAndService, c.protocol, c.serverName), "")),
-		Interceptor: getChainUnaryInterceptors(config.GetString(fmt.Sprintf(constant.ConfigClientInterceptorWithProtocolAndService, c.protocol, c.serverName), "")),
+		Balancer:    NewBalanceBuilder(conf.Loadbalances),
+		Interceptor: getChainUnaryInterceptors(conf),
 	}
 	return cc.NewConn(fmt.Sprintf("%s://%s/%s", constant.Framework, c.protocol, c.serverName), options)
 }
