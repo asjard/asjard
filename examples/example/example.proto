@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package api.v1.hello;
+
+option go_package = "github.com/asjard/asjard/examples/example/hellopb";
+
+import "github.com/asjard/protobuf/http.proto";
+
+// 需要实现的功能
+service Hello {
+  // 功能描述,
+  // 支持markdown
+  // 可渲染在openapi文档中
+  rpc Say(SayReq) returns (SayResp) {
+    // 如果是要对外暴露rest服务则写如下路由信息
+    option (asjard.api.http) = {
+      get : "/hello"
+    };
+    option (asjard.api.http) = {
+      post : "/hello"
+    };
+    option (asjard.api.http) = {
+      delete : "/hello/{name}"
+    };
+  };
+}
+
+// 请求参数
+message SayReq {
+  // 名称
+  string name = 1;
+}
+
+// 请求返回
+message SayResp { string message = 2; }
