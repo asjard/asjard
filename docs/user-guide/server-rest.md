@@ -256,4 +256,28 @@ asjard:
       #   StreamRequestBody: !!bool false
 ```
 
+### 开启openapi文档
+
+```yaml
+asjard:
+  servers:
+    rest:
+      openapi:
+        enabled: true
+        ## 一个可以展示openapi.yml文件的页面
+        page: https://petstore.swagger.io/?url=http://%s/openapi.yml
+        termsOfService: ""
+        license:
+          name: Apache 2.0
+          url: http://www.apache.org/licenses/LICENSE-2.0.html
+```
+
+- 访问`localhost:7030/page/openapi`即将会跳转到`asjard.servers.rest.openapi.page`页面
+
+- 其中显示信息如下图所示:
+
+![openapi_page](../media/openapi_page.png)
+
+### 跨域配置
+
 ### 示例
