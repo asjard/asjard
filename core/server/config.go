@@ -18,7 +18,7 @@ type Config struct {
 }
 
 var DefaultConfig = Config{
-	Interceptors:    utils.JSONStrings{"accessLog"},
+	Interceptors:    utils.JSONStrings{"accessLog", "restReadEntity", "restResponseHeader"},
 	DefaultHandlers: utils.JSONStrings{"health"},
 }
 

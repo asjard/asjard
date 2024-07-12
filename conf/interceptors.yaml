@@ -46,16 +46,3 @@ asjard:
           ## - "api.v1.hello.Hello.Call"
           - "grpc"
           - "rest://asjard.api.health.Health.Check"
-      cors:
-        allowOrigins:
-          - "*"
-        allowMethods:
-          - "GET"
-          - "HEAD"
-          - "PUT"
-          - "PATCH"
-          - "POST"
-          - "DELETE"
-        allowHeaders: []
-        allowCredentials: false
-        maxAge: 12h

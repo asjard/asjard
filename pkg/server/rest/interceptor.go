@@ -69,8 +69,3 @@ func (ResponseHeader) Interceptor() server.UnaryServerInterceptor {
 		return handler(ctx, req)
 	}
 }
-
-// Cors 跨域请求
-type Cors struct {
-	conf CorsConfig
-}
