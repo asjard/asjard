@@ -16,6 +16,7 @@
 package wellknown
 
 import (
+	openapi_v3 "github.com/google/gnostic/openapiv3"
 	v3 "github.com/google/gnostic/openapiv3"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -24,6 +25,14 @@ func NewStringSchema() *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
 			Schema: &v3.Schema{Type: "string"}}}
+}
+
+func NewIntegerStringSchema() *v3.SchemaOrReference {
+	return &v3.SchemaOrReference{
+		Oneof: &v3.SchemaOrReference_Schema{
+			Schema: &v3.Schema{Type: "string", Default: &openapi_v3.DefaultType{Oneof: &openapi_v3.DefaultType_Number{}}},
+		},
+	}
 }
 
 func NewBooleanSchema() *v3.SchemaOrReference {
