@@ -100,7 +100,7 @@ func defaultConfig() Config {
 			AllowOrigins:     []string{"*"},
 			AllowMethods:     []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete},
 			AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type"},
-			AllowCredentials: true,
+			AllowCredentials: false,
 			MaxAge:           utils.JSONDuration{Duration: 12 * time.Hour},
 		},
 		Options: OptionsConfig{},

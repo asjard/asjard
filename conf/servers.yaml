@@ -36,13 +36,13 @@ asjard:
           ## defined since the most recent time the number of outstanding RPCs became
           ## zero or the connection establishment.
           ## The current default value is infinity.
-          MaxConnectionIdle: !!str 5m
+          maxConnectionIdle: !!str 5m
           ## MaxConnectionAge is a duration for the maximum amount of time a
           ## connection may exist before it will be closed by sending a GoAway. A
           ## random jitter of +/-10% will be added to MaxConnectionAge to spread out
           ## connection storms.
           ## The current default value is infinity.
-          MaxConnectionAge: !!str 0s
+          maxConnectionAge: !!str 0s
           ## MaxConnectionAgeGrace is an additive period after MaxConnectionAge after
           ## which the connection will be forcibly closed.
           ## The current default value is infinity.
@@ -51,12 +51,12 @@ asjard:
           ## pings the client to see if the transport is still alive.
           ## If set below 1s, a minimum value of 1s will be used instead.
           ## The current default value is 2 hours.
-          Time: !!str 10s
+          time: !!str 10s
           ## After having pinged for keepalive check, the server waits for a duration
           ## of Timeout and if no activity is seen even after that the connection is
           ## closed.
           ## The current default value is 20 seconds.
-          Timeout: !!str 1s
+          timeout: !!str 1s
     ## pprof相关配置
     pprof:
       ## 同grpc相关配置

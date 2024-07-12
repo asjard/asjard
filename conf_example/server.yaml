@@ -16,6 +16,8 @@ asjard:
     ## rest(HTTP)协议相关配置
     rest:
       enabled: true
+      openapi:
+        enabled: true
       ## 同grpc相关配置
       addresses:
         listen: 127.0.0.1:7030

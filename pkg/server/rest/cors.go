@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asjard/asjard/core/logger"
 	"github.com/valyala/fasthttp"
 )
 
@@ -33,7 +32,6 @@ func (c CorsMiddleware) Handler(next fasthttp.RequestHandler) func(ctx *fasthttp
 			return
 		}
 		host := string(ctx.Host())
-		logger.Debug("cors", "origin", origin, "host", host)
 		if origin == "http://"+host || origin == "https://"+host {
 			next(ctx)
 			return
@@ -47,7 +45,6 @@ func (c CorsMiddleware) Handler(next fasthttp.RequestHandler) func(ctx *fasthttp
 			ctx.Response.Header.Set("Vary", "Origin")
 		}
 		if string(ctx.Method()) == http.MethodOptions {
-			logger.Debug("cors options request")
 			if c.conf.AllowCredentials {
 				ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
 			}
@@ -67,7 +64,6 @@ func (c CorsMiddleware) Handler(next fasthttp.RequestHandler) func(ctx *fasthttp
 			ctx.SetStatusCode(http.StatusNoContent)
 			return
 		} else {
-			logger.Debug("cors not options request")
 			if c.conf.AllowCredentials {
 				ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
 			}
