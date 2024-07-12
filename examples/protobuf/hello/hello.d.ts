@@ -82,6 +82,10 @@ export interface SayReq{
     kinds: ;
 //bytes_value:bytes
     bytes_value: ;
+//uint64_value:uint64
+    uint64_value: number;
+//google_int64_value:message
+    google_int64_value: message;
 }
 // -----------
 export interface Configs{

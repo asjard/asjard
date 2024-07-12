@@ -6,6 +6,7 @@ option go_package = "github.com/asjard/asjard/examples/protobuf/hello;hello";
 
 import "github.com/asjard/protobuf/http.proto";
 import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
 
 // hello 相关接口
 service Hello {
@@ -111,6 +112,9 @@ message SayReq {
     // 枚举列表
     repeated Kind kinds       = 16;
     bytes         bytes_value = 17;
+    // openapi 会把这个字段解析为字符串
+    uint64                     uint64_value       = 18;
+    google.protobuf.Int64Value google_int64_value = 19;
 }
 
 message Configs {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/asjard/asjard/core/server"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -43,7 +44,7 @@ func (r *ReadEntity) Name() string {
 func (r *ReadEntity) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
 		rc := ctx.(*Context)
-		if err := rc.ReadEntity(req); err != nil {
+		if err := rc.ReadEntity(req.(proto.Message)); err != nil {
 			return nil, err
 		}
 		return handler(ctx, req)

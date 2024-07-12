@@ -16,7 +16,7 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server"
-	"github.com/asjard/asjard/pkg/status"
+	"github.com/asjard/asjard/pkg/ajerr"
 	"github.com/asjard/asjard/utils"
 	"github.com/fasthttp/router"
 	openapi_v3 "github.com/google/gnostic/openapiv3"
@@ -57,10 +57,10 @@ func init() {
 func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) {
 	r := router.New()
 	r.NotFound = func(ctx *fasthttp.RequestCtx) {
-		NewContext(ctx).Write(nil, status.ErrNotFound)
+		NewContext(ctx).Write(nil, ajerr.PageNotFoundError)
 	}
 	r.MethodNotAllowed = func(ctx *fasthttp.RequestCtx) {
-		NewContext(ctx).Write(nil, status.ErrMethodNotAllowed)
+		NewContext(ctx).Write(nil, ajerr.MethodNotAllowedError)
 	}
 	r.PanicHandler = func(ctx *fasthttp.RequestCtx, err any) {
 		logger.Error("request panic",
@@ -69,7 +69,7 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 			"header", ctx.Request.Header.String(),
 			"err", err,
 			"stack", string(debug.Stack()))
-		NewContext(ctx).Write(nil, status.ErrInterServerError)
+		NewContext(ctx).Write(nil, ajerr.InternalServerError)
 	}
 	corsMiddleware := NewCorsMiddleware(conf.Cors)
 	r.GlobalOPTIONS = corsMiddleware.Handler(func(ctx *fasthttp.RequestCtx) {})
@@ -114,7 +114,7 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 					"path", ctx.Path(),
 					"header", ctx.Request.Header.String(),
 					"err", err)
-				NewContext(ctx).Write(nil, status.ErrInterServerError)
+				NewContext(ctx).Write(nil, ajerr.InternalServerError)
 			},
 		},
 	}, nil

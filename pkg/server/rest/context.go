@@ -3,17 +3,19 @@ package rest
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 	"sync"
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
-	"github.com/asjard/asjard/pkg/status"
+	"github.com/asjard/asjard/pkg/protobuf/responsepb"
 	"github.com/spf13/cast"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/metadata"
+	status "google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -44,7 +46,7 @@ type Context struct {
 	postBody     []byte
 	postLoaded   bool
 	// 返回内容
-	response *Response
+	response *responsepb.Response
 	write    Writer
 }
 
@@ -78,7 +80,7 @@ func NewContext(ctx *fasthttp.RequestCtx, options ...Option) *Context {
 // 解析顺序 query -> header -> body -> path
 // 后解析的同名参数会覆盖前解析的同名参数
 // post,put,patch解析body体,其余不解析
-func (c *Context) ReadEntity(entityPtr any) error {
+func (c *Context) ReadEntity(entityPtr proto.Message) error {
 	if err := c.readQueryParamsToEntity(entityPtr); err != nil {
 		return err
 	}
@@ -159,21 +161,22 @@ func (c *Context) ReadBodyParams() []byte {
 	return c.postBody
 }
 
-func (c *Context) readBodyParamsToEntity(entity any) error {
+func (c *Context) readBodyParamsToEntity(entity proto.Message) error {
 	if entity == nil {
 		return nil
 	}
-	if err := json.Unmarshal(c.ReadBodyParams(), entity); err != nil {
+	if err := protojson.Unmarshal(c.ReadBodyParams(), entity); err != nil {
+		// if err := json.Unmarshal(c.ReadBodyParams(), entity); err != nil {
 		// 修改下原本返回的错误信息，去掉语言相关内容
 		if e, ok := err.(*json.UnmarshalTypeError); ok {
 			if e.Struct != "" || e.Field != "" {
 				return status.Errorf(http.StatusBadRequest,
-					"cannot deserialize "+e.Value+" into field "+e.Field+" of type "+e.Type.String())
+					"cannot deserialize %s into field %s of type %s", e.Value, e.Field, e.Type.String())
 			}
 			return status.Errorf(http.StatusBadRequest,
-				"cannot deserialize "+e.Value+" into value of type "+e.Type.String())
+				"cannot deserialize %s into value of type %s", e.Value, e.Type.String())
 		}
-		return status.Errorf(http.StatusBadRequest, fmt.Sprintf("read body params fail: %s", err.Error()))
+		return status.Errorf(http.StatusBadRequest, "read body params fail: %s", err.Error())
 	}
 	return nil
 }
@@ -200,7 +203,7 @@ func (c *Context) readQueryParamsToEntity(entity any) error {
 		return nil
 	}
 	if err := mapForm(entity, c.ReadQueryParams()); err != nil {
-		return status.Errorf(http.StatusBadRequest, fmt.Sprintf("read query params fail: %s", err.Error()))
+		return status.Errorf(http.StatusBadRequest, "read query params fail: %s", err.Error())
 	}
 	return nil
 }
@@ -227,7 +230,7 @@ func (c *Context) readHeaderParamsToEntity(entity any) error {
 		return nil
 	}
 	if err := mapForm(entity, c.ReadHeaderParams()); err != nil {
-		return status.Errorf(http.StatusBadRequest, fmt.Sprintf("read header params fail: %s", err.Error()))
+		return status.Errorf(http.StatusBadRequest, "read header params fail: %s", err.Error())
 	}
 	return nil
 }
@@ -254,7 +257,7 @@ func (c *Context) readPathParamsToEntity(entity any) error {
 		return nil
 	}
 	if err := mapForm(entity, c.ReadPathParams()); err != nil {
-		return status.Errorf(http.StatusBadRequest, fmt.Sprintf("read path params fail: %s", err.Error()))
+		return status.Errorf(http.StatusBadRequest, "read path params fail: %s", err.Error())
 	}
 	return nil
 }

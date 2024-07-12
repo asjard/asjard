@@ -1,12 +1,14 @@
 package rest
 
 import (
-	"encoding/json"
 	"net/http"
 	"reflect"
 
+	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/utils"
 	"github.com/valyala/fasthttp"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -25,10 +27,9 @@ func DefaultWriter(c *Context, data any, err error) {
 	if c.URI().QueryArgs().Has(QueryParamNeedStatusCode) {
 		statusCode = getStatusCode(response.Code)
 	}
-	writeJSON(c, int(statusCode), response)
-	response.Status = nil
-	response.Data = nil
-	responsePool.Put(response)
+	if err := writeJSON(c, int(statusCode), response); err != nil {
+		logger.Error("write json fail", "err", err)
+	}
 }
 
 func getStatusCode(code uint32) uint32 {
@@ -44,12 +45,19 @@ func getStatusCode(code uint32) uint32 {
 	return http.StatusOK
 }
 
-func writeJSON(c *Context, statusCode int, body any) error {
-	if body == nil {
-		c.Response.SetStatusCode(statusCode)
-		return nil
-	}
+func writeJSON(c *Context, statusCode int, body proto.Message) error {
 	c.Response.Header.Set(fasthttp.HeaderContentType, MIME_JSON)
 	c.Response.SetStatusCode(statusCode)
-	return json.NewEncoder(c.Response.BodyWriter()).Encode(body)
+	b, err := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		EmitUnpopulated: true,
+	}.Marshal(body)
+	// b, err := protojson.Marshal(body)
+	if err != nil {
+		return err
+	}
+	if _, err := c.RequestCtx.Write(b); err != nil {
+		return err
+	}
+	return nil
 }
