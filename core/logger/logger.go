@@ -9,43 +9,15 @@ import (
 	"strings"
 
 	"gopkg.in/natefinch/lumberjack.v2"
-	// aruntime "github.com/asjard/asjard/core/runtime"
 )
 
-// Logger 日志
-type Logger interface {
-	// info级别日志
-	Info(format string, kv ...any)
-	// debug级别日志
-	Debug(format string, kv ...any)
-	// warn级别日志
-	Warn(format string, kv ...any)
-	// error级别日志
-	Error(format string, kv ...any)
-}
-
-// L 日志组件
-var L Logger
-
-// NewLoggerHandler 初始化logger handler的方法
-type NewLoggerHandler func() slog.Handler
-
-func init() {
-	SetLoggerHandler(defaultLoggerHandler)
-}
-
-// SetLoggerHandler 设置logger handler
-func SetLoggerHandler(newFunc NewLoggerHandler) {
-	L = NewLogger(newFunc)
-}
-
-// defaultLogger 默认日志
-type defaultLogger struct {
+// Logger 默认日志
+type Logger struct {
 	slogger *slog.Logger
 }
 
-// LoggerConfig 日志配置
-type LoggerConfig struct {
+// Config 日志配置
+type Config struct {
 	FileName   string `json:"filepath"`
 	MaxSize    int    `json:"maxSize"`
 	MaxAge     int    `json:"maxAge"`
@@ -55,7 +27,8 @@ type LoggerConfig struct {
 	Format     string `json:"format"`
 }
 
-var defaultLoggerConfig = &LoggerConfig{
+// DefaultConfig 日志默认配置
+var DefaultConfig = &Config{
 	FileName:   "/dev/stdout",
 	MaxSize:    100,
 	MaxAge:     0,
@@ -65,19 +38,23 @@ var defaultLoggerConfig = &LoggerConfig{
 	Format:     Json.String(),
 }
 
-// NewLogger .
-func NewLogger(newFunc NewLoggerHandler) *defaultLogger {
-	return &defaultLogger{
+// L 日志组件
+var L = &Logger{
+	slogger: slog.New(NewSlogHandler(DefaultConfig)),
+}
+
+// NewLoggerHandler 初始化logger handler的方法
+type NewLoggerHandler func() slog.Handler
+
+// SetLoggerHandler 设置logger handler
+func SetLoggerHandler(newFunc NewLoggerHandler) {
+	L = &Logger{
 		slogger: slog.New(newFunc()),
 	}
 }
 
-func defaultLoggerHandler() slog.Handler {
-	return GetSlogHandler(defaultLoggerConfig)
-}
-
-// GetSlogHandler .
-func GetSlogHandler(cfg *LoggerConfig) slog.Handler {
+// NewSlogHandler slog初始化
+func NewSlogHandler(cfg *Config) slog.Handler {
 	writer := &lumberjack.Logger{
 		Filename:   cfg.FileName,
 		MaxSize:    cfg.MaxSize,
@@ -95,22 +72,27 @@ func GetSlogHandler(cfg *LoggerConfig) slog.Handler {
 	}
 }
 
-func getSlogLevel(level string) slog.Level {
-	switch level {
-	case DEBUG.String():
-		return slog.LevelDebug
-	case INFO.String():
-		return slog.LevelInfo
-	case WARN.String():
-		return slog.LevelWarn
-	case ERROR.String():
-		return slog.LevelError
-	default:
-		return slog.LevelDebug
-	}
+func (dl Logger) Info(msg string, v ...any) {
+	dl.log(slog.LevelInfo, msg, v...)
 }
 
-func (dl defaultLogger) log(level slog.Level, msg string, args ...any) {
+func (dl Logger) Debug(msg string, v ...any) {
+	dl.log(slog.LevelDebug, msg, v...)
+}
+
+func (dl Logger) Warn(msg string, v ...any) {
+	dl.log(slog.LevelWarn, msg, v...)
+}
+
+func (dl Logger) Error(msg string, v ...any) {
+	dl.log(slog.LevelError, msg, v...)
+}
+
+func Info(format string, kv ...any) {
+	L.Info(format, kv...)
+}
+
+func (dl Logger) log(level slog.Level, msg string, args ...any) {
 	_, f, l, ok := runtime.Caller(3)
 	if !ok {
 		f = "???"
@@ -124,42 +106,14 @@ func (dl defaultLogger) log(level slog.Level, msg string, args ...any) {
 	dl.slogger.Log(context.Background(), level, msg, args...)
 }
 
-// Info .
-func (dl defaultLogger) Info(msg string, v ...any) {
-	dl.log(slog.LevelInfo, msg, v...)
-}
-
-// Debug .
-func (dl defaultLogger) Debug(msg string, v ...any) {
-	dl.log(slog.LevelDebug, msg, v...)
-}
-
-// Warn .
-func (dl defaultLogger) Warn(msg string, v ...any) {
-	dl.log(slog.LevelWarn, msg, v...)
-}
-
-// Error .
-func (dl defaultLogger) Error(msg string, v ...any) {
-	dl.log(slog.LevelError, msg, v...)
-}
-
-// Info .
-func Info(format string, kv ...any) {
-	L.Info(format, kv...)
-}
-
-// Debug .
 func Debug(format string, kv ...any) {
 	L.Debug(format, kv...)
 }
 
-// Warn .
 func Warn(format string, kv ...any) {
 	L.Warn(format, kv...)
 }
 
-// Error .
 func Error(format string, kv ...any) {
 	L.Error(format, kv...)
 }

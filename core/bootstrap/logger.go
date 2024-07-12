@@ -25,15 +25,11 @@ func (l Logger) Bootstrap() error {
 }
 
 func (l Logger) update() {
-	logger.SetLoggerHandler(l.newLoggerHandler)
-}
-
-func (l Logger) newLoggerHandler() slog.Handler {
-	var loggerConfig logger.LoggerConfig
-	if err := config.GetWithUnmarshal(constant.ConfigLoggerPrefix, &loggerConfig); err != nil {
-		logger.Error("get with unmarshal asjard.logger fail", "err", err)
-	}
-	return logger.GetSlogHandler(&loggerConfig)
+	conf := logger.DefaultConfig
+	config.GetWithUnmarshal(constant.ConfigLoggerPrefix, &conf)
+	logger.SetLoggerHandler(func() slog.Handler {
+		return logger.NewSlogHandler(conf)
+	})
 }
 
 func (l Logger) Shutdown() {}

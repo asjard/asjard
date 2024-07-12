@@ -1,5 +1,7 @@
 package logger
 
+import "log/slog"
+
 // Level 日志级别
 type Level int
 
@@ -40,5 +42,20 @@ func GetLevel(level string) Level {
 		return ERROR
 	default:
 		return DEBUG
+	}
+}
+
+func getSlogLevel(level string) slog.Level {
+	switch level {
+	case DEBUG.String():
+		return slog.LevelDebug
+	case INFO.String():
+		return slog.LevelInfo
+	case WARN.String():
+		return slog.LevelWarn
+	case ERROR.String():
+		return slog.LevelError
+	default:
+		return slog.LevelDebug
 	}
 }

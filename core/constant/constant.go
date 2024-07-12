@@ -63,8 +63,9 @@ const (
 	// ConfigServerInterceptorPrefix 服务端拦截器前缀
 	ConfigServerInterceptorPrefix = "asjard.interceptors.server"
 
-	// ConfigLoggerPrefix 配置前缀
-	ConfigLoggerPrefix        = "asjard.logger"
+	// ConfigLoggerPrefix 日志配置前缀
+	ConfigLoggerPrefix = Framework + ".logger"
+
 	ConfigLoggerAccessEnabled = "asjard.logger.accessEnabled"
 	ConfigLoggerBannerEnabled = "asjard.logger.banner.enabled"
 
