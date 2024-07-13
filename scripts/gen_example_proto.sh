@@ -12,7 +12,7 @@ do
         --go_out=${GOPATH}/src \
         --go-grpc_out=${GOPATH}/src \
         --go-rest_out=${GOPATH}/src \
-        -I${GOPATH}/src -I. $file
+        -I${ROOTDIR}/../third_party -I. $file
 done
 
 for file in $(find . -type f -name "*.pb.go")
