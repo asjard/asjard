@@ -74,6 +74,9 @@ const (
 	// 是否开启access_log
 	ConfigLoggerAccessEnabled = ConfigLoggerPrefix + ".accessEnabled"
 
+	// 监控配置前缀
+	ConfigMetricsPrefix = Framework + ".metrics"
+
 	ConfigLoggerBannerEnabled = "asjard.logger.banner.enabled"
 
 	ConfigRegistryFailureThreshold    = "asjard.registry.failureThreshold"

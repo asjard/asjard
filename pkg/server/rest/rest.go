@@ -37,14 +37,16 @@ type Handler interface {
 // Writer 结果输出
 type Writer func(ctx *Context, data any, err error)
 
+type MiddlewareFunc func(next fasthttp.RequestHandler) fasthttp.RequestHandler
+
 // RestServer .
 type RestServer struct {
-	corsMiddleware *CorsMiddleware
-	router         *router.Router
-	server         fasthttp.Server
-	openapi        *openapi_v3.Document
-	interceptor    server.UnaryServerInterceptor
-	conf           Config
+	router      *router.Router
+	server      fasthttp.Server
+	openapi     *openapi_v3.Document
+	interceptor server.UnaryServerInterceptor
+	conf        Config
+	middlewares []MiddlewareFunc
 }
 
 var _ server.Server = &RestServer{}
@@ -72,13 +74,14 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 		NewContext(ctx).Write(nil, ajerr.InternalServerError)
 	}
 	corsMiddleware := NewCorsMiddleware(conf.Cors)
-	r.GlobalOPTIONS = corsMiddleware.Handler(func(ctx *fasthttp.RequestCtx) {})
+	// 不能删除这行，option请求走不到middleware中
+	r.GlobalOPTIONS = corsMiddleware(func(ctx *fasthttp.RequestCtx) {})
 	return &RestServer{
-		router:         r,
-		openapi:        &openapi_v3.Document{},
-		interceptor:    options.Interceptor,
-		conf:           conf,
-		corsMiddleware: corsMiddleware,
+		router:      r,
+		openapi:     &openapi_v3.Document{},
+		interceptor: options.Interceptor,
+		conf:        conf,
+		middlewares: []MiddlewareFunc{corsMiddleware},
 		server: fasthttp.Server{
 			Name:                               runtime.APP,
 			Concurrency:                        conf.Options.Concurrency,
@@ -149,6 +152,9 @@ func (s *RestServer) Start(startErr chan error) error {
 	if s.conf.Openapi.Enabled {
 		// 添加openapi接口
 		s.AddHandler(NewOpenAPI(s.conf.Openapi, s.openapi))
+	}
+	if s.conf.Metrics.Enabled {
+
 	}
 	s.server.Handler = s.router.Handler
 	address, ok := s.conf.Addresses[constant.ServerListenAddressName]
@@ -232,7 +238,7 @@ func (s *RestServer) addRouter(handler Handler) error {
 }
 
 func (s *RestServer) addRouterHandler(method string, methodDesc MethodDesc, svc Handler) {
-	s.router.Handle(method, methodDesc.Path, s.corsMiddleware.Handler(s.newHandler(methodDesc.Handler, svc)))
+	s.router.Handle(method, methodDesc.Path, s.applyMiddleware(s.newHandler(methodDesc.Handler, svc), s.middlewares...))
 }
 
 func (s *RestServer) newHandler(methodHandler methodHandler, svc Handler) fasthttp.RequestHandler {
@@ -241,4 +247,11 @@ func (s *RestServer) newHandler(methodHandler methodHandler, svc Handler) fastht
 		reply, err := methodHandler(cc, svc, s.interceptor)
 		cc.Write(reply, err)
 	}
+}
+
+func (s *RestServer) applyMiddleware(h fasthttp.RequestHandler, middlewares ...MiddlewareFunc) fasthttp.RequestHandler {
+	for i := 0; i < len(middlewares); i++ {
+		h = middlewares[i](h)
+	}
+	return h
 }
