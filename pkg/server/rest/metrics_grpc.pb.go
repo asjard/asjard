@@ -4,7 +4,7 @@
 // - protoc             v5.27.0
 // source: metrics.proto
 
-package metricspb
+package rest
 
 import (
 	context "context"

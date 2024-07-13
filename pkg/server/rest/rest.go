@@ -154,7 +154,7 @@ func (s *RestServer) Start(startErr chan error) error {
 		s.AddHandler(NewOpenAPI(s.conf.Openapi, s.openapi))
 	}
 	if s.conf.Metrics.Enabled {
-
+		s.AddHandler(&MetricsAPI{})
 	}
 	s.server.Handler = s.router.Handler
 	address, ok := s.conf.Addresses[constant.ServerListenAddressName]

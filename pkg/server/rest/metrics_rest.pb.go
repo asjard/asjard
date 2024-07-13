@@ -4,17 +4,16 @@
 // - protoc             v5.27.0
 // source: metrics.proto
 
-package metricspb
+package rest
 
 import (
 	context "context"
 	server "github.com/asjard/asjard/core/server"
-	rest "github.com/asjard/asjard/pkg/server/rest"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // 获取监控指标
-func _Metrics_Fetch_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _Metrics_Fetch_RestHandler(ctx *Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(emptypb.Empty)
 	if interceptor == nil {
 		return srv.(MetricsServer).Fetch(ctx, in)
@@ -22,7 +21,7 @@ func _Metrics_Fetch_RestHandler(ctx *rest.Context, srv any, interceptor server.U
 	info := &server.UnaryServerInfo{
 		Server:     srv,
 		FullMethod: "asjard.api.Metrics.Fetch",
-		Protocol:   rest.Protocol,
+		Protocol:   Protocol,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(MetricsServer).Fetch(ctx, in)
@@ -30,16 +29,16 @@ func _Metrics_Fetch_RestHandler(ctx *rest.Context, srv any, interceptor server.U
 	return interceptor(ctx, in, info, handler)
 }
 
-// MetricsRestServiceDesc is the rest.ServiceDesc for Metrics service.
-// It's only intended for direct use with rest.AddHandler,
+// MetricsRestServiceDesc is the ServiceDesc for Metrics service.
+// It's only intended for direct use with AddHandler,
 // and not to be introspected or modified (even as a copy)
 //
 // 监控指标相关接口
-var MetricsRestServiceDesc = rest.ServiceDesc{
+var MetricsRestServiceDesc = ServiceDesc{
 	ServiceName: "asjard.api.Metrics",
 	HandlerType: (*MetricsServer)(nil),
 	OpenAPI:     file_metrics_proto_openapi,
-	Methods: []rest.MethodDesc{
+	Methods: []MethodDesc{
 		{
 			MethodName: "Fetch",
 			Desc:       "获取监控指标.",

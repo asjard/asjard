@@ -3,11 +3,18 @@ package rest
 import (
 	"context"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-type MetricsAPI struct{}
+type MetricsAPI struct {
+	UnimplementedMetricsServer
+}
 
-func (MetricsAPI) Fetch(ctx context.Context) {
-	promhttp.Handler()
+// Fetch 获取系统指标
+func (MetricsAPI) Fetch(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
+	return nil, nil
+}
+
+func (MetricsAPI) RestServiceDesc() *ServiceDesc {
+	return &MetricsRestServiceDesc
 }
