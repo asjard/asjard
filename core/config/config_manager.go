@@ -547,9 +547,10 @@ func GetByte(key string, defaultValue []byte, opts ...Option) []byte {
 
 // GetBool 获取配置并转化为bool类型
 // 除了true, false 布尔类型外
-// 如果为字符串，转换为小写字符后,如果不为false或no均为true
+// 如果为字符串，转换为小写字符后,
+// "1", "t", "true", "y", "yes", "on" 为true
+// "0", "f", "false", "n", "no", "off" 或其他均为false
 // 如果为整形，不等于零均为true
-// TODO 需实现，yes/no, y/n
 //
 //	@param key
 //	@param defaultValue
@@ -560,10 +561,9 @@ func GetBool(key string, defaultValue bool, opts ...Option) bool {
 	if v == nil {
 		return defaultValue
 	}
-	value, err := ccast.ToBoolE(v)
-	if err != nil {
-		return defaultValue
-	}
+	// 如果判断错误字符串转bool类型会出现错误
+	// 比如不在true和false列表中的会返回false,并返回错误
+	value, _ := ccast.ToBoolE(v)
 	return value
 }
 

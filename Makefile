@@ -35,5 +35,5 @@ build_gen_go_rest: ## 生成protoc-gen-go-rest命令
 build_gen_ts: ## 生成protoc-gen-ts命令
 	go build -o $(GOPATH)/bin/protoc-gen-ts -ldflags '-w -s' ./cmd/protoc-gen-ts/*.go
 
-build_gen_openapi: ## 生成protoc-gen-openapi命令
-	go build -o $(GOPATH)/bin/protoc-gen-openapi -ldflags '-w -s' ./cmd/protoc-gen-openapi/*.go
+test: ## 运行测试用例
+	go test -cover ./...
