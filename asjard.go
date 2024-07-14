@@ -68,26 +68,18 @@ func New() *Asjard {
 	}
 }
 
-// AddHandler 添加协议可以处理的handler方法
-func (asd *Asjard) AddHandler(protocol string, handler any) error {
+// AddHandler 同AddHandler方法，可以让一个handler支持多个协议
+func (asd *Asjard) AddHandler(handler any, protocols ...string) error {
 	asd.hm.Lock()
-	if _, ok := asd.handlers[protocol]; ok {
-		asd.handlers[protocol] = append(asd.handlers[protocol], handler)
-	} else {
-		asd.handlers[protocol] = []any{handler}
-	}
-	asd.hm.Unlock()
-	if bootstrapHandler, ok := handler.(bootstrap.BootstrapHandler); ok {
-		bootstrap.AddBootstrap(bootstrapHandler)
-	}
-	return nil
-}
-
-// AddHandlerV2 同AddHandler方法，可以让一个handler支持多个协议
-func (asd *Asjard) AddHandlerV2(handler any, protocols ...string) error {
+	defer asd.hm.Unlock()
 	for _, protocol := range protocols {
-		if err := asd.AddHandler(protocol, handler); err != nil {
-			return err
+		if _, ok := asd.handlers[protocol]; ok {
+			asd.handlers[protocol] = append(asd.handlers[protocol], handler)
+		} else {
+			asd.handlers[protocol] = []any{handler}
+		}
+		if bootstrapHandler, ok := handler.(bootstrap.BootstrapHandler); ok {
+			bootstrap.AddBootstrap(bootstrapHandler)
 		}
 	}
 	return nil

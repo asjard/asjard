@@ -112,8 +112,7 @@ func main() {
 	helloServer := &Hello{
 		exit: server.Exit(),
 	}
-	server.AddHandler(rest.Protocol, helloServer)
-	server.AddHandler(mgrpc.Protocol, helloServer)
+	server.AddHandler(helloServer, rest.Protocol, mgrpc.Protocol)
 	if err := server.Start(); err != nil {
 		log.Println(err.Error())
 	}

@@ -41,7 +41,7 @@ func (ExampleCipher) RestServiceDesc() *rest.ServiceDesc {
 
 func main() {
 	server := asjard.New()
-	server.AddHandler(rest.Protocol, &ExampleCipher{})
+	server.AddHandler(&ExampleCipher{}, rest.Protocol)
 	if err := server.Start(); err != nil {
 		panic(err)
 	}

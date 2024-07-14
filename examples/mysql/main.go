@@ -11,7 +11,7 @@ import (
 func main() {
 	server := asjard.New()
 	mysqlAPI := handler.NewMysqlExampleAPI()
-	server.AddHandler(rest.Protocol, mysqlAPI)
+	server.AddHandler(mysqlAPI, rest.Protocol)
 	if err := server.Start(); err != nil {
 		log.Println(err.Error())
 	}

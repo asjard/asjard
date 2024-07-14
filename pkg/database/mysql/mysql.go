@@ -181,7 +181,7 @@ func (m *DBManager) conn(dbCfg Config) error {
 			debug: dbCfg.Options.Debug,
 		}
 		m.dbs.Store(dbName, conn)
-		metrics.NewCollector("db_"+dbName, collectors.NewDBStatsCollector(sqlDB, dbName))
+		metrics.RegisterCollector("db_"+dbName, collectors.NewDBStatsCollector(sqlDB, dbName))
 	}
 	return nil
 }

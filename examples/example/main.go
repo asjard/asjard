@@ -34,7 +34,7 @@ func (api *HelloAPI) RestServiceDesc() *rest.ServiceDesc {
 func main() {
 	server := asjard.New()
 	// 同时提供grpc和rest服务
-	server.AddHandlerV2(&HelloAPI{}, rest.Protocol, mgrpc.Protocol)
+	server.AddHandler(&HelloAPI{}, rest.Protocol, mgrpc.Protocol)
 	// 启动服务
 	if err := server.Start(); err != nil {
 		panic(err)
