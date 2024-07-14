@@ -16,6 +16,7 @@ import (
 	cfgmem "github.com/asjard/asjard/core/config/sources/mem"
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/metrics"
 	"github.com/asjard/asjard/core/registry"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/security"
@@ -163,6 +164,11 @@ func (asd *Asjard) init() error {
 
 	// 一些运行期间变量初始化
 	if err := runtime.Init(); err != nil {
+		return err
+	}
+
+	// 监控初始化
+	if err := metrics.Init(); err != nil {
 		return err
 	}
 

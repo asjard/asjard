@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/constant"
 )
 
 // UnaryServerInfo consists of various information about a unary RPC on
@@ -43,11 +43,6 @@ type ServerInterceptor interface {
 
 type NewServerInterceptor func() ServerInterceptor
 
-const (
-	// ALLProtocols 所有协议都支持的拦截器
-	ALLProtocols = "*"
-)
-
 var (
 	newServerInterceptors = make(map[string][]NewServerInterceptor)
 	nsm                   sync.RWMutex
@@ -57,7 +52,7 @@ var (
 func AddInterceptor(newInterceptor NewServerInterceptor, supportProtocols ...string) {
 	nsm.Lock()
 	if len(supportProtocols) == 0 {
-		supportProtocols = []string{ALLProtocols}
+		supportProtocols = []string{constant.AllProtocol}
 	}
 	for _, protocol := range supportProtocols {
 		if _, ok := newServerInterceptors[protocol]; !ok {
@@ -74,10 +69,9 @@ func getServerInterceptors(protocol string) []UnaryServerInterceptor {
 	var interceptors []UnaryServerInterceptor
 	nsm.RLock()
 	newInterceptors := newServerInterceptors[protocol]
-	newInterceptors = append(newInterceptors, newServerInterceptors[ALLProtocols]...)
+	newInterceptors = append(newInterceptors, newServerInterceptors[constant.AllProtocol]...)
 	nsm.RUnlock()
 	conf := GetConfigWithProtocol(protocol)
-	logger.Debug("----------", "conf", conf)
 	// 自定义拦截器
 	for _, interceptorName := range conf.Interceptors {
 		for _, newInterceptor := range newInterceptors {

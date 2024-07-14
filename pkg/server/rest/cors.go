@@ -31,35 +31,35 @@ func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
 				ctx.SetStatusCode(http.StatusForbidden)
 				return
 			}
-			ctx.Response.Header.Set("Access-Control-Allow-Origin", origin)
+			ctx.Response.Header.Set(fasthttp.HeaderAccessControlAllowOrigin, origin)
 			if !conf.allowAllOrigins {
 				ctx.Response.Header.Set("Vary", "Origin")
 			}
 			if string(ctx.Method()) == http.MethodOptions {
 				if conf.AllowCredentials {
-					ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
+					ctx.Response.Header.Set(fasthttp.HeaderAccessControlAllowCredentials, "true")
 				}
 				if len(conf.AllowMethods) > 0 {
-					ctx.Response.Header.Set("Access-Control-Allow-Methods", strings.Join(conf.AllowMethods, ","))
+					ctx.Response.Header.Set(fasthttp.HeaderAccessControlAllowMethods, strings.Join(conf.AllowMethods, ","))
 				}
 				if len(conf.AllowHeaders) > 0 {
-					ctx.Response.Header.Set("Access-Control-Allow-Headers", strings.Join(conf.AllowHeaders, ","))
+					ctx.Response.Header.Set(fasthttp.HeaderAccessControlAllowHeaders, strings.Join(conf.AllowHeaders, ","))
 				}
 				if conf.MaxAge.Duration != 0 {
-					ctx.Response.Header.Set("Access-Control-Max-Age", strconv.FormatInt(int64(conf.MaxAge.Duration/time.Second), 10))
+					ctx.Response.Header.Set(fasthttp.HeaderAccessControlMaxAge, strconv.FormatInt(int64(conf.MaxAge.Duration/time.Second), 10))
 				}
 				if !conf.allowAllOrigins {
-					ctx.Response.Header.Add("Vary", "Access-Control-Request-Method")
-					ctx.Response.Header.Add("Vary", "Access-Control-Request-Headers")
+					ctx.Response.Header.Add(fasthttp.HeaderVary, fasthttp.HeaderAccessControlRequestMethod)
+					ctx.Response.Header.Add(fasthttp.HeaderVary, fasthttp.HeaderAccessControlRequestHeaders)
 				}
 				ctx.SetStatusCode(http.StatusNoContent)
 				return
 			} else {
 				if conf.AllowCredentials {
-					ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
+					ctx.Response.Header.Set(fasthttp.HeaderAccessControlAllowCredentials, "true")
 				}
 				if len(conf.ExposeHeaders) > 0 {
-					ctx.Response.Header.Set("Access-Control-Expose-Headers", strings.Join(conf.ExposeHeaders, ","))
+					ctx.Response.Header.Set(fasthttp.HeaderAccessControlExposeHeaders, strings.Join(conf.ExposeHeaders, ","))
 				}
 			}
 			next(ctx)

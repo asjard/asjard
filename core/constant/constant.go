@@ -39,6 +39,8 @@ const (
 
 	// DefaultCipherName 默认加解密名称
 	DefaultCipherName = "default"
+	// 全部协议
+	AllProtocol = "*"
 )
 
 const (

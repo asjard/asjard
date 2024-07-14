@@ -6,7 +6,6 @@ import (
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
-	"github.com/asjard/asjard/core/metrics"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/utils"
 )
@@ -19,7 +18,6 @@ const (
 // Config 服务配置
 type Config struct {
 	server.Config
-	Metrics metrics.Config
 	Doc     DocConfig     `json:"doc"`
 	Openapi OpenapiConfig `json:"openapi"`
 	Cors    CorsConfig    `json:"cors"`
@@ -87,8 +85,7 @@ type OptionsConfig struct {
 
 func defaultConfig() Config {
 	return Config{
-		Config:  server.GetConfigWithProtocol(Protocol),
-		Metrics: metrics.GetConfig(),
+		Config: server.GetConfigWithProtocol(Protocol),
 		Doc: DocConfig{
 			ErrPage: config.GetString(constant.ConfigWebsite, ""),
 		},

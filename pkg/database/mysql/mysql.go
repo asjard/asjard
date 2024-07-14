@@ -10,7 +10,9 @@ import (
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/metrics"
 	"github.com/asjard/asjard/utils"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/driver/clickhouse"
@@ -179,6 +181,7 @@ func (m *DBManager) conn(dbCfg Config) error {
 			debug: dbCfg.Options.Debug,
 		}
 		m.dbs.Store(dbName, conn)
+		metrics.NewCollector("db_"+dbName, collectors.NewDBStatsCollector(sqlDB, dbName))
 	}
 	return nil
 }

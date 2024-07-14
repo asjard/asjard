@@ -2,7 +2,7 @@ asjard:
   metrics:
     enabled: false
     ## 支持特性
-    features:
+    collectors:
       - goruntime
       - apirequests
     ## 推送到pushgateway中

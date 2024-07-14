@@ -9,7 +9,7 @@ import (
 // Config 监控配置
 type Config struct {
 	Enabled     bool              `json:"enabled"`
-	Features    utils.JSONStrings `json:"features"`
+	Collectors  utils.JSONStrings `json:"collectors"`
 	PushGateway PushGatewayConfig `json:"pushGateway"`
 }
 
@@ -18,7 +18,14 @@ type PushGatewayConfig struct {
 	Interval utils.JSONDuration `json:"interval"`
 }
 
-var defaultConfig = Config{}
+var defaultConfig = Config{
+	Collectors: utils.JSONStrings{
+		// "go_collector",
+		// "process_collector",
+		// "db_default",
+		"api_request_total",
+	},
+}
 
 // 获取配置
 func GetConfig() Config {
