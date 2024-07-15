@@ -16,6 +16,10 @@ type Value struct {
 
 // String 字符串格式化
 func (v Value) String() string {
-	return fmt.Sprintf("sourcer: '%s', value: '%+v', ref: '%s'",
-		v.Sourcer.Name(), v.Value, v.Ref)
+	if v.Sourcer != nil {
+		return fmt.Sprintf("sourcer: '%s', value: '%+v', ref: '%s'",
+			v.Sourcer.Name(), v.Value, v.Ref)
+	}
+	return fmt.Sprintf("sourcer: 'nil', value: '%+v', ref: '%s'",
+		v.Value, v.Ref)
 }

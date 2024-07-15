@@ -4,6 +4,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -25,6 +27,7 @@ func newTestSource() (Sourcer, error) {
 			"testFloat":    0.01,
 			"testDuration": "10m",
 			"testBool":     true,
+			"test_del_ref": "test_del_ref_value",
 		},
 	}, nil
 }
@@ -34,9 +37,14 @@ func (s *testSource) GetAll() map[string]*Value {
 	configs := make(map[string]*Value)
 	s.cm.RLock()
 	for key, value := range s.configs {
+		ref := ""
+		if key == "test_del_ref" {
+			ref = "test_del_ref"
+		}
 		configs[key] = &Value{
 			Sourcer: s,
 			Value:   value,
+			Ref:     ref,
 		}
 	}
 	s.cm.RUnlock()
@@ -47,14 +55,34 @@ func (s *testSource) Set(key string, value any) error {
 	s.cm.Lock()
 	s.configs[key] = value
 	s.cm.Unlock()
-	s.cb(&Event{
-		Type: EventTypeUpdate,
-		Key:  key,
-		Value: &Value{
-			Sourcer: s,
-			Value:   value,
-		},
-	})
+	if key == "test_del" {
+		s.cb(&Event{
+			Type: EventTypeDelete,
+			Key:  key,
+			Value: &Value{
+				Sourcer: s,
+				Value:   value,
+			},
+		})
+	} else if key == "test_del_ref" {
+		s.cb(&Event{
+			Type: EventTypeDelete,
+			Value: &Value{
+				Sourcer: s,
+				Value:   value,
+				Ref:     "test_del_ref",
+			},
+		})
+	} else {
+		s.cb(&Event{
+			Type: EventTypeUpdate,
+			Key:  key,
+			Value: &Value{
+				Sourcer: s,
+				Value:   value,
+			},
+		})
+	}
 	return nil
 }
 
@@ -76,6 +104,7 @@ func initTestConfig() {
 	if err := AddSource(testSourceName, testSourcePriority, newTestSource); err != nil {
 		panic(err)
 	}
+
 	if err := Load(-1); err != nil {
 		panic(err)
 	}
@@ -84,6 +113,67 @@ func initTestConfig() {
 func TestMain(m *testing.M) {
 	initTestConfig()
 	m.Run()
+}
+
+func TestDeleteEvent(t *testing.T) {
+	t.Run("DelByKey", func(t *testing.T) {
+		if err := Set("test_del", "test_del_value"); err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+		if out := GetString("test_del", ""); out != "" {
+			t.Errorf("test del fail, current: %s, want: ", out)
+			t.FailNow()
+		}
+	})
+	t.Run("DelByRef", func(t *testing.T) {
+		if err := Set("test_del_ref", "test_del_value"); err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+		if out := GetString("test_del_ref", ""); out != "" {
+			t.Errorf("test del fail, current: %s, want: ", out)
+			t.FailNow()
+		}
+	})
+}
+
+func TestAddDuplicateSource(t *testing.T) {
+	t.Run("SameName", func(t *testing.T) {
+		assert.NotNil(t, AddSource(testSourceName, 1111, newTestSource))
+	})
+	t.Run("SamePriority", func(t *testing.T) {
+		assert.NotNil(t, AddSource("not_exist_source_name", 0, newTestSource))
+	})
+
+	t.Run("DiffSource", func(t *testing.T) {
+		assert.NoError(t, AddSource("not_exist_source_name", 1111, newTestSource))
+	})
+}
+
+func TestGetWithUnmarshal(t *testing.T) {
+	datas := []struct {
+		prefix string
+		key    string
+		value  int
+	}{
+		{prefix: "test_prefix", key: "a", value: 1},
+		{prefix: "test_prefix", key: "b", value: 2},
+	}
+	for _, data := range datas {
+		if err := Set(data.prefix+"."+data.key, data.value); err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+	}
+	out := make(map[string]int)
+	if err := GetWithUnmarshal("test_prefix", &out); err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	for _, data := range datas {
+		assert.Equal(t, data.value, out[data.key])
+	}
 }
 
 func TestGetString(t *testing.T) {
@@ -196,8 +286,137 @@ func TestGetInt(t *testing.T) {
 			}
 		}
 	})
+	t.Run("GetInt64", func(t *testing.T) {
+		datas := []struct {
+			key    string
+			value  any
+			expect int64
+		}{
+			{key: "testInt", value: 100, expect: 100},
+			{key: "testIntStr", value: "100", expect: 100},
+			{key: "testIntFloat", value: 100.00, expect: 100},
+		}
+		for _, data := range datas {
+			if err := Set(data.key, data.value); err != nil {
+				t.Errorf("set data fail %s", err.Error())
+				t.FailNow()
+			}
+		}
+		for _, data := range datas {
+			out := GetInt64(data.key, 0)
+			if out != data.expect {
+				t.Errorf("test %s fail, out %d want %d", data.key, out, data.expect)
+				t.FailNow()
+			}
+		}
+	})
+	t.Run("GetInt32", func(t *testing.T) {
+		datas := []struct {
+			key    string
+			value  any
+			expect int32
+		}{
+			{key: "testInt", value: 100, expect: 100},
+			{key: "testIntStr", value: "100", expect: 100},
+			{key: "testIntFloat", value: 100.00, expect: 100},
+		}
+		for _, data := range datas {
+			if err := Set(data.key, data.value); err != nil {
+				t.Errorf("set data fail %s", err.Error())
+				t.FailNow()
+			}
+		}
+		for _, data := range datas {
+			out := GetInt32(data.key, 0)
+			if out != data.expect {
+				t.Errorf("test %s fail, out %d want %d", data.key, out, data.expect)
+				t.FailNow()
+			}
+		}
+	})
 	t.Run("GetInts", func(t *testing.T) {
-
+		datas := []struct {
+			key    string
+			value  any
+			expect []int
+		}{
+			{key: "testInt", value: 100, expect: []int{100}},
+			{key: "testIntStr", value: "100", expect: []int{100}},
+			{key: "testIntFloat", value: 100.00, expect: []int{100}},
+		}
+		for _, data := range datas {
+			if err := Set(data.key, data.value); err != nil {
+				t.Errorf("set data fail %s", err.Error())
+				t.FailNow()
+			}
+			out := GetInts(data.key, []int{})
+			if len(out) != len(data.expect) {
+				t.Errorf("test %s len fail,current: %d, want: %d ", data.key, len(out), len(data.expect))
+				t.FailNow()
+			}
+			for index, v := range out {
+				if v != data.expect[index] {
+					t.Errorf("test %s fail, out %d want %d", data.key, v, data.expect[index])
+					t.FailNow()
+				}
+			}
+		}
+	})
+	t.Run("GetInt64s", func(t *testing.T) {
+		datas := []struct {
+			key    string
+			value  any
+			expect []int64
+		}{
+			{key: "testInt", value: 100, expect: []int64{100}},
+			{key: "testIntStr", value: "100", expect: []int64{100}},
+			{key: "testIntFloat", value: 100.00, expect: []int64{100}},
+		}
+		for _, data := range datas {
+			if err := Set(data.key, data.value); err != nil {
+				t.Errorf("set data fail %s", err.Error())
+				t.FailNow()
+			}
+			out := GetInt64s(data.key, []int64{})
+			if len(out) != len(data.expect) {
+				t.Errorf("test %s len fail,current: %d, want: %d ", data.key, len(out), len(data.expect))
+				t.FailNow()
+			}
+			for index, v := range out {
+				if v != data.expect[index] {
+					t.Errorf("test %s fail, out %d want %d", data.key, v, data.expect[index])
+					t.FailNow()
+				}
+			}
+		}
+	})
+	t.Run("GetInt32s", func(t *testing.T) {
+		datas := []struct {
+			key    string
+			value  any
+			expect []int32
+		}{
+			{key: "testInt", value: 100, expect: []int32{100}},
+			{key: "testIntStr", value: "100", expect: []int32{100}},
+			{key: "testIntFloat", value: 100.00, expect: []int32{100}},
+		}
+		for _, data := range datas {
+			if err := Set(data.key, data.value); err != nil {
+				t.Errorf("set data fail %s", err.Error())
+				t.FailNow()
+			}
+			out := GetInt32s(data.key, []int32{})
+			if len(out) != len(data.expect) {
+				t.Errorf("test %s len fail,current: %d, want: %d ", data.key, len(out), len(data.expect))
+				t.FailNow()
+			}
+			for index, v := range out {
+				if v != data.expect[index] {
+					t.Errorf("test %s fail, out %d want %d", data.key, v, data.expect[index])
+					t.FailNow()
+				}
+			}
+		}
 	})
 }
 func TestGetDuration(t *testing.T) {
@@ -225,6 +444,7 @@ func TestGetDuration(t *testing.T) {
 		}
 	}
 }
+
 func TestGetBool(t *testing.T) {
 	t.Run("GetBool", func(t *testing.T) {
 		datas := []struct {
