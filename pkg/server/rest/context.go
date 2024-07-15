@@ -2,7 +2,6 @@ package rest
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strings"
 	"sync"
@@ -165,17 +164,10 @@ func (c *Context) readBodyParamsToEntity(entity proto.Message) error {
 	if entity == nil {
 		return nil
 	}
+	if len(c.ReadBodyParams()) == 0 {
+		return nil
+	}
 	if err := protojson.Unmarshal(c.ReadBodyParams(), entity); err != nil {
-		// if err := json.Unmarshal(c.ReadBodyParams(), entity); err != nil {
-		// 修改下原本返回的错误信息，去掉语言相关内容
-		if e, ok := err.(*json.UnmarshalTypeError); ok {
-			if e.Struct != "" || e.Field != "" {
-				return status.Errorf(http.StatusBadRequest,
-					"cannot deserialize %s into field %s of type %s", e.Value, e.Field, e.Type.String())
-			}
-			return status.Errorf(http.StatusBadRequest,
-				"cannot deserialize %s into value of type %s", e.Value, e.Type.String())
-		}
 		return status.Errorf(http.StatusBadRequest, "read body params fail: %s", err.Error())
 	}
 	return nil
