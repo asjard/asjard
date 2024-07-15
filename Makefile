@@ -37,4 +37,4 @@ build_gen_ts: ## 生成protoc-gen-ts命令
 
 test: ## 运行测试用例
 	go test -cover -coverprofile=cover.out ./...
-	# go tootl cover -html=cover.out
+	# go tool cover -html=cover.out

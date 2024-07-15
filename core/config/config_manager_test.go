@@ -89,23 +89,24 @@ func TestMain(m *testing.M) {
 func TestGetString(t *testing.T) {
 	t.Run("GetString", func(t *testing.T) {
 		datas := []struct {
-			key    string
-			value  any
-			expect string
+			key     string
+			value   any
+			expect  string
+			options []Option
 		}{
 			{key: "testStr", value: "test_str", expect: "test_str"},
+			{key: "testStr", value: "Test_Str", expect: "test_str", options: []Option{WithToLower()}},
 			{key: "testStrInt", value: 1, expect: "1"},
 			{key: "testStrFloat", value: 0.01, expect: "0.01"},
 			{key: "testStrBool", value: true, expect: "true"},
+			{key: "testStrBool1", value: true, expect: "TRUE", options: []Option{WithToUpper()}},
 		}
 		for _, data := range datas {
 			if err := Set(data.key, data.value); err != nil {
 				t.Errorf("set data fail %s", err.Error())
 				t.FailNow()
 			}
-		}
-		for _, data := range datas {
-			out := GetString(data.key, "")
+			out := GetString(data.key, "", data.options...)
 			if out != data.expect {
 				t.Errorf("test %v fail, out %s want %s", data.value, out, data.expect)
 				t.FailNow()
@@ -146,30 +147,58 @@ func TestGetString(t *testing.T) {
 		}
 	})
 }
-func TestGetInt(t *testing.T) {
 
+func TestGetBytes(t *testing.T) {
 	datas := []struct {
 		key    string
 		value  any
-		expect int
+		expect []byte
 	}{
-		{key: "testInt", value: 100, expect: 100},
-		{key: "testIntStr", value: "100", expect: 100},
-		{key: "testIntFloat", value: 100.00, expect: 100},
+		{key: "testBytesInt", value: 1, expect: []byte("1")},
+		{key: "testByteStr", value: "test_bytes", expect: []byte("test_bytes")},
+		{key: "testBytes", value: []byte("test"), expect: []byte("test")},
 	}
 	for _, data := range datas {
 		if err := Set(data.key, data.value); err != nil {
 			t.Errorf("set data fail %s", err.Error())
 			t.FailNow()
 		}
-	}
-	for _, data := range datas {
-		out := GetInt(data.key, 0)
-		if out != data.expect {
-			t.Errorf("test %s fail, out %d want %d", data.key, out, data.expect)
+		out := GetByte(data.key, []byte(""))
+		if string(out) != string(data.expect) {
+			t.Errorf("test %s fail, current: %s, want: %s", data.key, string(out), string(data.expect))
 			t.FailNow()
 		}
 	}
+}
+
+func TestGetInt(t *testing.T) {
+	t.Run("GetInt", func(t *testing.T) {
+		datas := []struct {
+			key    string
+			value  any
+			expect int
+		}{
+			{key: "testInt", value: 100, expect: 100},
+			{key: "testIntStr", value: "100", expect: 100},
+			{key: "testIntFloat", value: 100.00, expect: 100},
+		}
+		for _, data := range datas {
+			if err := Set(data.key, data.value); err != nil {
+				t.Errorf("set data fail %s", err.Error())
+				t.FailNow()
+			}
+		}
+		for _, data := range datas {
+			out := GetInt(data.key, 0)
+			if out != data.expect {
+				t.Errorf("test %s fail, out %d want %d", data.key, out, data.expect)
+				t.FailNow()
+			}
+		}
+	})
+	t.Run("GetInts", func(t *testing.T) {
+
+	})
 }
 func TestGetDuration(t *testing.T) {
 
@@ -197,37 +226,76 @@ func TestGetDuration(t *testing.T) {
 	}
 }
 func TestGetBool(t *testing.T) {
-
-	datas := []struct {
-		key    string
-		value  any
-		expect bool
-	}{
-		{key: "testBool", value: true, expect: true},
-		{key: "testBool1", value: false, expect: false},
-		{key: "testBoolStr", value: "true", expect: true},
-		{key: "testBoolStr1", value: "True", expect: true},
-		{key: "testBoolStr2", value: "TRUE", expect: true},
-		{key: "testBoolStr3", value: "yes", expect: true},
-		{key: "testBoolStr4", value: "Yes", expect: true},
-		{key: "testBoolStr5", value: "YES", expect: true},
-		{key: "testBoolStr6", value: "1", expect: true},
-		{key: "testBoolStr7", value: "2", expect: false},
-		{key: "testBoolStr8", value: "0", expect: false},
-		{key: "testBoolInt", value: 1, expect: true},
-		{key: "testBoolInt1", value: 2, expect: true},
-	}
-	for _, data := range datas {
-		if err := Set(data.key, data.value); err != nil {
-			t.Errorf("set data fail %s", err.Error())
-			t.FailNow()
+	t.Run("GetBool", func(t *testing.T) {
+		datas := []struct {
+			key    string
+			value  any
+			expect bool
+		}{
+			{key: "testBool", value: true, expect: true},
+			{key: "testBool1", value: false, expect: false},
+			{key: "testBoolStr", value: "true", expect: true},
+			{key: "testBoolStr1", value: "True", expect: true},
+			{key: "testBoolStr2", value: "TRUE", expect: true},
+			{key: "testBoolStr3", value: "yes", expect: true},
+			{key: "testBoolStr4", value: "Yes", expect: true},
+			{key: "testBoolStr5", value: "YES", expect: true},
+			{key: "testBoolStr6", value: "1", expect: true},
+			{key: "testBoolStr7", value: "2", expect: true},
+			{key: "testBoolStr8", value: "0", expect: false},
+			{key: "testBoolInt", value: 1, expect: true},
+			{key: "testBoolInt1", value: 2, expect: true},
 		}
-	}
-	for _, data := range datas {
-		out := GetBool(data.key, !data.expect)
-		if out != data.expect {
-			t.Errorf("test key %s, value %v fail, out %v want %v", data.key, data.value, out, data.expect)
-			t.FailNow()
+		for _, data := range datas {
+			if err := Set(data.key, data.value); err != nil {
+				t.Errorf("set data fail %s", err.Error())
+				t.FailNow()
+			}
+			out := GetBool(data.key, !data.expect)
+			if out != data.expect {
+				t.Errorf("test key %s, value %v fail, out %v want %v", data.key, data.value, out, data.expect)
+				t.FailNow()
+			}
 		}
-	}
+	})
+	t.Run("GetBools", func(t *testing.T) {
+		datas := []struct {
+			key    string
+			value  any
+			expect []bool
+		}{
+			{key: "testBool", value: true, expect: []bool{true}},
+			{key: "testBool1", value: false, expect: []bool{false}},
+			{key: "testBool2", value: []bool{true}, expect: []bool{}},
+			{key: "testBoolStr", value: "true", expect: []bool{true}},
+			{key: "testBoolStr01", value: "true,false", expect: []bool{true, false}},
+			{key: "testBoolStr1", value: "True", expect: []bool{true}},
+			{key: "testBoolStr2", value: "TRUE", expect: []bool{true}},
+			{key: "testBoolStr3", value: "yes", expect: []bool{true}},
+			{key: "testBoolStr4", value: "Yes", expect: []bool{true}},
+			{key: "testBoolStr5", value: "YES", expect: []bool{true}},
+			{key: "testBoolStr6", value: "1", expect: []bool{true}},
+			{key: "testBoolStr7", value: "2", expect: []bool{true}},
+			{key: "testBoolStr8", value: "0", expect: []bool{false}},
+			{key: "testBoolInt", value: 1, expect: []bool{true}},
+			{key: "testBoolInt1", value: 2, expect: []bool{true}},
+		}
+		for _, data := range datas {
+			if err := Set(data.key, data.value); err != nil {
+				t.Errorf("set data fail %s", err.Error())
+				t.FailNow()
+			}
+			out := GetBools(data.key, []bool{})
+			if len(out) != len(data.expect) {
+				t.Errorf("test %s fail, lenght not equal, current %d want %d", data.key, len(out), len(data.expect))
+				t.FailNow()
+			}
+			for index, v := range out {
+				if v != data.expect[index] {
+					t.Errorf("test %s fail, current %v, want %v", data.key, v, data.expect[index])
+					t.FailNow()
+				}
+			}
+		}
+	})
 }

@@ -270,15 +270,14 @@ func strToStrs(str, delimiter string) []string {
 	return noSpaceStrs
 }
 
+// 非false列表中的均为true
 func strToBool(str string) (bool, error) {
 	lower := strings.ToLower(str)
 	switch lower {
-	case "1", "t", "true", "y", "yes", "on":
-		return true, nil
 	case "0", "f", "false", "n", "no", "off":
 		return false, nil
 	}
-	return false, fmt.Errorf("%s cantnot covert to bool", str)
+	return true, nil
 }
 
 // toInt returns the int value of v if v or v's underlying type

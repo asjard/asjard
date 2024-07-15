@@ -548,8 +548,7 @@ func GetByte(key string, defaultValue []byte, opts ...Option) []byte {
 // GetBool 获取配置并转化为bool类型
 // 除了true, false 布尔类型外
 // 如果为字符串，转换为小写字符后,
-// "1", "t", "true", "y", "yes", "on" 为true
-// "0", "f", "false", "n", "no", "off" 或其他均为false
+// 非 "0", "f", "false", "n", "no", "off" 均为true
 // 如果为整形，不等于零均为true
 //
 //	@param key
@@ -585,10 +584,7 @@ func GetBools(key string, defaultValue []bool, opts ...Option) []bool {
 	}
 	var value []bool
 	for _, v := range valueStrs {
-		vi, err := cast.ToBoolE(v)
-		if err != nil {
-			return defaultValue
-		}
+		vi, _ := ccast.ToBoolE(v)
 		value = append(value, vi)
 	}
 	return value
