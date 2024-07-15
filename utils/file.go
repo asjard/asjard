@@ -75,6 +75,7 @@ func IsPathExists(path string) bool {
 }
 
 // IsDir 是否为目录
+// 不存在的目录会返回false
 func IsDir(dir string) bool {
 	s, err := os.Stat(dir)
 	if err != nil {
@@ -84,6 +85,7 @@ func IsDir(dir string) bool {
 }
 
 // IsFile 是否为文件
+// 不存在的文件会返回true
 func IsFile(file string) bool {
 	return !IsDir(file)
 }

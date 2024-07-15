@@ -36,4 +36,5 @@ build_gen_ts: ## 生成protoc-gen-ts命令
 	go build -o $(GOPATH)/bin/protoc-gen-ts -ldflags '-w -s' ./cmd/protoc-gen-ts/*.go
 
 test: ## 运行测试用例
-	go test -cover ./...
+	go test -cover -coverprofile=cover.out ./...
+	# go tootl cover -html=cover.out

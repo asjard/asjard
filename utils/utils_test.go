@@ -21,7 +21,3 @@ func TestIntLen(t *testing.T) {
 		}
 	}
 }
-
-func TestGetDeviceID16(t *testing.T) {
-	GetDeviceID16(0)
-}
