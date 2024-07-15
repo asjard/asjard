@@ -723,7 +723,7 @@ func GetFloat64(key string, defaultValue float64, opts ...Option) float64 {
 	return value
 }
 
-// GetFloat64s TODO 获取配置并转化为[]float64类型
+// GetFloat64s 获取配置并转化为[]float64类型
 func GetFloat64s(key string, defaultValue []float64, opts ...Option) []float64 {
 	options := GetOptions(opts...)
 	v := Get(key, options)
@@ -754,6 +754,28 @@ func GetFloat32(key string, defaultValue float32, opts ...Option) float32 {
 	value, err := cast.ToFloat32E(v)
 	if err != nil {
 		return defaultValue
+	}
+	return value
+}
+
+// GetFloat32s 获取配置并转化为[]float32类型
+func GetFloat32s(key string, defaultValue []float32, opts ...Option) []float32 {
+	options := GetOptions(opts...)
+	v := Get(key, options)
+	if v == nil {
+		return defaultValue
+	}
+	valueStrs, err := ccast.ToStringSliceE(v, options.delimiter)
+	if err != nil {
+		return defaultValue
+	}
+	var value []float32
+	for _, v := range valueStrs {
+		vi, err := cast.ToFloat32E(v)
+		if err != nil {
+			return defaultValue
+		}
+		value = append(value, vi)
 	}
 	return value
 }

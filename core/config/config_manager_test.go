@@ -152,28 +152,56 @@ func TestAddDuplicateSource(t *testing.T) {
 }
 
 func TestGetWithUnmarshal(t *testing.T) {
-	datas := []struct {
-		prefix string
-		key    string
-		value  int
-	}{
-		{prefix: "test_prefix", key: "a", value: 1},
-		{prefix: "test_prefix", key: "b", value: 2},
-	}
-	for _, data := range datas {
-		if err := Set(data.prefix+"."+data.key, data.value); err != nil {
+	t.Run("JsonUnmarshal", func(t *testing.T) {
+		datas := []struct {
+			prefix string
+			key    string
+			value  int
+		}{
+			{prefix: "test_json_prefix", key: "a", value: 1},
+			{prefix: "test_json_prefix", key: "b", value: 2},
+		}
+		for _, data := range datas {
+			if err := Set(data.prefix+"."+data.key, data.value); err != nil {
+				t.Error(err)
+				t.FailNow()
+			}
+		}
+		out := make(map[string]int)
+		if err := GetWithUnmarshal("test_json_prefix", &out); err != nil {
 			t.Error(err)
 			t.FailNow()
 		}
-	}
-	out := make(map[string]int)
-	if err := GetWithUnmarshal("test_prefix", &out); err != nil {
-		t.Error(err)
-		t.FailNow()
-	}
-	for _, data := range datas {
-		assert.Equal(t, data.value, out[data.key])
-	}
+		for _, data := range datas {
+			assert.Equal(t, data.value, out[data.key])
+		}
+	})
+
+	t.Run("YamlUnmarshal", func(t *testing.T) {
+		datas := []struct {
+			prefix string
+			key    string
+			value  int
+		}{
+			{prefix: "test_yaml_prefix", key: "a", value: 1},
+			{prefix: "test_yaml_prefix", key: "b", value: 2},
+		}
+		for _, data := range datas {
+			if err := Set(data.prefix+"."+data.key, data.value); err != nil {
+				t.Error(err)
+				t.FailNow()
+			}
+		}
+		out := make(map[string]int)
+		if err := GetWithYamlUnmarshal("test_yaml_prefix", &out); err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+		for _, data := range datas {
+			assert.Equal(t, data.value, out[data.key])
+		}
+	})
+
 }
 
 func TestGetString(t *testing.T) {
@@ -419,6 +447,163 @@ func TestGetInt(t *testing.T) {
 		}
 	})
 }
+
+func TestGetFloat(t *testing.T) {
+	t.Run("GetFloat32", func(t *testing.T) {
+		datas := []struct {
+			key    string
+			value  any
+			expect float32
+		}{
+			{key: "testInt", value: 100, expect: 100},
+			{key: "testIntStr", value: "100", expect: 100},
+			{key: "testIntFloat", value: 100.00, expect: 100},
+		}
+		for _, data := range datas {
+			if err := Set(data.key, data.value); err != nil {
+				t.Errorf("set data fail %s", err.Error())
+				t.FailNow()
+			}
+		}
+		for _, data := range datas {
+			out := GetFloat32(data.key, 0)
+			if out != data.expect {
+				t.Errorf("test %s fail, out %f want %f", data.key, out, data.expect)
+				t.FailNow()
+			}
+		}
+	})
+	t.Run("GetFloat64", func(t *testing.T) {
+		datas := []struct {
+			key    string
+			value  any
+			expect float64
+		}{
+			{key: "testInt", value: 100, expect: 100},
+			{key: "testIntStr", value: "100", expect: 100},
+			{key: "testIntFloat", value: 100.00, expect: 100},
+		}
+		for _, data := range datas {
+			if err := Set(data.key, data.value); err != nil {
+				t.Errorf("set data fail %s", err.Error())
+				t.FailNow()
+			}
+		}
+		for _, data := range datas {
+			out := GetFloat64(data.key, 0)
+			if out != data.expect {
+				t.Errorf("test %s fail, out %f want %f", data.key, out, data.expect)
+				t.FailNow()
+			}
+		}
+	})
+	t.Run("GetFloat32s", func(t *testing.T) {
+		datas := []struct {
+			key    string
+			value  any
+			expect []float32
+		}{
+			{key: "testInt", value: 100, expect: []float32{100}},
+			{key: "testIntStr", value: "100", expect: []float32{100}},
+			{key: "testIntFloat", value: 100.00, expect: []float32{100}},
+		}
+		for _, data := range datas {
+			if err := Set(data.key, data.value); err != nil {
+				t.Errorf("set data fail %s", err.Error())
+				t.FailNow()
+			}
+			out := GetFloat32s(data.key, []float32{})
+			if len(out) != len(data.expect) {
+				t.Errorf("test %s len fail,current: %d, want: %d ", data.key, len(out), len(data.expect))
+				t.FailNow()
+			}
+			for index, v := range out {
+				if v != data.expect[index] {
+					t.Errorf("test %s fail, out %f want %f", data.key, v, data.expect[index])
+					t.FailNow()
+				}
+			}
+		}
+	})
+	t.Run("GetFloat64s", func(t *testing.T) {
+		datas := []struct {
+			key    string
+			value  any
+			expect []float64
+		}{
+			{key: "testInt", value: 100, expect: []float64{100}},
+			{key: "testIntStr", value: "100", expect: []float64{100}},
+			{key: "testIntFloat", value: 100.00, expect: []float64{100}},
+		}
+		for _, data := range datas {
+			if err := Set(data.key, data.value); err != nil {
+				t.Errorf("set data fail %s", err.Error())
+				t.FailNow()
+			}
+			out := GetFloat64s(data.key, []float64{})
+			if len(out) != len(data.expect) {
+				t.Errorf("test %s len fail,current: %d, want: %d ", data.key, len(out), len(data.expect))
+				t.FailNow()
+			}
+			for index, v := range out {
+				if v != data.expect[index] {
+					t.Errorf("test %s fail, out %f want %f", data.key, v, data.expect[index])
+					t.FailNow()
+				}
+			}
+		}
+	})
+}
+
+func TestGetTime(t *testing.T) {
+	if err := Set("test_time", time.Now()); err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	out := GetTime("test_time", time.Now().AddDate(0, 0, 1))
+	if out.After(time.Now()) {
+		t.Errorf("get time fail, current: %s, now: %s", out.String(), time.Now())
+		t.FailNow()
+	}
+}
+
+func TestGetAndUnmarshal(t *testing.T) {
+	t.Run("JsonUnmarshal", func(t *testing.T) {
+		if err := Set("test_json_content", `{"a":1}`); err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+		out := make(map[string]int)
+		if err := GetAndUnmarshal("test_json_content", &out); err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+		if out["a"] != 1 {
+			t.Errorf("test json unmarshal fail, current: %d, want: %d", out["a"], 1)
+			t.FailNow()
+		}
+	})
+	t.Run("YamlUnmarshal", func(t *testing.T) {
+		content := `
+---
+a: 1`
+		if err := Set("test_yaml_content", content); err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+		out := make(map[string]int)
+		if err := GetAndYamlUnmarshal("test_yaml_content", &out); err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+		if out["a"] != 1 {
+			t.Errorf("test unmarshal yaml content fail, current: %d, want: %d", out["a"], 1)
+			t.FailNow()
+		}
+	})
+
+}
+
 func TestGetDuration(t *testing.T) {
 
 	datas := []struct {
