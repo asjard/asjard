@@ -2,12 +2,13 @@ package interceptors
 
 import (
 	"context"
+	"strconv"
 	"strings"
+	"time"
 
-	"github.com/asjard/asjard/core/metrics"
-	"github.com/asjard/asjard/core/runtime"
+	"github.com/asjard/asjard/core/metrics/collectors"
 	"github.com/asjard/asjard/core/server"
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/asjard/asjard/pkg/status"
 )
 
 const (
@@ -16,8 +17,8 @@ const (
 
 // Metrics 监控拦截器
 type Metrics struct {
-	requestTotal    *prometheus.CounterVec
-	requestDuration *prometheus.SummaryVec
+	requestTotal    *collectors.APIRequestCounter
+	requestDuration *collectors.APIRequestDuration
 }
 
 func init() {
@@ -27,9 +28,8 @@ func init() {
 
 func NewMetricsInterceptor() server.ServerInterceptor {
 	return &Metrics{
-		requestTotal: metrics.RegisterCounter("api_request_total",
-			"The total number of handled api request",
-			[]string{"service", "full_method", "protocol"}),
+		requestTotal:    collectors.NewAPIRequestCounter(),
+		requestDuration: collectors.NewAPIRequestDuratin(),
 	}
 }
 
@@ -39,14 +39,15 @@ func (Metrics) Name() string {
 
 func (m Metrics) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
+		resp, err = handler(ctx, req)
+		now := time.Now()
 		fullMethod := strings.ReplaceAll(strings.Trim(info.FullMethod, "/"), "/", ".")
-		if m.requestTotal != nil {
-			m.requestTotal.With(map[string]string{
-				"service":     runtime.Name,
-				"full_method": fullMethod,
-				"protocol":    info.Protocol,
-			}).Inc()
-		}
-		return handler(ctx, req)
+		code, _ := status.FromError(err)
+		codeStr := strconv.Itoa(int(code))
+		m.requestTotal.Inc(codeStr,
+			fullMethod, info.Protocol)
+		m.requestDuration.Observe(codeStr,
+			fullMethod, info.Protocol, float64(time.Since(now).Milliseconds()))
+		return resp, err
 	}
 }

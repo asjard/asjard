@@ -17,8 +17,9 @@ type MetricsManager struct {
 }
 
 var (
-	registry       = prometheus.NewRegistry()
-	metricsManager *MetricsManager
+	registry         = prometheus.NewRegistry()
+	metricsManager   *MetricsManager
+	APIRequestLables = []string{"app", "env", "version", "service", "code", "api", "protocol"}
 )
 
 func init() {
@@ -81,6 +82,20 @@ func (m *MetricsManager) register(name string, collector prometheus.Collector) p
 
 func RegisterCollector(name string, collector prometheus.Collector) prometheus.Collector {
 	return metricsManager.register(name, collector)
+}
+
+// RegisterAPIRequestCounter API请求计数器
+func RegisterAPIRequestCounter() *prometheus.CounterVec {
+	return RegisterCounter("api_requests_total",
+		"The total number of the handled request",
+		APIRequestLables)
+}
+
+func RegisterAPIRequestDuration() *prometheus.SummaryVec {
+	return RegisterSummaryVec("api_requests_duration_ms",
+		"",
+		[]string{},
+		map[float64]float64{})
 }
 
 // RegisterCounter 注册一个新的counter指标，如果注册成功则返回true，否则返回false

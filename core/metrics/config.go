@@ -23,7 +23,8 @@ var defaultConfig = Config{
 		// "go_collector",
 		// "process_collector",
 		// "db_default",
-		"api_request_total",
+		"api_requests_total",
+		"api_requests_duration_ms",
 	},
 }
 

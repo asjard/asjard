@@ -41,12 +41,13 @@ type MiddlewareFunc func(next fasthttp.RequestHandler) fasthttp.RequestHandler
 
 // RestServer .
 type RestServer struct {
-	router      *router.Router
-	server      fasthttp.Server
-	openapi     *openapi_v3.Document
-	interceptor server.UnaryServerInterceptor
-	conf        Config
-	middlewares []MiddlewareFunc
+	router       *router.Router
+	server       fasthttp.Server
+	openapi      *openapi_v3.Document
+	interceptor  server.UnaryServerInterceptor
+	conf         Config
+	middlewares  []MiddlewareFunc
+	errorHandler *ErrorHandlerAPI
 }
 
 var _ server.Server = &RestServer{}
@@ -58,30 +59,16 @@ func init() {
 // MustNew 配置文件初始化
 func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) {
 	r := router.New()
-	r.NotFound = func(ctx *fasthttp.RequestCtx) {
-		NewContext(ctx).Write(nil, ajerr.PageNotFoundError)
-	}
-	r.MethodNotAllowed = func(ctx *fasthttp.RequestCtx) {
-		NewContext(ctx).Write(nil, ajerr.MethodNotAllowedError)
-	}
-	r.PanicHandler = func(ctx *fasthttp.RequestCtx, err any) {
-		logger.Error("request panic",
-			"method", ctx.Method(),
-			"path", ctx.Path(),
-			"header", ctx.Request.Header.String(),
-			"err", err,
-			"stack", string(debug.Stack()))
-		NewContext(ctx).Write(nil, ajerr.InternalServerError)
-	}
 	corsMiddleware := NewCorsMiddleware(conf.Cors)
 	// 不能删除这行，option请求走不到middleware中
 	r.GlobalOPTIONS = corsMiddleware(func(ctx *fasthttp.RequestCtx) {})
 	return &RestServer{
-		router:      r,
-		openapi:     &openapi_v3.Document{},
-		interceptor: options.Interceptor,
-		conf:        conf,
-		middlewares: []MiddlewareFunc{corsMiddleware},
+		router:       r,
+		openapi:      &openapi_v3.Document{},
+		interceptor:  options.Interceptor,
+		conf:         conf,
+		middlewares:  []MiddlewareFunc{corsMiddleware},
+		errorHandler: &ErrorHandlerAPI{},
 		server: fasthttp.Server{
 			Name:                               runtime.APP,
 			Concurrency:                        conf.Options.Concurrency,
@@ -149,6 +136,18 @@ func (s *RestServer) AddHandler(handler any) error {
 
 // Start .
 func (s *RestServer) Start(startErr chan error) error {
+	s.router.NotFound = s.newHandler(_ErrorHandler_NotFound_RestHandler, s.errorHandler)
+	s.router.MethodNotAllowed = s.newHandler(_ErrorHandler_MethodNotAllowed_RestHandler, s.errorHandler)
+	s.router.PanicHandler = func(ctx *fasthttp.RequestCtx, err any) {
+		logger.Error("request panic",
+			"method", ctx.Method(),
+			"path", ctx.Path(),
+			"header", ctx.Request.Header.String(),
+			"err", err,
+			"stack", string(debug.Stack()))
+		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
+		cc.Write(_ErrorHandler_Panic_RestHandler(cc, s.errorHandler, s.interceptor))
+	}
 	if s.conf.Openapi.Enabled {
 		// 添加openapi接口
 		s.AddHandler(NewOpenAPI(s.conf.Openapi, s.openapi))
