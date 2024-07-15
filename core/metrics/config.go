@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"time"
+
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/utils"
@@ -20,11 +22,14 @@ type PushGatewayConfig struct {
 
 var defaultConfig = Config{
 	Collectors: utils.JSONStrings{
-		// "go_collector",
-		// "process_collector",
-		// "db_default",
+		"go_collector",
+		"process_collector",
+		"db_default",
 		"api_requests_total",
 		"api_requests_duration_ms",
+	},
+	PushGateway: PushGatewayConfig{
+		Interval: utils.JSONDuration{Duration: 5 * time.Second},
 	},
 }
 

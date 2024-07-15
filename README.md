@@ -223,7 +223,7 @@ func main() {
 - [ ] 拦截器配置自动更新，无需重启
 - [x] accesslog拦截器按错误级别输出日志
 - [ ] 限速，监控，链路追踪拦截器
-- [ ] rest添加metrics接口
+- [x] rest添加metrics接口
 - [ ] stream支持
 - [x] rest添加swagger
 - [ ] openapi更新default response
@@ -239,4 +239,5 @@ func main() {
 - [x] 修复文件配置源更新事件问题
 - [ ] 修复文件配置源同一个配置在不同配置文件中优先级问题
 - [ ] protoc-gen-ts实现
-- [ ] 所有配置添加默认配置，在不配置的情况下也能正常运行
+- [x] 所有配置添加默认配置，在不配置的情况下也能正常运行
+- [ ] 添加grafana看板

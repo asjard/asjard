@@ -2,12 +2,15 @@ package metrics
 
 import (
 	"sync"
+	"time"
 
+	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server/handlers"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/push"
 )
 
 type MetricsManager struct {
@@ -17,9 +20,8 @@ type MetricsManager struct {
 }
 
 var (
-	registry         = prometheus.NewRegistry()
-	metricsManager   *MetricsManager
-	APIRequestLables = []string{"app", "env", "version", "service", "code", "api", "protocol"}
+	registry       = prometheus.NewRegistry()
+	metricsManager *MetricsManager
 )
 
 func init() {
@@ -49,6 +51,7 @@ func Init() error {
 		handlers.AddServerDefaultHandler("metrics", handlers.NewMetricsAPI(registry), rest.Protocol)
 	}
 	metricsManager.conf = conf
+	go metricsManager.push()
 	return nil
 }
 
@@ -80,22 +83,32 @@ func (m *MetricsManager) register(name string, collector prometheus.Collector) p
 	return col
 }
 
+func (m *MetricsManager) push() {
+	if !m.conf.Enabled || m.conf.PushGateway.Endpoint == "" {
+		return
+	}
+	for {
+		select {
+		case <-time.After(m.conf.PushGateway.Interval.Duration):
+			pusher := push.New(m.conf.PushGateway.Endpoint, runtime.APP)
+			m.cm.RLock()
+			for _, collector := range m.collectors {
+				pusher.Collector(collector)
+			}
+			m.cm.RUnlock()
+			// TODO 此处instance是个无法辨认的字符串, 重启后会更新
+			// 是否可以生成一个可辨认的字符串
+			if err := pusher.Grouping("instance", runtime.InstanceID).
+				Grouping("service", runtime.Name).
+				Push(); err != nil {
+				logger.Error("push metrics fail", "endpoint", m.conf.PushGateway.Endpoint, "err", err)
+			}
+		}
+	}
+}
+
 func RegisterCollector(name string, collector prometheus.Collector) prometheus.Collector {
 	return metricsManager.register(name, collector)
-}
-
-// RegisterAPIRequestCounter API请求计数器
-func RegisterAPIRequestCounter() *prometheus.CounterVec {
-	return RegisterCounter("api_requests_total",
-		"The total number of the handled request",
-		APIRequestLables)
-}
-
-func RegisterAPIRequestDuration() *prometheus.SummaryVec {
-	return RegisterSummaryVec("api_requests_duration_ms",
-		"",
-		[]string{},
-		map[float64]float64{})
 }
 
 // RegisterCounter 注册一个新的counter指标，如果注册成功则返回true，否则返回false

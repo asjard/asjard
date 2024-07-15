@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	APIRequestLables = []string{"app", "env", "version", "service", "code", "api", "protocol"}
+	APIRequestLables = []string{"app", "env", "version", "code", "api", "protocol"}
 )
 
 type APIRequestBase struct{}
@@ -17,7 +17,6 @@ func (APIRequestBase) labelMap(code, api, protocol string) map[string]string {
 		"app":      runtime.APP,
 		"env":      runtime.Environment,
 		"version":  runtime.Version,
-		"service":  runtime.Name,
 		"code":     code,
 		"api":      api,
 		"protocol": protocol,
