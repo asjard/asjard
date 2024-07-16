@@ -45,7 +45,7 @@ type APIRequestDuration struct {
 
 func NewAPIRequestDuratin() *APIRequestDuration {
 	return &APIRequestDuration{
-		summary: metrics.RegisterSummaryVec("api_requests_duration_ms",
+		summary: metrics.RegisterSummaryVec("api_requests_latency_ms",
 			"The duration of handled requests",
 			APIRequestLables,
 			map[float64]float64{

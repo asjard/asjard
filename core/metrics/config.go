@@ -10,9 +10,10 @@ import (
 
 // Config 监控配置
 type Config struct {
-	Enabled     bool              `json:"enabled"`
-	Collectors  utils.JSONStrings `json:"collectors"`
-	PushGateway PushGatewayConfig `json:"pushGateway"`
+	Enabled           bool              `json:"enabled"`
+	Collectors        utils.JSONStrings `json:"collectors"`
+	BuiltInCollectors utils.JSONStrings `json:"BuiltInCollectors"`
+	PushGateway       PushGatewayConfig `json:"pushGateway"`
 }
 
 type PushGatewayConfig struct {
@@ -21,12 +22,12 @@ type PushGatewayConfig struct {
 }
 
 var defaultConfig = Config{
-	Collectors: utils.JSONStrings{
+	BuiltInCollectors: utils.JSONStrings{
 		"go_collector",
 		"process_collector",
 		"db_default",
 		"api_requests_total",
-		"api_requests_duration_ms",
+		"api_requests_latency_ms",
 	},
 	PushGateway: PushGatewayConfig{
 		Interval: utils.JSONDuration{Duration: 5 * time.Second},
@@ -37,5 +38,23 @@ var defaultConfig = Config{
 func GetConfig() Config {
 	conf := defaultConfig
 	config.GetWithUnmarshal(constant.ConfigMetricsPrefix, &conf)
-	return conf
+	return conf.complete()
+}
+
+func (c Config) complete() Config {
+	collectors := c.BuiltInCollectors
+	for _, collector := range c.Collectors {
+		exist := false
+		for _, ct := range c.BuiltInCollectors {
+			if ct == collector {
+				exist = true
+				break
+			}
+		}
+		if !exist {
+			collectors = append(collectors, collector)
+		}
+	}
+	c.Collectors = collectors
+	return c
 }
