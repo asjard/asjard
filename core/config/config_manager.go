@@ -321,12 +321,14 @@ func (m *ConfigManager) getConfigs() map[string]*Value {
 
 func (m *ConfigManager) setConfig(key string, value *Value) {
 	m.globalCfgs.set(key, value)
-	m.listener.notify(&Event{Type: EventTypeUpdate, Key: key, Value: value})
+	// 异步返回事件
+	go m.listener.notify(&Event{Type: EventTypeUpdate, Key: key, Value: value})
 }
 
 func (m *ConfigManager) delConfig(key string) {
 	m.globalCfgs.del(key, "")
-	m.listener.notify(&Event{Type: EventTypeDelete, Key: key})
+	// 异步返回事件
+	go m.listener.notify(&Event{Type: EventTypeDelete, Key: key})
 }
 
 // 获取配置

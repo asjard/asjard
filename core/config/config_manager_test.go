@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/base64"
 	"sync"
 	"testing"
 	"time"
@@ -263,6 +264,64 @@ func TestGetString(t *testing.T) {
 				}
 			}
 		}
+	})
+}
+
+func TestGetWithParam(t *testing.T) {
+	assert.Nil(t, Set("test_param", "test_param_value"))
+	assert.Nil(t, Set("test_get_by_param", "${test_param}"))
+	assert.Equal(t, "test_param_value", GetString("test_get_by_param", ""))
+}
+
+func TestGetWithCipher(t *testing.T) {
+	key := "test_base64_cipher"
+	value := "test_base64_cipher_value"
+	assert.Nil(t, Set(key, base64.StdEncoding.EncodeToString([]byte(value))))
+	assert.Equal(t, value, GetString(key, "", WithCipher("base64")))
+}
+
+func TestSetWithCipher(t *testing.T) {
+	key := "test_set_with_base64_cipher"
+	value := "test_set_with_base64_cipher_value"
+	assert.Nil(t, Set(key, value, WithCipher("base64")))
+	assert.Equal(t, base64.StdEncoding.EncodeToString([]byte(value)), GetString(key, ""))
+	assert.Equal(t, value, GetString(key, "", WithCipher("base64")))
+}
+
+func TestListener(t *testing.T) {
+	t.Run("AddListener", func(t *testing.T) {
+		key := "test_add_listener"
+		value := "test_add_listener_value"
+		recived := make(chan struct{})
+		AddListener(key, func(event *Event) {
+			recived <- struct{}{}
+		})
+		assert.Nil(t, Set(key, value))
+		select {
+		case <-recived:
+			break
+		case <-time.After(time.Millisecond * 10):
+			t.Error("after 100ms not recived event")
+			t.FailNow()
+		}
+		assert.Equal(t, value, GetString(key, ""))
+	})
+	t.Run("AddPatternListener", func(t *testing.T) {
+		key := "test_add_listener_pattern"
+		value := "test_add_listener_pattern_value"
+		recived := make(chan struct{})
+		AddPatternListener(key+".*", func(event *Event) {
+			recived <- struct{}{}
+		})
+		assert.Nil(t, Set(key, value))
+		select {
+		case <-recived:
+			break
+		case <-time.After(time.Millisecond * 10):
+			t.Error("after 10ms not recived event")
+			t.FailNow()
+		}
+		assert.Equal(t, value, GetString(key, ""))
 	})
 }
 

@@ -28,10 +28,10 @@ type ExampleCipher struct {
 func (ExampleCipher) CipherExample(ctx context.Context, in *pb.CipherExampleReq) (*pb.CipherExampleResp, error) {
 	return &pb.CipherExampleResp{
 		AesEncryptValueInPlainFile:         config.GetString("testAESEncrptValue", "", config.WithCipher(cs.AESCipherName)),
-		Base64EncryptValueInPlainFile:      config.GetString("testBase64EncryptValue", "", config.WithCipher(cs.Base64CipherName)),
+		Base64EncryptValueInPlainFile:      config.GetString("testBase64EncryptValue", "", config.WithCipher(security.Base64CipherName)),
 		PlainValueInAesEncryptFile:         config.GetString("testPlainValueInAESEncryptFile", ""),
 		AesEncryptValueInAesEncryptFile:    config.GetString("testAESEncryptValueInAESEncryptFile", "", config.WithCipher(AESCipherName)),
-		Base64EncryptValueInAesEncryptFile: config.GetString("testBase64EncryptValueInAESEncryptFile", "", config.WithCipher(cs.Base64CipherName)),
+		Base64EncryptValueInAesEncryptFile: config.GetString("testBase64EncryptValueInAESEncryptFile", "", config.WithCipher(security.Base64CipherName)),
 	}, nil
 }
 
