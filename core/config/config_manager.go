@@ -305,9 +305,11 @@ func (m *ConfigManager) getConfig(key string) (*Value, bool) {
 	return m.globalCfgs.get(key)
 }
 
+// 倒序第一个有值的值
+// 相当于依次向后覆盖，找到最终值
 func (m *ConfigManager) getConfigByChain(keys []string) (value *Value, ok bool) {
-	for _, key := range keys {
-		value, ok = m.getConfig(key)
+	for i := len(keys) - 1; i >= 0; i-- {
+		value, ok = m.getConfig(keys[i])
 		if ok {
 			return
 		}

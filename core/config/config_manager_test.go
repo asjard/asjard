@@ -2,11 +2,13 @@ package config
 
 import (
 	"encoding/base64"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -305,6 +307,7 @@ func TestListener(t *testing.T) {
 			t.FailNow()
 		}
 		assert.Equal(t, value, GetString(key, ""))
+		RemoveListener(key)
 	})
 	t.Run("AddPatternListener", func(t *testing.T) {
 		key := "test_add_listener_pattern"
@@ -346,6 +349,67 @@ func TestGetBytes(t *testing.T) {
 			t.FailNow()
 		}
 	}
+}
+
+type testYamlUnmarshal struct{}
+
+func (testYamlUnmarshal) Unmarshal(data []byte, v any) error {
+	return yaml.Unmarshal(data, v)
+}
+
+func TestGetOption(t *testing.T) {
+	t.Run("WithSource", func(t *testing.T) {
+		key := "test_with_source"
+		value := "test_with_source_value"
+		assert.Nil(t, Set(key, value, WithSource(testSourceName)))
+		assert.Equal(t, value, GetString(key, "", WithSource(testSourceName)))
+	})
+	t.Run("WithLocation", func(t *testing.T) {
+		key := "test_with_location"
+		date := time.Now().AddDate(0, 0, -2)
+		assert.Nil(t, Set(key, date.Unix()))
+		assert.Equal(t, date.Unix(), GetTime(key, time.Now(), WithLocation(time.Local)).Unix())
+
+	})
+	t.Run("WithUnmarshal", func(t *testing.T) {
+		key := "test_with_unmarshal"
+		value := `
+---
+a: 1`
+		assert.Nil(t, Set(key, value))
+		out := make(map[string]int)
+		assert.Nil(t, GetAndUnmarshal(key, &out, WithUnmarshaler(&testYamlUnmarshal{})))
+		if out["a"] != 1 {
+			t.Error("test withUnmarshal fail")
+			t.FailNow()
+		}
+	})
+	t.Run("WithDelimiter", func(t *testing.T) {
+		key := "test_with_delimiter"
+		value := []string{"a", "b", "c", "d"}
+		assert.Nil(t, Set(key, strings.Join(value, "|")))
+		out := GetStrings(key, []string{}, WithDelimiter("|"))
+		if len(out) != len(value) {
+			t.Errorf("test with delimiter fail length not equal, current: %d, want: %d", len(out), len(value))
+			t.FailNow()
+		}
+		for index, v := range out {
+			if v != value[index] {
+				t.Errorf("test with delimiter fail, current: %s, want: %s", v, value[index])
+				t.FailNow()
+			}
+		}
+	})
+	t.Run("WithIgnoreCase", func(t *testing.T) {})
+	t.Run("WithChain", func(t *testing.T) {
+		keys := []string{"test_chain_1", "test_chain_2", "test_chain_3"}
+		values := []string{"test_chain_1_value", "test_chain_2_value", "test_chain_3_value"}
+		for index, k := range keys {
+			assert.Nil(t, Set(k, values[index]))
+		}
+		assert.Equal(t, values[len(values)-1], GetString(keys[0], "", WithChain(keys[1:])))
+
+	})
 }
 
 func TestGetInt(t *testing.T) {
