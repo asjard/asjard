@@ -174,11 +174,9 @@ func main() {
 	server := asjard.New()
 	helloServer := &Hello{}
 	// 添加rest服务方法
-	server.AddHandler(rest.Protocol, helloServer)
-	// 添加grpc服务方法
-	server.AddHandler(mgrpc.Protocol, helloServer)
+	server.AddHandler(rest.Protocol, &Hello{}, rest.Protocol, mgrpc.Protocol)
 	if err := server.Start(); err != nil {
-		log.Println(err.Error())
+		panic(err)
 	}
 }
 
