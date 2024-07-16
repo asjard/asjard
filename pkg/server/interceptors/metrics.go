@@ -39,15 +39,19 @@ func (Metrics) Name() string {
 
 func (m Metrics) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
-		resp, err = handler(ctx, req)
 		now := time.Now()
-		fullMethod := strings.ReplaceAll(strings.Trim(info.FullMethod, "/"), "/", ".")
-		code, _ := status.FromError(err)
-		codeStr := strconv.Itoa(int(code))
-		m.requestTotal.Inc(codeStr,
-			fullMethod, info.Protocol)
-		m.requestDuration.Observe(codeStr,
-			fullMethod, info.Protocol, float64(time.Since(now).Milliseconds()))
+		resp, err = handler(ctx, req)
+		latency := time.Since(now)
+		go func(latency time.Duration, fullMethod, protocol string, err error) {
+			code, _ := status.FromError(err)
+			codeStr := strconv.Itoa(int(code))
+			fullMethod = strings.ReplaceAll(strings.Trim(info.FullMethod, "/"), "/", ".")
+			m.requestTotal.Inc(codeStr,
+				fullMethod, protocol)
+			time.Since(now)
+			m.requestDuration.Observe(fullMethod,
+				protocol, float64(latency.Milliseconds()))
+		}(latency, info.FullMethod, info.Protocol, err)
 		return resp, err
 	}
 }

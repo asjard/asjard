@@ -8,6 +8,7 @@ import (
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server/handlers"
 	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/push"
@@ -87,6 +88,10 @@ func (m *MetricsManager) push() {
 	if !m.conf.Enabled || m.conf.PushGateway.Endpoint == "" {
 		return
 	}
+	instanceId := utils.LocalIPv4()
+	if instanceId == "" {
+		instanceId = runtime.InstanceID
+	}
 	for {
 		select {
 		case <-time.After(m.conf.PushGateway.Interval.Duration):
@@ -98,7 +103,9 @@ func (m *MetricsManager) push() {
 			m.cm.RUnlock()
 			// TODO 此处instance是个无法辨认的字符串, 重启后会更新
 			// 是否可以生成一个可辨认的字符串
-			if err := pusher.Grouping("instance", runtime.InstanceID).
+			if err := pusher.Grouping("instance", instanceId).
+				Grouping("region", runtime.Region).
+				Grouping("az", runtime.AZ).
 				Grouping("app", runtime.APP).
 				Grouping("env", runtime.Environment).
 				Grouping("service_version", runtime.Version).

@@ -1,3 +1,5 @@
 ._*
 log/
 cover.out
+conf_*
+!conf_example

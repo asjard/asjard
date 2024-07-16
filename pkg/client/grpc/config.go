@@ -34,7 +34,7 @@ func defaultConfig() Config {
 		Options: OptionsConfig{
 			Keepalive: KeepaliveConfig{
 				Time:    utils.JSONDuration{Duration: 20 * time.Second},
-				Timeout: utils.JSONDuration{Duration: time.Second},
+				Timeout: utils.JSONDuration{Duration: 5 * time.Second},
 			},
 		},
 	}

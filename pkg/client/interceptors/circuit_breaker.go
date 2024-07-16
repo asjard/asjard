@@ -30,7 +30,7 @@ type CircuitBreaker struct {
 var (
 	defaultConfig = hystrix.CommandConfig{
 		Timeout:                hystrix.DefaultTimeout,
-		MaxConcurrentRequests:  hystrix.DefaultMaxConcurrent,
+		MaxConcurrentRequests:  1000,
 		RequestVolumeThreshold: hystrix.DefaultVolumeThreshold,
 		SleepWindow:            hystrix.DefaultSleepWindow,
 		ErrorPercentThreshold:  hystrix.DefaultErrorPercentThreshold,
@@ -108,7 +108,7 @@ func (ccb *CircuitBreaker) do(ctx context.Context, commandConfigName, method str
 		return invoker(ctx, method, req, reply, cc)
 	}, nil); err != nil {
 		if _, ok := err.(hystrix.CircuitError); ok {
-			return status.Error(codes.Internal, err.Error())
+			return status.Error(codes.ResourceExhausted, err.Error())
 		}
 		return err
 	}
