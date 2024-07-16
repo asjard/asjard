@@ -1,65 +1,44 @@
 > protobuf驱动插件式的微服务框架,通过简单的配置即可实现相应功能或者变更程序逻辑,插件式按需加载自己想要的功能或者定制自己的插件以满足业务需求
 
+## 开发日志
+
+- [x] [系统启动](./core/bootstrap/README.md)
+- [x] [客户端管理](./core/client/README.md)
+- [x] [配置管理](./core/config/README.md)
+- [x] [日志管理](./core/logger/README.md)
+- [x] [注册发现管理](./core/registry/REAME.md)
+- [x] [运行时](./core/runtime/README.md)
+- [x] [安全管理](./core/security/README.md)
+- [x] [服务管理](./core/server/README.md)
+- [x] 添加循环调用拦截器
+- [x] 熔断拦截器
+- [x] rest请求头注入到rpc上下文
+- [x] accesslog拦截器按错误级别输出日志
+- [x] rest添加metrics接口
+- [x] rest添加swagger
+- [x] 所有协议添加health接口
+- [x] server new方法使用options方式传参
+- [x] protoc-gen-rest-go支持自定义api类型和version(api: "api", version:"v1")
+- [x] 修复文件配置源更新事件问题
+- [x] 所有配置添加默认配置，在不配置的情况下也能正常运行
+- [x] 监控
+- [ ] 限速
+- [ ] 链路追踪
+- [ ] 拦截器配置自动更新，无需重启
+- [ ] stream支持
+- [ ] openapi更新default response
+- [ ] 用rest生成rpc的gateway
+- [ ] 添加rest服务返回自定义拦截器
+- [ ] 添加测试用例，文档，cli工具
+- [ ] 添加etcd服务发现注册中心
+- [ ] 添加远程配置中心(低优先级,实际环境中远程配置中心变更维护复杂)
+- [ ] 配置监听添加方法监听
+- [ ] 修复文件配置源同一个配置在不同配置文件中优先级问题
+- [ ] protoc-gen-ts实现
+- [ ] 添加grafana看板
+- [ ] api添加i18n拦截器
+
 ## 背景
-
-## 目录结构
-
-```shell
-├── CHANGELOG.md
-├── Makefile
-├── README.md
-├── asjard.go ## 框架入口
-├── cmd
-├── conf_example ## 配置目录
-│   ├── README.md
-│   ├── cache.yaml ## 缓存相关配置
-│   ├── certs ## 证书配置
-│   ├── cipher.yaml ## 加解密组件配置
-│   ├── client.yaml ## 客户端配置
-│   ├── config.yaml ## 配置中心配置
-│   ├── database.yaml ## 数据库配置
-│   ├── interceptors.yaml ## 拦截器配置
-│   ├── logger.yaml ## 日志配置
-│   ├── registry.yaml ## 注册发现中心配置
-│   ├── servers.yaml ## 服务协议配置
-│   └── service.yaml ## 实例配置
-├── core ## 框架规范及默认实现
-│   ├── bootstrap ## 系统启动规范
-│   ├── client ## 客户端规范
-│   ├── config ## 配置规范
-│   ├── constant ## 常量
-│   ├── logger ## 日志规范
-│   ├── registry ## 服务注册发现规范
-│   ├── runtime ## 运行时
-│   ├── security ## 安全规范
-│   └── server ## 服务规范
-├── docs
-│   └── doc.go
-├── examples
-│   ├── protobuf
-│   └── server
-├── go.mod
-├── go.sum
-├── log ## 日志目录
-│   ├── asjard.log
-│   └── exampleService.log ## 跟logger.filePath配置相关
-├── pkg  ## 对core目录下功能的扩展实现,以及一些业务通用实现
-│   ├── client
-│   ├── config
-│   ├── database
-│   ├── logger
-│   ├── registry
-│   ├── security
-│   ├── server
-│   └── status
-├── utils ## 工具包
-│   ├── cast ## 对github.com/spf13/cast库的扩展
-│   ├── file.go
-│   ├── ip.go
-│   ├── utils.go
-│   └── utils_test.go
-└── version
-```
 
 ## 特性
 
@@ -206,39 +185,3 @@ func main() {
 ```
 
 ## [变更日志](CHANGELOG.md)
-
-## 开发日志
-
-- [x] [系统启动](./core/bootstrap/README.md)
-- [x] [客户端管理](./core/client/README.md)
-- [x] [配置管理](./core/config/README.md)
-- [x] [日志管理](./core/logger/README.md)
-- [x] [注册发现管理](./core/registry/REAME.md)
-- [x] [运行时](./core/runtime/README.md)
-- [x] [安全管理](./core/security/README.md)
-- [x] [服务管理](./core/server/README.md)
-- [x] 添加循环调用拦截器
-- [x] 熔断拦截器
-- [x] rest请求头注入到rpc上下文
-- [x] accesslog拦截器按错误级别输出日志
-- [x] rest添加metrics接口
-- [x] rest添加swagger
-- [x] 所有协议添加health接口
-- [x] server new方法使用options方式传参
-- [x] protoc-gen-rest-go支持自定义api类型和version(api: "api", version:"v1")
-- [x] 修复文件配置源更新事件问题
-- [x] 所有配置添加默认配置，在不配置的情况下也能正常运行
-- [ ] 限速，监控，链路追踪拦截器
-- [ ] 拦截器配置自动更新，无需重启
-- [ ] stream支持
-- [ ] openapi更新default response
-- [ ] 用rest生成rpc的gateway
-- [ ] 添加rest服务返回自定义拦截器
-- [ ] 添加测试用例，文档，cli工具
-- [ ] 添加etcd服务发现注册中心
-- [ ] 添加远程配置中心(低优先级,实际环境中远程配置中心变更维护复杂)
-- [ ] 配置监听添加方法监听
-- [ ] 修复文件配置源同一个配置在不同配置文件中优先级问题
-- [ ] protoc-gen-ts实现
-- [ ] 添加grafana看板
-- [ ] api添加i18n拦截器
