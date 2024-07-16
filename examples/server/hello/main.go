@@ -58,7 +58,7 @@ func (c *Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 
 // Call .
 func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
-	time.Sleep(time.Second)
+	// time.Sleep(500 * time.Millisecond)
 	md, ok := metadata.FromIncomingContext(ctx)
 	logger.Debug("===========", "md", md, "ok", ok)
 	if in.Configs == nil {

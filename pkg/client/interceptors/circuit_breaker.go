@@ -29,7 +29,8 @@ type CircuitBreaker struct {
 
 var (
 	defaultConfig = hystrix.CommandConfig{
-		Timeout:                hystrix.DefaultTimeout,
+		// Timeout:                hystrix.DefaultTimeout,
+		Timeout:                3000,
 		MaxConcurrentRequests:  1000,
 		RequestVolumeThreshold: hystrix.DefaultVolumeThreshold,
 		SleepWindow:            hystrix.DefaultSleepWindow,
