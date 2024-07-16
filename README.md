@@ -172,7 +172,6 @@ func (Hello) GrpcServiceDesc() *grpc.ServiceDesc {
 
 func main() {
 	server := asjard.New()
-	helloServer := &Hello{}
 	// 添加rest服务方法
 	server.AddHandler(rest.Protocol, &Hello{}, rest.Protocol, mgrpc.Protocol)
 	if err := server.Start(); err != nil {
