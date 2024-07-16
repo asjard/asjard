@@ -8,9 +8,15 @@ import (
 	"github.com/asjard/asjard/utils"
 )
 
+const (
+	AllCollectors = "*"
+)
+
 // Config 监控配置
 type Config struct {
-	Enabled           bool              `json:"enabled"`
+	Enabled bool `json:"enabled"`
+	// 是否是所有指标
+	allCollectors     bool
 	Collectors        utils.JSONStrings `json:"collectors"`
 	BuiltInCollectors utils.JSONStrings `json:"BuiltInCollectors"`
 	PushGateway       PushGatewayConfig `json:"pushGateway"`
@@ -44,6 +50,10 @@ func GetConfig() Config {
 func (c Config) complete() Config {
 	collectors := c.BuiltInCollectors
 	for _, collector := range c.Collectors {
+		if collector == AllCollectors {
+			c.allCollectors = true
+			break
+		}
 		exist := false
 		for _, ct := range c.BuiltInCollectors {
 			if ct == collector {

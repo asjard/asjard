@@ -9,6 +9,7 @@ asjard:
     ## 如果开启了rest服务，则rest服务会多一个/metrics路由
     enabled: true
     ## 需要收集的指标
+    ## *代表所有指标
     collectors:
       - go_collector
       - process_collector

@@ -42,7 +42,7 @@ func Init() error {
 	if conf.Enabled {
 		for name, colletor := range metricsManager.collectors {
 			for _, cname := range conf.Collectors {
-				if cname == name {
+				if conf.allCollectors || cname == name {
 					registry.MustRegister(colletor)
 					break
 				}
