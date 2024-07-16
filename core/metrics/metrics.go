@@ -99,6 +99,9 @@ func (m *MetricsManager) push() {
 			// TODO 此处instance是个无法辨认的字符串, 重启后会更新
 			// 是否可以生成一个可辨认的字符串
 			if err := pusher.Grouping("instance", runtime.InstanceID).
+				Grouping("app", runtime.APP).
+				Grouping("env", runtime.Environment).
+				Grouping("service_version", runtime.Version).
 				Grouping("service", runtime.Name).
 				Push(); err != nil {
 				logger.Error("push metrics fail", "endpoint", m.conf.PushGateway.Endpoint, "err", err)

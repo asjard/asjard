@@ -2,21 +2,17 @@ package collectors
 
 import (
 	"github.com/asjard/asjard/core/metrics"
-	"github.com/asjard/asjard/core/runtime"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
-	APIRequestLables = []string{"app", "env", "version", "code", "api", "protocol"}
+	APIRequestLables = []string{"code", "api", "protocol"}
 )
 
 type APIRequestBase struct{}
 
 func (APIRequestBase) labelMap(code, api, protocol string) map[string]string {
 	return map[string]string{
-		"app":      runtime.APP,
-		"env":      runtime.Environment,
-		"version":  runtime.Version,
 		"code":     code,
 		"api":      api,
 		"protocol": protocol,
