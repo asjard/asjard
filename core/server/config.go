@@ -11,19 +11,20 @@ import (
 type Config struct {
 	Enabled      bool              `json:"enabled"`
 	Interceptors utils.JSONStrings `json:"interceptors"`
-	// 默认拦截器
-	defaultInterceptors utils.JSONStrings
+	// 内建拦截器
+	// 配置的拦截器和内建拦截器合并
+	BuiltInInterceptors utils.JSONStrings `json:"builtInInterceptors"`
 	DefaultHandlers     utils.JSONStrings `json:"defaultHandlers"`
-	// 默认处理器
-	defaultHandlers utils.JSONStrings
-	Addresses       map[string]string `json:"addresses"`
-	CertFile        string            `json:"certFile"`
-	KeyFile         string            `json:"keyFile"`
+	// 内建默认处理器
+	BuiltInDefaultHandlers utils.JSONStrings `json:"builtInDefaultHandlers"`
+	Addresses              map[string]string `json:"addresses"`
+	CertFile               string            `json:"certFile"`
+	KeyFile                string            `json:"keyFile"`
 }
 
 var DefaultConfig = Config{
-	defaultInterceptors: utils.JSONStrings{"metrics", "accessLog", "restReadEntity", "restResponseHeader"},
-	defaultHandlers:     utils.JSONStrings{"health", "metrics"},
+	BuiltInInterceptors:    utils.JSONStrings{"metrics", "accessLog", "restReadEntity", "restResponseHeader"},
+	BuiltInDefaultHandlers: utils.JSONStrings{"health", "metrics"},
 }
 
 // GetConfigWithProtocol 根据协议获取配置
@@ -42,33 +43,33 @@ func GetConfig() Config {
 	return conf.complete()
 }
 
-// 去重，添加默认配置
+// 去重，添加内建配置
 func (c Config) complete() Config {
-	interceptors := c.defaultInterceptors
-	for _, dintc := range c.Interceptors {
+	interceptors := c.BuiltInInterceptors
+	for _, interceptor := range c.Interceptors {
 		exist := false
-		for _, intc := range interceptors {
-			if intc == dintc {
+		for _, inc := range interceptors {
+			if inc == interceptor {
 				exist = true
 				break
 			}
 		}
 		if !exist {
-			interceptors = append(interceptors, dintc)
+			interceptors = append(interceptors, interceptor)
 		}
 	}
 	c.Interceptors = interceptors
-	defaultHandlers := c.defaultHandlers
-	for _, dh := range c.DefaultHandlers {
+	defaultHandlers := c.BuiltInDefaultHandlers
+	for _, defaultHandler := range c.DefaultHandlers {
 		exist := false
-		for _, d := range defaultHandlers {
-			if dh == d {
+		for _, dh := range defaultHandlers {
+			if defaultHandler == dh {
 				exist = true
 				break
 			}
 		}
 		if !exist {
-			defaultHandlers = append(defaultHandlers, dh)
+			defaultHandlers = append(defaultHandlers, defaultHandler)
 		}
 	}
 	c.DefaultHandlers = defaultHandlers
