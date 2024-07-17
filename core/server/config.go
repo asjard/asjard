@@ -17,9 +17,15 @@ type Config struct {
 	DefaultHandlers     utils.JSONStrings `json:"defaultHandlers"`
 	// 内建默认处理器
 	BuiltInDefaultHandlers utils.JSONStrings `json:"builtInDefaultHandlers"`
-	Addresses              map[string]string `json:"addresses"`
-	CertFile               string            `json:"certFile"`
-	KeyFile                string            `json:"keyFile"`
+	// Addresses              map[string]string `json:"addresses"`
+	Addresses AddressConfig `json:"addresses"`
+	CertFile  string        `json:"certFile"`
+	KeyFile   string        `json:"keyFile"`
+}
+
+type AddressConfig struct {
+	Listen    string `json:"listen"`
+	Advertise string `json:"advertise"`
 }
 
 var DefaultConfig = Config{

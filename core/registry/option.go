@@ -160,7 +160,7 @@ func (opts *Options) okPickFunc() PickFunc {
 func (opts *Options) appPickFunc() PickFunc {
 	if opts.App != "" {
 		return func(instance *Instance) bool {
-			return instance.Instance.App == opts.App
+			return instance.Service.App == opts.App
 		}
 	}
 	return opts.okPickFunc()
@@ -170,7 +170,7 @@ func (opts *Options) appPickFunc() PickFunc {
 func (opts *Options) regionPickFunc() PickFunc {
 	if opts.Region != "" {
 		return func(instance *Instance) bool {
-			return instance.Instance.Region == opts.Region
+			return instance.Service.Region == opts.Region
 		}
 	}
 	return opts.okPickFunc()
@@ -180,7 +180,7 @@ func (opts *Options) regionPickFunc() PickFunc {
 func (opts *Options) environmentPickFunc() PickFunc {
 	if opts.Environment != "" {
 		return func(instance *Instance) bool {
-			return instance.Instance.Environment == opts.Environment
+			return instance.Service.Environment == opts.Environment
 		}
 	}
 	return opts.okPickFunc()
@@ -190,7 +190,7 @@ func (opts *Options) environmentPickFunc() PickFunc {
 func (opts *Options) servicePickFunc() PickFunc {
 	if opts.ServiceName != "" {
 		return func(instance *Instance) bool {
-			return instance.Instance.Instance.Name == opts.ServiceName
+			return instance.Service.Instance.Name == opts.ServiceName
 		}
 	}
 	return opts.okPickFunc()
@@ -210,7 +210,7 @@ func (opts *Options) registryPickFunc() PickFunc {
 func (opts *Options) protocolPickFunc() PickFunc {
 	if opts.Protocol != "" {
 		return func(instance *Instance) bool {
-			for protocol := range instance.Instance.Endpoints {
+			for protocol := range instance.Service.Endpoints {
 				if protocol == opts.Protocol {
 					return true
 				}
@@ -237,7 +237,7 @@ func (opts *Options) metadataPickFunc() PickFunc {
 		return func(instance *Instance) bool {
 			for wantKey, wantValue := range opts.MetaData {
 				isOk := false
-				for key, value := range instance.Instance.Instance.MetaData {
+				for key, value := range instance.Service.Instance.MetaData {
 					if wantKey == key && wantValue == value {
 						isOk = true
 						break

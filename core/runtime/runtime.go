@@ -36,6 +36,8 @@ type Instance struct {
 	Name string `json:"name"`
 	// 实例版本
 	Version string `json:"version"`
+	// 是否可共享
+	Shareable bool `json:"shareable"`
 	// 服务元数据
 	MetaData map[string]string `json:"metadata"`
 }

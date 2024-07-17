@@ -1,21 +1,86 @@
 package server
 
-// Service .
+import (
+	"errors"
+	"sync"
+
+	"github.com/asjard/asjard/core/runtime"
+)
+
+// Service 服务详情
 type Service struct {
-	// 服务名称
-	Name string
-	// 协议
-	Protocol    string
-	LoadBalance string
+	runtime.APP
+	// 服务端口列表
+	// key为协议名称
+	// value-key 监听地址名称
+	// value-value 监听地址列表，有可能有多个实例列表所以是个列表
+	Endpoints map[string]*Endpoint
+	em        sync.RWMutex
 }
 
-// NewService 用以客户端访问
-// 服务名称和协议
-func NewService(name, protocol string) *Service {
+// ServiceInstance 服务实例
+var service *Service
+var sonce sync.Once
+
+// GetInstance 返回服务实例详情
+func GetService() *Service {
+	sonce.Do(func() {
+		service = NewService()
+	})
+	return service
+}
+
+// NewInstance .
+func NewService() *Service {
 	return &Service{
-		Name:     name,
-		Protocol: protocol,
-		// LoadBalance: config.GetString(fmt.Sprintf("loadbalance.services.%s.strategy", name),
-		// config.GetString("loadbalance.strategy", "")),
+		APP:       runtime.GetAPP(),
+		Endpoints: make(map[string]*Endpoint),
 	}
+}
+
+// AddEndpoint 添加服务端口
+func (s *Service) AddEndpoint(protocol string, address AddressConfig) error {
+	if protocol == "" {
+		return errors.New("endpoint protocol is must")
+	}
+	s.em.RLock()
+	if _, ok := s.Endpoints[protocol]; !ok {
+		s.Endpoints[protocol] = &Endpoint{}
+	}
+	s.em.RUnlock()
+
+	s.em.Lock()
+	if address.Listen != "" {
+		s.Endpoints[protocol].Listen = append(s.Endpoints[protocol].Listen, address.Listen)
+	}
+	if address.Advertise != "" {
+		s.Endpoints[protocol].Advertise = append(s.Endpoints[protocol].Advertise, address.Advertise)
+	}
+	s.em.Unlock()
+	return nil
+}
+
+// GetListenAddresses 获取监听地址
+func (s *Service) GetListenAddresses(protocol string) []string {
+	endpoint, ok := s.Endpoints[protocol]
+	if !ok {
+		return []string{}
+	}
+	return endpoint.Listen
+}
+
+// GetAdvertiseAddresses 获取广播地址
+func (s *Service) GetAdvertiseAddresses(protocol string) []string {
+	endpoint, ok := s.Endpoints[protocol]
+	if !ok {
+		return []string{}
+	}
+	return endpoint.Advertise
+}
+
+func (s *Service) GetEndpoint(protocol string) (*Endpoint, bool) {
+	s.em.RLock()
+	endpoint, ok := s.Endpoints[protocol]
+	s.em.RUnlock()
+	return endpoint, ok
 }

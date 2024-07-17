@@ -11,6 +11,15 @@ import (
 	"google.golang.org/grpc/resolver"
 )
 
+// AddressAttrKey 空的结构体用来作为address attr的key
+type AddressAttrKey struct{}
+
+// ListenAddressKey 空的结构用来作为标记监听地址
+type ListenAddressKey struct{}
+
+// AdvertiseAddressKey 空的结构体用来标记广播地址
+type AdvertiseAddressKey struct{}
+
 // ClientBuilder .
 type ClientBuilder struct{}
 
@@ -47,9 +56,11 @@ func (r *clientResolver) Close() {
 
 // ResolveNow 从服务发现中心获取服务列表
 func (r *clientResolver) ResolveNow(_ resolver.ResolveNowOptions) {
+	app := runtime.GetAPP()
 	instances := registry.PickServices(registry.WithServiceName(r.serviceName),
 		registry.WithProtocol(r.protocol),
-		registry.WithEnvironment(runtime.GetAPP().Environment),
+		registry.WithEnvironment(app.Environment),
+		registry.WithApp(app.App),
 		registry.WithWatch(r.listenerName(), r.watch))
 	r.update(instances)
 }
@@ -64,26 +75,24 @@ func (r *clientResolver) listenerName() string {
 func (r *clientResolver) update(instances []*registry.Instance) {
 	var addresses []resolver.Address
 	for _, instance := range instances {
-		attr := attributes.New(constant.DiscoverNameKey, instance.DiscoverName)
-		for mkey, mvalue := range instance.Instance.Instance.MetaData {
-			attr.WithValue(mkey, mvalue)
-		}
-		attr = attr.WithValue(constant.ServiceAppKey, instance.Instance.App)
-		attr = attr.WithValue(constant.ServiceEnvKey, instance.Instance.Environment)
-		attr = attr.WithValue(constant.ServiceRegionKey, instance.Instance.Region)
-		attr = attr.WithValue(constant.ServiceAZKey, instance.Instance.AZ)
-		attr = attr.WithValue(constant.ServiceIDKey, instance.Instance.Instance.ID)
-		attr = attr.WithValue(constant.ServiceNameKey, instance.Instance.Instance.Name)
-		attr = attr.WithValue(constant.ServiceVersionKey, instance.Instance.Instance.Version)
-		attr = attr.WithValue(constant.ServerProtocolKey, r.protocol)
-		attr = attr.WithValue(constant.ServiceNameKey, r.serviceName)
-		for name, epts := range instance.Instance.Endpoints[r.protocol] {
-			for _, addr := range epts {
-				addresses = append(addresses, resolver.Address{
-					Addr:       addr,
-					ServerName: name,
-					Attributes: attr,
-				})
+		attr := attributes.New(AddressAttrKey{}, instance)
+		endpoint, ok := instance.Service.GetEndpoint(r.protocol)
+		if ok {
+			if len(endpoint.Listen) != 0 {
+				for _, addr := range endpoint.Listen {
+					addresses = append(addresses, resolver.Address{
+						Addr:       addr,
+						Attributes: attr.WithValue(ListenAddressKey{}, nil),
+					})
+				}
+			}
+			if len(endpoint.Advertise) != 0 {
+				for _, addr := range endpoint.Advertise {
+					addresses = append(addresses, resolver.Address{
+						Addr:       addr,
+						Attributes: attr.WithValue(AdvertiseAddressKey{}, nil),
+					})
+				}
 			}
 		}
 	}

@@ -13,3 +13,8 @@ package server
 // 	Name    string
 // 	Address string
 // }
+
+type Endpoint struct {
+	Listen    []string
+	Advertise []string
+}

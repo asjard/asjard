@@ -188,7 +188,7 @@ func (asd *Asjard) init() error {
 func (asd *Asjard) startServers() error {
 	logger.Debug("Start start servers")
 	defer logger.Debug("start servers Done")
-	svc := server.GetInstance()
+	svc := server.GetService()
 	// 启动所有服务
 	for _, sv := range asd.servers {
 		if !sv.Enabled() {

@@ -17,7 +17,7 @@ type Server interface {
 	// 服务监听地址列表
 	// key为监听地址名称, listen,advertise为保留关键词，会在客户端负载均衡场景中用到
 	// value为监听地址
-	ListenAddresses() map[string]string
+	ListenAddresses() AddressConfig
 	// 是否已启用
 	Enabled() bool
 }

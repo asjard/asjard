@@ -14,8 +14,8 @@ import (
 type Registry struct {
 	cache *cache
 
-	// 当前服务实例
-	currentInstance *server.Instance
+	// 当前服务
+	currentService *server.Service
 
 	// 注册中心列表
 	registers []Register
@@ -33,7 +33,7 @@ func init() {
 // Init 服务注册中心初始化
 // 只发现服务，不注册服务，等服务启动后再注册服务
 func Init() error {
-	registryManager.currentInstance = server.GetInstance()
+	registryManager.currentService = server.GetService()
 	registryManager.cache = newCache(registryManager.healthCheck)
 	for _, newRegister := range newRegisters {
 		register, err := newRegister()
@@ -77,7 +77,7 @@ func (r *Registry) delayRegiste(delay string) error {
 // 注册当前服务到注册中心
 func (r *Registry) doRegiste() error {
 	for _, register := range r.registers {
-		if err := register.Registe(r.currentInstance); err != nil {
+		if err := register.Registe(r.currentService); err != nil {
 			return err
 		}
 	}
@@ -112,7 +112,7 @@ func (r *Registry) doHeartbeat() {
 // 从注册中心删除本服务
 func (r *Registry) remove() error {
 	for _, register := range r.registers {
-		register.Remove(r.currentInstance)
+		register.Remove(r.currentService)
 	}
 	return nil
 }
@@ -134,7 +134,7 @@ func (r *Registry) discove() error {
 	return nil
 }
 
-func (r *Registry) healthCheck(discoverName string, instance *server.Instance) error {
+func (r *Registry) healthCheck(discoverName string, instance *server.Service) error {
 	for _, discover := range r.discovers {
 		if discover.Name() == discoverName {
 			// return discover.HealthCheck(instance)

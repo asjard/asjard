@@ -10,9 +10,9 @@ import (
 type Register interface {
 	// 将服务注册到不同的配置中心
 	// 如果开启心跳，则每隔一个心跳间隔注册一次
-	Registe(instance *server.Instance) error
+	Registe(instance *server.Service) error
 	// 从配置中心移除服务实例
-	Remove(instance *server.Instance)
+	Remove(instance *server.Service)
 	// 注册中心名称
 	Name() string
 }

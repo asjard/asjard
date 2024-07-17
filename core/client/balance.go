@@ -3,10 +3,9 @@ package client
 import (
 	"sync/atomic"
 
-	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/registry"
 	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/utils/cast"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
 	"google.golang.org/grpc/metadata"
@@ -85,6 +84,7 @@ func (b *BalanceBuilder) Build(info base.PickerBuildInfo) balancer.Picker {
 
 // NewRoundRobinPicker .
 func NewRoundRobinPicker(scs map[balancer.SubConn]base.SubConnInfo) balancer.Picker {
+	logger.Debug("new roundrobin picker")
 	var subConns []*subConn
 	for conn, info := range scs {
 		subConns = append(subConns, &subConn{
@@ -104,8 +104,11 @@ type subConn struct {
 
 // RoundRobinPicker 轮询负载均衡
 type RoundRobinPicker struct {
-	scs  []*subConn
-	next uint32
+	// 所有连接列表
+	scs []*subConn
+	// 可被选择的连接列表
+	picks []*subConn
+	next  uint32
 }
 
 // Pick 负载选择
@@ -120,13 +123,18 @@ func (r *RoundRobinPicker) Pick(info balancer.PickInfo) (balancer.PickResult, er
 	}
 	next := atomic.AddUint32(&r.next, 1) - 1
 	sc := r.scs[next%n]
+	destServicename := ""
+	instance, ok := sc.address.Attributes.Value(AddressAttrKey{}).(*registry.Instance)
+	if ok {
+		destServicename = instance.Service.Instance.Name
+	}
 	return balancer.PickResult{
 		SubConn: sc.conn,
 		Done:    func(info balancer.DoneInfo) {},
 		Metadata: metadata.New(map[string]string{
+			HeaderRequestApp:    runtime.GetAPP().App,
 			HeaderRequestSource: runtime.GetInstance().Name,
-			HeaderRequestDest:   cast.ToString(sc.address.Attributes.Value(constant.ServiceNameKey)),
-			HeaderRequestApp:    cast.ToString(sc.address.Attributes.Value(constant.ServiceAppKey)),
+			HeaderRequestDest:   destServicename,
 		}),
 	}, nil
 }

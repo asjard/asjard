@@ -52,17 +52,16 @@ func (s *PprofServer) AddHandler(_ any) error {
 
 // Start .
 func (s *PprofServer) Start(startErr chan error) error {
-	address, ok := s.conf.Addresses[constant.ServerListenAddressName]
-	if !ok {
+	if s.conf.Addresses.Listen == "" {
 		return errors.New("config servers.pprof.addresses.listen not found")
 	}
 	go func() {
-		if err := http.ListenAndServe(address, nil); err != nil {
-			startErr <- fmt.Errorf("start pprof with adress %s fail %s", address, err.Error())
+		if err := http.ListenAndServe(s.conf.Addresses.Listen, nil); err != nil {
+			startErr <- fmt.Errorf("start pprof with adress %s fail %s", s.conf.Addresses.Listen, err.Error())
 		}
 	}()
 	logger.Debug("start pprof server",
-		"address", address)
+		"address", s.conf.Addresses.Listen)
 	return nil
 }
 
@@ -80,6 +79,6 @@ func (s *PprofServer) Enabled() bool {
 }
 
 // ListenAddresses .
-func (s *PprofServer) ListenAddresses() map[string]string {
+func (s *PprofServer) ListenAddresses() server.AddressConfig {
 	return s.conf.Addresses
 }

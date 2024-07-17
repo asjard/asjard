@@ -8,18 +8,47 @@ import (
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/utils"
 	"google.golang.org/grpc/metadata"
 )
 
 // Rest2RpcContext rest协议的context转换为rpc的Context
 // 放在拦截器的最前面
 type Rest2RpcContext struct {
-	cfg *rest2RpcContextConfig
+	cfg rest2RpcContextConfig
 }
 
 // Rest2RpcContextConfig 拦截器配置
 type rest2RpcContextConfig struct {
-	AllowHeaders []string `json:"allowHeaders"`
+	AllowHeaders        utils.JSONStrings `json:"allowHeaders"`
+	BuiltInAllowHeaders utils.JSONStrings `json:"builtInAllowHeaders"`
+}
+
+var defaultRest2RpcContextConfig = rest2RpcContextConfig{
+	BuiltInAllowHeaders: utils.JSONStrings{
+		"x-request-region",
+		"x-request-az",
+		"x-request-id",
+		"x-forward-for",
+	},
+}
+
+func (r rest2RpcContextConfig) complete() rest2RpcContextConfig {
+	allowHeaders := r.BuiltInAllowHeaders
+	for _, allowHeader := range r.AllowHeaders {
+		exist := false
+		for _, ah := range r.BuiltInAllowHeaders {
+			if allowHeader == ah {
+				exist = true
+				break
+			}
+		}
+		if !exist {
+			allowHeaders = append(allowHeaders, allowHeader)
+		}
+	}
+	r.AllowHeaders = allowHeaders
+	return r
 }
 
 func init() {
@@ -28,15 +57,16 @@ func init() {
 
 // NewRest2RpcContext context转换初始化
 func NewRest2RpcContext() client.ClientInterceptor {
-	rest2RpcContext := &Rest2RpcContext{
-		cfg: &rest2RpcContextConfig{},
+	rest2RpcContext := Rest2RpcContext{
+		cfg: defaultRest2RpcContextConfig,
 	}
 	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientRest2RpcContextPrefix,
-		rest2RpcContext.cfg,
+		&rest2RpcContext.cfg,
 		config.WithMatchWatch(constant.ConfigInterceptorClientRest2RpcContextPrefix+".*", rest2RpcContext.watch)); err != nil {
 		logger.Error("get interceptor config fail", "interceptor", "rest2RpcContext", "err", err)
 	}
-	return rest2RpcContext
+	rest2RpcContext.cfg = rest2RpcContext.cfg.complete()
+	return &rest2RpcContext
 }
 
 // Name 拦截器名称
@@ -66,8 +96,8 @@ func (r *Rest2RpcContext) Interceptor() client.UnaryClientInterceptor {
 }
 
 func (r *Rest2RpcContext) watch(event *config.Event) {
-	var cfg rest2RpcContextConfig
-	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientRest2RpcContextPrefix, &cfg); err == nil {
-		r.cfg = &cfg
+	conf := defaultRest2RpcContextConfig
+	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientRest2RpcContextPrefix, &conf); err == nil {
+		r.cfg = conf.complete()
 	}
 }

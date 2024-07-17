@@ -127,25 +127,19 @@ func (l *LocalRegistry) watch(event *config.Event) {
 func (l *LocalRegistry) getInstances(services map[string][]string) []*Instance {
 	var instances []*Instance
 	for name, addresses := range services {
-		instance := server.NewInstance()
-		instance.Instance.Name = name
-		endpoints := make(map[string][]string)
+		service := server.NewService()
+		service.Instance.Name = name
 		for index := range addresses {
 			u, err := url.Parse(addresses[index])
 			if err == nil {
-				endpoints[u.Scheme] = append(endpoints[u.Scheme], u.Host)
-			}
-		}
-		for protocol, addresses := range endpoints {
-			if err := instance.AddEndpoints(protocol, map[string][]string{
-				constant.ServerListenAddressName: addresses,
-			}); err != nil {
-				logger.Error(err.Error())
+				service.AddEndpoint(u.Scheme, server.AddressConfig{
+					Listen: u.Host,
+				})
 			}
 		}
 		instances = append(instances, &Instance{
 			DiscoverName: l.Name(),
-			Instance:     instance,
+			Service:      service,
 		})
 	}
 	return instances

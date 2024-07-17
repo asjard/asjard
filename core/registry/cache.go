@@ -11,14 +11,14 @@ import (
 )
 
 // 服务健康方法
-type healthCheckFunc func(discoverName string, instance *server.Instance) error
+type healthCheckFunc func(discoverName string, instance *server.Service) error
 
 // Instance 带发现者的服务实例详情
 type Instance struct {
 	// 服务发现者
 	DiscoverName string
 	// 实例详情
-	Instance *server.Instance
+	Service *server.Service
 }
 
 // 服务发现缓存
@@ -51,7 +51,7 @@ type serviceCache struct {
 	// value: 相同服务名称的服务实例列表
 	// 一个注册中心中相同的服务不应该重复
 	// 不同注册中心可以出现相同的服务
-	services map[string][]*server.Instance
+	services map[string][]*server.Service
 	sm       sync.RWMutex
 }
 
@@ -116,7 +116,7 @@ func (c *cache) update(instances []*Instance) {
 	for _, instance := range instances {
 		exist := false
 		for index := range c.services {
-			if instance.Instance.Instance.ID == c.services[index].Instance.Instance.ID {
+			if instance.Service.Instance.ID == c.services[index].Service.Instance.ID {
 				c.services[index] = instance
 				c.notify(EventTypeUpdate, c.services[index])
 				exist = true
@@ -132,9 +132,9 @@ func (c *cache) update(instances []*Instance) {
 // 从本地缓存中删除服务实例
 func (c *cache) delete(instance *Instance) {
 	logger.Debug("delete instance",
-		"instance", instance.Instance.Instance.Name)
+		"instance", instance.Service.Instance.Name)
 	for index, svc := range c.services {
-		if svc.Instance.Instance.ID == instance.Instance.Instance.ID {
+		if svc.Service.Instance.ID == instance.Service.Instance.ID {
 			c.notify(EventTypeDelete, svc)
 			c.services = append(c.services[:index], c.services[index+1:]...)
 		}
@@ -207,7 +207,7 @@ func (c *cache) setFailureThreshold(failKey string, threshold int) {
 
 func (c *cache) newServiceCache(_ string) *serviceCache {
 	serviceCache := &serviceCache{
-		services: make(map[string][]*server.Instance),
+		services: make(map[string][]*server.Service),
 	}
 	// c.sm.Lock()
 	// c.discoverServices[discoverName] = serviceCache
@@ -215,7 +215,7 @@ func (c *cache) newServiceCache(_ string) *serviceCache {
 	return serviceCache
 }
 
-func (c *serviceCache) addOrUpdate(instances []*server.Instance) {
+func (c *serviceCache) addOrUpdate(instances []*server.Service) {
 	for _, instance := range instances {
 		exist := false
 		c.sm.RLock()
@@ -246,7 +246,7 @@ func (c *serviceCache) addOrUpdate(instances []*server.Instance) {
 	}
 }
 
-func (c *serviceCache) delete(instance *server.Instance) {
+func (c *serviceCache) delete(instance *server.Service) {
 	c.sm.RLock()
 	services, ok := c.services[instance.Instance.Name]
 	c.sm.RUnlock()
@@ -266,8 +266,8 @@ func (c *serviceCache) delete(instance *server.Instance) {
 	}
 }
 
-func (c *serviceCache) healthCheck(discoverName string, hf healthCheckFunc) []*server.Instance {
-	var notHealthInstances []*server.Instance
+func (c *serviceCache) healthCheck(discoverName string, hf healthCheckFunc) []*server.Service {
+	var notHealthInstances []*server.Service
 	c.sm.RLock()
 	for _, instances := range c.services {
 		for _, instance := range instances {

@@ -7,7 +7,6 @@ import (
 
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/pkg/ajerr"
 	openapi_v3 "github.com/google/gnostic/openapiv3"
@@ -17,7 +16,7 @@ import (
 type OpenAPI struct {
 	document *openapi_v3.Document
 	conf     OpenapiConfig
-	app      runtime.APP
+	service  *server.Service
 	UnimplementedOpenAPIServer
 }
 
@@ -25,20 +24,20 @@ func NewOpenAPI(conf OpenapiConfig, document *openapi_v3.Document) *OpenAPI {
 	return &OpenAPI{
 		document: document,
 		conf:     conf,
-		app:      runtime.GetAPP(),
+		service:  server.GetService(),
 	}
 }
 
 func (api *OpenAPI) Yaml(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
 	api.document.Info = &openapi_v3.Info{
-		Title:       api.app.App,
-		Description: api.app.Desc,
+		Title:       api.service.App,
+		Description: api.service.Desc,
 		Contact: &openapi_v3.Contact{
-			Name: api.app.App,
-			Url:  api.app.Website,
+			Name: api.service.App,
+			Url:  api.service.Website,
 		},
 		TermsOfService: api.conf.TermsOfService,
-		Version:        api.app.Instance.Version,
+		Version:        api.service.Instance.Version,
 		License: &openapi_v3.License{
 			Name: api.conf.License.Name,
 			Url:  api.conf.License.Url,
@@ -71,12 +70,10 @@ func (api *OpenAPI) Page(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 	rtx, ok := ctx.(*Context)
 	if ok {
 		var address string
-		if listenAddresses, ok := server.GetInstance().Endpoints[Protocol]; ok {
-			if addresses := listenAddresses[constant.ServerAdvertiseAddressName]; len(addresses) > 0 {
-				address = addresses[0]
-			} else if addresses := listenAddresses[constant.ServerListenAddressName]; len(addresses) > 0 {
-				address = addresses[0]
-			}
+		if addresses := api.service.GetAdvertiseAddresses(Protocol); len(addresses) > 0 {
+			address = addresses[0]
+		} else if addresses := api.service.GetListenAddresses(Protocol); len(addresses) > 0 {
+			address = addresses[0]
 		}
 		rtx.Redirect(fmt.Sprintf(api.conf.Page, address), http.StatusMovedPermanently)
 		return nil, nil

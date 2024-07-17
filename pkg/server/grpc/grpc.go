@@ -98,11 +98,10 @@ func (s *GrpcServer) AddHandler(handler any) error {
 
 // Start .
 func (s *GrpcServer) Start(startErr chan error) error {
-	address, ok := s.conf.Addresses[constant.ServerListenAddressName]
-	if !ok {
+	if s.conf.Addresses.Listen == "" {
 		return errors.New("config servers.grpc.addresses.listen not found")
 	}
-	listen, err := net.Listen("tcp", address)
+	listen, err := net.Listen("tcp", s.conf.Addresses.Listen)
 	if err != nil {
 		return err
 	}
@@ -112,7 +111,7 @@ func (s *GrpcServer) Start(startErr chan error) error {
 		}
 	}()
 	logger.Debug("start grpc server",
-		"address", address)
+		"address", s.conf.Addresses.Listen)
 	return nil
 }
 
@@ -134,6 +133,6 @@ func (s *GrpcServer) Enabled() bool {
 }
 
 // ListenAddresses 监听地址列表
-func (s *GrpcServer) ListenAddresses() map[string]string {
+func (s *GrpcServer) ListenAddresses() server.AddressConfig {
 	return s.conf.Addresses
 }

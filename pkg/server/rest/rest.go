@@ -153,36 +153,35 @@ func (s *RestServer) Start(startErr chan error) error {
 		s.AddHandler(NewOpenAPI(s.conf.Openapi, s.openapi))
 	}
 	s.server.Handler = s.router.Handler
-	address, ok := s.conf.Addresses[constant.ServerListenAddressName]
-	if !ok {
+	if s.conf.Addresses.Listen == "" {
 		return errors.New("config servces.rest.addresses.listen not found")
 	}
-	if strings.HasPrefix(address, "unix") {
+	if strings.HasPrefix(s.conf.Addresses.Listen, "unix") {
 		go func() {
-			if err := s.server.ListenAndServeUNIX(address, os.ModeSocket); err != nil {
+			if err := s.server.ListenAndServeUNIX(s.conf.Addresses.Listen, os.ModeSocket); err != nil {
 				startErr <- fmt.Errorf("start rest server with address %s fail %s",
-					address, err.Error())
+					s.conf.Addresses.Listen, err.Error())
 			}
 		}()
 	} else if s.conf.CertFile != "" && s.conf.KeyFile != "" {
 		go func() {
-			if err := s.server.ListenAndServeTLS(address, s.conf.CertFile, s.conf.KeyFile); err != nil {
+			if err := s.server.ListenAndServeTLS(s.conf.Addresses.Listen, s.conf.CertFile, s.conf.KeyFile); err != nil {
 				startErr <- fmt.Errorf("start rest server with address %s fail %s",
-					address, err.Error())
+					s.conf.Addresses.Listen, err.Error())
 			}
 		}()
 
 	} else {
 		go func() {
-			if err := s.server.ListenAndServe(address); err != nil {
+			if err := s.server.ListenAndServe(s.conf.Addresses.Listen); err != nil {
 				// return err
 				startErr <- fmt.Errorf("start rest server with address %s fail %s",
-					address, err.Error())
+					s.conf.Addresses.Listen, err.Error())
 			}
 		}()
 	}
 	logger.Debug("start rest server",
-		"address", address)
+		"address", s.conf.Addresses.Listen)
 	return nil
 }
 
@@ -204,7 +203,7 @@ func (s *RestServer) Enabled() bool {
 }
 
 // ListenAddresses 监听地址列表
-func (s *RestServer) ListenAddresses() map[string]string {
+func (s *RestServer) ListenAddresses() server.AddressConfig {
 	return s.conf.Addresses
 }
 
