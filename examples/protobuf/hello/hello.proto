@@ -23,6 +23,11 @@ service Hello {
         option (asjard.api.http) = {
             get : "/region/{region_id}/project/{project_id}/user/{user_id}"
         };
+        option(asjard.api.http) = {
+            get: "/hello"
+            api: "/"
+            version:"/"
+        };
     };
     // 这里是call方法的注释
     // 这里是call方法的第二行注释
