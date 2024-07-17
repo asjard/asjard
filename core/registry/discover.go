@@ -128,7 +128,7 @@ func (l *LocalRegistry) getInstances(services map[string][]string) []*Instance {
 	var instances []*Instance
 	for name, addresses := range services {
 		instance := server.NewInstance()
-		instance.Name = name
+		instance.Instance.Name = name
 		endpoints := make(map[string][]string)
 		for index := range addresses {
 			u, err := url.Parse(addresses[index])

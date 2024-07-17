@@ -61,10 +61,11 @@ func NewOptions(opts []Option) *Options {
 // 相同的环境
 func DefaultOptions() *Options {
 	defaultOptionsOnce.Do(func() {
+		app := runtime.GetAPP()
 		defaultOptions = &Options{
-			App:         runtime.APP,
-			Region:      runtime.Region,
-			Environment: runtime.Environment,
+			App:         app.App,
+			Region:      app.Region,
+			Environment: app.Environment,
 		}
 	})
 	return defaultOptions
@@ -189,7 +190,7 @@ func (opts *Options) environmentPickFunc() PickFunc {
 func (opts *Options) servicePickFunc() PickFunc {
 	if opts.ServiceName != "" {
 		return func(instance *Instance) bool {
-			return instance.Instance.Name == opts.ServiceName
+			return instance.Instance.Instance.Name == opts.ServiceName
 		}
 	}
 	return opts.okPickFunc()
@@ -236,7 +237,7 @@ func (opts *Options) metadataPickFunc() PickFunc {
 		return func(instance *Instance) bool {
 			for wantKey, wantValue := range opts.MetaData {
 				isOk := false
-				for key, value := range instance.Instance.MetaData {
+				for key, value := range instance.Instance.Instance.MetaData {
 					if wantKey == key && wantValue == value {
 						isOk = true
 						break

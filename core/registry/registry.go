@@ -141,7 +141,7 @@ func (r *Registry) healthCheck(discoverName string, instance *server.Instance) e
 		}
 	}
 	return fmt.Errorf("service '%s(%s)' health check discover '%s' not found",
-		instance.Name, instance.ID, discoverName)
+		instance.Instance.Name, instance.Instance.ID, discoverName)
 }
 
 // 服务变化更新

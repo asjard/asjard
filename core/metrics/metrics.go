@@ -28,10 +28,8 @@ var (
 func init() {
 	metricsManager = &MetricsManager{
 		collectors: map[string]prometheus.Collector{
-			"go_collector": collectors.NewGoCollector(),
-			"process_collector": collectors.NewProcessCollector(collectors.ProcessCollectorOpts{
-				Namespace: runtime.APP,
-			}),
+			"go_collector":      collectors.NewGoCollector(),
+			"process_collector": collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 		},
 		conf: defaultConfig,
 	}
@@ -88,14 +86,15 @@ func (m *MetricsManager) push() {
 	if !m.conf.Enabled || m.conf.PushGateway.Endpoint == "" {
 		return
 	}
+	app := runtime.GetAPP()
 	instanceId := utils.LocalIPv4()
 	if instanceId == "" {
-		instanceId = runtime.InstanceID
+		instanceId = app.Instance.ID
 	}
 	for {
 		select {
 		case <-time.After(m.conf.PushGateway.Interval.Duration):
-			pusher := push.New(m.conf.PushGateway.Endpoint, runtime.APP)
+			pusher := push.New(m.conf.PushGateway.Endpoint, app.App)
 			m.cm.RLock()
 			for _, collector := range m.collectors {
 				pusher.Collector(collector)
@@ -104,12 +103,12 @@ func (m *MetricsManager) push() {
 			// TODO 此处instance是个无法辨认的字符串, 重启后会更新
 			// 是否可以生成一个可辨认的字符串
 			if err := pusher.Grouping("instance", instanceId).
-				Grouping("region", runtime.Region).
-				Grouping("az", runtime.AZ).
-				Grouping("app", runtime.APP).
-				Grouping("env", runtime.Environment).
-				Grouping("service_version", runtime.Version).
-				Grouping("service", runtime.Name).
+				Grouping("region", app.Region).
+				Grouping("az", app.AZ).
+				Grouping("app", app.App).
+				Grouping("env", app.Environment).
+				Grouping("service_version", app.Instance.Version).
+				Grouping("service", app.Instance.Name).
 				Push(); err != nil {
 				logger.Error("push metrics fail", "endpoint", m.conf.PushGateway.Endpoint, "err", err)
 			}

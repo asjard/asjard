@@ -49,7 +49,7 @@ func (r *clientResolver) Close() {
 func (r *clientResolver) ResolveNow(_ resolver.ResolveNowOptions) {
 	instances := registry.PickServices(registry.WithServiceName(r.serviceName),
 		registry.WithProtocol(r.protocol),
-		registry.WithEnvironment(runtime.Environment),
+		registry.WithEnvironment(runtime.GetAPP().Environment),
 		registry.WithWatch(r.listenerName(), r.watch))
 	r.update(instances)
 }
@@ -65,16 +65,16 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 	var addresses []resolver.Address
 	for _, instance := range instances {
 		attr := attributes.New(constant.DiscoverNameKey, instance.DiscoverName)
-		for mkey, mvalue := range instance.Instance.MetaData {
+		for mkey, mvalue := range instance.Instance.Instance.MetaData {
 			attr.WithValue(mkey, mvalue)
 		}
 		attr = attr.WithValue(constant.ServiceAppKey, instance.Instance.App)
 		attr = attr.WithValue(constant.ServiceEnvKey, instance.Instance.Environment)
 		attr = attr.WithValue(constant.ServiceRegionKey, instance.Instance.Region)
 		attr = attr.WithValue(constant.ServiceAZKey, instance.Instance.AZ)
-		attr = attr.WithValue(constant.ServiceIDKey, instance.Instance.ID)
-		attr = attr.WithValue(constant.ServiceNameKey, instance.Instance.Name)
-		attr = attr.WithValue(constant.ServiceVersionKey, instance.Instance.Version)
+		attr = attr.WithValue(constant.ServiceIDKey, instance.Instance.Instance.ID)
+		attr = attr.WithValue(constant.ServiceNameKey, instance.Instance.Instance.Name)
+		attr = attr.WithValue(constant.ServiceVersionKey, instance.Instance.Instance.Version)
 		attr = attr.WithValue(constant.ServerProtocolKey, r.protocol)
 		attr = attr.WithValue(constant.ServiceNameKey, r.serviceName)
 		for name, epts := range instance.Instance.Endpoints[r.protocol] {

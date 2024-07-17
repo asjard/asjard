@@ -110,7 +110,7 @@ type RoundRobinPicker struct {
 
 // Pick 负载选择
 // TODO
-// 优先同app，region,metadata
+// 优先同app，region,az
 // 优先选择同区域
 // 如果垮区域应优先使用advertise地址
 func (r *RoundRobinPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
@@ -124,7 +124,7 @@ func (r *RoundRobinPicker) Pick(info balancer.PickInfo) (balancer.PickResult, er
 		SubConn: sc.conn,
 		Done:    func(info balancer.DoneInfo) {},
 		Metadata: metadata.New(map[string]string{
-			HeaderRequestSource: runtime.Name,
+			HeaderRequestSource: runtime.GetInstance().Name,
 			HeaderRequestDest:   cast.ToString(sc.address.Attributes.Value(constant.ServiceNameKey)),
 			HeaderRequestApp:    cast.ToString(sc.address.Attributes.Value(constant.ServiceAppKey)),
 		}),

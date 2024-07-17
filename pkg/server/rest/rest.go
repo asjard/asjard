@@ -70,7 +70,7 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 		middlewares:  []MiddlewareFunc{corsMiddleware},
 		errorHandler: &ErrorHandlerAPI{},
 		server: fasthttp.Server{
-			Name:                               runtime.APP,
+			Name:                               runtime.GetAPP().App,
 			Concurrency:                        conf.Options.Concurrency,
 			ReadBufferSize:                     conf.Options.ReadBufferSize,
 			WriteBufferSize:                    conf.Options.WriteBufferSize,

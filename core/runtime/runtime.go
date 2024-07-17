@@ -5,40 +5,66 @@ import (
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
-
 	"github.com/google/uuid"
 )
 
-var (
-	// InstanceID 实例ID
-	InstanceID string
-	// APP 项目名称
-	APP string
-	// Region 所属区域
-	Region string
-	// AZ 可用区
-	AZ string
-	// Environment 所属环境
-	Environment string
-	// Name 服务名称
-	Name string
-	// Version 服务版本
-	Version string
+const (
+	website = "https://github.com/asjard/asjard"
+)
 
+type APP struct {
+	// 所属项目
+	App string `json:"app"`
+	// 所属环境
+	Environment string `json:"environment"`
+	// 所属区域
+	Region string `json:"region"`
+	// 可用区
+	AZ string `json:"avaliablezone"`
+	// 项目站点
+	Website string `json:"website"`
+	// 项目描述
+	Desc string `json:"desc"`
+	// 实例详情
+	Instance Instance `json:"instance"`
+}
+
+type Instance struct {
+	// 实例ID
+	ID string
+	// 实例名称
+	Name string `json:"name"`
+	// 实例版本
+	Version string `json:"version"`
+	// 服务元数据
+	MetaData map[string]string `json:"metadata"`
+}
+
+var (
+	app = APP{
+		App:         constant.Framework,
+		Environment: "dev",
+		Region:      "default",
+		AZ:          "default",
+		Website:     website,
+		Instance: Instance{
+			Name:    constant.Framework,
+			Version: "1.0.0",
+		},
+	}
 	once sync.Once
 )
 
-// Init 运行期间的参数初始化
-// 服务一旦启动起来后，这些参数是不会修改的
-func Init() error {
+// GetInstance 获取服务实例详情
+func GetInstance() Instance {
+	return GetAPP().Instance
+}
+
+// GetAPP 获取项目详情
+func GetAPP() APP {
 	once.Do(func() {
-		InstanceID = uuid.NewString()
-		APP = config.GetString(constant.ConfigApp, constant.Framework)
-		Region = config.GetString(constant.ConfigRegion, "default")
-		AZ = config.GetString(constant.ConfigAvaliablezone, "default")
-		Environment = config.GetString(constant.ConfigEnvironment, "dev")
-		Version = config.GetString(constant.ConfigVersion, "1.0.0")
-		Name = config.GetString(constant.ConfigName, constant.Framework)
+		config.GetWithUnmarshal(constant.Framework, &app)
+		app.Instance.ID = uuid.NewString()
 	})
-	return nil
+	return app
 }

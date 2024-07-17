@@ -116,7 +116,7 @@ func (c *cache) update(instances []*Instance) {
 	for _, instance := range instances {
 		exist := false
 		for index := range c.services {
-			if instance.Instance.ID == c.services[index].Instance.ID {
+			if instance.Instance.Instance.ID == c.services[index].Instance.Instance.ID {
 				c.services[index] = instance
 				c.notify(EventTypeUpdate, c.services[index])
 				exist = true
@@ -132,9 +132,9 @@ func (c *cache) update(instances []*Instance) {
 // 从本地缓存中删除服务实例
 func (c *cache) delete(instance *Instance) {
 	logger.Debug("delete instance",
-		"instance", instance.Instance.Name)
+		"instance", instance.Instance.Instance.Name)
 	for index, svc := range c.services {
-		if svc.Instance.ID == instance.Instance.ID {
+		if svc.Instance.Instance.ID == instance.Instance.Instance.ID {
 			c.notify(EventTypeDelete, svc)
 			c.services = append(c.services[:index], c.services[index+1:]...)
 		}
@@ -219,17 +219,17 @@ func (c *serviceCache) addOrUpdate(instances []*server.Instance) {
 	for _, instance := range instances {
 		exist := false
 		c.sm.RLock()
-		services, ok := c.services[instance.Name]
+		services, ok := c.services[instance.Instance.Name]
 		c.sm.RUnlock()
 		if ok {
 			for index, service := range services {
-				if service.ID == instance.ID {
+				if service.Instance.ID == instance.Instance.ID {
 					logger.Debug("update instance",
-						"instance_name", instance.Name,
-						"instance_id", instance.ID)
+						"instance_name", instance.Instance.Name,
+						"instance_id", instance.Instance.ID)
 					exist = true
 					c.sm.Lock()
-					c.services[instance.Name][index] = instance
+					c.services[instance.Instance.Name][index] = instance
 					c.sm.Unlock()
 					break
 				}
@@ -237,10 +237,10 @@ func (c *serviceCache) addOrUpdate(instances []*server.Instance) {
 		}
 		if !ok || !exist {
 			logger.Debug("add instance",
-				"instance_name", instance.Name,
-				"instance_id", instance.ID)
+				"instance_name", instance.Instance.Name,
+				"instance_id", instance.Instance.ID)
 			c.sm.Lock()
-			c.services[instance.Name] = append(c.services[instance.Name], instance)
+			c.services[instance.Instance.Name] = append(c.services[instance.Instance.Name], instance)
 			c.sm.Unlock()
 		}
 	}
@@ -248,17 +248,17 @@ func (c *serviceCache) addOrUpdate(instances []*server.Instance) {
 
 func (c *serviceCache) delete(instance *server.Instance) {
 	c.sm.RLock()
-	services, ok := c.services[instance.Name]
+	services, ok := c.services[instance.Instance.Name]
 	c.sm.RUnlock()
 	if ok {
 		for index, service := range services {
-			if service.ID == instance.ID {
+			if service.Instance.ID == instance.Instance.ID {
 				logger.Debug("delete instance",
-					"instance_name", service.Name,
-					"instance_id", service.ID)
+					"instance_name", service.Instance.Name,
+					"instance_id", service.Instance.ID)
 				// 删除该实例
 				c.sm.Lock()
-				c.services[instance.Name] = append(services[:index], services[index+1:]...)
+				c.services[instance.Instance.Name] = append(services[:index], services[index+1:]...)
 				c.sm.Unlock()
 				break
 			}
@@ -274,8 +274,8 @@ func (c *serviceCache) healthCheck(discoverName string, hf healthCheckFunc) []*s
 			if err := hf(discoverName, instance); err != nil {
 				logger.Error("health check discover instance fail",
 					"discover_name", discoverName,
-					"instance_name", instance.Name,
-					"instance_id", instance.ID,
+					"instance_name", instance.Instance.Name,
+					"instance_id", instance.Instance.ID,
 					"err", err.Error())
 				notHealthInstances = append(notHealthInstances, instance)
 			}

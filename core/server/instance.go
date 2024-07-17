@@ -4,37 +4,18 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
-	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/utils"
 )
 
 // Instance 服务实例详情
 type Instance struct {
-	// 所属项目
-	App string
-	// 所属环境
-	Environment string
-	// 所属区域
-	Region string
-	// 可用区
-	AZ string
-
-	// 服务ID
-	ID string
-	// 服务名称
-	Name string
-	// 服务版本
-	Version string
+	runtime.APP
 	// 服务端口列表
 	// key为协议名称
 	// value-key 监听地址名称
 	// value-value 监听地址列表，有可能有多个实例列表所以是个列表
 	Endpoints map[string]map[string][]string
-	// 服务元数据
-	MetaData map[string]string
 }
 
 // ServiceInstance 服务实例
@@ -51,20 +32,9 @@ func GetInstance() *Instance {
 
 // NewInstance .
 func NewInstance() *Instance {
-	metadata := make(map[string]string)
-	if err := config.GetWithUnmarshal(constant.ConfigMetadata, &metadata); err != nil {
-		logger.Error("get instance metadata fail",
-			"err", err.Error())
-	}
 	return &Instance{
-		App:         runtime.APP,
-		Environment: runtime.Environment,
-		Region:      runtime.Region,
-		ID:          runtime.InstanceID,
-		Name:        runtime.Name,
-		Version:     runtime.Version,
-		Endpoints:   make(map[string]map[string][]string),
-		MetaData:    metadata,
+		APP:       runtime.GetAPP(),
+		Endpoints: make(map[string]map[string][]string),
 	}
 }
 
@@ -118,7 +88,7 @@ func (s *Instance) AddEndpoints(protocol string, endpoints map[string][]string) 
 	return nil
 }
 
-// SetMetadata 设置元数据
-func (s *Instance) SetMetadata(key, value string) {
-	s.MetaData[key] = value
-}
+// // SetMetadata 设置元数据
+// func (s *Instance) SetMetadata(key, value string) {
+// 	s.Instance.MetaData[key] = value
+// }

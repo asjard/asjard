@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
@@ -18,6 +17,7 @@ import (
 type OpenAPI struct {
 	document *openapi_v3.Document
 	conf     OpenapiConfig
+	app      runtime.APP
 	UnimplementedOpenAPIServer
 }
 
@@ -25,19 +25,20 @@ func NewOpenAPI(conf OpenapiConfig, document *openapi_v3.Document) *OpenAPI {
 	return &OpenAPI{
 		document: document,
 		conf:     conf,
+		app:      runtime.GetAPP(),
 	}
 }
 
 func (api *OpenAPI) Yaml(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
 	api.document.Info = &openapi_v3.Info{
-		Title:       runtime.APP,
-		Description: config.GetString(constant.ConfigDesc, ""),
+		Title:       api.app.App,
+		Description: api.app.Desc,
 		Contact: &openapi_v3.Contact{
-			Name: runtime.APP,
-			Url:  config.GetString(constant.ConfigWebsite, ""),
+			Name: api.app.App,
+			Url:  api.app.Website,
 		},
 		TermsOfService: api.conf.TermsOfService,
-		Version:        runtime.Version,
+		Version:        api.app.Instance.Version,
 		License: &openapi_v3.License{
 			Name: api.conf.License.Name,
 			Url:  api.conf.License.Url,

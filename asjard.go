@@ -154,11 +154,6 @@ func (asd *Asjard) init() error {
 		return err
 	}
 
-	// 一些运行期间变量初始化
-	if err := runtime.Init(); err != nil {
-		return err
-	}
-
 	// 监控初始化
 	if err := metrics.Init(); err != nil {
 		return err
@@ -253,16 +248,17 @@ func (asd *Asjard) stop() {
 }
 
 func (asd *Asjard) printBanner() {
+	app := runtime.GetAPP()
 	fmt.Printf(banner,
-		runtime.APP,
-		runtime.Environment,
-		runtime.Region,
-		runtime.AZ,
+		app.App,
+		app.Environment,
+		app.Region,
+		app.AZ,
 		constant.FrameworkVersion,
-		runtime.InstanceID,
-		runtime.Name,
-		runtime.Version,
-		config.GetString(constant.ConfigWebsite, website),
+		app.Instance.ID,
+		app.Instance.Name,
+		app.Instance.Version,
+		app.Website,
 		strings.Join(asd.startedServers, ","),
 		utils.GetConfDir())
 }
