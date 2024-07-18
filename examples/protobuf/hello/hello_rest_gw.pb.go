@@ -8,10 +8,8 @@ package hello
 
 import (
 	context "context"
-
 	client "github.com/asjard/asjard/core/client"
 	config "github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/logger"
 	grpc "github.com/asjard/asjard/pkg/client/grpc"
 	rest "github.com/asjard/asjard/pkg/server/rest"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
@@ -21,8 +19,6 @@ type HelloAPI struct {
 	UnimplementedHelloServer
 	client HelloClient
 }
-
-var _ HelloServer = &HelloAPI{}
 
 func (api *HelloAPI) Bootstrap() error {
 	conn, err := client.NewClient(grpc.Protocol, config.GetString("asjard.topology.services.hello.name", "hello")).Conn()
@@ -34,11 +30,13 @@ func (api *HelloAPI) Bootstrap() error {
 }
 func (api *HelloAPI) Shutdown() {
 }
+func (api *HelloAPI) Hello(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
+	return api.client.Hello(ctx, in)
+}
 
 // say something
 // 这里是say方法的第二行注释
 func (api *HelloAPI) Say(ctx context.Context, in *SayReq) (*SayReq, error) {
-	logger.Debug("-----------")
 	return api.client.Say(ctx, in)
 }
 

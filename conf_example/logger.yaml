@@ -2,7 +2,7 @@ asjard:
   ## 日志相关配置
   logger:
     ## 支持DEBUG,INFO,WARN,ERROR,大小写不敏感,修改立即生效
-    level: DEBUG
+    level: INFO
     ## 日志格式, text或json,修改立即生效
     format: json
     ## 日志文件,修改立即生效
@@ -17,7 +17,7 @@ asjard:
     ## 是否进行压缩,修改立即生效
     compress: true
     ## 是否开启access日志, 和accessLog拦截器相关，不实时更新，修改后需重新启动
-    accessEnabled: true
+    accessEnabled: false
     ## 横幅，修改后需重新启动
     ## 开启后会在标准输出打印服务启动详情
     banner:

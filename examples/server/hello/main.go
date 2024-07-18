@@ -44,6 +44,10 @@ func (c *Hello) Bootstrap() error {
 // Shutdown
 func (c *Hello) Shutdown() {}
 
+func (c *Hello) Hello(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+
 // Say .
 func (c *Hello) Say(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 	// HTTP 调用GRPC

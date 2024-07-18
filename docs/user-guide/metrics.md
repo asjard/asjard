@@ -17,6 +17,7 @@ asjard:
       - api_requests_total
       - api_requests_latency_ms
     ## pushgateway配置
+    ## 建议使用pushgateway方式收集指标
     pushGateway:
       ## 地址,不要路由
       endpoint: http://127.0.0.1:9091
@@ -41,3 +42,9 @@ func main() {
 
 }
 ```
+
+## 看板
+
+参考[grafana](../media/grafana_asjard.json),效果如下(持续完善中):
+
+![grafana](../grafana_dashboard.png)
