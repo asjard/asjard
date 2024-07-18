@@ -14,6 +14,7 @@ func TestGetListenAddress(t *testing.T) {
 		{hostPort: "0.0.0.0:8080", output: LocalIPv4() + ":8080", ok: true},
 		{hostPort: "127.0.0.1:8080", output: "127.0.0.1:8080", ok: true},
 		{hostPort: "127.0.0.1:", output: "127.0.0.1:", ok: true},
+		// 没有IPv6不会有预期结果
 		{hostPort: "[::]:8080", output: "[" + LocalIPv6() + "]" + ":8080", ok: LocalIPv6() != ""},
 		{hostPort: "[::]:", output: "[" + LocalIPv6() + "]" + ":", ok: LocalIPv6() != ""},
 		// invlaid host port

@@ -106,7 +106,8 @@ func (ccb *CircuitBreaker) Interceptor() client.UnaryClientInterceptor {
 
 func (ccb *CircuitBreaker) do(ctx context.Context, commandConfigName, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
 	if err := hystrix.DoC(ctx, commandConfigName, func(ctx context.Context) error {
-		return invoker(ctx, method, req, reply, cc)
+		err1 := invoker(ctx, method, req, reply, cc)
+		return err1
 	}, nil); err != nil {
 		if _, ok := err.(hystrix.CircuitError); ok {
 			return status.Error(codes.ResourceExhausted, err.Error())

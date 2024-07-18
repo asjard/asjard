@@ -7,10 +7,10 @@ asjard:
   environment: "dev"
   ## 部署区域,例如: east-1, east-2
   ## 表示不同地域，内网不互通，只能通过公网相互连接的不同区域
-  region: "default"
+  region: "region-conf-example"
   ## 可用区，例如: az-1,az-2
   ## 表示同一区域内，或者同一个机房内，可以内网互通
-  avaliablezone: "default"
+  avaliablezone: "region-conf-example-1"
   ## 站点地址
   website: "https://github.com/${asjard.app}/${asjard.instance.name}"
   ## 服务描述

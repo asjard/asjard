@@ -71,8 +71,7 @@ func (l *LocalityRoundRobinPicker) Pick(info balancer.PickInfo) (*SubConn, error
 }
 
 // 优先选择request下的
-// 如果request下为空，则选择current下的
-// 如果current下为空，则获被共享的
+// 如果request下为空，则选择current下共享的
 func (l LocalityRoundRobinPicker) pick(request, current string, isEqual func(request string, sc *SubConn) bool, scs []*SubConn) []*SubConn {
 	if len(scs) == 0 {
 		return []*SubConn{}
@@ -82,28 +81,20 @@ func (l LocalityRoundRobinPicker) pick(request, current string, isEqual func(req
 	}
 	picks := make([]*SubConn, 0, len(scs))
 	for _, sc := range scs {
-		if request != current && isEqual(request, sc) && l.CanReachable(sc) {
+		if isEqual(request, sc) && l.CanReachable(sc) {
 			picks = append(picks, sc)
 		}
 	}
-	if len(picks) == 0 {
-		if request != current {
-			logger.Debug("request is empty")
-			// 获取current下共享的
-			return l.pick(current, current, isEqual, scs)
-		}
-		for _, sc := range scs {
-			if l.Shareable(sc) && l.CanReachable(sc) {
-				picks = append(picks, sc)
-			}
-		}
+	if len(picks) == 0 && request != current {
+		logger.Debug("no conns in request", "request", request)
+		// 获取current下共享的
+		return l.pick(current, current, l.isShareable, scs)
 	}
 	return picks
 }
 
 func (l LocalityRoundRobinPicker) isSameRegion(region string, sc *SubConn) bool {
 	instance, ok := sc.Address.Attributes.Value(AddressAttrKey{}).(*registry.Instance)
-	logger.Debug("----same-region--", "request", region, "current", instance.Service.Region, "sc", sc)
 	if ok && instance.Service.Region == region {
 		return true
 	}
@@ -112,9 +103,12 @@ func (l LocalityRoundRobinPicker) isSameRegion(region string, sc *SubConn) bool 
 
 func (l LocalityRoundRobinPicker) isSameAz(az string, sc *SubConn) bool {
 	instance, ok := sc.Address.Attributes.Value(AddressAttrKey{}).(*registry.Instance)
-	logger.Debug("----same-az--", "request", az, "current", instance.Service.AZ, "sc", sc)
 	if ok && instance.Service.AZ == az {
 		return true
 	}
 	return false
+}
+
+func (l LocalityRoundRobinPicker) isShareable(_ string, sc *SubConn) bool {
+	return l.Shareable(sc)
 }

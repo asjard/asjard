@@ -61,6 +61,7 @@ func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 	// time.Sleep(500 * time.Millisecond)
 	md, ok := metadata.FromIncomingContext(ctx)
 	logger.Debug("===========", "md", md, "ok", ok)
+	// return nil, ajerr.InternalServerError
 	if in.Configs == nil {
 		in.Configs = &pb.Configs{}
 	}

@@ -47,10 +47,7 @@ func (p PickerBase) CanReachable(sc *SubConn) bool {
 func (p PickerBase) Shareable(sc *SubConn) bool {
 	instance, ok := sc.Address.Attributes.Value(AddressAttrKey{}).(*registry.Instance)
 	if ok {
-		// if p.app.Region != instance.Service.Region {
 		return instance.Service.Instance.Shareable
-		// }
-		// return true
 	}
 	return false
 }
