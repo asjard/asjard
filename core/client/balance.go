@@ -1,14 +1,9 @@
 package client
 
 import (
-	"sync/atomic"
-
 	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/registry"
-	"github.com/asjard/asjard/core/runtime"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/resolver"
 )
 
@@ -23,15 +18,16 @@ const (
 	HeaderRequestApp = "x-request-app"
 )
 
+type SubConn struct {
+	Address resolver.Address
+	Conn    balancer.SubConn
+}
+
 // NewBalancerPicker .
-type NewBalancerPicker func(scs map[balancer.SubConn]base.SubConnInfo) balancer.Picker
+type NewBalancerPicker func(scs map[balancer.SubConn]base.SubConnInfo) Picker
 
 // 负载均衡器列表
 var balancers = make(map[string]NewBalancerPicker)
-
-func init() {
-	AddBalancer(DefaultBalanceRoundRobin, NewRoundRobinPicker)
-}
 
 // AddBalancer 添加负载均衡器
 func AddBalancer(name string, newPicker NewBalancerPicker) {
@@ -79,62 +75,5 @@ func (b *BalanceBuilder) Build(info base.PickerBuildInfo) balancer.Picker {
 	for sc, sinfo := range info.ReadySCs {
 		scs[sc] = sinfo
 	}
-	return b.newPicker(scs)
-}
-
-// NewRoundRobinPicker .
-func NewRoundRobinPicker(scs map[balancer.SubConn]base.SubConnInfo) balancer.Picker {
-	logger.Debug("new roundrobin picker")
-	var subConns []*subConn
-	for conn, info := range scs {
-		subConns = append(subConns, &subConn{
-			address: info.Address,
-			conn:    conn,
-		})
-	}
-	return &RoundRobinPicker{
-		scs: subConns,
-	}
-}
-
-type subConn struct {
-	address resolver.Address
-	conn    balancer.SubConn
-}
-
-// RoundRobinPicker 轮询负载均衡
-type RoundRobinPicker struct {
-	// 所有连接列表
-	scs []*subConn
-	// 可被选择的连接列表
-	picks []*subConn
-	next  uint32
-}
-
-// Pick 负载选择
-// TODO
-// 优先同app，region,az
-// 优先选择同区域
-// 如果垮区域应优先使用advertise地址
-func (r *RoundRobinPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
-	n := uint32(len(r.scs))
-	if n == 0 {
-		return balancer.PickResult{}, balancer.ErrNoSubConnAvailable
-	}
-	next := atomic.AddUint32(&r.next, 1) - 1
-	sc := r.scs[next%n]
-	destServicename := ""
-	instance, ok := sc.address.Attributes.Value(AddressAttrKey{}).(*registry.Instance)
-	if ok {
-		destServicename = instance.Service.Instance.Name
-	}
-	return balancer.PickResult{
-		SubConn: sc.conn,
-		Done:    func(info balancer.DoneInfo) {},
-		Metadata: metadata.New(map[string]string{
-			HeaderRequestApp:    runtime.GetAPP().App,
-			HeaderRequestSource: runtime.GetInstance().Name,
-			HeaderRequestDest:   destServicename,
-		}),
-	}, nil
+	return NewPicker(b.newPicker, scs)
 }

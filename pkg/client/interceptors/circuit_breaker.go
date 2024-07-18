@@ -115,7 +115,3 @@ func (ccb *CircuitBreaker) do(ctx context.Context, commandConfigName, method str
 	}
 	return nil
 }
-
-// func (ccb *CircuitBreaker) fallback(ctx context.Context, err error) error {
-// 	return err
-// }

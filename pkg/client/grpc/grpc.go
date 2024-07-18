@@ -81,7 +81,7 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (client
 	serviceName := strings.Trim(u.Path, "/")
 	var options []grpc.DialOption
 	balanceName := c.balanceName
-	if clientOpts.Balancer != nil && balancer.Get(clientOpts.Balancer.Name()) != nil {
+	if clientOpts.Balancer != nil && balancer.Get(clientOpts.Balancer.Name()) == nil {
 		balancer.Register(clientOpts.Balancer)
 		balanceName = clientOpts.Balancer.Name()
 	}
