@@ -47,4 +47,4 @@ func main() {
 
 参考[grafana](../media/grafana_asjard.json),效果如下(持续完善中):
 
-![grafana](../grafana_dashboard.png)
+![grafana](../media/grafana_dashboard.png)
