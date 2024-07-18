@@ -12,6 +12,7 @@ do
         --go_out=${GOPATH}/src \
         --go-grpc_out=${GOPATH}/src \
         --go-rest_out=${GOPATH}/src \
+        --go-rest2grpc-gw_out=${GOPATH}/src \
         -I${ROOTDIR}/../third_party -I. $file
 done
 

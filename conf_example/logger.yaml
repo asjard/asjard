@@ -17,7 +17,7 @@ asjard:
     ## 是否进行压缩,修改立即生效
     compress: true
     ## 是否开启access日志, 和accessLog拦截器相关，不实时更新，修改后需重新启动
-    accessEnabled: false
+    accessEnabled: true
     ## 横幅，修改后需重新启动
     ## 开启后会在标准输出打印服务启动详情
     banner:

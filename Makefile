@@ -32,6 +32,9 @@ build_cipher_aes: ## 生成asjard_cipher_aes命令
 build_gen_go_rest: ## 生成protoc-gen-go-rest命令
 	go build -o $(GOPATH)/bin/protoc-gen-go-rest -ldflags '-w -s' ./cmd/protoc-gen-go-rest/*.go
 
+build_gen_go_rest2grpc_gw: ## 生成protoc-gen-go-rest2grpc-gw命令
+	go build -o $(GOPATH)/bin/protoc-gen-go-rest2grpc-gw -ldflags '-w -s' ./cmd/protoc-gen-go-rest2grpc-gw/*.go
+
 build_gen_ts: ## 生成protoc-gen-ts命令
 	go build -o $(GOPATH)/bin/protoc-gen-ts -ldflags '-w -s' ./cmd/protoc-gen-ts/*.go
 

@@ -1,0 +1,5 @@
+asjard:
+  topology:
+    services:
+      hello:
+        name: helloGrpc
