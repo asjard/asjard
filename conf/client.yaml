@@ -3,7 +3,7 @@ asjard:
   ## 不实时更新
   clients:
     ## 客户端负载均衡, 不存在或者为空，则默认为roundRobin
-    loadbalances: "roundRobin"
+    loadbalance: "roundRobin"
     ## 同servers.interceptors配置
     interceptors: "rest2RpcContext,cycleChainInterceptor,circuitBreaker"
     ## 同servers.certFile配置
@@ -12,7 +12,7 @@ asjard:
     grpc:
       ## grpc客户端负载均衡相关配置
       ## 一级目录下的所有配置均可在某个服务中配置
-      loadbalances: ""
+      loadbalance: ""
       ## grpc客户端拦截器
       # interceptors: ""
       ## grpc客户端证书配置, 路径同servers.certFile配置
@@ -40,7 +40,7 @@ asjard:
       ## 连接到instance.name为helloGrpc这个服务的grpc客户端相关配置
       helloGrpc:
         ## helloGrpc 这个服务的负载均衡
-        loadbalances: ""
+        loadbalance: ""
         ## heeloGrpc 这个服务的证书
         certFile: ""
         ## helloGrpc 这个服务的拦截器

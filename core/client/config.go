@@ -10,8 +10,8 @@ import (
 
 // Config 客户端配置
 type Config struct {
-	// 客户端负载均很
-	Loadbalances string `json:"loadbalances"`
+	// 客户端负载均衡策略
+	Loadbalance string `json:"loadbalance"`
 	// 客户端拦截器
 	Interceptors utils.JSONStrings `json:"interceptors"`
 	// 内建客户端拦截器
@@ -21,7 +21,7 @@ type Config struct {
 }
 
 var DefaultConfig = Config{
-	Loadbalances:        "roundRobin",
+	Loadbalance:         "roundRobin",
 	BuiltInInterceptors: utils.JSONStrings{"rest2RpcContext", "cycleChainInterceptor", "circuitBreaker"},
 }
 

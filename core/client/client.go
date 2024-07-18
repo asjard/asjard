@@ -40,7 +40,7 @@ func Init() error {
 		conf := GetConfigWithProtocol(protocol)
 		clients[protocol] = newClient(&ClientOptions{
 			Resolver:    &ClientBuilder{},
-			Balancer:    NewBalanceBuilder(conf.Loadbalances),
+			Balancer:    NewBalanceBuilder(conf.Loadbalance),
 			Interceptor: getChainUnaryInterceptors(conf),
 		})
 	}
@@ -63,7 +63,7 @@ func (c Client) Conn() (grpc.ClientConnInterface, error) {
 	conf := serviceConfig(c.protocol, c.serverName)
 	// 设置置指定服务的负载均衡
 	options := &ClientOptions{
-		Balancer:    NewBalanceBuilder(conf.Loadbalances),
+		Balancer:    NewBalanceBuilder(conf.Loadbalance),
 		Interceptor: getChainUnaryInterceptors(conf),
 	}
 	return cc.NewConn(fmt.Sprintf("%s://%s/%s", constant.Framework, c.protocol, c.serverName), options)
