@@ -25,15 +25,15 @@ func New() (registry.Register, error) {
 }
 
 // GetAll 获取服务实例
-func (e *Etcd) GetAll() ([]*server.Instance, error) {
-	return []*server.Instance{}, nil
+func (e *Etcd) GetAll() ([]*server.Service, error) {
+	return []*server.Service{}, nil
 }
 
 // Watch 监听服务变化
 func (e *Etcd) Watch(callbak func(event *registry.Event)) {}
 
 // HealthCheck 监控检查
-func (e *Etcd) HealthCheck(instance *server.Instance) error {
+func (e *Etcd) HealthCheck(instance *server.Service) error {
 	return nil
 }
 
@@ -43,12 +43,12 @@ func (e *Etcd) Name() string {
 }
 
 // Registe 注册服务到注册中心
-func (e *Etcd) Registe(instance *server.Instance) error {
+func (e *Etcd) Registe(instance *server.Service) error {
 	return nil
 }
 
 // Remove 从服务注册中心删除服务
-func (e *Etcd) Remove(instance *server.Instance) {}
+func (e *Etcd) Remove(instance *server.Service) {}
 
 // Heartbeat 向服务注册中心发送心跳
-func (e *Etcd) Heartbeat(instance *server.Instance) {}
+func (e *Etcd) Heartbeat(instance *server.Service) {}
