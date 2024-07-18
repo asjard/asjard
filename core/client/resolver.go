@@ -82,7 +82,7 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 				for _, addr := range endpoint.Listen {
 					addresses = append(addresses, resolver.Address{
 						Addr:       addr,
-						Attributes: attr.WithValue(ListenAddressKey{}, nil),
+						Attributes: attr.WithValue(ListenAddressKey{}, true),
 					})
 				}
 			}
@@ -90,7 +90,7 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 				for _, addr := range endpoint.Advertise {
 					addresses = append(addresses, resolver.Address{
 						Addr:       addr,
-						Attributes: attr.WithValue(AdvertiseAddressKey{}, nil),
+						Attributes: attr.WithValue(AdvertiseAddressKey{}, true),
 					})
 				}
 			}
