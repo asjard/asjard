@@ -2151,9 +2151,9 @@
       },
       {
         "current": {
-          "selected": false,
-          "text": "default",
-          "value": "default"
+          "selected": true,
+          "text": "region-conf-example",
+          "value": "region-conf-example"
         },
         "datasource": {
           "type": "prometheus",
@@ -2179,8 +2179,8 @@
       {
         "current": {
           "selected": false,
-          "text": "default",
-          "value": "default"
+          "text": "region-conf-example-1",
+          "value": "region-conf-example-1"
         },
         "datasource": {
           "type": "prometheus",
@@ -2206,8 +2206,8 @@
       {
         "current": {
           "selected": true,
-          "text": ["accountService"],
-          "value": ["accountService"]
+          "text": ["exampleService"],
+          "value": ["exampleService"]
         },
         "datasource": {
           "type": "prometheus",
@@ -2232,7 +2232,7 @@
       },
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": ["dev"],
           "value": ["dev"]
         },
@@ -2260,8 +2260,8 @@
       {
         "current": {
           "selected": true,
-          "text": ["All"],
-          "value": ["$__all"]
+          "text": ["api.v1.hello.Hello.Hello"],
+          "value": ["api.v1.hello.Hello.Hello"]
         },
         "datasource": {
           "type": "prometheus",
@@ -2349,6 +2349,6 @@
   "timezone": "browser",
   "title": "ASJARD",
   "uid": "adrteheceyigwd",
-  "version": 33,
+  "version": 35,
   "weekStart": ""
 }

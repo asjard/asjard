@@ -1,5 +1,16 @@
 package bootstrap
 
+import (
+	// 加载加解密组件
+	_ "github.com/asjard/asjard/pkg/security"
+	// 服务端拦截器
+	_ "github.com/asjard/asjard/pkg/server/interceptors"
+	// 客户端拦截器
+	_ "github.com/asjard/asjard/pkg/client/interceptors"
+	// 导入pprof包, 这样就不需要在main函数中导入了
+	_ "github.com/asjard/asjard/pkg/server/pprof"
+)
+
 // BootstrapHandler 启动引导需实现的方法
 type BootstrapHandler interface {
 	// 启动时执行
