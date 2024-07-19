@@ -23,15 +23,21 @@ const (
 	ErrorHandler_NotFound_FullMethodName         = "/asjard.api.ErrorHandler/NotFound"
 	ErrorHandler_MethodNotAllowed_FullMethodName = "/asjard.api.ErrorHandler/MethodNotAllowed"
 	ErrorHandler_Panic_FullMethodName            = "/asjard.api.ErrorHandler/Panic"
+	ErrorHandler_Error_FullMethodName            = "/asjard.api.ErrorHandler/Error"
 )
 
 // ErrorHandlerClient is the client API for ErrorHandler service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ErrorHandlerClient interface {
+	// 页面未找到
 	NotFound(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// 请求方式错误
 	MethodNotAllowed(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// 奔溃
 	Panic(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// 错误
+	Error(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type errorHandlerClient struct {
@@ -69,13 +75,27 @@ func (c *errorHandlerClient) Panic(ctx context.Context, in *emptypb.Empty, opts 
 	return out, nil
 }
 
+func (c *errorHandlerClient) Error(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ErrorHandler_Error_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ErrorHandlerServer is the server API for ErrorHandler service.
 // All implementations must embed UnimplementedErrorHandlerServer
 // for forward compatibility
 type ErrorHandlerServer interface {
+	// 页面未找到
 	NotFound(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
+	// 请求方式错误
 	MethodNotAllowed(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
+	// 奔溃
 	Panic(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
+	// 错误
+	Error(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	mustEmbedUnimplementedErrorHandlerServer()
 }
 
@@ -91,6 +111,9 @@ func (UnimplementedErrorHandlerServer) MethodNotAllowed(context.Context, *emptyp
 }
 func (UnimplementedErrorHandlerServer) Panic(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Panic not implemented")
+}
+func (UnimplementedErrorHandlerServer) Error(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Error not implemented")
 }
 func (UnimplementedErrorHandlerServer) mustEmbedUnimplementedErrorHandlerServer() {}
 
@@ -159,6 +182,24 @@ func _ErrorHandler_Panic_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ErrorHandler_Error_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ErrorHandlerServer).Error(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ErrorHandler_Error_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ErrorHandlerServer).Error(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ErrorHandler_ServiceDesc is the grpc.ServiceDesc for ErrorHandler service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -177,6 +218,10 @@ var ErrorHandler_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Panic",
 			Handler:    _ErrorHandler_Panic_Handler,
+		},
+		{
+			MethodName: "Error",
+			Handler:    _ErrorHandler_Error_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

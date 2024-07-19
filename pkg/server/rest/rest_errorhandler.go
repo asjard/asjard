@@ -11,6 +11,10 @@ type ErrorHandlerAPI struct {
 	UnimplementedErrorHandlerServer
 }
 
+func (ErrorHandlerAPI) Error(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, status.InternalServerError
+}
+
 func (ErrorHandlerAPI) NotFound(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
 	return &emptypb.Empty{}, status.PageNotFoundError
 }

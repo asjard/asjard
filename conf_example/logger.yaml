@@ -2,7 +2,7 @@ asjard:
   ## 日志相关配置
   logger:
     ## 支持DEBUG,INFO,WARN,ERROR,大小写不敏感,修改立即生效
-    level: INFO
+    level: DEBUG
     ## 日志格式, text或json,修改立即生效
     format: json
     ## 日志文件,修改立即生效

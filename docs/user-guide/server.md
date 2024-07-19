@@ -1,4 +1,4 @@
-> 可以通过暴露已有的服务，或者自行实现相应的协议队外暴露服务
+> 可以通过暴露已有的服务，或者自行实现相应的协议对外暴露服务
 
 ### 已实现服务
 
@@ -31,9 +31,7 @@ type Server interface {
 	// 服务提供的协议
 	Protocol() string
 	// 服务监听地址列表
-	// key为监听地址名称, listen,advertise为保留关键词，会在客户端负载均衡场景中用到
-	// value为监听地址
-	ListenAddresses() map[string]string
+	ListenAddresses() AddressConfig
 	// 是否已启用
 	Enabled() bool
 }

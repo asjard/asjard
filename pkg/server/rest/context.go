@@ -153,7 +153,7 @@ func (c *Context) Close() {
 
 // ReadBodyParams 读取请求体
 func (c *Context) ReadBodyParams() []byte {
-	if !c.postLoaded {
+	if !c.postLoaded && len(c.Request.Header.MultipartFormBoundary()) == 0 {
 		c.postBody = c.Request.Body()
 		c.postLoaded = true
 	}

@@ -16,7 +16,6 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server"
-	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
 	"github.com/fasthttp/router"
 	openapi_v3 "github.com/google/gnostic/openapiv3"
@@ -98,14 +97,6 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 			CloseOnShutdown:                    conf.Options.CloseOnShutdown,
 			StreamRequestBody:                  conf.Options.StreamRequestBody,
 			Logger:                             &Logger{},
-			ErrorHandler: func(ctx *fasthttp.RequestCtx, err error) {
-				logger.Error("request fail",
-					"method", ctx.Method(),
-					"path", ctx.Path(),
-					"header", ctx.Request.Header.String(),
-					"err", err)
-				NewContext(ctx).Write(nil, status.InternalServerError)
-			},
 		},
 	}, nil
 }
@@ -140,13 +131,22 @@ func (s *RestServer) Start(startErr chan error) error {
 	s.router.MethodNotAllowed = s.newHandler(_ErrorHandler_MethodNotAllowed_RestHandler, s.errorHandler)
 	s.router.PanicHandler = func(ctx *fasthttp.RequestCtx, err any) {
 		logger.Error("request panic",
-			"method", ctx.Method(),
-			"path", ctx.Path(),
+			"method", string(ctx.Method()),
+			"path", string(ctx.Path()),
 			"header", ctx.Request.Header.String(),
 			"err", err,
 			"stack", string(debug.Stack()))
 		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
 		cc.Write(_ErrorHandler_Panic_RestHandler(cc, s.errorHandler, s.interceptor))
+	}
+	s.server.ErrorHandler = func(ctx *fasthttp.RequestCtx, err error) {
+		logger.Error("request error",
+			"method", string(ctx.Method()),
+			"path", string(ctx.Path()),
+			"header", ctx.Request.Header.String(),
+			"err", err)
+		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
+		cc.Write(_ErrorHandler_Error_RestHandler(cc, s.errorHandler, s.interceptor))
 	}
 	if s.conf.Openapi.Enabled {
 		// 添加openapi接口

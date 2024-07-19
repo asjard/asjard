@@ -17,6 +17,7 @@ var (
 	InternalServerError   = Error(codes.Internal, "internal server error")
 	PageNotFoundError     = Error(codes.NotFound, "page not found")
 	MethodNotAllowedError = Error(codes.Unimplemented, "method not allowed")
+	UnsupportProtocol     = Error(codes.Unavailable, "unsupport protocol")
 )
 
 // Error 添加系统码

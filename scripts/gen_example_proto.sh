@@ -13,7 +13,10 @@ do
         --go-grpc_out=${GOPATH}/src \
         --go-rest_out=${GOPATH}/src \
         --go-rest2grpc-gw_out=${GOPATH}/src \
-        -I${ROOTDIR}/../third_party -I. $file
+        -I${ROOTDIR}/../third_party \
+        -I${ROOTDIR}/../third_party/github.com/google/gnostic \
+        -I. \
+        $file
 done
 
 for file in $(find . -type f -name "*.pb.go")

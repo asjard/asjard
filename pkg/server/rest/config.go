@@ -103,6 +103,8 @@ func defaultConfig() Config {
 			AllowCredentials: false,
 			MaxAge:           utils.JSONDuration{Duration: 12 * time.Hour},
 		},
-		Options: OptionsConfig{},
+		Options: OptionsConfig{
+			MaxRequestBodySize: 10 * 1024 * 1024,
+		},
 	}
 }

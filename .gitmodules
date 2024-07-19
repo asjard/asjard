@@ -2,3 +2,7 @@
 	path = third_party/github.com/asjard/protobuf
 	url = git@github.com:asjard/protobuf.git
 	branch = master
+[submodule "third_party/github.com/google/gnostic"]
+	path = third_party/github.com/google/gnostic
+	url = git@github.com:google/gnostic.git
+	branch = main

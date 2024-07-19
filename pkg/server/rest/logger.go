@@ -11,5 +11,5 @@ type Logger struct{}
 
 // Printf .
 func (Logger) Printf(format string, args ...any) {
-	logger.Info(fmt.Sprintf(format, args...))
+	logger.Error(fmt.Sprintf(format, args...))
 }
