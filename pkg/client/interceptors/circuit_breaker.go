@@ -11,8 +11,8 @@ import (
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/status"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const (

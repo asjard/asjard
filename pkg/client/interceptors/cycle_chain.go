@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	"github.com/asjard/asjard/core/client"
+	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/pkg/client/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 )
 
 const (

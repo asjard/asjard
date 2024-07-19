@@ -8,7 +8,7 @@ import (
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
-	"github.com/asjard/asjard/pkg/ajerr"
+	"github.com/asjard/asjard/core/status"
 	openapi_v3 "github.com/google/gnostic/openapiv3"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -58,7 +58,7 @@ func (api *OpenAPI) Yaml(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 			constant.Framework, constant.FrameworkVersion, constant.FrameworkGithub))
 		if err != nil {
 			logger.Error("openapi yaml value fail", "err", err)
-			return nil, ajerr.InternalServerError
+			return nil, status.InternalServerError
 		}
 		rtx.RequestCtx.Write(b)
 		return nil, nil

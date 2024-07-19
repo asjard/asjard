@@ -8,7 +8,7 @@ import (
 
 	"github.com/asjard/asjard/core/metrics/collectors"
 	"github.com/asjard/asjard/core/server"
-	"github.com/asjard/asjard/pkg/status"
+	"github.com/asjard/asjard/core/status"
 )
 
 const (
@@ -43,8 +43,8 @@ func (m Metrics) Interceptor() server.UnaryServerInterceptor {
 		resp, err = handler(ctx, req)
 		latency := time.Since(now)
 		go func(latency time.Duration, fullMethod, protocol string, err error) {
-			code, _ := status.FromError(err)
-			codeStr := strconv.Itoa(int(code))
+			st := status.FromError(err)
+			codeStr := strconv.Itoa(int(st.Code))
 			fullMethod = strings.ReplaceAll(strings.Trim(info.FullMethod, "/"), "/", ".")
 			m.requestTotal.Inc(codeStr,
 				fullMethod, protocol)

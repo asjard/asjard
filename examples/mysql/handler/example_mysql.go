@@ -3,11 +3,11 @@ package handler
 import (
 	"context"
 
+	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/examples/mysql/model"
 	pb "github.com/asjard/asjard/examples/protobuf/hello"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type MysqlExampleAPI struct {

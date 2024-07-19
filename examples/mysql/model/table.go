@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/status"
 	pb "github.com/asjard/asjard/examples/protobuf/hello"
 	"github.com/asjard/asjard/pkg/database/mysql"
 	"github.com/lib/pq"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 )
 

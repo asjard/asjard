@@ -11,6 +11,7 @@ import (
 	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/status"
 	pb "github.com/asjard/asjard/examples/protobuf/hello"
 	_ "github.com/asjard/asjard/pkg/client/grpc"
 	mgrpc "github.com/asjard/asjard/pkg/server/grpc"
@@ -18,7 +19,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 

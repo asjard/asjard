@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/pkg/ajerr"
+	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/pkg/protobuf/metricspb"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/prometheus/client_golang/prometheus"
@@ -30,7 +30,7 @@ func (api *MetricsAPI) Fetch(ctx context.Context, in *emptypb.Empty) (*emptypb.E
 		defer done()
 		if err != nil {
 			logger.Error("gathering metrics fail", "err", err)
-			return nil, ajerr.InternalServerError
+			return nil, status.InternalServerError
 		}
 		contentType := expfmt.NegotiateIncludingOpenMetrics(rtx.ReadHeaderParams())
 		rtx.Response.Header.Set(fasthttp.HeaderContentType, string(contentType))
@@ -38,13 +38,13 @@ func (api *MetricsAPI) Fetch(ctx context.Context, in *emptypb.Empty) (*emptypb.E
 		for _, mf := range mfs {
 			if err := enc.Encode(mf); err != nil {
 				logger.Error("encoding and sending metric family fail", "err", err)
-				return nil, ajerr.InternalServerError
+				return nil, status.InternalServerError
 			}
 		}
 		if closer, ok := enc.(expfmt.Closer); ok {
 			if err := closer.Close(); err != nil {
 				logger.Error("closer close fail", "err", err)
-				return nil, ajerr.InternalServerError
+				return nil, status.InternalServerError
 			}
 		}
 		return nil, nil

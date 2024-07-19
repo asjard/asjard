@@ -18,8 +18,8 @@ asjard:
     ## 这里是服务描述
   ## 服务实例详情
   instance:
-    ##
-    code: 0
+    ## 系统码
+    systemCode: 100
     ## 服务名称
     name: exampleService
     ## 服务版本

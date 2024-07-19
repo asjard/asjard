@@ -25,7 +25,7 @@ func DefaultWriter(c *Context, data any, err error) {
 	response := newResponse(c, data, err)
 	var statusCode uint32 = http.StatusOK
 	if c.URI().QueryArgs().Has(QueryParamNeedStatusCode) {
-		statusCode = getStatusCode(response.Code)
+		statusCode = response.Status
 	}
 	if err := writeJSON(c, int(statusCode), response); err != nil {
 		logger.Error("write json fail", "err", err)
@@ -52,7 +52,6 @@ func writeJSON(c *Context, statusCode int, body proto.Message) error {
 		UseProtoNames:   true,
 		EmitUnpopulated: true,
 	}.Marshal(body)
-	// b, err := protojson.Marshal(body)
 	if err != nil {
 		return err
 	}

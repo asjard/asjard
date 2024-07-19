@@ -32,6 +32,8 @@ type APP struct {
 type Instance struct {
 	// 实例ID
 	ID string
+	// 系统码
+	SystemCode uint32 `json:"systemCode"`
 	// 实例名称
 	Name string `json:"name"`
 	// 实例版本
@@ -50,8 +52,9 @@ var (
 		AZ:          "default",
 		Website:     website,
 		Instance: Instance{
-			Name:    constant.Framework,
-			Version: "1.0.0",
+			SystemCode: 100,
+			Name:       constant.Framework,
+			Version:    "1.0.0",
 		},
 	}
 	once sync.Once
@@ -67,6 +70,9 @@ func GetAPP() APP {
 	once.Do(func() {
 		config.GetWithUnmarshal(constant.Framework, &app)
 		app.Instance.ID = uuid.NewString()
+		if app.Instance.SystemCode < 100 || app.Instance.SystemCode > 999 {
+			app.Instance.SystemCode = 100
+		}
 	})
 	return app
 }

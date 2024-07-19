@@ -16,7 +16,7 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server"
-	"github.com/asjard/asjard/pkg/ajerr"
+	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
 	"github.com/fasthttp/router"
 	openapi_v3 "github.com/google/gnostic/openapiv3"
@@ -104,7 +104,7 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 					"path", ctx.Path(),
 					"header", ctx.Request.Header.String(),
 					"err", err)
-				NewContext(ctx).Write(nil, ajerr.InternalServerError)
+				NewContext(ctx).Write(nil, status.InternalServerError)
 			},
 		},
 	}, nil

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/asjard/asjard/core/status"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 )
 
