@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2020 gRPC authors.
+ * Copyright 2024 ASJARD authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,21 @@
  *
  */
 
-// protoc-gen-go-grpc is a plugin for the Google protocol buffer compiler to
+// protoc-gen-go-rest2grpc-gw is a plugin for the Google protocol buffer compiler to
 // generate Go code. Install it by building this program and making it
 // accessible within your PATH with the name:
 //
-//	protoc-gen-go-grpc
+//	protoc-gen-go-rest2grpc-gw
 //
-// The 'go-grpc' suffix becomes part of the argument for the protocol compiler,
+// The 'go-rest2grpc-gw' suffix becomes part of the argument for the protocol compiler,
 // such that it can be invoked as:
 //
-//	protoc --go-grpc_out=. path/to/file.proto
+//	protoc --go-test2grpc-gw_out=. path/to/file.proto
 //
 // This generates Go service definitions for the protocol buffer defined by
 // file.proto.  With that input, the output will be written to:
 //
-//	path/to/file_grpc.pb.go
+//	path/to/file_rest-gw.pb.go
 package main
 
 import (
@@ -59,8 +59,6 @@ func main() {
 	}
 
 	var flags flag.FlagSet
-	requireUnimplemented = flags.Bool("require_unimplemented_servers", true, "set to false to match legacy behavior")
-	useGenericStreams = flags.Bool("use_generic_streams_experimental", false, "set to true to use generic types for streaming client and server objects; this flag is EXPERIMENTAL and may be changed or removed in a future release")
 
 	protogen.Options{
 		ParamFunc: flags.Set,

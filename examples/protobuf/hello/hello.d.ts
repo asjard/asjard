@@ -4,102 +4,60 @@
 // - protoc             v5.27.0
 // source: hello/hello.proto
 
-
-
-//
-// 加解密示例请求
-// -----------
-export interface CipherExampleReq{
+interface CipherExampleReq{
 }
-// -----------
-export interface MysqlExampleReq{
-//name:string
+
+interface MysqlExampleReq{
     name: string;
-//age:uint32
     age: number;
 }
-// -----------
-export interface MysqlExampleResp{
-//id:int64
+
+interface MysqlExampleResp{
     id: number;
-//name:string
     name: string;
-//age:uint32
     age: number;
-//created_at:string
     created_at: string;
-//updated_at:string
     updated_at: string;
 }
-//
-// 加解密示例返回
-// -----------
-export interface CipherExampleResp{
-//aes_encrypt_value_in_plain_file:string
+
+interface CipherExampleResp{
     aes_encrypt_value_in_plain_file: string;
-//base64_encrypt_value_in_plain_file:string
     base64_encrypt_value_in_plain_file: string;
-//plain_value_in_aes_encrypt_file:string
     plain_value_in_aes_encrypt_file: string;
-//aes_encrypt_value_in_aes_encrypt_file:string
     aes_encrypt_value_in_aes_encrypt_file: string;
-//base64_encrypt_value_in_aes_encrypt_file:string
     base64_encrypt_value_in_aes_encrypt_file: string;
 }
-// -----------
-export interface SayReq{
-//region_id:string
+
+interface SayReq{
     region_id: string;
-//project_id:string
     project_id: string;
-//user_id:int64
     user_id: number;
-//str_list:string
     str_list: string;
-//int_list:int64
     int_list: number;
-//obj:message
     obj: message;
-//objs:message
     objs: message;
-//configs:message
     configs: message;
-//page:int32
     page: number;
-//size:int32
     size: number;
-//sort:string
     sort: string;
-//ok:bool
     ok: boolean;
-//int_optional_value:int32
     int_optional_value: number;
-//string_optional_value:string
     string_optional_value: string;
-//kind:enum
     kind: ;
-//kinds:enum
     kinds: ;
-//bytes_value:bytes
     bytes_value: ;
-//uint64_value:uint64
     uint64_value: number;
-//google_int64_value:message
     google_int64_value: message;
 }
-// -----------
-export interface Configs{
-//timeout:string
+
+interface Configs{
     timeout: string;
-//field_in_different_file_under_same_section:string
     field_in_different_file_under_same_section: string;
-//another_field_in_different_file_under_same_section:string
     another_field_in_different_file_under_same_section: string;
 }
-// -----------
-export interface SayObj{
-//field_int:int32
+
+interface SayObj{
     field_int: number;
-//field_str:string
     field_str: string;
 }
+

@@ -4,20 +4,15 @@
 // - protoc             v5.27.0
 // source: file.proto
 
-
-
-// -----------
-export interface UploadReq{
-//file:string
+interface UploadReq{
     file: string;
 }
-// -----------
-export interface UploadResp{
-//download_name:string
+
+interface UploadResp{
     download_name: string;
 }
-// -----------
-export interface DownloadReq{
-//file_name:string
+
+interface DownloadReq{
     file_name: string;
 }
+
