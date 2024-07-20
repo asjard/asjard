@@ -113,8 +113,8 @@ type MysqlExampleReq struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name"`
-	Age  uint32 `protobuf:"varint,2,opt,name=age,proto3" json:"age"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Age  uint32 `protobuf:"varint,2,opt,name=age,proto3" json:"age,omitempty"`
 }
 
 func (x *MysqlExampleReq) Reset() {
@@ -168,11 +168,11 @@ type MysqlExampleResp struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id        int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id"`
-	Name      string `protobuf:"bytes,2,opt,name=name,proto3" json:"name"`
-	Age       uint32 `protobuf:"varint,3,opt,name=age,proto3" json:"age"`
-	CreatedAt string `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at"`
-	UpdatedAt string `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at"`
+	Id        int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name      string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Age       uint32 `protobuf:"varint,3,opt,name=age,proto3" json:"age,omitempty"`
+	CreatedAt string `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt string `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 }
 
 func (x *MysqlExampleResp) Reset() {
@@ -248,11 +248,11 @@ type CipherExampleResp struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	AesEncryptValueInPlainFile         string `protobuf:"bytes,1,opt,name=aes_encrypt_value_in_plain_file,json=aesEncryptValueInPlainFile,proto3" json:"aes_encrypt_value_in_plain_file"`
-	Base64EncryptValueInPlainFile      string `protobuf:"bytes,2,opt,name=base64_encrypt_value_in_plain_file,json=base64EncryptValueInPlainFile,proto3" json:"base64_encrypt_value_in_plain_file"`
-	PlainValueInAesEncryptFile         string `protobuf:"bytes,3,opt,name=plain_value_in_aes_encrypt_file,json=plainValueInAesEncryptFile,proto3" json:"plain_value_in_aes_encrypt_file"`
-	AesEncryptValueInAesEncryptFile    string `protobuf:"bytes,4,opt,name=aes_encrypt_value_in_aes_encrypt_file,json=aesEncryptValueInAesEncryptFile,proto3" json:"aes_encrypt_value_in_aes_encrypt_file"`
-	Base64EncryptValueInAesEncryptFile string `protobuf:"bytes,5,opt,name=base64_encrypt_value_in_aes_encrypt_file,json=base64EncryptValueInAesEncryptFile,proto3" json:"base64_encrypt_value_in_aes_encrypt_file"`
+	AesEncryptValueInPlainFile         string `protobuf:"bytes,1,opt,name=aes_encrypt_value_in_plain_file,json=aesEncryptValueInPlainFile,proto3" json:"aes_encrypt_value_in_plain_file,omitempty"`
+	Base64EncryptValueInPlainFile      string `protobuf:"bytes,2,opt,name=base64_encrypt_value_in_plain_file,json=base64EncryptValueInPlainFile,proto3" json:"base64_encrypt_value_in_plain_file,omitempty"`
+	PlainValueInAesEncryptFile         string `protobuf:"bytes,3,opt,name=plain_value_in_aes_encrypt_file,json=plainValueInAesEncryptFile,proto3" json:"plain_value_in_aes_encrypt_file,omitempty"`
+	AesEncryptValueInAesEncryptFile    string `protobuf:"bytes,4,opt,name=aes_encrypt_value_in_aes_encrypt_file,json=aesEncryptValueInAesEncryptFile,proto3" json:"aes_encrypt_value_in_aes_encrypt_file,omitempty"`
+	Base64EncryptValueInAesEncryptFile string `protobuf:"bytes,5,opt,name=base64_encrypt_value_in_aes_encrypt_file,json=base64EncryptValueInAesEncryptFile,proto3" json:"base64_encrypt_value_in_aes_encrypt_file,omitempty"`
 }
 
 func (x *CipherExampleResp) Reset() {
@@ -328,41 +328,41 @@ type SayReq struct {
 	unknownFields protoimpl.UnknownFields
 
 	// 区域ID
-	RegionId string `protobuf:"bytes,1,opt,name=region_id,json=regionId,proto3" json:"region_id"`
+	RegionId string `protobuf:"bytes,1,opt,name=region_id,json=regionId,proto3" json:"region_id,omitempty"`
 	// 项目ID
-	ProjectId string `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id"`
+	ProjectId string `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
 	// 用户ID
-	UserId int64 `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id"`
+	UserId int64 `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	// 字符串列表
-	StrList []string `protobuf:"bytes,4,rep,name=str_list,json=strList,proto3" json:"str_list"`
+	StrList []string `protobuf:"bytes,4,rep,name=str_list,json=strList,proto3" json:"str_list,omitempty"`
 	// 数字列表
-	IntList []int64 `protobuf:"varint,5,rep,packed,name=int_list,json=intList,proto3" json:"int_list"`
+	IntList []int64 `protobuf:"varint,5,rep,packed,name=int_list,json=intList,proto3" json:"int_list,omitempty"`
 	// 对象
-	Obj *SayObj `protobuf:"bytes,6,opt,name=obj,proto3" json:"obj"`
+	Obj *SayObj `protobuf:"bytes,6,opt,name=obj,proto3" json:"obj,omitempty"`
 	// 对象列表
-	Objs []*SayObj `protobuf:"bytes,7,rep,name=objs,proto3" json:"objs"`
+	Objs []*SayObj `protobuf:"bytes,7,rep,name=objs,proto3" json:"objs,omitempty"`
 	// 配置
-	Configs *Configs `protobuf:"bytes,8,opt,name=configs,proto3" json:"configs"`
+	Configs *Configs `protobuf:"bytes,8,opt,name=configs,proto3" json:"configs,omitempty"`
 	// 分页
-	Page int32 `protobuf:"varint,9,opt,name=page,proto3" json:"page"`
+	Page int32 `protobuf:"varint,9,opt,name=page,proto3" json:"page,omitempty"`
 	// 每页大小
-	Size int32 `protobuf:"varint,10,opt,name=size,proto3" json:"size"`
+	Size int32 `protobuf:"varint,10,opt,name=size,proto3" json:"size,omitempty"`
 	// 排序
-	Sort string `protobuf:"bytes,11,opt,name=sort,proto3" json:"sort"`
+	Sort string `protobuf:"bytes,11,opt,name=sort,proto3" json:"sort,omitempty"`
 	// 布尔类型
-	Ok *bool `protobuf:"varint,12,opt,name=ok,proto3,oneof" json:"ok"`
+	Ok *bool `protobuf:"varint,12,opt,name=ok,proto3,oneof" json:"ok,omitempty"`
 	// 可选整形参数
-	IntOptionalValue *int32 `protobuf:"varint,13,opt,name=int_optional_value,json=intOptionalValue,proto3,oneof" json:"int_optional_value"`
+	IntOptionalValue *int32 `protobuf:"varint,13,opt,name=int_optional_value,json=intOptionalValue,proto3,oneof" json:"int_optional_value,omitempty"`
 	// 可选字符串参数
-	StringOptionalValue *string `protobuf:"bytes,14,opt,name=string_optional_value,json=stringOptionalValue,proto3,oneof" json:"string_optional_value"`
+	StringOptionalValue *string `protobuf:"bytes,14,opt,name=string_optional_value,json=stringOptionalValue,proto3,oneof" json:"string_optional_value,omitempty"`
 	// 可选枚举参数
-	Kind *Kind `protobuf:"varint,15,opt,name=kind,proto3,enum=api.v1.hello.Kind,oneof" json:"kind"`
+	Kind *Kind `protobuf:"varint,15,opt,name=kind,proto3,enum=api.v1.hello.Kind,oneof" json:"kind,omitempty"`
 	// 枚举列表
-	Kinds      []Kind `protobuf:"varint,16,rep,packed,name=kinds,proto3,enum=api.v1.hello.Kind" json:"kinds"`
-	BytesValue []byte `protobuf:"bytes,17,opt,name=bytes_value,json=bytesValue,proto3" json:"bytes_value"`
+	Kinds      []Kind `protobuf:"varint,16,rep,packed,name=kinds,proto3,enum=api.v1.hello.Kind" json:"kinds,omitempty"`
+	BytesValue []byte `protobuf:"bytes,17,opt,name=bytes_value,json=bytesValue,proto3" json:"bytes_value,omitempty"`
 	// openapi 会把这个字段解析为字符串
-	Uint64Value      uint64                 `protobuf:"varint,18,opt,name=uint64_value,json=uint64Value,proto3" json:"uint64_value"`
-	GoogleInt64Value *wrapperspb.Int64Value `protobuf:"bytes,19,opt,name=google_int64_value,json=googleInt64Value,proto3" json:"google_int64_value"`
+	Uint64Value      uint64                 `protobuf:"varint,18,opt,name=uint64_value,json=uint64Value,proto3" json:"uint64_value,omitempty"`
+	GoogleInt64Value *wrapperspb.Int64Value `protobuf:"bytes,19,opt,name=google_int64_value,json=googleInt64Value,proto3" json:"google_int64_value,omitempty"`
 }
 
 func (x *SayReq) Reset() {
@@ -535,9 +535,9 @@ type Configs struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Timeout                                     string `protobuf:"bytes,1,opt,name=timeout,proto3" json:"timeout"`
-	FieldInDifferentFileUnderSameSection        string `protobuf:"bytes,2,opt,name=field_in_different_file_under_same_section,json=fieldInDifferentFileUnderSameSection,proto3" json:"field_in_different_file_under_same_section"`
-	AnotherFieldInDifferentFileUnderSameSection string `protobuf:"bytes,3,opt,name=another_field_in_different_file_under_same_section,json=anotherFieldInDifferentFileUnderSameSection,proto3" json:"another_field_in_different_file_under_same_section"`
+	Timeout                                     string `protobuf:"bytes,1,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	FieldInDifferentFileUnderSameSection        string `protobuf:"bytes,2,opt,name=field_in_different_file_under_same_section,json=fieldInDifferentFileUnderSameSection,proto3" json:"field_in_different_file_under_same_section,omitempty"`
+	AnotherFieldInDifferentFileUnderSameSection string `protobuf:"bytes,3,opt,name=another_field_in_different_file_under_same_section,json=anotherFieldInDifferentFileUnderSameSection,proto3" json:"another_field_in_different_file_under_same_section,omitempty"`
 }
 
 func (x *Configs) Reset() {
@@ -598,8 +598,8 @@ type SayObj struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	FieldInt int32  `protobuf:"varint,1,opt,name=field_int,json=fieldInt,proto3" json:"field_int"`
-	FieldStr string `protobuf:"bytes,2,opt,name=field_str,json=fieldStr,proto3" json:"field_str"`
+	FieldInt int32  `protobuf:"varint,1,opt,name=field_int,json=fieldInt,proto3" json:"field_int,omitempty"`
+	FieldStr string `protobuf:"bytes,2,opt,name=field_str,json=fieldStr,proto3" json:"field_str,omitempty"`
 }
 
 func (x *SayObj) Reset() {

@@ -27,7 +27,7 @@ type UploadReq struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	File string `protobuf:"bytes,1,opt,name=file,proto3" json:"file"`
+	File string `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
 }
 
 func (x *UploadReq) Reset() {
@@ -74,7 +74,7 @@ type UploadResp struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	DownloadName string `protobuf:"bytes,2,opt,name=download_name,json=downloadName,proto3" json:"download_name"`
+	DownloadName string `protobuf:"bytes,2,opt,name=download_name,json=downloadName,proto3" json:"download_name,omitempty"`
 }
 
 func (x *UploadResp) Reset() {
@@ -121,7 +121,7 @@ type DownloadReq struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	FileName string `protobuf:"bytes,2,opt,name=file_name,json=fileName,proto3" json:"file_name"`
+	FileName string `protobuf:"bytes,2,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
 }
 
 func (x *DownloadReq) Reset() {

@@ -6,6 +6,10 @@ GEN_PROTO_GO ?= true
 GEN_PROTO_GO_GRPC ?= true
 ##env 是否根据protobuf文件生成*_rest.pb.go文件
 GEN_PROTO_GO_REST ?= true
+##env 是否根据protobuf文件生成*_rest_gw.pb.go文件
+GEN_PROTO_GO_REST_GW ?= true
+##env 是否根据protobuf文件生成*_ts.pb.go文件
+GEN_PROTO_TS ?= true
 
 help: ## 使用帮助
 	@echo "Commands:"
@@ -24,7 +28,7 @@ update: .gitmodules ## 更新本地代码
 	git submodule foreach  --recursive 'tag="$$(git config -f $$toplevel/.gitmodules submodule.$$name.tag)";[ -n $$tag ] && git reset --hard  $$tag || echo "this module has no tag"'
 
 gen_example_proto: ## 生成examples目录下的协议
-	/bin/bash scripts/gen_example_proto.sh
+	GEN_PROTO_GO=$(GEN_PROTO_GO) GEN_PROTO_GO_GRPC=$(GEN_PROTO_GO_GRPC) GEN_PROTO_GO_REST=$(GEN_PROTO_GO_REST) GEN_PROTO_GO_REST_GW=$(GEN_PROTO_GO_REST_GW) GEN_PROTO_TS=$(GEN_PROTO_TS) /bin/bash scripts/gen_example_proto.sh
 
 build_cipher_aes: ## 生成asjard_cipher_aes命令
 	go build -o $(GOPATH)/bin/asjard_cipher_aes -ldflags '-w -s' ./cmd/asjard_cipher_aes/*.go
