@@ -58,11 +58,12 @@ func getChainUnaryInterceptors(conf Config) UnaryClientInterceptor {
 // 添加默认拦截器
 func getClientInterceptors(conf Config) []UnaryClientInterceptor {
 	var interceptors []UnaryClientInterceptor
-	for _, interceptorName := range conf.Interceptors {
-		for _, newInterceptor := range newClientInterceptors {
-			interceptor := newInterceptor()
+	for _, newInterceptor := range newClientInterceptors {
+		interceptor := newInterceptor()
+		for _, interceptorName := range conf.Interceptors {
 			if interceptor.Name() == interceptorName {
 				interceptors = append(interceptors, interceptor.Interceptor())
+				break
 			}
 		}
 	}

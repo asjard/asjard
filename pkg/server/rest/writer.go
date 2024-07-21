@@ -5,10 +5,11 @@ import (
 	"reflect"
 
 	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/core/status"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 const (
@@ -22,27 +23,22 @@ func DefaultWriter(c *Context, data any, err error) {
 	if err == nil && (data == nil || reflect.ValueOf(data).IsNil()) {
 		return
 	}
-	response := newResponse(c, data, err)
+	st := status.FromError(err)
 	var statusCode uint32 = http.StatusOK
 	if c.URI().QueryArgs().Has(QueryParamNeedStatusCode) {
-		statusCode = response.Status
+		statusCode = st.Status
 	}
-	if err := writeJSON(c, int(statusCode), response); err != nil {
+	if err == nil {
+		if d, err := anypb.New(data.(proto.Message)); err == nil {
+			st.Data = d
+		} else {
+			logger.Error("can not create anypb.Any", "data", data, "err", err)
+		}
+
+	}
+	if err := writeJSON(c, int(statusCode), st); err != nil {
 		logger.Error("write json fail", "err", err)
 	}
-}
-
-func getStatusCode(code uint32) uint32 {
-	if code != 0 {
-		if http.StatusText(int(code)) != "" {
-			return code
-		}
-		if code < 1000 {
-			return http.StatusInternalServerError
-		}
-		return code / utils.Uint32Len(code)
-	}
-	return http.StatusOK
 }
 
 func writeJSON(c *Context, statusCode int, body proto.Message) error {

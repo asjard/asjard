@@ -9,7 +9,6 @@ import (
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/status"
-	"github.com/asjard/asjard/pkg/protobuf/responsepb"
 	"github.com/spf13/cast"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/metadata"
@@ -44,9 +43,7 @@ type Context struct {
 	headLoaded   bool
 	postBody     []byte
 	postLoaded   bool
-	// 返回内容
-	response *responsepb.Response
-	write    Writer
+	write        Writer
 }
 
 // KV .

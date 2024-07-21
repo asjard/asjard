@@ -16,6 +16,8 @@ asjard:
     ## rest(HTTP)协议相关配置
     rest:
       enabled: true
+      i18n:
+        enabled: true
       openapi:
         enabled: true
         termsOfService: http://github.com/asjard/asjard111

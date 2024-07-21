@@ -20,6 +20,7 @@ asjard:
   instance:
     ## 系统码
     systemCode: 100
+    shareable: true
     ## 服务名称
     name: exampleService
     ## 服务版本
