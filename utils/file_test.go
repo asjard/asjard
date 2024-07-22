@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"testing"
@@ -144,4 +146,19 @@ func TestCopyDir(t *testing.T) {
 		t.Error("content not match")
 		t.FailNow()
 	}
+}
+
+func TestFileMD5(t *testing.T) {
+	tmpFile := filepath.Join(t.TempDir(), "test_file_md5")
+	content := []byte("test file md5")
+	h := md5.New()
+	_, err := h.Write(content)
+	assert.Nil(t, err)
+	contentMd5 := hex.EncodeToString(h.Sum(nil))
+	assert.NotEmpty(t, contentMd5)
+	err = os.WriteFile(tmpFile, content, os.ModePerm)
+	assert.Nil(t, err)
+	fileMd5, err := FileMD5(tmpFile)
+	assert.Nil(t, err)
+	assert.Equal(t, contentMd5, fileMd5)
 }
