@@ -17,7 +17,7 @@ asjard:
     rest:
       enabled: true
       i18n:
-        enabled: true
+        enabled: false
       openapi:
         enabled: true
         termsOfService: http://github.com/asjard/asjard111

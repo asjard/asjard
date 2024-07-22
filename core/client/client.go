@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/asjard/asjard/core/constant"
 	"google.golang.org/grpc"
@@ -22,6 +23,14 @@ type ClientConnInterface interface {
 	Protocol() string
 	Conn() grpc.ClientConnInterface
 }
+
+// ConnOptions 连接参数
+type ConnOptions struct {
+	// 实例ID
+	InstanceID string
+}
+
+type ConnOption func(opts *ConnOptions)
 
 // NewClientFunc 初始化客户端的方法
 type NewClientFunc func(*ClientOptions) ClientInterface
@@ -54,8 +63,16 @@ type Client struct {
 	conf       Config
 }
 
+// NewClient 新客户端
+func NewClient(protocol, serverName string) *Client {
+	return &Client{
+		protocol:   protocol,
+		serverName: serverName,
+	}
+}
+
 // Conn 链接地址
-func (c Client) Conn() (grpc.ClientConnInterface, error) {
+func (c Client) Conn(ops ...ConnOption) (grpc.ClientConnInterface, error) {
 	cc, ok := clients[c.protocol]
 	if !ok {
 		return nil, fmt.Errorf("protocol %s client not found", c.protocol)
@@ -66,13 +83,28 @@ func (c Client) Conn() (grpc.ClientConnInterface, error) {
 		Balancer:    NewBalanceBuilder(conf.Loadbalance),
 		Interceptor: getChainUnaryInterceptors(conf),
 	}
-	return cc.NewConn(fmt.Sprintf("%s://%s/%s", constant.Framework, c.protocol, c.serverName), options)
+	return cc.NewConn(fmt.Sprintf("%s://%s/%s?%s",
+		constant.Framework, c.protocol, c.serverName, c.connOptions(ops...).queryString()),
+		options)
 }
 
-// NewClient 新客户端
-func NewClient(protocol, serverName string) *Client {
-	return &Client{
-		protocol:   protocol,
-		serverName: serverName,
+func (c Client) connOptions(ops ...ConnOption) *ConnOptions {
+	options := &ConnOptions{}
+	for _, op := range ops {
+		op(options)
+	}
+	return options
+}
+
+func (o ConnOptions) queryString() string {
+	v := make(url.Values)
+	v.Set("instanceID", o.InstanceID)
+	return v.Encode()
+
+}
+
+func WithInstanceID(instanceID string) func(opts *ConnOptions) {
+	return func(opts *ConnOptions) {
+		opts.InstanceID = instanceID
 	}
 }

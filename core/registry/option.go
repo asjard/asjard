@@ -16,6 +16,8 @@ type Options struct {
 	Environment string
 	// 服务名称
 	ServiceName string
+	// 实例ID
+	InstanceID string
 	// 服务注册发现中心名称
 	RegistryName string
 	// 协议名称
@@ -110,6 +112,13 @@ func WithServiceName(serviceName string) func(opts *Options) {
 	}
 }
 
+func WithInstanceID(instanceID string) func(opts *Options) {
+	return func(opts *Options) {
+		opts.InstanceID = instanceID
+		opts.pickFuncs = append(opts.pickFuncs, opts.instancePickFunc())
+	}
+}
+
 // WithRegistryName 设置注册/发现中心名称
 func WithRegistryName(registryName string) func(opts *Options) {
 	return func(opts *Options) {
@@ -191,6 +200,15 @@ func (opts *Options) servicePickFunc() PickFunc {
 	if opts.ServiceName != "" {
 		return func(instance *Instance) bool {
 			return instance.Service.Instance.Name == opts.ServiceName
+		}
+	}
+	return opts.okPickFunc()
+}
+
+func (opts *Options) instancePickFunc() PickFunc {
+	if opts.InstanceID != "" {
+		return func(instance *Instance) bool {
+			return instance.Service.Instance.ID == opts.InstanceID
 		}
 	}
 	return opts.okPickFunc()

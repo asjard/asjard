@@ -32,6 +32,7 @@ func (c *ClientBuilder) Build(target resolver.Target, cc resolver.ClientConn, op
 		cc:          cc,
 		protocol:    target.URL.Host,
 		serviceName: target.Endpoint(),
+		instanceID:  target.URL.Query().Get("instanceID"),
 	}
 
 	cr.ResolveNow(resolver.ResolveNowOptions{})
@@ -47,6 +48,7 @@ type clientResolver struct {
 	cc          resolver.ClientConn
 	protocol    string
 	serviceName string
+	instanceID  string
 }
 
 // Close .
@@ -57,11 +59,17 @@ func (r *clientResolver) Close() {
 // ResolveNow 从服务发现中心获取服务列表
 func (r *clientResolver) ResolveNow(_ resolver.ResolveNowOptions) {
 	app := runtime.GetAPP()
-	instances := registry.PickServices(registry.WithServiceName(r.serviceName),
+	options := []registry.Option{
+		registry.WithServiceName(r.serviceName),
 		registry.WithProtocol(r.protocol),
 		registry.WithEnvironment(app.Environment),
 		registry.WithApp(app.App),
-		registry.WithWatch(r.listenerName(), r.watch))
+		registry.WithWatch(r.listenerName(), r.watch),
+	}
+	if r.instanceID != "" {
+		options = append(options, registry.WithInstanceID(r.instanceID))
+	}
+	instances := registry.PickServices(options...)
 	r.update(instances)
 }
 
