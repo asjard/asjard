@@ -9,7 +9,7 @@ GEN_PROTO_GO_REST ?= true
 ##env 是否根据protobuf文件生成*_rest_gw.pb.go文件
 GEN_PROTO_GO_REST_GW ?= true
 ##env 是否根据protobuf文件生成*_ts.pb.go文件
-GEN_PROTO_TS ?= true
+GEN_PROTO_TS ?= false
 
 help: ## 使用帮助
 	@echo "Commands:"

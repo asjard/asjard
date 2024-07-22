@@ -51,9 +51,7 @@ fi
 
 cd $proto_dir
 
-echo "$protoc_out"
-
-for file in $(find . -type f -name "*.pb.go")
+for file in $(find . -type f -name "*.pb.go" -o -name '*.d.ts')
 do
     rm -rf $file
 done
