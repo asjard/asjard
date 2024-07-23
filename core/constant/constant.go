@@ -50,6 +50,8 @@ const (
 	ConfigServerGrpcPrefix  = "asjard.servers.grpc"
 	ConfigServerPporfPrefix = "asjard.servers.pprof"
 
+	ConfigServicePrefix = "asjard.service"
+
 	// 服务配置前缀
 	ConfigServerPrefix = Framework + ".servers"
 	// 协议配置前缀

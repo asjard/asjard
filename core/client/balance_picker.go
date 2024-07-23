@@ -10,7 +10,14 @@ import (
 
 // Picker 所有的负载句衡器都要实现的接口
 type Picker interface {
-	Pick(info balancer.PickInfo) (*SubConn, error)
+	Pick(info balancer.PickInfo) (*PickResult, error)
+}
+
+// PickResult 负载均衡结果
+type PickResult struct {
+	SubConn       *SubConn
+	RequestRegion string
+	RequestAz     string
 }
 
 // WrapPicker 在本身的选择器上再添加一层，统一返回pickResult
@@ -60,22 +67,32 @@ func NewPicker(newPicker NewBalancerPicker, scs map[balancer.SubConn]base.SubCon
 }
 
 func (p WrapPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
-	sc, err := p.picker.Pick(info)
+	result, err := p.picker.Pick(info)
 	if err != nil {
 		return balancer.PickResult{}, err
 	}
 	destServicename := ""
-	instance, ok := sc.Address.Attributes.Value(AddressAttrKey{}).(*registry.Instance)
+	instance, ok := result.SubConn.Address.Attributes.Value(AddressAttrKey{}).(*registry.Instance)
 	if ok {
 		destServicename = instance.Service.Instance.Name
 	}
+	requestRegion := result.RequestRegion
+	if requestRegion == "" {
+		requestRegion = p.app.Region
+	}
+	requestAz := result.RequestAz
+	if requestAz == "" {
+		requestAz = p.app.AZ
+	}
 	return balancer.PickResult{
-		SubConn: sc.Conn,
+		SubConn: result.SubConn.Conn,
 		Done:    func(info balancer.DoneInfo) {},
 		Metadata: metadata.New(map[string]string{
 			HeaderRequestApp:    p.app.App,
 			HeaderRequestSource: p.app.Instance.Name,
 			HeaderRequestDest:   destServicename,
+			HeaderRequestRegion: requestRegion,
+			HeaderRequestAz:     requestAz,
 		}),
 	}, nil
 }

@@ -37,7 +37,7 @@ func NewRoundRobinPicker(scs map[balancer.SubConn]base.SubConnInfo) Picker {
 }
 
 // Pick 负载选择
-func (r *RoundRobinPicker) Pick(info balancer.PickInfo) (*SubConn, error) {
+func (r *RoundRobinPicker) Pick(info balancer.PickInfo) (*PickResult, error) {
 	n := uint32(len(r.scs))
 	if n == 0 {
 		return nil, balancer.ErrNoSubConnAvailable
@@ -51,5 +51,7 @@ func (r *RoundRobinPicker) Pick(info balancer.PickInfo) (*SubConn, error) {
 	n = uint32(len(picks))
 	next := atomic.AddUint32(&r.next, 1) - 1
 	sc := picks[next%n]
-	return sc, nil
+	return &PickResult{
+		SubConn: sc,
+	}, nil
 }

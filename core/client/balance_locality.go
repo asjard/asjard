@@ -47,7 +47,7 @@ func NewLocalityRoundRobinPicker(scs map[balancer.SubConn]base.SubConnInfo) Pick
 
 // Pick 负载均衡选择
 // 同region,az优先
-func (l *LocalityRoundRobinPicker) Pick(info balancer.PickInfo) (*SubConn, error) {
+func (l *LocalityRoundRobinPicker) Pick(info balancer.PickInfo) (*PickResult, error) {
 	var requestRegion, requestAz string
 	md, ok := metadata.FromIncomingContext(info.Ctx)
 	if ok {
@@ -67,7 +67,11 @@ func (l *LocalityRoundRobinPicker) Pick(info balancer.PickInfo) (*SubConn, error
 	}
 	next := atomic.AddUint32(&l.next, 1) - 1
 	sc := picks[next%n]
-	return sc, nil
+	return &PickResult{
+		SubConn:       sc,
+		RequestRegion: requestRegion,
+		RequestAz:     requestAz,
+	}, nil
 }
 
 // 优先选择request下的
