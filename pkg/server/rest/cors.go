@@ -6,10 +6,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asjard/asjard/core/logger"
 	"github.com/valyala/fasthttp"
 )
 
 func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
+	logger.Debug("new cors middleware", "conf", conf)
 	for _, origin := range conf.AllowOrigins {
 		if origin == "*" {
 			conf.allowAllOrigins = true

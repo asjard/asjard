@@ -130,53 +130,62 @@ var HelloRestServiceDesc = rest.ServiceDesc{
 			MethodName: "Hello",
 			Desc:       ".",
 			Method:     "GET",
-			Path:       "/hello",
+			Path:       Hello_Hello_RestPath,
 			Handler:    _Hello_Hello_RestHandler,
 		},
 		{
 			MethodName: "Say",
 			Desc:       "say something,这里是say方法的第二行注释.",
 			Method:     "POST",
-			Path:       "/api/v1/region/{region_id}/project/{project_id}/user/{user_id}",
+			Path:       Hello_Say_RestPath,
 			Handler:    _Hello_Say_RestHandler,
 		},
 		{
 			MethodName: "Say",
 			Desc:       "say something,这里是say方法的第二行注释.",
 			Method:     "GET",
-			Path:       "/api/v1/region/{region_id}/project/{project_id}/user/{user_id}",
+			Path:       Hello_Say_RestPath,
 			Handler:    _Hello_Say_RestHandler,
 		},
 		{
 			MethodName: "Call",
 			Desc:       "这里是call方法的注释,这里是call方法的第二行注释.",
 			Method:     "POST",
-			Path:       "/api/v1/call/region/{region_id}/project/{project_id}/user/{user_id}",
+			Path:       Hello_Call_RestPath,
 			Handler:    _Hello_Call_RestHandler,
 		},
 		{
 			MethodName: "Log",
 			Desc:       "获取日志.",
 			Method:     "GET",
-			Path:       "/api/v1/log",
+			Path:       Hello_Log_RestPath,
 			Handler:    _Hello_Log_RestHandler,
 		},
 		{
 			MethodName: "CipherExample",
 			Desc:       "加解密示例.",
 			Method:     "GET",
-			Path:       "/api/v1/examples/cipher",
+			Path:       Hello_CipherExample_RestPath,
 			Handler:    _Hello_CipherExample_RestHandler,
 		},
 		{
 			MethodName: "MysqlExample",
 			Desc:       "mysql数据库示例.",
 			Method:     "POST",
-			Path:       "/api/v1/examples/mysql",
+			Path:       Hello_MysqlExample_RestPath,
 			Handler:    _Hello_MysqlExample_RestHandler,
 		},
 	},
 }
+
+const (
+	Hello_Hello_RestPath         = "/hello"
+	Hello_Say_RestPath           = "/api/v1/region/{region_id}/project/{project_id}/user/{user_id}"
+	Hello_Call_RestPath          = "/api/v1/call/region/{region_id}/project/{project_id}/user/{user_id}"
+	Hello_Log_RestPath           = "/api/v1/log"
+	Hello_CipherExample_RestPath = "/api/v1/examples/cipher"
+	Hello_MysqlExample_RestPath  = "/api/v1/examples/mysql"
+)
 
 var file_hello_hello_proto_openapi = []byte{
 	0x0a, 0x05, 0x33, 0x2e, 0x30, 0x2e, 0x33, 0x12, 0x07, 0x32, 0x05, 0x30, 0x2e, 0x30, 0x2e, 0x31,

@@ -58,18 +58,23 @@ var FileRestServiceDesc = rest.ServiceDesc{
 			MethodName: "Upload",
 			Desc:       "文件上传.",
 			Method:     "POST",
-			Path:       "/api/v1/file/upload",
+			Path:       File_Upload_RestPath,
 			Handler:    _File_Upload_RestHandler,
 		},
 		{
 			MethodName: "Download",
 			Desc:       "文件下载.",
 			Method:     "GET",
-			Path:       "/api/v1/file/download",
+			Path:       File_Download_RestPath,
 			Handler:    _File_Download_RestHandler,
 		},
 	},
 }
+
+const (
+	File_Upload_RestPath   = "/api/v1/file/upload"
+	File_Download_RestPath = "/api/v1/file/download"
+)
 
 var file_file_proto_openapi = []byte{
 	0x0a, 0x05, 0x33, 0x2e, 0x30, 0x2e, 0x33, 0x12, 0x07, 0x32, 0x05, 0x30, 0x2e, 0x30, 0x2e, 0x31,

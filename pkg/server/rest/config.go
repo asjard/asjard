@@ -104,7 +104,7 @@ func defaultConfig() Config {
 			MaxAge:           utils.JSONDuration{Duration: 12 * time.Hour},
 		},
 		Options: OptionsConfig{
-			MaxRequestBodySize: 10 * 1024 * 1024,
+			MaxRequestBodySize: 20 * 1024 * 1024,
 		},
 	}
 }

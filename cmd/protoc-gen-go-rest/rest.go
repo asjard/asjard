@@ -134,6 +134,7 @@ func (g *RestGenerator) genService(service *protogen.Service) {
 
 func (g *RestGenerator) genServiceDesc(service *protogen.Service, serverType string, handlerNames []string, genopenapi bool) {
 	serviceDescVar := service.GoName + "RestServiceDesc"
+	fullPaths := make(map[string]string)
 	// Service descriptor.
 	g.gen.P("// ", serviceDescVar, " is the ", restPackage.Ident("ServiceDesc"), " for ", service.GoName, " service.")
 	g.gen.P("// It's only intended for direct use with ", restPackage.Ident("AddHandler"), ",")
@@ -168,8 +169,10 @@ func (g *RestGenerator) genServiceDesc(service *protogen.Service, serverType str
 				g.gen.P("MethodName: ", strconv.Quote(string(method.Desc.Name())), ",")
 				g.gen.P("Desc: ", strconv.Quote(string(methodDesc)), ",")
 				fullPath, optionMethod, _ := utils.ParseMethodOption(service, httpOption)
+				fullPathName := fmt.Sprintf("%s_%s_RestPath", service.GoName, method.GoName)
+				fullPaths[fullPathName] = fullPath
 				g.gen.P("Method:", strconv.Quote(optionMethod), ",")
-				g.gen.P("Path:", strconv.Quote(fullPath), ",")
+				g.gen.P("Path:", fullPathName, ",")
 				g.gen.P("Handler: ", handlerNames[i], ",")
 				g.gen.P("},")
 			}
@@ -177,6 +180,13 @@ func (g *RestGenerator) genServiceDesc(service *protogen.Service, serverType str
 	}
 	g.gen.P("},")
 	g.gen.P("}")
+	g.gen.P()
+
+	g.gen.P("const (")
+	for fullPathName, fullPath := range fullPaths {
+		g.gen.P(fullPathName, "=", strconv.Quote(fullPath))
+	}
+	g.gen.P(")")
 	g.gen.P()
 }
 

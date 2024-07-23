@@ -21,6 +21,11 @@ asjard:
       openapi:
         enabled: true
         termsOfService: http://github.com/asjard/asjard111
+      cors:
+        allowHeaders:
+          - Authorization
+          - Paasport-App-Id
+          - Paasport-Device-Id
       ## 同grpc相关配置
       addresses:
         listen: 127.0.0.1:7030
