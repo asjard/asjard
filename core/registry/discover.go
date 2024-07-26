@@ -93,7 +93,7 @@ func (l *LocalRegistry) getAndWatch() {
 	services := make(map[string][]string)
 	if err := config.GetWithUnmarshal(l.localDiscoverConfPrefix,
 		&services,
-		config.WithMatchWatch(l.localDiscoverConfPrefix+".*", l.watch)); err != nil {
+		config.WithWatch(l.watch)); err != nil {
 		logger.Error("get registry.localDiscover fail",
 			"err", err.Error())
 	} else {

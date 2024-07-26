@@ -114,7 +114,7 @@ func (m *DBManager) Bootstrap() error {
 	}
 	if err := config.GetWithUnmarshal(constant.ConfigDatabaseMysqlPrefix,
 		&cfg,
-		config.WithMatchWatch(constant.ConfigDatabaseMysqlPrefix+".*", m.watch)); err != nil {
+		config.WithWatch(m.watch)); err != nil {
 		return err
 	}
 	return m.conn(cfg)

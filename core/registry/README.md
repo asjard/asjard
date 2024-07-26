@@ -57,7 +57,6 @@ func (c CustomeRegister) Name() string{
 - 从不同的服务发现中心发现服务并维护在本地
 - 提供相关的接口从本地查询相关服务列表
 
-
 ### 自定义服务发现
 
 需实现如下所有接口
@@ -118,7 +117,7 @@ func (l *LocalRegistry) getAndWatch() {
 	services := make(map[string][]string)
 	if err := config.GetWithUnmarshal(l.localDiscoverConfPrefix,
 		&services,
-		config.WithMatchWatch(l.localDiscoverConfPrefix+".*", l.watch)); err != nil {
+		config.WithWatch(l.watch)); err != nil {
 		logger.Errorf("get registry.localDiscover fail[%s]", err.Error())
 	} else {
 		l.instances = l.getInstances(services)

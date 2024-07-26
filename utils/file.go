@@ -1,12 +1,17 @@
 package utils
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/asjard/asjard/core/logger"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -151,4 +156,56 @@ func FileMD5(path string) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func MergeFile(ctx context.Context, inputFiles []string, outputFile string, concurrency int) error {
+	logger.Debug("merge files", "concurrency", concurrency)
+	return MergeFiles(ctx, append([]string{outputFile}, inputFiles...), concurrency)
+}
+
+func MergeFiles(ctx context.Context, files []string, concurrency int) error {
+	eg, _ := errgroup.WithContext(ctx)
+	n := len(files)
+	if n == 1 {
+		return nil
+	}
+	newFiles := make([]string, 0, n)
+	ch := make(chan struct{}, concurrency)
+	defer close(ch)
+	for j := 0; j < n; j = j + 2 {
+		i := j
+		eg.Go(func() error {
+			ch <- struct{}{}
+			defer func() { <-ch }()
+			if i+1 >= n {
+				return mergefile(files[i], "")
+			}
+			return mergefile(files[i], files[i+1])
+		})
+		newFiles = append(newFiles, files[i])
+	}
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+	return MergeFiles(ctx, newFiles, concurrency)
+}
+
+func mergefile(dst, src string) error {
+	if src != "" {
+		// df, err := os.Create(dst)
+		df, err := os.OpenFile(dst, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0640)
+		if err != nil {
+			return err
+		}
+		defer df.Close()
+		sf, err := os.Open(src)
+		if err != nil {
+			return err
+		}
+		defer sf.Close()
+		if _, err := io.Copy(df, sf); err != nil {
+			return fmt.Errorf("copy file %s to %s fail[%s]", src, dst, err.Error())
+		}
+	}
+	return nil
 }

@@ -62,7 +62,7 @@ func NewRest2RpcContext() client.ClientInterceptor {
 	}
 	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientRest2RpcContextPrefix,
 		&rest2RpcContext.cfg,
-		config.WithMatchWatch(constant.ConfigInterceptorClientRest2RpcContextPrefix+".*", rest2RpcContext.watch)); err != nil {
+		config.WithWatch(rest2RpcContext.watch)); err != nil {
 		logger.Error("get interceptor config fail", "interceptor", "rest2RpcContext", "err", err)
 	}
 	rest2RpcContext.cfg = rest2RpcContext.cfg.complete()

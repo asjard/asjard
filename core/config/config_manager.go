@@ -360,6 +360,7 @@ func (m *ConfigManager) removeListener(key string) {
 // 根据前缀获取配置
 func (m *ConfigManager) getValueByPrefix(prefix string, opts *Options) map[string]any {
 	if opts != nil && opts.watch != nil {
+		opts.watch.pattern = prefix + ".*"
 		m.listener.watch(prefix, opts.watch)
 	}
 	out := make(map[string]any)
