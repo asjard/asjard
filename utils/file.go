@@ -6,12 +6,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"sync"
 
-	"github.com/asjard/asjard/core/logger"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -159,11 +160,12 @@ func FileMD5(path string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
+// MergeFile 多个小文件合并为一个大文件
 func MergeFile(ctx context.Context, inputFiles []string, outputFile string, concurrency int) error {
-	logger.Debug("merge files", "concurrency", concurrency)
 	return MergeFiles(ctx, append([]string{outputFile}, inputFiles...), concurrency)
 }
 
+// MergeFiles 所有文件都会合并到列表的第一个文件中
 func MergeFiles(ctx context.Context, files []string, concurrency int) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	if concurrency == 0 {
@@ -213,4 +215,37 @@ func mergefile(dst, src string) error {
 		}
 	}
 	return nil
+}
+
+// SplitFile 分隔文件，一个大文件切分为多个小文件
+func SplitFile(srcFile, dstDir string, chunkSize int64) ([]string, error) {
+	var parts []string
+	// 打开原始文件
+	f, err := os.Open(srcFile)
+	if err != nil {
+		return parts, err
+	}
+	defer f.Close()
+
+	// 获取原始文件信息
+	fi, err := f.Stat()
+	if err != nil {
+		return parts, err
+	}
+	totalPartsNum := int64(math.Ceil(float64(fi.Size()) / float64(chunkSize)))
+	for i := int64(0); i < totalPartsNum; i++ {
+		partSize := int(math.Min(float64(chunkSize), float64(fi.Size()-i*chunkSize)))
+		partBuffer := make([]byte, partSize)
+		f.Read(partBuffer)
+		fileName := filepath.Join(dstDir, "part_"+strconv.Itoa(int(i)))
+		parts = append(parts, fileName)
+		_, err := os.Create(fileName)
+		if err != nil {
+			return parts, err
+		}
+		if err := os.WriteFile(fileName, partBuffer, os.ModeAppend); err != nil {
+			return parts, err
+		}
+	}
+	return parts, nil
 }
