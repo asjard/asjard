@@ -8,7 +8,6 @@ import (
 
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/metrics"
 	"github.com/asjard/asjard/core/status"
@@ -46,10 +45,11 @@ type DBConn struct {
 
 // Config 数据库配置
 type Config struct {
-	Dbs     map[string]DBConnConfig `json:"dbs"`
+	DBs     map[string]DBConnConfig `json:"dbs"`
 	Options Options                 `json:"options"`
 }
 
+// Options 数据库连接全局配置
 type Options struct {
 	MaxIdleConns              int                `json:"maxIdleConns"`
 	MaxOpenConns              int                `json:"maxOpenConns"`
@@ -72,6 +72,7 @@ type DBConnConfig struct {
 
 // DBConnOptions 数据库连接自定义配置
 type DBConnOptions struct {
+	Options
 	CustomeDriverName string `json:"driverName"`
 }
 
@@ -83,55 +84,29 @@ type DBOptions struct {
 // Option .
 type Option func(*DBOptions)
 
-var dbManager *DBManager
+// WithConnName .
+func WithConnName(connName string) func(*DBOptions) {
+	return func(opts *DBOptions) {
+		opts.connName = connName
+	}
+}
+
+var (
+	dbManager          *DBManager
+	defaultConnOptions = Options{
+		MaxIdleConns:              10,
+		MaxOpenConns:              100,
+		ConnMaxIdleTime:           utils.JSONDuration{Duration: 10 * time.Second},
+		ConnMaxLifeTime:           utils.JSONDuration{Duration: time.Hour},
+		Debug:                     false,
+		IgnoreRecordNotFoundError: true,
+		SlowThreshold:             utils.JSONDuration{Duration: 200 * time.Millisecond},
+	}
+)
 
 func init() {
 	dbManager = &DBManager{}
 	bootstrap.AddBootstrap(dbManager)
-}
-
-// WithConnName .
-func WithConnName(connName string) func(*DBOptions) {
-	return func(opt *DBOptions) {
-		opt.connName = connName
-	}
-}
-
-// 连接到数据库
-func (m *DBManager) Bootstrap() error {
-	logger.Debug("database mysql bootstrap")
-	cfg := Config{
-		Dbs: make(map[string]DBConnConfig),
-		Options: Options{
-			MaxIdleConns:              10,
-			MaxOpenConns:              100,
-			ConnMaxIdleTime:           utils.JSONDuration{Duration: 10 * time.Second},
-			ConnMaxLifeTime:           utils.JSONDuration{Duration: time.Hour},
-			Debug:                     false,
-			IgnoreRecordNotFoundError: true,
-			SlowThreshold:             utils.JSONDuration{Duration: 200 * time.Millisecond},
-		},
-	}
-	if err := config.GetWithUnmarshal(constant.ConfigDatabaseMysqlPrefix,
-		&cfg,
-		config.WithWatch(m.watch)); err != nil {
-		return err
-	}
-	return m.conn(cfg)
-}
-
-// Shutdown 和数据库断开连接
-func (m *DBManager) Shutdown() {
-	m.dbs.Range(func(key, value any) bool {
-		conn, ok := value.(*DBConn)
-		if ok {
-			sqlDB, err := conn.db.DB()
-			if err == nil {
-				sqlDB.Close()
-			}
-		}
-		return true
-	})
 }
 
 // DB 数据库连接地址
@@ -154,39 +129,71 @@ func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 	return db.db.WithContext(ctx), nil
 }
 
-func (m *DBManager) conn(dbCfg Config) error {
-	for dbName, cfg := range dbCfg.Dbs {
-		logger.Debug("connect to database", "database", dbName, "config", cfg)
-		db, err := gorm.Open(m.dialector(cfg), &gorm.Config{
-			Logger: &mysqlLogger{
-				ignoreRecordNotFoundError: dbCfg.Options.IgnoreRecordNotFoundError,
-				slowThreshold:             dbCfg.Options.SlowThreshold.Duration,
-				name:                      dbName,
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("connect to %s fail[%s]", dbName, err.Error())
+// 连接到数据库
+func (m *DBManager) Bootstrap() error {
+	logger.Debug("database mysql bootstrap")
+	conf, err := m.loadAndWatchConfig()
+	if err != nil {
+		return err
+	}
+	return m.connDBs(conf)
+}
+
+// Shutdown 和数据库断开连接
+func (m *DBManager) Shutdown() {
+	m.dbs.Range(func(key, value any) bool {
+		conn, ok := value.(*DBConn)
+		if ok {
+			sqlDB, err := conn.db.DB()
+			if err == nil {
+				sqlDB.Close()
+			}
 		}
-		sqlDB, err := db.DB()
-		if err != nil {
+		return true
+	})
+}
+
+func (m *DBManager) connDBs(dbsConf map[string]*DBConnConfig) error {
+	for dbName, cfg := range dbsConf {
+		logger.Debug("connect to database", "database", dbName, "config", cfg)
+		if err := m.connDB(dbName, cfg); err != nil {
+			logger.Error("connect to database fail", "database", dbName, "err", err)
 			return err
 		}
-		sqlDB.SetMaxIdleConns(dbCfg.Options.MaxIdleConns)
-		sqlDB.SetMaxOpenConns(dbCfg.Options.MaxOpenConns)
-		sqlDB.SetConnMaxIdleTime(dbCfg.Options.ConnMaxIdleTime.Duration)
-		sqlDB.SetConnMaxLifetime(dbCfg.Options.ConnMaxLifeTime.Duration)
-		conn := &DBConn{
-			name:  dbName,
-			db:    db,
-			debug: dbCfg.Options.Debug,
-		}
-		m.dbs.Store(dbName, conn)
-		metrics.RegisterCollector("db_"+dbName+"_collector", collectors.NewDBStatsCollector(sqlDB, dbName))
 	}
 	return nil
 }
 
-func (m *DBManager) dialector(cfg DBConnConfig) gorm.Dialector {
+func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) error {
+	db, err := gorm.Open(m.dialector(cfg), &gorm.Config{
+		Logger: &mysqlLogger{
+			ignoreRecordNotFoundError: cfg.Options.IgnoreRecordNotFoundError,
+			slowThreshold:             cfg.Options.SlowThreshold.Duration,
+			name:                      dbName,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("connect to %s fail[%s]", dbName, err.Error())
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		return err
+	}
+	sqlDB.SetMaxIdleConns(cfg.Options.MaxIdleConns)
+	sqlDB.SetMaxOpenConns(cfg.Options.MaxOpenConns)
+	sqlDB.SetConnMaxIdleTime(cfg.Options.ConnMaxIdleTime.Duration)
+	sqlDB.SetConnMaxLifetime(cfg.Options.ConnMaxLifeTime.Duration)
+	conn := &DBConn{
+		name:  dbName,
+		db:    db,
+		debug: cfg.Options.Debug,
+	}
+	m.dbs.Store(dbName, conn)
+	metrics.RegisterCollector("db_"+dbName+"_collector", collectors.NewDBStatsCollector(sqlDB, dbName))
+	return nil
+}
+
+func (m *DBManager) dialector(cfg *DBConnConfig) gorm.Dialector {
 	switch cfg.Driver {
 	case postgresDefaultDriverName:
 		return postgres.New(postgres.Config{
@@ -216,7 +223,58 @@ func (m *DBManager) dialector(cfg DBConnConfig) gorm.Dialector {
 	}
 }
 
+func (m *DBManager) loadAndWatchConfig() (map[string]*DBConnConfig, error) {
+	conf, err := m.loadConfig()
+	if err != nil {
+		return conf, err
+	}
+	config.AddPatternListener("asjard.database.mysql.*", m.watch)
+	return conf, nil
+}
+
+func (m *DBManager) loadConfig() (map[string]*DBConnConfig, error) {
+	dbs := make(map[string]*DBConnConfig)
+	options := defaultConnOptions
+	if err := config.GetWithUnmarshal("asjard.database.mysql.options", &options); err != nil {
+		return dbs, err
+	}
+	if err := config.GetWithUnmarshal("asjard.database.mysql.dbs", &dbs); err != nil {
+		return dbs, err
+	}
+	for dbName, dbConfig := range dbs {
+		dbConfig.Options.Options = options
+		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.database.mysql.dbs.%s.options", dbName),
+			&dbConfig.Options.Options); err != nil {
+			return dbs, err
+		}
+	}
+	return dbs, nil
+}
+
 func (m *DBManager) watch(event *config.Event) {
+	conf, err := m.loadConfig()
+	if err != nil {
+		logger.Error("load config fail", "err", err)
+		return
+	}
+	if err := m.connDBs(conf); err != nil {
+		logger.Error("connect db fail", "err", err)
+		return
+	}
+	// 删除被删除的数据库
+	m.dbs.Range(func(key, value any) bool {
+		exist := false
+		for dbName := range conf {
+			if key.(string) == dbName {
+				exist = true
+				break
+			}
+		}
+		if !exist {
+			m.dbs.Delete(key)
+		}
+		return true
+	})
 }
 
 func defaultOptions() *DBOptions {

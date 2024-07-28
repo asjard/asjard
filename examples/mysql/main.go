@@ -10,8 +10,7 @@ import (
 
 func main() {
 	server := asjard.New()
-	mysqlAPI := handler.NewMysqlExampleAPI()
-	server.AddHandler(mysqlAPI, rest.Protocol)
+	server.AddHandler(handler.NewMysqlExampleAPI(), rest.Protocol)
 	if err := server.Start(); err != nil {
 		log.Println(err.Error())
 	}

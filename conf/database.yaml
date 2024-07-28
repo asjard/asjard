@@ -23,14 +23,28 @@ asjard:
         ignoreRecordNotFoundError: false
         slowThreshold: 200ms
         debug: false
-    redis:
-      host: 127.0.0.1
-      port: 6379
-      db: 0
-      auth: xxx
-    mongo:
-      hosts:
-        - "127.0.0.1:2370"
+
     etcd:
-      endpoints:
-        - "127.0.0.1:2379"
+      dbs:
+        default:
+          endpoints:
+            - 127.0.0.1:2379
+        config:
+          endpoints: 127.0.0.1:2379,127.0.0.1:2380
+        registry:
+          endpoints: 127.0.0.1:3379,127.0.0.1:3380
+      options:
+        dialTimeout: 5s
+
+    redis:
+      dbs:
+        default:
+          host: 127.0.0.1
+          port: 6379
+          db: 0
+          auth: xxx
+    mongo:
+      dbs:
+        default:
+          hosts:
+            - "127.0.0.1:2370"

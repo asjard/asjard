@@ -34,7 +34,7 @@ asjard:
       #   - grpc://127.0.0.1:9081
 
     ## etcd注册发现中心相关配置
+    ## 依赖asjard.database.etcd
     etcd:
-      endpoints:
-        - ${asjard.database.etcd.endpoints[0]}
-        - ${asjard.database.etcd.endpoints[1]}
+      ## 配置asjard.database.etcd.dbs中的数据库名称(key)
+      db: default

@@ -21,6 +21,17 @@ func NewMysqlExampleAPI() *MysqlExampleAPI {
 	}
 }
 
+func (MysqlExampleAPI) Bootstrap() error {
+	// 数据库初始化
+	if err := model.Init(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (MysqlExampleAPI) Shutdown() {
+}
+
 func (m MysqlExampleAPI) MysqlExample(ctx context.Context, in *pb.MysqlExampleReq) (*pb.MysqlExampleResp, error) {
 	if in.Name == "" {
 		return nil, status.Error(codes.InvalidArgument, "name is must")

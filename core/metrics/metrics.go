@@ -72,14 +72,14 @@ func (m *MetricsManager) register(name string, collector prometheus.Collector) p
 	m.cm.RLock()
 	col, ok := m.collectors[name]
 	m.cm.RUnlock()
-	if !ok {
-		registry.MustRegister(collector)
-		m.cm.Lock()
-		m.collectors[name] = collector
-		m.cm.Unlock()
-		return collector
+	if ok {
+		registry.Unregister(col)
 	}
-	return col
+	registry.MustRegister(collector)
+	m.cm.Lock()
+	m.collectors[name] = collector
+	m.cm.Unlock()
+	return collector
 }
 
 func (m *MetricsManager) push() {
