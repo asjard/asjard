@@ -8,6 +8,7 @@ import (
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
+	"github.com/google/uuid"
 )
 
 const (
@@ -92,6 +93,7 @@ func (l *LocalRegistry) getInstances(services map[string][]string) []*Instance {
 	for name, addresses := range services {
 		service := server.NewService()
 		service.Instance.Name = name
+		service.Instance.ID = uuid.NewString()
 		for index := range addresses {
 			u, err := url.Parse(addresses[index])
 			if err == nil {
