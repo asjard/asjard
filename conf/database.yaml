@@ -25,7 +25,7 @@ asjard:
         debug: false
 
     etcd:
-      dbs:
+      clients:
         default:
           endpoints:
             - 127.0.0.1:2379
@@ -33,6 +33,8 @@ asjard:
           endpoints: 127.0.0.1:2379,127.0.0.1:2380
         registry:
           endpoints: 127.0.0.1:3379,127.0.0.1:3380
+          options:
+            dialTimeout: 5s
       options:
         dialTimeout: 5s
 

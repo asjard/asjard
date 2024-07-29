@@ -162,3 +162,5 @@ func TestFileMD5(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, contentMd5, fileMd5)
 }
+
+func TestMergeFile(t *testing.T) {}

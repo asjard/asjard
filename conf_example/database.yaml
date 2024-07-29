@@ -22,7 +22,7 @@ asjard:
         # connMaxLifeTime: 2h
         ignoreRecordNotFoundError: false
         slowThreshold: 200ms
-        debug: false
+        debug: true
     redis:
       host: 127.0.0.1
       port: 6379

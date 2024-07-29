@@ -73,7 +73,9 @@ type DBConnConfig struct {
 // DBConnOptions 数据库连接自定义配置
 type DBConnOptions struct {
 	Options
-	CustomeDriverName string `json:"driverName"`
+	CustomeDriverName         string `json:"driverName"`
+	SkipInitializeWithVersion bool   `json:"skipInitializeWithVersion"`
+	SkipDefaultTransaction    bool   `json:"skipDefaultTransaction"`
 }
 
 // DBOptions .
@@ -166,6 +168,7 @@ func (m *DBManager) connDBs(dbsConf map[string]*DBConnConfig) error {
 
 func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) error {
 	db, err := gorm.Open(m.dialector(cfg), &gorm.Config{
+		SkipDefaultTransaction: cfg.Options.SkipDefaultTransaction,
 		Logger: &mysqlLogger{
 			ignoreRecordNotFoundError: cfg.Options.IgnoreRecordNotFoundError,
 			slowThreshold:             cfg.Options.SlowThreshold.Duration,
@@ -212,13 +215,15 @@ func (m *DBManager) dialector(cfg *DBConnConfig) gorm.Dialector {
 		})
 	case clickhouseDefaultDriverName:
 		return clickhouse.New(clickhouse.Config{
-			DriverName: cfg.Options.CustomeDriverName,
-			DSN:        cfg.Dsn,
+			DriverName:                cfg.Options.CustomeDriverName,
+			DSN:                       cfg.Dsn,
+			SkipInitializeWithVersion: cfg.Options.SkipInitializeWithVersion,
 		})
 	default:
 		return mysql.New(mysql.Config{
-			DriverName: cfg.Options.CustomeDriverName,
-			DSN:        cfg.Dsn,
+			DriverName:                cfg.Options.CustomeDriverName,
+			DSN:                       cfg.Dsn,
+			SkipInitializeWithVersion: cfg.Options.SkipInitializeWithVersion,
 		})
 	}
 }
@@ -254,7 +259,7 @@ func (m *DBManager) loadConfig() (map[string]*DBConnConfig, error) {
 func (m *DBManager) watch(event *config.Event) {
 	conf, err := m.loadConfig()
 	if err != nil {
-		logger.Error("load config fail", "err", err)
+		logger.Error("load mysql config fail", "err", err)
 		return
 	}
 	if err := m.connDBs(conf); err != nil {
