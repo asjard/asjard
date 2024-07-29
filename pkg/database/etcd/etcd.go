@@ -1,4 +1,4 @@
-package main
+package etcd
 
 import (
 	"crypto/tls"
@@ -88,7 +88,8 @@ func init() {
 	bootstrap.AddBootstrap(clientManager)
 }
 
-func WithConnName(clientName string) func(*ClientOptions) {
+// WithClientName 设置客户端名称
+func WithClientName(clientName string) func(*ClientOptions) {
 	return func(opt *ClientOptions) {
 		opt.clientName = clientName
 	}
@@ -125,6 +126,7 @@ func (m *ClientManager) Shutdown() {
 			if err := conn.client.Close(); err != nil {
 				logger.Error("close etcd client fail", "client", conn.name, "err", err)
 			}
+			m.clients.Delete(key)
 		}
 		return true
 	})
@@ -132,6 +134,7 @@ func (m *ClientManager) Shutdown() {
 
 func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	for name, cfg := range clients {
+		logger.Debug("connect to etcd", "name", name, "cfg", cfg)
 		if err := m.newClient(name, cfg); err != nil {
 			return err
 		}

@@ -150,6 +150,7 @@ func (m *DBManager) Shutdown() {
 			if err == nil {
 				sqlDB.Close()
 			}
+			m.dbs.Delete(key)
 		}
 		return true
 	})
