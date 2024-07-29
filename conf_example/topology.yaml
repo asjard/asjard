@@ -2,4 +2,4 @@ asjard:
   topology:
     services:
       hello:
-        name: helloGrpc
+        name: exampleService

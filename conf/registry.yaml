@@ -1,6 +1,7 @@
 asjard:
   ## 服务发现，注册相关配置
   registry:
+    registers: etcd
     ## 是否自动服务注册
     ## TODO 实时生效
     autoRegiste: true
@@ -11,6 +12,7 @@ asjard:
     ## 心跳频率
     heartbeatInterval: 5s
 
+    discovers: localDiscover,etcd
     ## 自动服务发现, 自动从配置中心发现服务
     ## TODO 实时生效
     autoDiscove: true
@@ -36,5 +38,5 @@ asjard:
     ## etcd注册发现中心相关配置
     ## 依赖asjard.database.etcd
     etcd:
-      ## 配置asjard.database.etcd.dbs中的数据库名称(key)
-      db: default
+      ## 配置asjard.database.etcd.client中的数据库名称(key)
+      client: default

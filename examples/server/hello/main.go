@@ -11,9 +11,11 @@ import (
 	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/status"
 	pb "github.com/asjard/asjard/examples/protobuf/hello"
 	_ "github.com/asjard/asjard/pkg/client/grpc"
+	_ "github.com/asjard/asjard/pkg/registry/etcd"
 	mgrpc "github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"google.golang.org/grpc"
@@ -25,6 +27,7 @@ import (
 // Hello 同一个方法既可以当做GRPC的handler，也可以当做http的handler
 type Hello struct {
 	pb.UnimplementedHelloServer
+	app  runtime.APP
 	conn pb.HelloClient
 	exit <-chan struct{}
 }
@@ -33,11 +36,12 @@ var _ pb.HelloServer = &Hello{}
 
 // Bootstrap .
 func (c *Hello) Bootstrap() error {
-	conn, err := client.NewClient(mgrpc.Protocol, "helloGrpc").Conn()
+	conn, err := client.NewClient(mgrpc.Protocol, runtime.GetAPP().Instance.Name).Conn()
 	if err != nil {
 		return err
 	}
 	c.conn = pb.NewHelloClient(conn)
+	c.app = runtime.GetAPP()
 	return nil
 }
 
@@ -72,6 +76,15 @@ func (c *Hello) Call(ctx context.Context, in *pb.SayReq) (*pb.SayReq, error) {
 	in.Configs.Timeout = config.GetString("examples.timeout", "")
 	in.Configs.FieldInDifferentFileUnderSameSection = config.GetString("examples.fieldInDifferentFileUnderSameSection", "")
 	in.Configs.AnotherFieldInDifferentFileUnderSameSection = config.GetString("examples.anotherFieldInDifferentFileUnderSameSection", "")
+	in.App = c.app.App
+	in.Region = c.app.Region
+	in.Az = c.app.AZ
+	in.Instance = &pb.SayReq_Instance{
+		Id:       c.app.Instance.ID,
+		Name:     c.app.Instance.Name,
+		Version:  c.app.Instance.Version,
+		Metadata: c.app.Instance.MetaData,
+	}
 	return in, nil
 }
 

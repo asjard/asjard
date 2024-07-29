@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/registry"
 	"github.com/asjard/asjard/core/runtime"
 	"google.golang.org/grpc/balancer"
@@ -8,9 +9,14 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+const (
+	HeaderLoadBalancer = "x-request-balancer"
+)
+
 // Picker 所有的负载句衡器都要实现的接口
 type Picker interface {
 	Pick(info balancer.PickInfo) (*PickResult, error)
+	Name() string
 }
 
 // PickResult 负载均衡结果
@@ -71,6 +77,7 @@ func (p WrapPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 	if err != nil {
 		return balancer.PickResult{}, err
 	}
+	logger.Debug("pick result", "result", result)
 	destServicename := ""
 	instance, ok := result.SubConn.Address.Attributes.Value(AddressAttrKey{}).(*registry.Instance)
 	if ok {
@@ -93,6 +100,7 @@ func (p WrapPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 			HeaderRequestDest:   destServicename,
 			HeaderRequestRegion: requestRegion,
 			HeaderRequestAz:     requestAz,
+			HeaderLoadBalancer:  p.picker.Name(),
 		}),
 	}, nil
 }

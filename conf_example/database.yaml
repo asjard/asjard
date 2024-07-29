@@ -32,5 +32,7 @@ asjard:
       hosts:
         - "127.0.0.1:2370"
     etcd:
-      endpoints:
-        - "127.0.0.1:2379"
+      clients:
+        default:
+          endpoints:
+            - "127.0.0.1:2379"

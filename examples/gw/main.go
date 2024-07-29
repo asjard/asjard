@@ -10,6 +10,7 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
 	pb "github.com/asjard/asjard/examples/protobuf/hello"
+	_ "github.com/asjard/asjard/pkg/registry/etcd"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/emptypb"

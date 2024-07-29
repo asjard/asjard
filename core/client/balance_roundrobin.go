@@ -55,3 +55,7 @@ func (r *RoundRobinPicker) Pick(info balancer.PickInfo) (*PickResult, error) {
 		SubConn: sc,
 	}, nil
 }
+
+func (r *RoundRobinPicker) Name() string {
+	return DefaultBalanceRoundRobin
+}

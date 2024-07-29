@@ -97,6 +97,10 @@ func (asd *Asjard) Start() error {
 	if err := registry.Registe(); err != nil {
 		return err
 	}
+	// 服务发现
+	if err := registry.Discover(); err != nil {
+		return err
+	}
 	logger.Info("System Started")
 	if config.GetBool(constant.ConfigLoggerBannerEnabled, true) {
 		asd.printBanner()

@@ -1,8 +1,6 @@
 package registry
 
 import (
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/server"
 )
 
@@ -21,26 +19,22 @@ type Register interface {
 type NewRegisterFunc func() (Register, error)
 
 // 注册的所有配置中心，会在启动阶段遍历并启动
-var newRegisters []NewRegisterFunc
+var (
+	newRegisters = make(map[string]NewRegisterFunc)
+)
 
 // AddRegister 添加服务注册组件
-func AddRegister(newFunc NewRegisterFunc) error {
-	newRegisters = append(newRegisters, newFunc)
+func AddRegister(name string, newFunc NewRegisterFunc) error {
+	newRegisters[name] = newFunc
 	return nil
 }
 
 // Registe 注册服务到注册中心
 func Registe() error {
-	if !config.GetBool(constant.ConfigRegistryAutoRegiste, true) {
-		return nil
-	}
 	return registryManager.registe()
 }
 
 // Unregiste 从注册中心删除服务
 func Unregiste() error {
-	if !config.GetBool(constant.ConfigRegistryAutoRegiste, true) {
-		return nil
-	}
 	return registryManager.remove()
 }

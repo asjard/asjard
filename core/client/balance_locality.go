@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	HeaderRequestRegion = "x-request-region"
-	HeaderRequestAz     = "x-request-az"
+	HeaderRequestRegion    = "x-request-region"
+	HeaderRequestAz        = "x-request-az"
+	LocalityRoundRobinName = "localityRoundRobin"
 )
 
 // LocalityRoundRobinPicker 就近权重负载均衡
@@ -25,7 +26,7 @@ type LocalityRoundRobinPicker struct {
 }
 
 func init() {
-	AddBalancer("localityRoundRobin", NewLocalityRoundRobinPicker)
+	AddBalancer(LocalityRoundRobinName, NewLocalityRoundRobinPicker)
 }
 
 // NewLocalityWeightPicker 就近权重负载均衡初始化
@@ -58,6 +59,7 @@ func (l *LocalityRoundRobinPicker) Pick(info balancer.PickInfo) (*PickResult, er
 			requestAz = azs[0]
 		}
 	}
+	logger.Debug("localityRoundRobin", "region", requestRegion, "az", requestAz)
 	picks := l.pick(requestAz, l.app.AZ, l.isSameAz,
 		l.pick(requestRegion, l.app.Region, l.isSameRegion, l.scs))
 
@@ -72,6 +74,10 @@ func (l *LocalityRoundRobinPicker) Pick(info balancer.PickInfo) (*PickResult, er
 		RequestRegion: requestRegion,
 		RequestAz:     requestAz,
 	}, nil
+}
+
+func (l *LocalityRoundRobinPicker) Name() string {
+	return LocalityRoundRobinName
 }
 
 // 优先选择request下的

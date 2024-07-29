@@ -4,8 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
 )
@@ -26,6 +24,7 @@ type cache struct {
 	// 服务列表
 	// TODO 需要更新存储结构
 	services []*Instance
+	conf     *Config
 
 	// 健康检查方法
 	healthCheckFunc healthCheckFunc
@@ -56,14 +55,15 @@ type serviceCache struct {
 }
 
 // 初始化一个本地缓存用以维护发现的服务实例
-func newCache(hf healthCheckFunc) *cache {
+func newCache(conf *Config, hf healthCheckFunc) *cache {
 	c := &cache{
-		failureThreshold:  config.GetInt(constant.ConfigRegistryFailureThreshold, 1),
+		failureThreshold:  conf.FailureThreshold,
 		healthCheckFunc:   hf,
 		failureThresholds: map[string]int{},
 		listeners:         map[string]*listener{},
+		conf:              conf,
 	}
-	if config.GetBool(constant.ConfigRegistryHealthCheck, true) {
+	if conf.HealthCheck {
 		go c.healthCheck()
 	}
 	return c
@@ -156,11 +156,7 @@ func (c *cache) notify(eventType EventType, instance *Instance) {
 
 // 服务健康检查
 func (c *cache) healthCheck() {
-	duration, err := time.ParseDuration(config.GetString(constant.ConfigRegistryHealthCheckInterval, "10s"))
-	if err != nil {
-		duration = 10 * time.Second
-	}
-	ticker := time.NewTicker(duration)
+	ticker := time.NewTicker(c.conf.HealthCheckInterval.Duration)
 	for {
 		select {
 		case <-ticker.C:

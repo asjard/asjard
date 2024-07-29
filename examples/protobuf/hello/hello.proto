@@ -124,6 +124,17 @@ message SayReq {
     // openapi 会把这个字段解析为字符串
     uint64                     uint64_value       = 18;
     google.protobuf.Int64Value google_int64_value = 19;
+    string                     app                = 20;
+    string                     region             = 21;
+    string                     az                 = 22;
+    message                    Instance {
+        string              id          = 1;
+        string              name        = 2;
+        string              system_code = 3;
+        string              version     = 4;
+        map<string, string> metadata    = 5;
+    }
+    Instance instance = 23;
 }
 
 message Configs {
