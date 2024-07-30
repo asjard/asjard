@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/DATA-DOG/go-sqlmock"
 	"github.com/asjard/asjard/core/config"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
