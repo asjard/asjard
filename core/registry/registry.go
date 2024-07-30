@@ -48,17 +48,13 @@ func (r *RegistryManager) registe() error {
 	if !r.conf.AutoRegiste {
 		return nil
 	}
-	for name, newRegister := range newRegisters {
-		for _, registerName := range r.conf.Registers {
-			if name == registerName {
-				register, err := newRegister()
-				if err != nil {
-					return err
-				}
-				r.registers = append(r.registers, register)
-				break
-			}
+	for _, newRegister := range newRegisters {
+		register, err := newRegister()
+		if err != nil {
+			return err
 		}
+		r.registers = append(r.registers, register)
+		break
 	}
 	// 延迟注册
 	if r.conf.DelayRegiste.Duration != 0 {
@@ -125,17 +121,13 @@ func (r *RegistryManager) discove() error {
 		logger.Warn("registry.autoDiscove not enabled")
 		return nil
 	}
-	for name, newDiscover := range newDiscoverys {
-		for _, discoverName := range r.conf.Discovers {
-			if name == discoverName {
-				discover, err := newDiscover()
-				if err != nil {
-					return err
-				}
-				r.discovers = append(r.discovers, discover)
-				break
-			}
+	for _, newDiscover := range newDiscoverys {
+		discover, err := newDiscover()
+		if err != nil {
+			return err
 		}
+		r.discovers = append(r.discovers, discover)
+		break
 	}
 	for _, discover := range r.discovers {
 		services, err := discover.GetAll()
