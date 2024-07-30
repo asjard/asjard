@@ -165,7 +165,7 @@ func (c *Context) readBodyParamsToEntity(entity proto.Message) error {
 		return nil
 	}
 	if err := protojson.Unmarshal(c.ReadBodyParams(), entity); err != nil {
-		return status.Errorf(http.StatusBadRequest, "read body params fail: %s", err.Error())
+		return status.Errorf(status.BadRequestCode, "read body params fail: %s", err.Error())
 	}
 	return nil
 }

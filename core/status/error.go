@@ -20,6 +20,8 @@ var (
 	PageNotFoundError     = Error(codes.NotFound, "page not found")
 	MethodNotAllowedError = Error(codes.Unimplemented, "method not allowed")
 	UnsupportProtocol     = Error(codes.Unavailable, "unsupport protocol")
+
+	BadRequestCode = codes.Code(4004)
 )
 
 // Error 添加系统码

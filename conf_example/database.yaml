@@ -24,10 +24,9 @@ asjard:
         slowThreshold: 200ms
         debug: true
     redis:
-      host: 127.0.0.1
-      port: 6379
-      db: 0
-      auth: xxx
+      clients:
+        default:
+          address: 127.0.0.1:6379
     mongo:
       hosts:
         - "127.0.0.1:2370"
