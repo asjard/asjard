@@ -3,7 +3,7 @@ package database
 import (
 	"time"
 
-	"github.com/asjard/asjard/pkg/database/redis"
+	"github.com/redis/go-redis/v9"
 )
 
 // cacheType 缓存类型

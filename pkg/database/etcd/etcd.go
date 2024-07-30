@@ -15,7 +15,6 @@ import (
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"google.golang.org/grpc/codes"
 )
 
 const (
@@ -35,7 +34,7 @@ type ClientConn struct {
 
 // Config 客户端连接配置
 type Config struct {
-	DBs     map[string]ClientConnConfig `json:"dbs"`
+	Clients map[string]ClientConnConfig `json:"clients"`
 	Options Options                     `json:"options"`
 }
 
@@ -102,11 +101,11 @@ func Client(opts ...Option) (*clientv3.Client, error) {
 	}
 	conn, ok := clientManager.clients.Load(options.clientName)
 	if !ok {
-		return nil, status.Error(codes.Internal, "database not found")
+		return nil, status.DatabaseNotFoundError
 	}
 	client, ok := conn.(*ClientConn)
 	if !ok {
-		return nil, status.Error(codes.Internal, "invalid db")
+		return nil, status.InvalidDBError
 	}
 	return client.client, nil
 }
@@ -156,25 +155,19 @@ func (m *ClientManager) newClient(name string, cfg *ClientConnConfig) error {
 		BackoffWaitBetween:    cfg.Options.BackoffWaitBetween.Duration,
 		BackoffJitterFraction: cfg.Options.BackoffJitterFraction,
 	}
-	if cfg.Options.CAFile != "" {
+	if cfg.Options.CAFile != "" && cfg.Options.CertFile != "" && cfg.Options.KeyFile != "" {
 		cfg.Options.CAFile = filepath.Join(utils.GetCertDir(), cfg.Options.CAFile)
 		if !utils.IsPathExists(cfg.Options.CAFile) {
 			return fmt.Errorf("cafile %s not found", cfg.Options.CAFile)
 		}
-	}
-	if cfg.Options.CertFile != "" {
 		cfg.Options.CertFile = filepath.Join(utils.GetCertDir(), cfg.Options.CertFile)
 		if !utils.IsPathExists(cfg.Options.CertFile) {
 			return fmt.Errorf("certFile %s not found", cfg.Options.CertFile)
 		}
-	}
-	if cfg.Options.KeyFile != "" {
 		cfg.Options.KeyFile = filepath.Join(utils.GetCertDir(), cfg.Options.KeyFile)
 		if !utils.IsPathExists(cfg.Options.KeyFile) {
 			return fmt.Errorf("keyFile %s not found", cfg.Options.KeyFile)
 		}
-	}
-	if cfg.Options.CAFile != "" && cfg.Options.CertFile != "" && cfg.Options.KeyFile != "" {
 		cert, err := tls.LoadX509KeyPair(cfg.Options.CertFile, cfg.Options.KeyFile)
 		if err != nil {
 			return err

@@ -13,7 +13,6 @@ import (
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
 	"github.com/prometheus/client_golang/prometheus/collectors"
-	"google.golang.org/grpc/codes"
 	"gorm.io/driver/clickhouse"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -119,11 +118,11 @@ func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 	}
 	conn, ok := dbManager.dbs.Load(options.connName)
 	if !ok {
-		return nil, status.Error(codes.Internal, "database not found")
+		return nil, status.DatabaseNotFoundError
 	}
 	db, ok := conn.(*DBConn)
 	if !ok {
-		return nil, status.Error(codes.Internal, "invalid db")
+		return nil, status.InvalidDBError
 	}
 	if db.debug {
 		return db.db.Debug().WithContext(ctx), nil
