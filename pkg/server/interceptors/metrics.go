@@ -23,7 +23,7 @@ type Metrics struct {
 
 func init() {
 	// 支持所有协议
-	server.AddInterceptor(NewMetricsInterceptor)
+	server.AddInterceptor(MetricsInterceptorName, NewMetricsInterceptor)
 }
 
 func NewMetricsInterceptor() server.ServerInterceptor {

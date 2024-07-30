@@ -114,6 +114,7 @@ func (c *cache) removeListener(listenerName string) {
 // 更新本地缓存中的服务实例
 func (c *cache) update(instances []*Instance) {
 	for _, instance := range instances {
+		logger.Debug("update instance", "instance", instance.Service.Instance.ID)
 		exist := false
 		for index := range c.services {
 			if instance.Service.Instance.ID == c.services[index].Service.Instance.ID {
@@ -132,7 +133,7 @@ func (c *cache) update(instances []*Instance) {
 // 从本地缓存中删除服务实例
 func (c *cache) delete(instance *Instance) {
 	logger.Debug("delete instance",
-		"instance", instance.Service.Instance.Name)
+		"instance", instance.Service.Instance.ID)
 	for index, svc := range c.services {
 		if svc.Service.Instance.ID == instance.Service.Instance.ID {
 			c.notify(EventTypeDelete, svc)

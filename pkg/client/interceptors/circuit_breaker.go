@@ -17,7 +17,8 @@ import (
 
 const (
 	// DefaultCommandConfigName 默认配置名称
-	DefaultCommandConfigName = "default"
+	DefaultCommandConfigName      = "default"
+	CircuitBreakerInterceptorName = "circuitBreaker"
 )
 
 // CircuitBreaker 断路器
@@ -38,7 +39,7 @@ var (
 )
 
 func init() {
-	client.AddInterceptor(NewCircuitBreaker)
+	client.AddInterceptor(CircuitBreakerInterceptorName, NewCircuitBreaker)
 }
 
 // NewCircuitBreaker 拦截器初始化
@@ -81,7 +82,7 @@ func NewCircuitBreaker() client.ClientInterceptor {
 
 // Name 拦截器名称
 func (ccb *CircuitBreaker) Name() string {
-	return "circuitBreaker"
+	return CircuitBreakerInterceptorName
 }
 
 // Interceptor 拦截器实现

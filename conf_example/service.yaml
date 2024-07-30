@@ -23,7 +23,7 @@ asjard:
       systemCode: 100
       shareable: true
       ## 服务名称
-      name: hello
+      name: exampleService
       ## 服务版本
       version: 1.0.0
       ## 自定义服务源数据

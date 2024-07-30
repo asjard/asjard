@@ -40,7 +40,7 @@ var defaultAccessLogConfig = accessLogConfig{
 }
 
 func init() {
-	server.AddInterceptor(NewAccessLogInterceptor)
+	server.AddInterceptor(AccessLogInterceptorName, NewAccessLogInterceptor)
 }
 
 // NewAccessLogInterceptor .

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/pkg/database/etcd"
 	"github.com/asjard/asjard/utils"
+	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -25,6 +27,7 @@ const (
 // Etcd etcd注册中心
 type Etcd struct {
 	client *clientv3.Client
+	cb     func(event *registry.Event)
 	conf   *Config
 }
 
@@ -57,7 +60,12 @@ func NewRegister() (registry.Register, error) {
 }
 
 func NewDiscovery() (registry.Discovery, error) {
-	return New()
+	discover, err := New()
+	if err != nil {
+		return discover, err
+	}
+	go discover.watch()
+	return discover, nil
 }
 
 func New() (*Etcd, error) {
@@ -103,7 +111,9 @@ func (e *Etcd) GetAll() ([]*registry.Instance, error) {
 }
 
 // Watch 监听服务变化
-func (e *Etcd) Watch(callbak func(event *registry.Event)) {}
+func (e *Etcd) Watch(callbak func(event *registry.Event)) {
+	e.cb = callbak
+}
 
 // HealthCheck 监控检查
 func (e *Etcd) HealthCheck(instance *server.Service) error {
@@ -173,6 +183,52 @@ func (e *Etcd) Remove(instance *server.Service) {
 
 // Heartbeat 向服务注册中心发送心跳
 func (e *Etcd) Heartbeat(instance *server.Service) {}
+
+func (e *Etcd) watch() {
+	logger.Debug("watch instance from etcd")
+	watchChan := e.client.Watch(context.Background(), e.prefix(), clientv3.WithPrefix())
+	for resp := range watchChan {
+		for _, event := range resp.Events {
+			logger.Debug("instance from etcd updated",
+				"key", string(event.Kv.Key),
+				"event", event.Type.String())
+			callbackEvent := &registry.Event{
+				Instance: &registry.Instance{
+					DiscoverName: e.Name(),
+				},
+			}
+			switch event.Type {
+			case mvccpb.PUT:
+				callbackEvent.Type = registry.EventTypeUpdate
+				var service server.Service
+				if err := json.Unmarshal(event.Kv.Value, &service); err != nil {
+					logger.Error("unmarshal service fail",
+						"key", string(event.Kv.Key),
+						"value", string(event.Kv.Value),
+						"err", err)
+					continue
+				}
+				callbackEvent.Instance.Service = &service
+			case mvccpb.DELETE:
+				callbackEvent.Type = registry.EventTypeDelete
+				keyList := strings.Split(string(event.Kv.Key), "/")
+				if len(keyList) > 0 {
+					callbackEvent.Instance.Service = &server.Service{
+						APP: runtime.APP{
+							Instance: runtime.Instance{
+								ID: keyList[len(keyList)-1],
+							},
+						},
+					}
+				}
+			}
+			if e.cb != nil {
+				e.cb(callbackEvent)
+			}
+		}
+	}
+	logger.Debug("watch exit")
+}
 
 func (e *Etcd) loadConfig() error {
 	conf := defaultConfig

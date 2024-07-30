@@ -5,7 +5,6 @@
 - 负载均衡
 - 拦截器
 
-
 ### 自定义负载均衡实现
 
 ```go
@@ -50,5 +49,9 @@ func (r *RoundRobinPicker) Pick(info balancer.PickInfo) (balancer.PickResult, er
 		SubConn: sc.conn,
 		Done:    func(info balancer.DoneInfo) {},
 	}, nil
+}
+
+func (r *RoundRobinPicker) Name() string{
+	return "roundRobin"
 }
 ```

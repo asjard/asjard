@@ -1,7 +1,6 @@
 package client
 
 import (
-	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/registry"
 	"github.com/asjard/asjard/core/runtime"
 	"google.golang.org/grpc/balancer"
@@ -77,7 +76,6 @@ func (p WrapPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 	if err != nil {
 		return balancer.PickResult{}, err
 	}
-	logger.Debug("pick result", "result", result)
 	destServicename := ""
 	instance, ok := result.SubConn.Address.Attributes.Value(AddressAttrKey{}).(*registry.Instance)
 	if ok {

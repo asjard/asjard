@@ -13,13 +13,16 @@ const (
 	HeaderResponseRequestMethod = "x-request-method"
 	// HeaderResponseRequestID 请求ID返回头
 	HeaderResponseRequestID = "x-request-id"
+
+	RestReadEntityInterceptorName     = "restReadEntity"
+	RestResponseHeaderInterceptorName = "restResponseHeader"
 )
 
 func init() {
 	// 请求参数自动解析
-	server.AddInterceptor(NewReadEntityInterceptor, Protocol)
+	server.AddInterceptor(RestReadEntityInterceptorName, NewReadEntityInterceptor, Protocol)
 	// 统一添加返回头
-	server.AddInterceptor(NewResponseHeaderInterceptor, Protocol)
+	server.AddInterceptor(RestResponseHeaderInterceptorName, NewResponseHeaderInterceptor, Protocol)
 }
 
 // NewReadEntityInterceptor 初始化序列化参数拦截器
@@ -37,7 +40,7 @@ type ReadEntity struct{}
 
 // Name .
 func (r *ReadEntity) Name() string {
-	return "restReadEntity"
+	return RestReadEntityInterceptorName
 }
 
 // Interceptor .
@@ -56,7 +59,7 @@ type ResponseHeader struct{}
 
 // Name .
 func (ResponseHeader) Name() string {
-	return "restResponseHeader"
+	return RestResponseHeaderInterceptorName
 }
 
 // Interceptor .

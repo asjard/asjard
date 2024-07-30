@@ -12,6 +12,10 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+const (
+	Rest2RpcContextInterceptorName = "rest2RpcContext"
+)
+
 // Rest2RpcContext rest协议的context转换为rpc的Context
 // 放在拦截器的最前面
 type Rest2RpcContext struct {
@@ -52,7 +56,7 @@ func (r rest2RpcContextConfig) complete() rest2RpcContextConfig {
 }
 
 func init() {
-	client.AddInterceptor(NewRest2RpcContext)
+	client.AddInterceptor(Rest2RpcContextInterceptorName, NewRest2RpcContext)
 }
 
 // NewRest2RpcContext context转换初始化
@@ -71,7 +75,7 @@ func NewRest2RpcContext() client.ClientInterceptor {
 
 // Name 拦截器名称
 func (Rest2RpcContext) Name() string {
-	return "rest2RpcContext"
+	return Rest2RpcContextInterceptorName
 }
 
 // Interceptor 拦截器实现

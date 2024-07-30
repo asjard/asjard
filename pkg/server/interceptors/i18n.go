@@ -48,7 +48,7 @@ type I18nConfig struct {
 
 func init() {
 	// 支持rest协议
-	server.AddInterceptor(NewI18nInterceptor, rest.Protocol)
+	server.AddInterceptor(I18nInterceptorName, NewI18nInterceptor, rest.Protocol)
 }
 
 // I18n拦截器初始化

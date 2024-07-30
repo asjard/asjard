@@ -45,21 +45,23 @@ type ServerInterceptor interface {
 type NewServerInterceptor func() ServerInterceptor
 
 var (
-	newServerInterceptors = make(map[string][]NewServerInterceptor)
+	newServerInterceptors = make(map[string]map[string]NewServerInterceptor)
 	nsm                   sync.RWMutex
 )
 
 // AddInterceptor 添加拦截器
-func AddInterceptor(newInterceptor NewServerInterceptor, supportProtocols ...string) {
+func AddInterceptor(name string, newInterceptor NewServerInterceptor, supportProtocols ...string) {
 	nsm.Lock()
 	if len(supportProtocols) == 0 {
 		supportProtocols = []string{constant.AllProtocol}
 	}
 	for _, protocol := range supportProtocols {
 		if _, ok := newServerInterceptors[protocol]; !ok {
-			newServerInterceptors[protocol] = []NewServerInterceptor{newInterceptor}
+			newServerInterceptors[protocol] = map[string]NewServerInterceptor{
+				name: newInterceptor,
+			}
 		} else {
-			newServerInterceptors[protocol] = append(newServerInterceptors[protocol], newInterceptor)
+			newServerInterceptors[protocol][name] = newInterceptor
 		}
 	}
 	nsm.Unlock()
@@ -70,18 +72,19 @@ func getServerInterceptors(protocol string) []UnaryServerInterceptor {
 	logger.Debug("get server intereptors", "protocol", protocol)
 	var interceptors []UnaryServerInterceptor
 	nsm.RLock()
-	newInterceptors := newServerInterceptors[protocol]
-	newInterceptors = append(newInterceptors, newServerInterceptors[constant.AllProtocol]...)
-	nsm.RUnlock()
+	defer nsm.RUnlock()
+	newInterceptors := make(map[string]NewServerInterceptor)
+	for name, newInterceptor := range newServerInterceptors[protocol] {
+		newInterceptors[name] = newInterceptor
+	}
+	for name, newInterceptor := range newServerInterceptors[constant.AllProtocol] {
+		newInterceptors[name] = newInterceptor
+	}
 	conf := GetConfigWithProtocol(protocol)
 	// 自定义拦截器
-	for _, newInterceptor := range newInterceptors {
-		interceptor := newInterceptor()
-		for _, interceptorName := range conf.Interceptors {
-			if interceptor.Name() == interceptorName {
-				interceptors = append(interceptors, interceptor.Interceptor())
-				break
-			}
+	for _, interceptorName := range conf.Interceptors {
+		if newInerceptor, ok := newInterceptors[interceptorName]; ok {
+			interceptors = append(interceptors, newInerceptor().Interceptor())
 		}
 	}
 	return interceptors

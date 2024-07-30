@@ -2,6 +2,9 @@ package client
 
 import (
 	"context"
+	"sync"
+
+	"github.com/asjard/asjard/core/constant"
 )
 
 // ClientInterceptor 客户端拦截器需要实现的方法
@@ -15,11 +18,27 @@ type ClientInterceptor interface {
 // NewClientInterceptor 客户端拦截器初始化方法
 type NewClientInterceptor func() ClientInterceptor
 
-var newClientInterceptors []NewClientInterceptor
+var (
+	newClientInterceptors = make(map[string]map[string]NewClientInterceptor)
+	ncm                   sync.RWMutex
+)
 
 // AddInterceptor 添加客户端拦截器
-func AddInterceptor(newInterceptor NewClientInterceptor) {
-	newClientInterceptors = append(newClientInterceptors, newInterceptor)
+func AddInterceptor(name string, newInterceptor NewClientInterceptor, supportProtocols ...string) {
+	ncm.Lock()
+	defer ncm.Unlock()
+	if len(supportProtocols) == 0 {
+		supportProtocols = []string{constant.AllProtocol}
+	}
+	for _, protocol := range supportProtocols {
+		if _, ok := newClientInterceptors[protocol]; !ok {
+			newClientInterceptors[protocol] = map[string]NewClientInterceptor{
+				name: newInterceptor,
+			}
+		} else {
+			newClientInterceptors[protocol][name] = newInterceptor
+		}
+	}
 }
 
 // UnaryInvoker is called by UnaryClientInterceptor to complete RPCs.
@@ -42,8 +61,8 @@ type UnaryInvoker func(ctx context.Context, method string, req, reply any, cc Cl
 // The returned error must be compatible with the status package.
 type UnaryClientInterceptor func(ctx context.Context, method string, req, reply any, cc ClientConnInterface, invoker UnaryInvoker) error
 
-func getChainUnaryInterceptors(conf Config) UnaryClientInterceptor {
-	interceptors := getClientInterceptors(conf)
+func getChainUnaryInterceptors(protocol string, conf Config) UnaryClientInterceptor {
+	interceptors := getClientInterceptors(protocol, conf)
 	var chainedInt UnaryClientInterceptor
 	if len(interceptors) == 0 {
 		chainedInt = nil
@@ -56,15 +75,21 @@ func getChainUnaryInterceptors(conf Config) UnaryClientInterceptor {
 }
 
 // 添加默认拦截器
-func getClientInterceptors(conf Config) []UnaryClientInterceptor {
+func getClientInterceptors(protocol string, conf Config) []UnaryClientInterceptor {
 	var interceptors []UnaryClientInterceptor
-	for _, newInterceptor := range newClientInterceptors {
-		interceptor := newInterceptor()
-		for _, interceptorName := range conf.Interceptors {
-			if interceptor.Name() == interceptorName {
-				interceptors = append(interceptors, interceptor.Interceptor())
-				break
-			}
+	ncm.RLock()
+	defer ncm.RUnlock()
+	newInterceptors := make(map[string]NewClientInterceptor)
+	for name, newInterceptor := range newClientInterceptors[protocol] {
+		newInterceptors[name] = newInterceptor
+	}
+	for name, newInterceptor := range newClientInterceptors[constant.AllProtocol] {
+		newInterceptors[name] = newInterceptor
+	}
+	// 顺序需要按照配置执行
+	for _, interceptorName := range conf.Interceptors {
+		if newInterceptor, ok := newInterceptors[interceptorName]; ok {
+			interceptors = append(interceptors, newInterceptor().Interceptor())
 		}
 	}
 	return interceptors

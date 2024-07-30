@@ -42,6 +42,9 @@ build_gen_go_rest2grpc_gw: ## 生成protoc-gen-go-rest2grpc-gw命令
 build_gen_ts: ## 生成protoc-gen-ts命令
 	go build -o $(GOPATH)/bin/protoc-gen-ts -ldflags '-w -s' ./cmd/protoc-gen-ts/*.go
 
+run_example: ## 运行examples/server/hello/main.go
+	ASJARD_CONF_DIR=$(PWD)/conf_example go run examples/server/hello/main.go
+
 test: ## 运行测试用例
 	go test -cover -coverprofile=cover.out ./...
 	# go tool cover -html=cover.out

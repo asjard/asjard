@@ -18,7 +18,8 @@ const (
 	// HeaderRequestDest 请求目的地
 	HeaderRequestDest = "x-request-dest"
 	// HeaderRequestApp 请求应用
-	HeaderRequestApp = "x-request-app"
+	HeaderRequestApp          = "x-request-app"
+	CycleChainInterceptorName = "cycleChainInterceptor"
 )
 
 // CycleChainInterceptor 循环调用拦截器
@@ -27,7 +28,7 @@ type CycleChainInterceptor struct {
 }
 
 func init() {
-	client.AddInterceptor(NewCycleChainInterceptor)
+	client.AddInterceptor(CycleChainInterceptorName, NewCycleChainInterceptor)
 }
 
 // CycleChainInterceptor 初始化来源拦截器
@@ -37,7 +38,7 @@ func NewCycleChainInterceptor() client.ClientInterceptor {
 
 // Name 拦截器名称
 func (CycleChainInterceptor) Name() string {
-	return "cycleChainInterceptor"
+	return CycleChainInterceptorName
 }
 
 // Interceptor 拦截器

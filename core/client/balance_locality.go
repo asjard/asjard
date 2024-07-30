@@ -31,7 +31,6 @@ func init() {
 
 // NewLocalityWeightPicker 就近权重负载均衡初始化
 func NewLocalityRoundRobinPicker(scs map[balancer.SubConn]base.SubConnInfo) Picker {
-	logger.Debug("locality round robin picker")
 	subConns := make([]*SubConn, 0, len(scs))
 	for conn, info := range scs {
 		subConns = append(subConns, &SubConn{
@@ -59,10 +58,8 @@ func (l *LocalityRoundRobinPicker) Pick(info balancer.PickInfo) (*PickResult, er
 			requestAz = azs[0]
 		}
 	}
-	logger.Debug("localityRoundRobin", "region", requestRegion, "az", requestAz)
 	picks := l.pick(requestAz, l.app.AZ, l.isSameAz,
 		l.pick(requestRegion, l.app.Region, l.isSameRegion, l.scs))
-
 	n := uint32(len(picks))
 	if n == 0 {
 		return nil, balancer.ErrNoSubConnAvailable

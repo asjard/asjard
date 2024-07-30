@@ -17,6 +17,7 @@ require (
 	github.com/spf13/cast v1.6.0
 	github.com/stretchr/testify v1.9.0
 	github.com/valyala/fasthttp v1.54.0
+	go.etcd.io/etcd v0.5.0-alpha.5.0.20200910180754-dd1b699fc489
 	go.etcd.io/etcd/client/v3 v3.5.15
 	golang.org/x/sync v0.7.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240528184218-531527333157
