@@ -2,12 +2,12 @@
 
 ### 已实现服务发现
 
-- [x]local
-- [x]etcd
+- [x] local
+- [x] etcd
 
 ### 已实现服务注册
 
-- [x]etcd
+- [x] etcd
 
 ### 本地服务发现
 
@@ -31,7 +31,7 @@ asjard:
 asjard:
   registry:
     etcd:
-      ## 客户端名称, asjard.database.etcd.client.{这里的名称}
+      ## 客户端名称, asjard.database.etcd.clients.{这里的名称}
       client: default
 ```
 
