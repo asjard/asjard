@@ -85,6 +85,16 @@ func (asd *Asjard) AddHandler(handler any, protocols ...string) error {
 	return nil
 }
 
+// AddHandlers 添加同一个协议的多个handler
+func (asd *Asjard) AddHandlers(protocol string, handlers ...any) error {
+	for _, handler := range handlers {
+		if err := asd.AddHandler(handler, protocol); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Start 系统启动
 func (asd *Asjard) Start() error {
 	if err := asd.init(); err != nil {
