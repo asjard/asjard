@@ -28,9 +28,9 @@ asjard:
     # localDiscover:
     ## 服务名称
     ## 配置格式{protocol}://{ip}:{port}
-    # helloGrpc:
-    #   - grpc://127.0.0.1:7010
-    #   - grpc://127.0.0.1:7011
+    exampleService:
+      - grpc://127.0.0.1:7010
+      - grpc://127.0.0.1:7011
     # helloGrpc1:
     #   - grpc://127.0.0.1:8081
     #   - grpc://127.0.0.1:9081

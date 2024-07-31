@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-rest v1.3.0
 // - protoc             v5.27.0
-// source: third_party/github.com/asjard/protobuf/health.proto
+// source: health.proto
 
 package healthpb
 
@@ -35,7 +35,7 @@ func _Health_Check_RestHandler(ctx *rest.Context, srv any, interceptor server.Un
 var HealthRestServiceDesc = rest.ServiceDesc{
 	ServiceName: "asjard.api.health.Health",
 	HandlerType: (*HealthServer)(nil),
-	OpenAPI:     file_third_party_github_com_asjard_protobuf_health_proto_openapi,
+	OpenAPI:     file_health_proto_openapi,
 	Methods: []rest.MethodDesc{
 		{
 			MethodName: "Check",
@@ -51,7 +51,7 @@ const (
 	Health_Check_RestPath = "/health"
 )
 
-var file_third_party_github_com_asjard_protobuf_health_proto_openapi = []byte{
+var file_health_proto_openapi = []byte{
 	0x0a, 0x05, 0x33, 0x2e, 0x30, 0x2e, 0x33, 0x12, 0x07, 0x32, 0x05, 0x30, 0x2e, 0x30, 0x2e, 0x31,
 	0x22, 0xa2, 0x02, 0x0a, 0x9f, 0x02, 0x0a, 0x07, 0x2f, 0x68, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x12,
 	0x93, 0x02, 0x22, 0x90, 0x02, 0x0a, 0x06, 0x48, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x1a, 0x0b, 0x68,

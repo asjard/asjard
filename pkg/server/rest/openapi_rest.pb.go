@@ -60,18 +60,23 @@ var OpenAPIRestServiceDesc = ServiceDesc{
 			MethodName: "Yaml",
 			Desc:       "获取openapi yaml文件.",
 			Method:     "GET",
-			Path:       "/openapi.yml",
+			Path:       OpenAPI_Yaml_RestPath,
 			Handler:    _OpenAPI_Yaml_RestHandler,
 		},
 		{
 			MethodName: "Page",
 			Desc:       "文档页面.",
 			Method:     "GET",
-			Path:       "/page/openapi",
+			Path:       OpenAPI_Page_RestPath,
 			Handler:    _OpenAPI_Page_RestHandler,
 		},
 	},
 }
+
+const (
+	OpenAPI_Yaml_RestPath = "/openapi.yml"
+	OpenAPI_Page_RestPath = "/page/openapi"
+)
 
 var file_openapi_proto_openapi = []byte{
 	0x0a, 0x05, 0x33, 0x2e, 0x30, 0x2e, 0x33, 0x12, 0x07, 0x32, 0x05, 0x30, 0x2e, 0x30, 0x2e, 0x31,

@@ -94,32 +94,39 @@ var ErrorHandlerRestServiceDesc = ServiceDesc{
 			MethodName: "NotFound",
 			Desc:       "页面未找到.",
 			Method:     "GET",
-			Path:       "/asjard/api/not_found",
+			Path:       ErrorHandler_NotFound_RestPath,
 			Handler:    _ErrorHandler_NotFound_RestHandler,
 		},
 		{
 			MethodName: "MethodNotAllowed",
 			Desc:       "请求方式错误.",
 			Method:     "GET",
-			Path:       "/asjard/api/method_not_allowed",
+			Path:       ErrorHandler_MethodNotAllowed_RestPath,
 			Handler:    _ErrorHandler_MethodNotAllowed_RestHandler,
 		},
 		{
 			MethodName: "Panic",
 			Desc:       "奔溃.",
 			Method:     "GET",
-			Path:       "/asjard/api/panic",
+			Path:       ErrorHandler_Panic_RestPath,
 			Handler:    _ErrorHandler_Panic_RestHandler,
 		},
 		{
 			MethodName: "Error",
 			Desc:       "错误.",
 			Method:     "GET",
-			Path:       "/asjard/api/error",
+			Path:       ErrorHandler_Error_RestPath,
 			Handler:    _ErrorHandler_Error_RestHandler,
 		},
 	},
 }
+
+const (
+	ErrorHandler_Error_RestPath            = "/asjard/api/error"
+	ErrorHandler_NotFound_RestPath         = "/asjard/api/not_found"
+	ErrorHandler_MethodNotAllowed_RestPath = "/asjard/api/method_not_allowed"
+	ErrorHandler_Panic_RestPath            = "/asjard/api/panic"
+)
 
 var file_rest_errorhandler_proto_openapi = []byte{
 	0x0a, 0x05, 0x33, 0x2e, 0x30, 0x2e, 0x33, 0x12, 0x07, 0x32, 0x05, 0x30, 0x2e, 0x30, 0x2e, 0x31,

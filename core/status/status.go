@@ -18,7 +18,7 @@ func FromError(err error) *statuspb.Status {
 	result.Success = false
 	if stts, ok := status.FromError(err); ok {
 		result.Code = uint32(stts.Code())
-		result.System, result.Status, _ = parseCode(stts.Code())
+		result.System, result.Status, result.ErrCode = parseCode(stts.Code())
 		result.Message = stts.Message()
 		for _, detail := range stts.Details() {
 			if st, ok := detail.(*statuspb.Status); ok {
@@ -30,6 +30,7 @@ func FromError(err error) *statuspb.Status {
 	} else {
 		logger.Error("invalid err, must be status.Error", "err", err.Error())
 		result.Code = uint32(codes.Internal)
+		result.ErrCode = result.Code
 		result.System, result.Status, _ = parseCode(codes.Internal)
 		result.Message = err.Error()
 	}

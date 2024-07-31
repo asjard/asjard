@@ -73,6 +73,11 @@ func parseCode(c codes.Code) (systemCode, httpCode, errCode uint32) {
 		sysHttpCode := uint32(c) / uint32(math.Pow10(n-6))
 		httpCode = sysHttpCode % uint32(math.Pow10(3))
 		systemCode = sysHttpCode / uint32(math.Pow10(3))
+		errCodeLen := utils.Uint32Len(errCode)
+		if errCodeLen == 1 {
+			errCodeLen += 1
+		}
+		errCode = systemCode*uint32(math.Pow10(int(errCodeLen))) + errCode
 	}
 	return
 }

@@ -44,11 +44,15 @@ var MetricsRestServiceDesc = rest.ServiceDesc{
 			MethodName: "Fetch",
 			Desc:       "获取监控指标.",
 			Method:     "GET",
-			Path:       "/metrics",
+			Path:       Metrics_Fetch_RestPath,
 			Handler:    _Metrics_Fetch_RestHandler,
 		},
 	},
 }
+
+const (
+	Metrics_Fetch_RestPath = "/metrics"
+)
 
 var file_metrics_proto_openapi = []byte{
 	0x0a, 0x05, 0x33, 0x2e, 0x30, 0x2e, 0x33, 0x12, 0x07, 0x32, 0x05, 0x30, 0x2e, 0x30, 0x2e, 0x31,
