@@ -144,7 +144,7 @@ var HelloRestServiceDesc = rest.ServiceDesc{
 			MethodName: "Say",
 			Desc:       "say something,这里是say方法的第二行注释.",
 			Method:     "GET",
-			Path:       Hello_Say_RestPath,
+			Path:       Hello_Say_RestPath_1,
 			Handler:    _Hello_Say_RestHandler,
 		},
 		{
@@ -181,6 +181,7 @@ var HelloRestServiceDesc = rest.ServiceDesc{
 const (
 	Hello_Hello_RestPath         = "/hello"
 	Hello_Say_RestPath           = "/api/v1/region/{region_id}/project/{project_id}/user/{user_id}"
+	Hello_Say_RestPath_1         = "/api/v1/region/{region_id}/project/{project_id}/user/{user_id}"
 	Hello_Call_RestPath          = "/api/v1/call/region/{region_id}/project/{project_id}/user/{user_id}"
 	Hello_Log_RestPath           = "/api/v1/log"
 	Hello_CipherExample_RestPath = "/api/v1/examples/cipher"

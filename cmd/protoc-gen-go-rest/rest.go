@@ -164,12 +164,15 @@ func (g *RestGenerator) genServiceDesc(service *protogen.Service, serverType str
 		}
 		httpOptions, ok := proto.GetExtension(method.Desc.Options(), httppb.E_Http).([]*httppb.Http)
 		if ok {
-			for _, httpOption := range httpOptions {
+			for index, httpOption := range httpOptions {
 				g.gen.P("{")
 				g.gen.P("MethodName: ", strconv.Quote(string(method.Desc.Name())), ",")
 				g.gen.P("Desc: ", strconv.Quote(string(methodDesc)), ",")
 				fullPath, optionMethod, _ := utils.ParseMethodOption(service, httpOption)
 				fullPathName := fmt.Sprintf("%s_%s_RestPath", service.GoName, method.GoName)
+				if index != 0 {
+					fullPathName += fmt.Sprintf("_%d", index)
+				}
 				fullPaths[fullPathName] = fullPath
 				g.gen.P("Method:", strconv.Quote(optionMethod), ",")
 				g.gen.P("Path:", fullPathName, ",")

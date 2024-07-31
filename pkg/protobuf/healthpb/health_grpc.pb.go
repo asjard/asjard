@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v5.27.0
-// source: health.proto
+// source: third_party/github.com/asjard/protobuf/health.proto
 
 package healthpb
 
@@ -107,5 +107,5 @@ var Health_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "health.proto",
+	Metadata: "third_party/github.com/asjard/protobuf/health.proto",
 }
