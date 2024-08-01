@@ -15,8 +15,6 @@ import (
 var (
 	// InternalServerError 系统内部错误
 	InternalServerError   = Error(codes.Internal, "internal server error")
-	DatabaseNotFoundError = Error(codes.Internal, "database not found")
-	InvalidDBError        = Error(codes.Internal, "invalid db")
 	PageNotFoundError     = Error(codes.NotFound, "page not found")
 	MethodNotAllowedError = Error(codes.Unimplemented, "method not allowed")
 	UnsupportProtocol     = Error(codes.Unavailable, "unsupport protocol")

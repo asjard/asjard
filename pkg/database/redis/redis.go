@@ -100,11 +100,13 @@ func Client(opts ...Option) (*redis.Client, error) {
 	}
 	conn, ok := clientManager.clients.Load(options.clientName)
 	if !ok {
-		return nil, status.DatabaseNotFoundError
+		logger.Error("redis not found", "name", options.clientName)
+		return nil, status.InternalServerError
 	}
 	client, ok := conn.(*ClientConn)
 	if !ok {
-		return nil, status.InvalidDBError
+		logger.Error("invalid redis client, must be *ClientConn", "current", fmt.Sprintf("%T", conn))
+		return nil, status.InternalServerError
 	}
 	return client.client, nil
 }
