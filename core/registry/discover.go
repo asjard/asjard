@@ -1,5 +1,7 @@
 package registry
 
+import "github.com/asjard/asjard/core/logger"
+
 const (
 	// LocalRegistryName 本地注册发现中心名称
 	LocalRegistryName = "local"
@@ -24,6 +26,7 @@ var (
 
 // AddDiscover 添加服务发现组件
 func AddDiscover(name string, newFunc NewDiscoveryFunc) error {
+	logger.Debug("add discover", "name", name)
 	newDiscoverys[name] = newFunc
 	return nil
 }

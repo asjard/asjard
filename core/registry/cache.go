@@ -23,8 +23,11 @@ type Instance struct {
 type cache struct {
 	// 服务列表
 	// TODO 需要更新存储结构
-	services []*Instance
-	conf     *Config
+	// services []*Instance
+	services map[string]*Instance
+	sm       sync.RWMutex
+
+	conf *Config
 
 	// 健康检查方法
 	healthCheckFunc healthCheckFunc
@@ -45,18 +48,10 @@ type listener struct {
 	callback func(*Event)
 }
 
-type serviceCache struct {
-	// key: 服务名称
-	// value: 相同服务名称的服务实例列表
-	// 一个注册中心中相同的服务不应该重复
-	// 不同注册中心可以出现相同的服务
-	services map[string][]*server.Service
-	sm       sync.RWMutex
-}
-
 // 初始化一个本地缓存用以维护发现的服务实例
 func newCache(conf *Config, hf healthCheckFunc) *cache {
 	c := &cache{
+		services:          make(map[string]*Instance),
 		failureThreshold:  conf.FailureThreshold,
 		healthCheckFunc:   hf,
 		failureThresholds: map[string]int{},
@@ -81,6 +76,8 @@ func (instance *Instance) canPick(options *Options) bool {
 // 获取服务实例
 func (c *cache) pick(options *Options) []*Instance {
 	var instances []*Instance
+	c.sm.RLock()
+	defer c.sm.RUnlock()
 	for _, instance := range c.services {
 		if instance.canPick(options) {
 			instances = append(instances, instance)
@@ -113,20 +110,12 @@ func (c *cache) removeListener(listenerName string) {
 
 // 更新本地缓存中的服务实例
 func (c *cache) update(instances []*Instance) {
+	c.sm.Lock()
+	defer c.sm.Unlock()
 	for _, instance := range instances {
 		logger.Debug("update instance", "instance", instance.Service.Instance.ID)
-		exist := false
-		for index := range c.services {
-			if instance.Service.Instance.ID == c.services[index].Service.Instance.ID {
-				c.services[index] = instance
-				c.notify(EventTypeUpdate, c.services[index])
-				exist = true
-			}
-		}
-		if !exist {
-			c.services = append(c.services, instance)
-			c.notify(EventTypeUpdate, instance)
-		}
+		c.services[instance.Service.Instance.ID] = instance
+		c.notify(EventTypeUpdate, instance)
 	}
 }
 
@@ -134,12 +123,12 @@ func (c *cache) update(instances []*Instance) {
 func (c *cache) delete(instance *Instance) {
 	logger.Debug("delete instance",
 		"instance", instance.Service.Instance.ID)
-	for index, svc := range c.services {
-		if svc.Service.Instance.ID == instance.Service.Instance.ID {
-			c.notify(EventTypeDelete, svc)
-			c.services = append(c.services[:index], c.services[index+1:]...)
-		}
+	c.sm.Lock()
+	if svc, ok := c.services[instance.Service.Instance.ID]; ok {
+		delete(c.services, instance.Service.Instance.ID)
+		c.notify(EventTypeDelete, svc)
 	}
+	c.sm.Unlock()
 }
 
 func (c *cache) notify(eventType EventType, instance *Instance) {
@@ -200,84 +189,4 @@ func (c *cache) setFailureThreshold(failKey string, threshold int) {
 	c.fm.Lock()
 	c.failureThresholds[failKey] = threshold
 	c.fm.Unlock()
-}
-
-func (c *cache) newServiceCache(_ string) *serviceCache {
-	serviceCache := &serviceCache{
-		services: make(map[string][]*server.Service),
-	}
-	// c.sm.Lock()
-	// c.discoverServices[discoverName] = serviceCache
-	// c.sm.Unlock()
-	return serviceCache
-}
-
-func (c *serviceCache) addOrUpdate(instances []*server.Service) {
-	for _, instance := range instances {
-		exist := false
-		c.sm.RLock()
-		services, ok := c.services[instance.Instance.Name]
-		c.sm.RUnlock()
-		if ok {
-			for index, service := range services {
-				if service.Instance.ID == instance.Instance.ID {
-					logger.Debug("update instance",
-						"instance_name", instance.Instance.Name,
-						"instance_id", instance.Instance.ID)
-					exist = true
-					c.sm.Lock()
-					c.services[instance.Instance.Name][index] = instance
-					c.sm.Unlock()
-					break
-				}
-			}
-		}
-		if !ok || !exist {
-			logger.Debug("add instance",
-				"instance_name", instance.Instance.Name,
-				"instance_id", instance.Instance.ID)
-			c.sm.Lock()
-			c.services[instance.Instance.Name] = append(c.services[instance.Instance.Name], instance)
-			c.sm.Unlock()
-		}
-	}
-}
-
-func (c *serviceCache) delete(instance *server.Service) {
-	c.sm.RLock()
-	services, ok := c.services[instance.Instance.Name]
-	c.sm.RUnlock()
-	if ok {
-		for index, service := range services {
-			if service.Instance.ID == instance.Instance.ID {
-				logger.Debug("delete instance",
-					"instance_name", service.Instance.Name,
-					"instance_id", service.Instance.ID)
-				// 删除该实例
-				c.sm.Lock()
-				c.services[instance.Instance.Name] = append(services[:index], services[index+1:]...)
-				c.sm.Unlock()
-				break
-			}
-		}
-	}
-}
-
-func (c *serviceCache) healthCheck(discoverName string, hf healthCheckFunc) []*server.Service {
-	var notHealthInstances []*server.Service
-	c.sm.RLock()
-	for _, instances := range c.services {
-		for _, instance := range instances {
-			if err := hf(discoverName, instance); err != nil {
-				logger.Error("health check discover instance fail",
-					"discover_name", discoverName,
-					"instance_name", instance.Instance.Name,
-					"instance_id", instance.Instance.ID,
-					"err", err.Error())
-				notHealthInstances = append(notHealthInstances, instance)
-			}
-		}
-	}
-	c.sm.RUnlock()
-	return notHealthInstances
 }
