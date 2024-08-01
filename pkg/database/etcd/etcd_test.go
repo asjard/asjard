@@ -108,8 +108,12 @@ func TestNewClients(t *testing.T) {
 
 	t.Run("new", func(t *testing.T) {
 		config.Set("asjard.database.etcd.clients.new.endpoints", "localhost:2")
-		time.Sleep(time.Second)
+		time.Sleep(2 * time.Second)
 		_, err := Client(WithClientName("new"))
+		if err != nil {
+			t.Error(err.Error())
+			t.FailNow()
+		}
 		assert.Nil(t, err)
 	})
 	t.Run("shutdown", func(t *testing.T) {

@@ -23,7 +23,7 @@ const (
 // cache: 将从这个缓存获取数据，如果获取不到数据则会执行do方法
 // do: 从数据源获取数据
 // hitted: 是否命中了缓存
-func (m Model) GetData(out interface{}, cache *Cache, do func() (interface{}, error)) (hitted bool, err error) {
+func (m Model) GetData(out any, cache *Cache, do func() (interface{}, error)) (hitted bool, err error) {
 	if out == nil {
 		return false, errors.New("out is empty")
 	}
@@ -72,6 +72,16 @@ func (m Model) SetData(do func(chan error) error, caches ...*Cache) error {
 			return err
 		}
 	}
+	return nil
+}
+
+// UpdateData 更新数据
+func (m Model) UpdateData() error {
+	return nil
+}
+
+// DeleteData 删除数据
+func (m Model) DeleteData() error {
 	return nil
 }
 
