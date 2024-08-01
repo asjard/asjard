@@ -32,7 +32,7 @@ func TestParseCode(t *testing.T) {
 		systemCode, httpCode, errCode uint32
 	}{
 		{input: 1, httpCode: 499, errCode: 1},
-		{input: 1004045, systemCode: 100, httpCode: 404, errCode: 5},
+		{input: 1004045, systemCode: 100, httpCode: 404, errCode: 10005},
 	}
 
 	for _, data := range datas {
