@@ -17,6 +17,7 @@ import (
 	_ "github.com/asjard/asjard/pkg/client/grpc"
 
 	// _ "github.com/asjard/asjard/pkg/registry/etcd"
+	_ "github.com/asjard/asjard/pkg/config/etcd"
 	mgrpc "github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"google.golang.org/grpc"

@@ -98,9 +98,9 @@ func (dl Logger) log(level slog.Level, msg string, args ...any) {
 		f = "???"
 		l = 0
 	} else {
-		fdir := filepath.Base(filepath.Dir(f))
-		fname := strings.TrimSuffix(filepath.Base(f), filepath.Ext(f))
-		f = filepath.Join(fdir, fname)
+		if fl := strings.Split(f, string(filepath.Separator)); len(fl) >= 3 {
+			f = filepath.Join(fl[len(fl)-3:]...)
+		}
 	}
 	args = append(args, []any{"source", f + ":" + strconv.Itoa(l)}...)
 	dl.slogger.Log(context.Background(), level, msg, args...)

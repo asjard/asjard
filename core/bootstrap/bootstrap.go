@@ -9,6 +9,8 @@ import (
 	_ "github.com/asjard/asjard/pkg/client/interceptors"
 	// 导入pprof包, 这样就不需要在main函数中导入了
 	_ "github.com/asjard/asjard/pkg/server/pprof"
+	// 导入内存配置源
+	_ "github.com/asjard/asjard/core/config/sources/mem"
 )
 
 // BootstrapHandler 启动引导需实现的方法

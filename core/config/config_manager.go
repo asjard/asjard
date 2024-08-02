@@ -33,7 +33,9 @@ type Sourcer interface {
 	// 维护在config_manager的本地内存中,
 	// 返回的配置应该为properties格式的，并区分大小写。
 	GetAll() map[string]*Value
-	// 添加配置到配置源中
+	// 添加配置到配置源中,
+	// 慎用,存在安全隐患和配置源实现复杂问题
+	// 理论只应该在mem配置源中使用,非必要不要使用
 	Set(key string, value any) error
 	// 监听配置变化,当配置源中的配置发生变化时,
 	// 通过此回调方法通知config_manager进行配置变更
@@ -153,6 +155,7 @@ func (m *ConfigManager) load(priority int) error {
 		if priority >= 0 && source.priority > priority {
 			break
 		}
+		logger.Debug("load source", "source", source.name)
 		newSourcer, err := source.newSourceFunc()
 		if err != nil {
 			return err

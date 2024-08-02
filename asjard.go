@@ -13,7 +13,6 @@ import (
 	"github.com/asjard/asjard/core/config"
 	cfgenv "github.com/asjard/asjard/core/config/sources/env"
 	cfgfile "github.com/asjard/asjard/core/config/sources/file"
-	cfgmem "github.com/asjard/asjard/core/config/sources/mem"
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/metrics"
@@ -157,17 +156,6 @@ func (asd *Asjard) init() error {
 		return err
 	}
 
-	// 内存配置源加载
-	// config.Set方法默认使用内存配置源,系统运行期间存在，系统退出后消失
-	if err := config.Load(cfgmem.Priority); err != nil {
-		return err
-	}
-
-	// 其他配置加载
-	if err := config.Load(-1); err != nil {
-		return err
-	}
-
 	// 监控初始化
 	if err := metrics.Init(); err != nil {
 		return err
@@ -192,6 +180,11 @@ func (asd *Asjard) init() error {
 
 	// 系统启动
 	if err := bootstrap.Start(); err != nil {
+		return err
+	}
+
+	// 其他配置加载
+	if err := config.Load(-1); err != nil {
 		return err
 	}
 

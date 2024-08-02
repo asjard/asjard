@@ -1,11 +1,16 @@
 package etcd
 
 import (
-	"fmt"
+	"context"
+	"strings"
+	"time"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/constant"
+	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/pkg/database/etcd"
+	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -14,15 +19,16 @@ const (
 	Name = "etcd"
 	// Priority 优先级
 	Priority = 10
+
+	defaultDelimiter = "/"
 )
 
 // Etcd etcd配置
 type Etcd struct {
-	cb      func(*config.Event)
-	configs map[string]*Value
-	app     runtime.APP
-	conf    *Config
-	client  *clientv3.Client
+	cb     func(*config.Event)
+	app    runtime.APP
+	conf   *Config
+	client *clientv3.Client
 }
 
 type Value struct {
@@ -32,11 +38,14 @@ type Value struct {
 
 type Config struct {
 	Client string `json:"client"`
+	// 分隔符
+	Delimiter string `json:"delimiter"`
 }
 
 var (
 	defaultConfig = Config{
-		Client: etcd.DefaultClientName,
+		Client:    etcd.DefaultClientName,
+		Delimiter: defaultDelimiter,
 	}
 )
 
@@ -53,9 +62,11 @@ func New() (config.Sourcer, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	sourcer.client, err = etcd.Client(etcd.WithClientName(sourcer.conf.Client))
 	if err != nil {
+		return nil, err
+	}
+	if err := sourcer.watch(); err != nil {
 		return nil, err
 	}
 	return sourcer, nil
@@ -63,16 +74,42 @@ func New() (config.Sourcer, error) {
 
 // GetAll .
 func (s *Etcd) GetAll() map[string]*config.Value {
-	return nil
+	result := make(map[string]*config.Value)
+	for priority, prefix := range s.prefixs() {
+		ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
+		resp, err := s.client.Get(ctx, prefix, clientv3.WithPrefix())
+		cancel()
+		if err != nil {
+			logger.Error("get prefix values fail", "prefix", prefix, "err", err)
+			continue
+		}
+		for _, kv := range resp.Kvs {
+			result[s.configKey(prefix, kv.Key)] = &config.Value{
+				Sourcer:  s,
+				Value:    kv.Value,
+				Priority: priority,
+			}
+		}
+	}
+	return result
 
 }
 
 // GetByKey .
 func (s *Etcd) GetByKey(key string) any {
+	for _, prefix := range s.prefixs() {
+		ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
+		resp, err := s.client.Get(ctx, prefix+strings.ReplaceAll(key, constant.ConfigDelimiter, s.conf.Delimiter))
+		cancel()
+		if err == nil && len(resp.Kvs) > 0 {
+			return resp.Kvs[0].Value
+		}
+	}
 	return nil
 }
 
-// Set .
+// Set 添加配置到etcd中
+// TODO 添加在runtime命名空间下, 需要带过期时间参数
 func (s *Etcd) Set(key string, value any) error {
 	return nil
 }
@@ -98,22 +135,97 @@ func (s *Etcd) Disconnect() {
 }
 
 func (s *Etcd) loadAndWatchConfig() error {
+	conf, err := s.loadConfig()
+	if err != nil {
+		return err
+	}
+	s.conf = conf
+	config.AddListener("asjard.config.etcd.*", s.watchConfig)
 	return nil
 }
 
+func (s *Etcd) loadConfig() (*Config, error) {
+	conf := defaultConfig
+	if err := config.GetWithUnmarshal("asjard.config.etcd", &conf); err != nil {
+		return nil, err
+	}
+	return &conf, nil
+}
+
+func (s *Etcd) watchConfig(event *config.Event) {
+	conf, err := s.loadConfig()
+	if err != nil {
+		logger.Error("load config fail", "err")
+		return
+	}
+	s.conf = conf
+	client, err := etcd.Client(etcd.WithClientName(s.conf.Client))
+	if err != nil {
+		logger.Error("new etcd client fail", "err")
+		return
+	}
+	s.client = client
+}
+
+func (s *Etcd) watch() error {
+	for priority, prefix := range s.prefixs() {
+		go s.watchPrefix(prefix, priority)
+	}
+	return nil
+}
+
+func (s *Etcd) watchPrefix(prefix string, priority int) {
+	watchChan := s.client.Watch(context.Background(), prefix, clientv3.WithPrefix())
+	for resp := range watchChan {
+		for _, event := range resp.Events {
+			callbackEvent := &config.Event{
+				Key: s.configKey(prefix, event.Kv.Key),
+				Value: &config.Value{
+					Sourcer:  s,
+					Priority: priority,
+				},
+			}
+			switch event.Type {
+			case mvccpb.PUT:
+				callbackEvent.Type = config.EventTypeUpdate
+				callbackEvent.Value.Value = event.Kv.Value
+			case mvccpb.DELETE:
+				callbackEvent.Type = config.EventTypeDelete
+			}
+			if s.cb != nil {
+				s.cb(callbackEvent)
+			}
+		}
+	}
+}
+
 // /{app}/configs/global/
-// /{app}/configs/{service}/
-// /{app}/configs/{service}/{region}
-// /{app}/configs/{service}/{region}/{az}
+// /{app}/configs/service/{service}/
+// /{app}/configs/service/{service}/{region}/
+// /{app}/configs/service/{service}/{region}/{az}/
+// /{app}/configs/runtime/{instance.ID}/
 func (s *Etcd) prefixs() []string {
 	return []string{
-		fmt.Sprintf("%s/global/", s.prefix()),
-		fmt.Sprintf("%s/%s/", s.prefix(), s.app.Instance.Name),
-		fmt.Sprintf("%s/%s/%s/", s.prefix(), s.app.Instance.Name, s.app.Region),
-		fmt.Sprintf("%s/%s/%s/%s/", s.prefix(), s.app.Instance.Name, s.app.Region, s.app.AZ),
+		s.globalPrefix(),
+		strings.Join([]string{s.prefix(), s.app.Instance.Name, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), s.app.Instance.Name, s.app.Region, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), s.app.Instance.Name, s.app.Region, s.app.AZ, ""}, s.conf.Delimiter),
+		s.runtimePrefix(),
 	}
 }
 
 func (s *Etcd) prefix() string {
-	return fmt.Sprintf("/%s/configs", s.app.App)
+	return strings.Join([]string{"", s.app.App, "configs"}, s.conf.Delimiter)
+}
+
+func (s *Etcd) runtimePrefix() string {
+	return strings.Join([]string{s.prefix(), "runtime", s.app.Instance.ID, ""}, s.conf.Delimiter)
+}
+
+func (s *Etcd) globalPrefix() string {
+	return strings.Join([]string{s.prefix(), "global", ""}, s.conf.Delimiter)
+}
+
+func (s *Etcd) configKey(prefix string, key []byte) string {
+	return strings.ReplaceAll(strings.TrimPrefix(string(key), prefix), s.conf.Delimiter, constant.ConfigDelimiter)
 }
