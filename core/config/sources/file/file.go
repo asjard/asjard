@@ -64,6 +64,8 @@ type File struct {
 	// 用来处理回调事件中的事件类型
 	// 如果没有此处记录，无法在回调事件中处理删除事件
 	configs map[string]map[string]any
+	// 配置目录
+	confDir string
 	// configs的锁
 	cm sync.RWMutex
 	// 文件监听
@@ -83,11 +85,11 @@ func New() (config.Sourcer, error) {
 		configs: make(map[string]map[string]any),
 	}
 
-	confDir := utils.GetConfDir()
-	if !utils.IsPathExists(confDir) {
+	fsource.confDir = utils.GetConfDir()
+	if !utils.IsPathExists(fsource.confDir) {
 		return fsource, nil
 	}
-	if err := fsource.walk(confDir); err != nil {
+	if err := fsource.walk(fsource.confDir); err != nil {
 		return fsource, err
 	}
 	if err := fsource.watch(); err != nil {
@@ -206,27 +208,40 @@ func (s *File) doWatch() {
 			case fsnotify.Create, fsnotify.Write:
 				logger.Debug("file source watch event",
 					"event", event, "op", event.Op.String())
-				configs, err := s.read(event.Name)
-				if err == nil {
-					for _, event := range s.getUpdateEvents(event.Name, configs) {
-						s.cb(event)
+				if utils.IsDir(event.Name) {
+					if err := s.watcher.Add(event.Name); err != nil {
+						logger.Error("watch dir fail", "dir", event.Name, "err", err)
 					}
 				} else {
-					logger.Error("read file fail",
-						"file", event.Name,
-						"err", err.Error())
+					configs, err := s.read(event.Name)
+					if err == nil {
+						for _, event := range s.getUpdateEvents(event.Name, configs) {
+							s.cb(event)
+						}
+					} else {
+						logger.Error("read file fail",
+							"file", event.Name,
+							"err", err.Error())
+					}
 				}
 			case fsnotify.Remove, fsnotify.Rename:
 				logger.Debug("file source watch event",
 					"event", event, "op", event.Op.String())
-				s.delConfig(event.Name, "")
-				s.cb(&config.Event{
-					Type: config.EventTypeDelete,
-					Value: &config.Value{
-						Sourcer: s,
-						Ref:     event.Name,
-					},
-				})
+				if utils.IsDir(event.Name) {
+					if err := s.watcher.Remove(event.Name); err != nil {
+						logger.Error("remove watch dir fail", "dir", event.Name, "err", err)
+					}
+				} else {
+					s.delConfig(event.Name, "")
+					s.cb(&config.Event{
+						Type: config.EventTypeDelete,
+						Value: &config.Value{
+							Sourcer:  s,
+							Ref:      event.Name,
+							Priority: -1,
+						},
+					})
+				}
 			}
 		case err, ok := <-s.watcher.Errors:
 			if !ok {
@@ -239,6 +254,11 @@ func (s *File) doWatch() {
 }
 
 // 遍历目录
+/*
+文件里表保持和编辑器一致
+[{"dir": ["file1", "file2"]}, {"dir": ["file1"]}]
+当添加一个文件，或者删除一个文件，该文件后的所有优先级都会发生变化
+*/
 func (s *File) walk(dir string) error {
 	if err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {

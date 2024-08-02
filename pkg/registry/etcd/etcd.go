@@ -42,7 +42,7 @@ var (
 	_ registry.Discovery = &Etcd{}
 	// 默认配置
 	defaultConfig = Config{
-		Client:  "default",
+		Client:  etcd.DefaultClientName,
 		Timeout: utils.JSONDuration{Duration: 5 * time.Second},
 	}
 	newEtcd *Etcd

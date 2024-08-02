@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	defaultClientname = "default"
+	// DefaultClientname 默认客户端名称
+	DefaultClientname = "default"
 )
 
 type ClientManager struct {
@@ -264,6 +265,6 @@ func (m *ClientManager) watch(event *config.Event) {
 
 func defaultClientOptions() *ClientOptions {
 	return &ClientOptions{
-		clientName: defaultClientname,
+		clientName: DefaultClientname,
 	}
 }

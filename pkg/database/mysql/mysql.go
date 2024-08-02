@@ -27,7 +27,7 @@ const (
 	sqliteDefaultDriverName     = "sqlite"
 	sqlserverDefaultDrierName   = "sqlserver"
 	clickhouseDefaultDriverName = "clickhouse"
-	defaultConnectName          = "default"
+	DefaultConnectName          = "default"
 )
 
 // DBManager 数据连接维护
@@ -286,6 +286,6 @@ func (m *DBManager) watch(event *config.Event) {
 
 func defaultOptions() *DBOptions {
 	return &DBOptions{
-		connName: defaultConnectName,
+		connName: DefaultConnectName,
 	}
 }

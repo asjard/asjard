@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	defaultClientName = "default"
+	// DefaultClientName 默认客户端名称
+	DefaultClientName = "default"
 )
 
 // ClientManager 客户端连接维护
@@ -250,6 +251,6 @@ func (m *ClientManager) watch(event *config.Event) {
 
 func defaultClientOptions() *ClientOptions {
 	return &ClientOptions{
-		clientName: defaultClientName,
+		clientName: DefaultClientName,
 	}
 }

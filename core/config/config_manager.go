@@ -187,30 +187,13 @@ func (m *ConfigManager) watch(event *Event) {
 
 // 查询key是否已存在
 // 如果不存在则添加
-// 存在, 相同的源更新，不通的源判断是否大于当前优先级
+// 存在, 相同的源更新，不同的源判断是否大于当前优先级
 // 如果优先级高于当前值则更新
 func (m *ConfigManager) update(event *Event) {
-	// 更新配置源配置
-	m.sourceCfgs.set(event.Value.Sourcer.Name(), event.Key, event.Value)
 	// 配置是否存在
 	value, ok := m.getConfig(event.Key)
-	if !ok {
-		m.setConfig(event.Key, event.Value)
-		return
-	}
-	sourcer, ok := m.getSourcer(event.Value.Sourcer.Name())
-	if !ok {
-		logger.Error("update config, source not found",
-			"event", event,
-			"source", event.Value.Sourcer.Name())
-		return
-	}
-	if sourcer.Name() == event.Value.Sourcer.Name() {
-		m.setConfig(event.Key, event.Value)
-		return
-	}
-	if sourcer.Priority() > value.Sourcer.Priority() {
-		m.setConfig(event.Key, event.Value)
+	if !ok || value.Sourcer.Name() == event.Value.Sourcer.Name() || event.Value.Sourcer.Priority() > value.Sourcer.Priority() {
+		m.setConfig(event.Value.Sourcer.Name(), event.Key, event.Value)
 	}
 }
 
@@ -219,7 +202,7 @@ func (m *ConfigManager) update(event *Event) {
 // 如果小于则删除
 // 优先级排序查找第一个
 func (m *ConfigManager) delete(event *Event) {
-	m.sourceCfgs.del(event.Value.Sourcer.Name(), event.Key, event.Value.Ref)
+	m.sourceCfgs.del(event.Value.Sourcer.Name(), event.Key, event.Value.Ref, event.Value.Priority)
 	if event.Value.Ref != "" {
 		m.deleteByRef(event)
 		return
@@ -232,17 +215,7 @@ func (m *ConfigManager) delete(event *Event) {
 // 根据key删除
 func (m *ConfigManager) deleteByKey(event *Event) {
 	value, ok := m.getConfig(event.Key)
-	if !ok {
-		return
-	}
-	sourcer, ok := m.getSourcer(event.Value.Sourcer.Name())
-	if !ok {
-		logger.Error("delete config, source not found",
-			"key", event.Key,
-			"source", event.Value.Sourcer.Name())
-		return
-	}
-	if value.Sourcer.Priority() > sourcer.Priority() {
+	if !ok || value.Sourcer.Priority() > event.Value.Sourcer.Priority() {
 		return
 	}
 	m.deleteAndFindNext(event.Key)
@@ -274,11 +247,10 @@ func (m *ConfigManager) deleteAndFindNext(key string) {
 		logger.Debug("delete key and find next from sourcer",
 			"key", key,
 			"source", sources[i].name)
-		m.setConfig(key, value)
+		m.setConfig(sources[i].name, key, value)
 		return
 	}
-	logger.Debug("delete key",
-		"key", key)
+	logger.Debug("delete key", "key", key)
 	m.delConfig(key)
 }
 
@@ -321,14 +293,18 @@ func (m *ConfigManager) getConfigs() map[string]*Value {
 	return m.globalCfgs.getAll()
 }
 
-func (m *ConfigManager) setConfig(key string, value *Value) {
-	m.globalCfgs.set(key, value)
-	// 异步返回事件
-	go m.listener.notify(&Event{Type: EventTypeUpdate, Key: key, Value: value})
+func (m *ConfigManager) setConfig(sourceName, key string, value *Value) {
+	// 更新配置源配置
+	if m.sourceCfgs.set(sourceName, key, value) {
+		// 更新全局配置
+		m.globalCfgs.set(key, value)
+		// 异步返回事件
+		go m.listener.notify(&Event{Type: EventTypeUpdate, Key: key, Value: value})
+	}
 }
 
 func (m *ConfigManager) delConfig(key string) {
-	m.globalCfgs.del(key, "")
+	m.globalCfgs.del(key)
 	// 异步返回事件
 	go m.listener.notify(&Event{Type: EventTypeDelete, Key: key})
 }

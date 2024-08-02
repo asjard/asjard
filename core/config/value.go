@@ -12,6 +12,9 @@ type Value struct {
 	// 例如删除一个文件，是不知道删除的key
 	// 此时可以使用此字段，删除引用下的所有key
 	Ref string
+	// 值的优先级
+	// 同一个配置源中也会出现同一个配置有不同的优先级
+	Priority int
 }
 
 // String 字符串格式化
