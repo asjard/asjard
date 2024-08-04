@@ -18,7 +18,6 @@ import (
 	"github.com/asjard/asjard/core/metrics"
 	"github.com/asjard/asjard/core/registry"
 	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/core/security"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/core/server/handlers"
 	"github.com/asjard/asjard/utils"
@@ -142,12 +141,6 @@ func (asd *Asjard) Exit() <-chan struct{} {
 func (asd *Asjard) init() error {
 	// 环境变量配置源加载
 	if err := config.Load(cfgenv.Priority); err != nil {
-		return err
-	}
-
-	// 安全组件初始化
-	// 需要支持配置文件加密，所以在加载配置文件前需要加载加解密组件
-	if err := security.Init(); err != nil {
 		return err
 	}
 

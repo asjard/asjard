@@ -46,12 +46,6 @@ func init() {
 	AddCipher(constant.DefaultCipherName, NewDefaultCipher)
 }
 
-// Init 加解密组件初始化
-// 使用时初始化
-func Init() error {
-	return nil
-}
-
 // AddCipher 添加加解密组件
 func AddCipher(name string, newFunc NewCipherFunc) {
 	ncm.Lock()
