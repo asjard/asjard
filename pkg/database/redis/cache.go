@@ -337,7 +337,7 @@ func (c Cache) delGroup(ctx context.Context) error {
 	// 删除分组内的所有缓存
 	if len(c.groups) != 0 {
 		for _, group := range c.groups {
-			result := c.client.HGetAll(ctx, c.Group(group))
+			result := c.client.HGetAll(ctx, group)
 			if err := result.Err(); err != nil {
 				return err
 			}
@@ -348,6 +348,7 @@ func (c Cache) delGroup(ctx context.Context) error {
 			for key := range result.Val() {
 				keys = append(keys, key)
 			}
+			logger.Debug("delete group", "group", group, "keys", keys)
 			if c.options.localCache != nil {
 				if err := c.options.localCache.Del(ctx, keys...); err != nil {
 					return err
@@ -356,6 +357,9 @@ func (c Cache) delGroup(ctx context.Context) error {
 			if err := c.client.Del(ctx, keys...).Err(); err != nil {
 				return err
 			}
+		}
+		if err := c.client.Del(ctx, c.groups...).Err(); err != nil {
+			return err
 		}
 	}
 	return nil
