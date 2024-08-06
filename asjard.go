@@ -55,6 +55,8 @@ type Asjard struct {
 	startedServers []string
 	// 退出信号
 	exit chan struct{}
+	// 是否已初始化了
+	inited bool
 }
 
 // New 框架初始化
@@ -95,9 +97,10 @@ func (asd *Asjard) AddHandlers(protocol string, handlers ...any) error {
 
 // Start 系统启动
 func (asd *Asjard) Start() error {
-	if err := asd.init(); err != nil {
+	if err := asd.Init(); err != nil {
 		return err
 	}
+
 	if err := asd.startServers(); err != nil {
 		return err
 	}
@@ -137,8 +140,11 @@ func (asd *Asjard) Exit() <-chan struct{} {
 	return asd.exit
 }
 
-// 系统初始化
-func (asd *Asjard) init() error {
+// Init 系统初始化
+func (asd *Asjard) Init() error {
+	if asd.inited {
+		return nil
+	}
 	// 环境变量配置源加载
 	if err := config.Load(cfgenv.Priority); err != nil {
 		return err
@@ -180,7 +186,7 @@ func (asd *Asjard) init() error {
 	if err := config.Load(-1); err != nil {
 		return err
 	}
-
+	asd.inited = true
 	return nil
 }
 

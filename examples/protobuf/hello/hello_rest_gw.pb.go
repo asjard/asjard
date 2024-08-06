@@ -55,11 +55,6 @@ func (api *HelloAPI) Log(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 func (api *HelloAPI) CipherExample(ctx context.Context, in *CipherExampleReq) (*CipherExampleResp, error) {
 	return api.client.CipherExample(ctx, in)
 }
-
-// mysql数据库示例
-func (api *HelloAPI) MysqlExample(ctx context.Context, in *MysqlExampleReq) (*MysqlExampleResp, error) {
-	return api.client.MysqlExample(ctx, in)
-}
 func (api *HelloAPI) RestServiceDesc() *rest.ServiceDesc {
 	return &HelloRestServiceDesc
 }

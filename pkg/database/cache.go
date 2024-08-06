@@ -1,129 +1,97 @@
 package database
 
 import (
+	"context"
 	"time"
 
-	"github.com/redis/go-redis/v9"
-)
-
-// cacheType 缓存类型
-type cacheType int
-
-const (
-	// CacheTypeKeyValue key-value缓存
-	cacheTypeKeyValue cacheType = iota
-	// CacheTypeHash hash缓存
-	cacheTypeHash
-	// CacheTypeSet 集合缓存
-	cacheTypeSet
+	"github.com/asjard/asjard/core/runtime"
+	"github.com/asjard/asjard/utils"
 )
 
 // Cacher 缓存需要实现的方法
 type Cacher interface {
 	// 从缓存获取数据
-	get(out interface{}) error
+	Get(ctx context.Context, key string, out any) error
 	// 从缓存删除数据
-	del() error
+	Del(ctx context.Context, keys ...string) error
 	// 设置缓存数据
-	set(in interface{}) error
+	Set(ctx context.Context, key string, in any) error
 	// 刷新缓存过期时间
-	refreshExpire() error
-	// 设置空值到缓存
-	setEmpty(in interface{}) error
+	Refresh(ctx context.Context, key string) error
+
+	// 返回缓存Key名称
+	Key() string
+	// 是否开启了缓存
+	Enabled() bool
+	// 是否自动刷新缓存
+	AutoRefresh() bool
+}
+
+// 缓存配置
+type CacheConfig struct {
+	// 是否开启缓存
+	Enabled bool `json:"enabled"`
+	// 是否自动刷新
+	AutoRefresh bool `json:"autoRefresh"`
+	// 缓存过期时间
+	ExpiresIn utils.JSONDuration `json:"expiresIn"`
 }
 
 // Cache 缓存相关
 type Cache struct {
-	// 缓存key
-	key string
-	// hash中的field， set中的member
-	field string
-	// 缓存类型
-	tp cacheType
-
-	// 缓存过期时间
-	timeout time.Duration
-	// 是否自动刷新缓存
-	autoRefresh bool
-
-	// redis
-	rds *redis.Client
-
-	// redis缓存
-	rc *RedisCache
-	// 本地缓存
-	lc *LocalCache
+	// 缓存配置
+	conf *CacheConfig
+	// 缓存表
+	model Modeler
+	app   runtime.APP
 }
 
-// NewKeyValueCache key-value缓存
-func NewKeyValueCache(key string) *Cache {
-	return newCache(cacheTypeKeyValue, key)
-}
+var (
+	// DefaultCacheConfig 默认配置
+	DefaultCacheConfig = CacheConfig{
+		Enabled:     true,
+		AutoRefresh: true,
+		ExpiresIn:   utils.JSONDuration{Duration: 5 * time.Minute},
+	}
+)
 
-// NewHashCache hash缓存
-func NewHashCache(key, field string) *Cache {
-	return newCache(cacheTypeHash, key).
-		withField(field)
-}
-
-// NewSetCache set缓存
-func NewSetCache(key, member string) *Cache {
-	return newCache(cacheTypeSet, key).
-		withField(member)
-}
-
-// newCache 创建新缓存
-func newCache(tp cacheType, key string) *Cache {
+// NewCache 创建新缓存
+func NewCache(model Modeler) *Cache {
 	return &Cache{
-		key: key,
-		tp:  tp,
+		model: model,
+		app:   runtime.GetAPP(),
+		conf:  &DefaultCacheConfig,
 	}
 }
 
-// WithExpiresIn 缓存过期时间
-func (c *Cache) WithExpiresIn(timeout time.Duration) *Cache {
-	c.timeout = timeout
+// WithConf 设置配置文件
+func (c *Cache) WithConf(conf *CacheConfig) *Cache {
+	c.conf = conf
 	return c
 }
 
-// WithAutoRefresh 自动刷新
-func (c *Cache) WithAutoRefresh(autoRefresh bool) *Cache {
-	c.autoRefresh = autoRefresh
-	return c
+// Enabled 否开启缓存
+func (c *Cache) Enabled() bool {
+	return c.conf.Enabled
 }
 
-// WithRedis 设置redis
-func (c *Cache) WithRedis(rds *redis.Client) *Cache {
-	c.rds = rds
-	return c
+// AutoRefresh 是否自动刷新
+func (c *Cache) AutoRefresh() bool {
+	return c.conf.AutoRefresh
 }
 
-func (c *Cache) withField(field string) *Cache {
-	c.field = field
-	return c
+// Prefix 缓存前缀
+// {app}:caches:service:{service}:{region}:{az}:{model_name}
+func (c *Cache) Prefix() string {
+	return c.app.App + ":caches:service:" + c.app.Instance.Name + ":" + c.app.Region + ":" + c.app.AZ + ":" + c.model.ModelName()
 }
 
-// 从缓存获取数据
-func (c Cache) get(out interface{}) error {
-	return nil
+// NewKey 缓存key
+func (c *Cache) NewKey(key string) string {
+	return c.Prefix() + ":" + key
 }
 
-// 删除缓存数据
-func (c Cache) del() error {
-	return nil
-}
-
-// 设置缓存数据
-func (c Cache) set(in interface{}) error {
-	return nil
-}
-
-// 刷新缓存数据
-func (c Cache) refreshExpire() error {
-	return nil
-}
-
-// 设置空数据
-func (c Cache) setEmpty(in interface{}) error {
-	return nil
+// ExpiresIn 缓存过期时间
+func (c *Cache) ExpiresIn() time.Duration {
+	return c.conf.ExpiresIn.Duration
 }

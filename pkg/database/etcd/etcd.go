@@ -103,7 +103,7 @@ func Client(opts ...Option) (*clientv3.Client, error) {
 	conn, ok := clientManager.clients.Load(options.clientName)
 	if !ok {
 		logger.Error("etcd not found", "name", options.clientName)
-		return nil, status.InternalServerError
+		return nil, status.DatabaseNotFoundError
 	}
 	client, ok := conn.(*ClientConn)
 	if !ok {

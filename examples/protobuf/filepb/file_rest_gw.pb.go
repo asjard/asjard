@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-rest2grpc-gw v1.3.0
 // - protoc             v5.27.0
-// source: file.proto
+// source: filepb/file.proto
 
 package filepb
 

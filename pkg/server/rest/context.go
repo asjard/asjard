@@ -11,6 +11,7 @@ import (
 	"github.com/asjard/asjard/core/status"
 	"github.com/spf13/cast"
 	"github.com/valyala/fasthttp"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -165,7 +166,7 @@ func (c *Context) readBodyParamsToEntity(entity proto.Message) error {
 		return nil
 	}
 	if err := protojson.Unmarshal(c.ReadBodyParams(), entity); err != nil {
-		return status.Errorf(status.BadRequestCode, "read body params fail: %s", err.Error())
+		return status.Errorf(codes.InvalidArgument, "read body params fail: %s", err.Error())
 	}
 	return nil
 }

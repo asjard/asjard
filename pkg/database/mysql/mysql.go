@@ -119,7 +119,7 @@ func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 	conn, ok := dbManager.dbs.Load(options.connName)
 	if !ok {
 		logger.Error("db not found", "db", options.connName)
-		return nil, status.InternalServerError
+		return nil, status.DatabaseNotFoundError
 	}
 	db, ok := conn.(*DBConn)
 	if !ok {
@@ -164,6 +164,7 @@ func (m *DBManager) connDBs(dbsConf map[string]*DBConnConfig) error {
 			logger.Error("connect to database fail", "database", dbName, "err", err)
 			return err
 		}
+		logger.Debug("connect to database success", "database", dbName)
 	}
 	return nil
 }

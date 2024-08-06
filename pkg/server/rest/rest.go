@@ -58,6 +58,7 @@ func init() {
 // MustNew 配置文件初始化
 func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) {
 	r := router.New()
+	r.SaveMatchedRoutePath = true
 	corsMiddleware := NewCorsMiddleware(conf.Cors)
 	// 不能删除这行，option请求走不到middleware中
 	r.GlobalOPTIONS = corsMiddleware(func(ctx *fasthttp.RequestCtx) {})

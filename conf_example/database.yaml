@@ -4,7 +4,7 @@ asjard:
     mysql:
       dbs:
         default:
-          dsn: root:my-secret-pw@tcp(127.0.0.1:3306)/exmple-database?charset=utf8&parseTime=True&loc=Local
+          dsn: root:my-secret-pw@tcp(127.0.0.1:3306)/exmple-database?charset=utf8&parseTime=True&loc=Local&timeout=5s&readTimeout=5s
           ## 数据库驱动
           ## mysql, postgres,sqlite,sqlserver,clickhouse
           ## ref: https://gorm.io/zh_CN/docs/connecting_to_the_database.html#PostgreSQL

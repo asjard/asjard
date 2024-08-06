@@ -54,12 +54,6 @@ service Hello {
             get : "/examples/cipher"
         };
     };
-    // mysql数据库示例
-    rpc MysqlExample(MysqlExampleReq) returns (MysqlExampleResp) {
-        option (asjard.api.http) = {
-            post : "/examples/mysql"
-        };
-    };
 }
 
 // 加解密示例请求

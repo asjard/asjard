@@ -2,6 +2,7 @@ package snowflake
 
 import (
 	"github.com/asjard/asjard/core/bootstrap"
+	"github.com/asjard/asjard/core/runtime"
 	"github.com/bwmarrin/snowflake"
 )
 
@@ -15,8 +16,8 @@ func init() {
 }
 
 func (SnowFlake) Bootstrap() error {
-	// TODO 生成一个ID
-	node, err := snowflake.NewNode(0)
+	// TODO 添加实例ID
+	node, err := snowflake.NewNode(int64(runtime.GetAPP().Instance.SystemCode))
 	if err != nil {
 		return err
 	}

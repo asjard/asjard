@@ -11,15 +11,45 @@ import (
 )
 
 // 对grpc的status和code外面再包装一层，添加系统码和错误码的概念
+// 	其中<=200为框架保留错误码
+
+const (
+	// InternalServerErrorStr 系统内部错误统一返回字符串
+	InternalServerErrorStr = "internal server error"
+
+	// SetCacheFailCode 设置缓存失败错误码
+	SetCacheFailCode = 500_20
+	// RefreshCacheFailCode 刷新缓存失败错误码
+	RefreshCacheFailCode = 500_21
+	// DeleteCacheFailCode 删除缓存失败错误码
+	DeleteCacheFailCode = 500_22
+	// DatabaseNotFoundCode 数据库不存在错误
+	DatabaseNotFoundCode = 500_23
+
+	// UnsupportProtocolCode 暂不支持的协议
+	UnsupportProtocolCode = 404_30
+	// MethodNotAllowedCode 请求方法不匹配错误码
+	MethodNotAllowedCode = 400_31
+)
 
 var (
 	// InternalServerError 系统内部错误
-	InternalServerError   = Error(codes.Internal, "internal server error")
-	PageNotFoundError     = Error(codes.NotFound, "page not found")
-	MethodNotAllowedError = Error(codes.Unimplemented, "method not allowed")
-	UnsupportProtocol     = Error(codes.Unavailable, "unsupport protocol")
+	InternalServerError = Error(codes.Internal, InternalServerErrorStr)
+	// PageNotFoundError 页面找不到
+	PageNotFoundError = Error(codes.NotFound, "page not found")
+	// MethodNotAllowedError 请求方法不匹配
+	MethodNotAllowedError = Error(MethodNotAllowedCode, "method not allowed")
+	// UnsupportProtocol 暂不支持的协议
+	UnsupportProtocol = Error(UnsupportProtocolCode, "unsupport protocol")
 
-	BadRequestCode = codes.Code(4004)
+	// SetCacheFailError 设置缓存失败错误
+	SetCacheFailError = Error(SetCacheFailCode, InternalServerErrorStr)
+	// RefreCacheFailError 刷新缓存失败错误
+	RefreCacheFailError = Error(RefreshCacheFailCode, InternalServerErrorStr)
+	// DeleteCacheFailError 删除缓存失败错误
+	DeleteCacheFailError = Error(DeleteCacheFailCode, InternalServerErrorStr)
+	// DatabaseNotFoundError 数据库不存在
+	DatabaseNotFoundError = Error(DatabaseNotFoundCode, InternalServerErrorStr)
 )
 
 // Error 添加系统码

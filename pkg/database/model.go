@@ -1,16 +1,24 @@
 package database
 
 import (
-	"errors"
+	"context"
+	"reflect"
 
+	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/status"
 	"golang.org/x/sync/singleflight"
 )
 
 // Model 带缓存的数据存储，获取，删除
-type Model struct{}
+type Model struct {
+	sg singleflight.Group
+}
 
-// 防止缓存穿透
-var sg singleflight.Group
+// Modeler 模型需要实现的方法
+type Modeler interface {
+	// 返回库名和表名
+	ModelName() string
+}
 
 const (
 	// DefaultSingleflightKey 默认singleflight
@@ -19,73 +27,89 @@ const (
 
 // GetData 获取数据
 // 先从缓存获取数据，如果缓存中没有数据则从数据源获取数据
-// out: 将获取到的数据赋值个这个参数
-// cache: 将从这个缓存获取数据，如果获取不到数据则会执行do方法
-// do: 从数据源获取数据
-// hitted: 是否命中了缓存
-func (m Model) GetData(out any, cache *Cache, do func() (interface{}, error)) (hitted bool, err error) {
+// out: 将获取到的数据赋值给这个参数
+// cacher: 将从这个缓存获取数据，如果获取不到数据则会执行do方法
+// get: 从数据源获取数据
+func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (any, error)) (err error) {
 	if out == nil {
-		return false, errors.New("out is empty")
+		logger.Error("GetData out is nil")
+		return status.InternalServerError
 	}
-	if cache == nil {
-		out, err = m.doGet(DefaultSingleflightKey, do)
+	if cache == nil || !cache.Enabled() || cache.Key() == "" {
+		result, err := get()
 		if err != nil {
-			return false, err
+			return err
 		}
-		return false, nil
+		return m.copy(result, out)
 	}
 	// 从缓存获取数据
-	if err := cache.get(out); err != nil {
+	if err = cache.Get(ctx, cache.Key(), out); err != nil {
 		// 从数据源获取数据
-		out, err = m.doGet(cache.key, do)
+		result, err, _ := m.sg.Do(cache.Key(), get)
 		if err != nil {
 			// 如果从数据源也没有获取到数据
 			// 则可以设置一个空值
-			cache.setEmpty(out)
-			return false, err
+			cache.Set(ctx, cache.Key(), out)
+			return err
 		}
 		// 设置缓存
-		if err := cache.set(out); err != nil {
-			return false, err
+		if err := cache.Set(ctx, cache.Key(), result); err != nil {
+			logger.Error("set cache fail", "key", cache.Key(), "err", err)
+			// return status.SetCacheFailError
 		}
-		return false, nil
+		return m.copy(result, out)
 	}
-	// 刷新缓存过期时间
-	return true, cache.refreshExpire()
+	// 刷新缓存时间
+	if cache.AutoRefresh() {
+		if err := cache.Refresh(ctx, cache.Key()); err != nil {
+			logger.Error("refresh cache fail", "key", cache.Key(), "err", err)
+			// return status.RefreCacheFailError
+		}
+	}
+	return nil
 }
 
 // SetData 创建、更新、或删除数据
 // 先更新数据源，然后删除缓存
-// do: 更新数据源数据, 如果删除缓存过程中出现失败则会通过管道通知
+// set: 更新数据源数据, 如果删除缓存过程中出现失败则会通过管道通知
 // caches: 缓存列表
-func (m Model) SetData(do func(chan error) error, caches ...*Cache) error {
-	delErr := make(chan error)
-	defer close(delErr)
+func (m *Model) SetData(ctx context.Context, cache Cacher, set func() error) error {
 	// 更新数据源数据
-	if err := do(delErr); err != nil {
+	if err := set(); err != nil {
 		return err
 	}
 	// 删除缓存数据
-	for _, cache := range caches {
-		if err := cache.del(); err != nil {
-			delErr <- err
-			return err
-		}
+	if err := cache.Del(ctx, cache.Key()); err != nil {
+		logger.Error("delete cache fail", "key", cache.Key(), "err", err)
+		return status.DeleteCacheFailError
 	}
 	return nil
 }
 
-// UpdateData 更新数据
-func (m Model) UpdateData() error {
+// UpdateData TODO 更新数据
+func (m *Model) UpdateData() error {
 	return nil
 }
 
-// DeleteData 删除数据
-func (m Model) DeleteData() error {
+// DeleteData TODO 删除数据
+func (m *Model) DeleteData() error {
 	return nil
 }
 
-func (m Model) doGet(key string, do func() (interface{}, error)) (interface{}, error) {
-	v, err, _ := sg.Do(key, do)
-	return v, err
+// from值拷贝到to
+// from和to必须是同类型
+// from 和to 必须是指针
+func (m *Model) copy(from, to any) error {
+	fromVal := reflect.ValueOf(from)
+	toVal := reflect.ValueOf(to)
+	if toVal.Kind() != reflect.Ptr || toVal.IsNil() {
+		logger.Error("out must be a non-nil ptr")
+		return status.InternalServerError
+	}
+	if fromVal.Type() != toVal.Type() {
+		logger.Error("type mismatch: get func return type must be same with out type")
+		return status.InternalServerError
+	}
+	toVal.Elem().Set(fromVal.Elem())
+	return nil
 }

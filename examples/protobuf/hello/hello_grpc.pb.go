@@ -25,7 +25,6 @@ const (
 	Hello_Call_FullMethodName          = "/api.v1.hello.Hello/Call"
 	Hello_Log_FullMethodName           = "/api.v1.hello.Hello/Log"
 	Hello_CipherExample_FullMethodName = "/api.v1.hello.Hello/CipherExample"
-	Hello_MysqlExample_FullMethodName  = "/api.v1.hello.Hello/MysqlExample"
 )
 
 // HelloClient is the client API for Hello service.
@@ -43,8 +42,6 @@ type HelloClient interface {
 	Log(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// 加解密示例
 	CipherExample(ctx context.Context, in *CipherExampleReq, opts ...grpc.CallOption) (*CipherExampleResp, error)
-	// mysql数据库示例
-	MysqlExample(ctx context.Context, in *MysqlExampleReq, opts ...grpc.CallOption) (*MysqlExampleResp, error)
 }
 
 type helloClient struct {
@@ -100,15 +97,6 @@ func (c *helloClient) CipherExample(ctx context.Context, in *CipherExampleReq, o
 	return out, nil
 }
 
-func (c *helloClient) MysqlExample(ctx context.Context, in *MysqlExampleReq, opts ...grpc.CallOption) (*MysqlExampleResp, error) {
-	out := new(MysqlExampleResp)
-	err := c.cc.Invoke(ctx, Hello_MysqlExample_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // HelloServer is the server API for Hello service.
 // All implementations must embed UnimplementedHelloServer
 // for forward compatibility
@@ -124,8 +112,6 @@ type HelloServer interface {
 	Log(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	// 加解密示例
 	CipherExample(context.Context, *CipherExampleReq) (*CipherExampleResp, error)
-	// mysql数据库示例
-	MysqlExample(context.Context, *MysqlExampleReq) (*MysqlExampleResp, error)
 	mustEmbedUnimplementedHelloServer()
 }
 
@@ -147,9 +133,6 @@ func (UnimplementedHelloServer) Log(context.Context, *emptypb.Empty) (*emptypb.E
 }
 func (UnimplementedHelloServer) CipherExample(context.Context, *CipherExampleReq) (*CipherExampleResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CipherExample not implemented")
-}
-func (UnimplementedHelloServer) MysqlExample(context.Context, *MysqlExampleReq) (*MysqlExampleResp, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MysqlExample not implemented")
 }
 func (UnimplementedHelloServer) mustEmbedUnimplementedHelloServer() {}
 
@@ -254,24 +237,6 @@ func _Hello_CipherExample_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Hello_MysqlExample_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MysqlExampleReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HelloServer).MysqlExample(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Hello_MysqlExample_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HelloServer).MysqlExample(ctx, req.(*MysqlExampleReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // Hello_ServiceDesc is the grpc.ServiceDesc for Hello service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -298,10 +263,6 @@ var Hello_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CipherExample",
 			Handler:    _Hello_CipherExample_Handler,
-		},
-		{
-			MethodName: "MysqlExample",
-			Handler:    _Hello_MysqlExample_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

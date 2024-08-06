@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	// DefaultClientname 默认客户端名称
-	DefaultClientname = "default"
+	// DefaultClientName 默认客户端名称
+	DefaultClientName = "default"
 )
 
 type ClientManager struct {
@@ -102,7 +102,7 @@ func Client(opts ...Option) (*redis.Client, error) {
 	conn, ok := clientManager.clients.Load(options.clientName)
 	if !ok {
 		logger.Error("redis not found", "name", options.clientName)
-		return nil, status.InternalServerError
+		return nil, status.DatabaseNotFoundError
 	}
 	client, ok := conn.(*ClientConn)
 	if !ok {
@@ -265,6 +265,6 @@ func (m *ClientManager) watch(event *config.Event) {
 
 func defaultClientOptions() *ClientOptions {
 	return &ClientOptions{
-		clientName: DefaultClientname,
+		clientName: DefaultClientName,
 	}
 }

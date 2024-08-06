@@ -3,29 +3,28 @@ asjard:
     # 全局是否开启缓存
     enabled: true
     # 全局是否自动刷新
-    auto_refresh: true
+    autoRefresh: true
     # 全局过期时间
     expiresIn: 5m
-    # 二级缓存类型, 可以为redis, memcache等内存数据库
-    level2Type: redis
+    models:
+      modelName:
+        enabled: true
+        autoRefresh: 5m
     # redis缓存相关配置
     redis:
-      enabled: true
+      client: default
       # 是否自动刷新
       autoRefresh: true
       # 过期时间
-      expires_in: 5m
+      expiresIn: 5m
       # 是否开启某个表的缓存
-      tableEnabled:
-        xxx: true
+      models:
+        modelName:
+          enabled: true
     local:
       # 是否开启本地缓存
-      enabled: true
       # 过期时间
       expiresIn: 5m
-      tableEnabled:
-        xxx: true
-    memcache:
-      enabled: true
-    tableEnabled:
-      xx: true
+      models:
+        modelName:
+          enabled: true

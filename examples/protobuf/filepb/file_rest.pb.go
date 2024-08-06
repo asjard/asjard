@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-rest v1.3.0
 // - protoc             v5.27.0
-// source: file.proto
+// source: filepb/file.proto
 
 package filepb
 
@@ -52,7 +52,7 @@ func _File_Download_RestHandler(ctx *rest.Context, srv any, interceptor server.U
 var FileRestServiceDesc = rest.ServiceDesc{
 	ServiceName: "api.v1.file.File",
 	HandlerType: (*FileServer)(nil),
-	OpenAPI:     file_file_proto_openapi,
+	OpenAPI:     file_filepb_file_proto_openapi,
 	Methods: []rest.MethodDesc{
 		{
 			MethodName: "Upload",
@@ -76,7 +76,7 @@ const (
 	File_Download_RestPath = "/api/v1/file/download"
 )
 
-var file_file_proto_openapi = []byte{
+var file_filepb_file_proto_openapi = []byte{
 	0x0a, 0x05, 0x33, 0x2e, 0x30, 0x2e, 0x33, 0x12, 0x07, 0x32, 0x05, 0x30, 0x2e, 0x30, 0x2e, 0x31,
 	0x22, 0xa5, 0x04, 0x0a, 0xe4, 0x01, 0x0a, 0x15, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f,
 	0x66, 0x69, 0x6c, 0x65, 0x2f, 0x64, 0x6f, 0x77, 0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0xca, 0x01,
