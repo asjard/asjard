@@ -82,6 +82,21 @@ Asjard是一个用[Go](https://go.dev/)语言实现的由[protobuf](https://prot
 
 - [x] [安全](docs/user-guide/security.md)
 
+## 安装
+
+```bash
+go get github.com/asjard/asjard
+```
+
+protobuf编译命令安装
+
+```bash
+# rest 代码生成命令
+go install github.com/asjard/asjard/cmd/protoc-gen-go-rest
+# rest -> grpc gateway代码生成命令
+go install github.com/asjard/asjard/cmd/protoc-gen-go-rest
+```
+
 ## 快速开始
 
 > 更多示例请参考[examples](./examples)
@@ -138,6 +153,7 @@ protoc --go-grpc_out=${GOPATH}/src -I${GOPATH}/src -I. ./*.proto
 
 # 生成rest需要的文件, rest依赖grpc生成的文件
 protoc --go-rest_out=${GOPATH}/src -I${GOPATH}/src -I. ./*.proto
+
 ```
 
 ### 编写服务
