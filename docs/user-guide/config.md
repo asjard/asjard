@@ -6,7 +6,7 @@
 - [x] 内存, 优先级: 99
 - [x] 环境变量, 优先级: 0
 - [ ] cli, 优先级: 1
-- [ ] etcd, 优先级: 10
+- [x] etcd, 优先级: 10
 
 ## 配置优先级
 
@@ -39,4 +39,32 @@
 // 程序中可以这样读
 config.GetString("asjard.app", "")
 // Output: asjard
+```
+
+## ETCD配置
+
+### 配置优先级
+
+> 从上向下优先级依次递增,多个字段之间已英文`/`分隔,不以`/`结尾
+
+- `/{app}/configs/global/`: 项目相关全局配置
+- `/{app}/configs/service/{service}/`: 服务相关配置
+- `/{app}/configs/service/{service}/{region}/`: 服务region相关配置
+- `/{app}/configs/service/{service}/{region}/{az}/`: 服务region，az配置
+- `/{app}/configs/runtime/{instance.ID}/`: 实例配置
+
+### 使用
+
+```go
+// 例如全局配置
+// /app/configs/global/examples/timeout => 5ms
+config.GetDuration("examples.timeout", time.Second)
+// Output: 5ms
+
+// 服务配置
+// /app/configs/service/exampleService/examples/timeout => 6ms
+config.GetDuration("examples.timeout", time.Second)
+// Output: 6ms
+
+// 其他同上
 ```
