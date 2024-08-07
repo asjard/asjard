@@ -45,7 +45,7 @@ config.GetString("asjard.app", "")
 
 ### 配置优先级
 
-> 从上向下优先级依次递增,多个字段之间已英文`/`分隔,不以`/`结尾
+> 从上向下优先级依次递增,多个字段之间以英文`/`分隔,不以`/`结尾
 
 - `/{app}/configs/global/`: 项目相关全局配置
 - `/{app}/configs/service/{service}/`: 服务相关配置
