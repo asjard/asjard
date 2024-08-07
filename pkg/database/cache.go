@@ -18,9 +18,9 @@ type Cacher interface {
 	Set(ctx context.Context, key string, in any) error
 	// 刷新缓存过期时间
 	Refresh(ctx context.Context, key string) error
-
 	// 返回缓存Key名称
 	Key() string
+
 	// 是否开启了缓存
 	Enabled() bool
 	// 是否自动刷新缓存

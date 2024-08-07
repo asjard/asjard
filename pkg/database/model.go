@@ -75,6 +75,7 @@ func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (
 // caches: 缓存列表
 func (m *Model) SetData(ctx context.Context, cache Cacher, set func() error) error {
 	// 删除缓存
+	// TODO 如果set出错,这里缓存会被删除
 	if err := m.delCache(ctx, cache); err != nil {
 		return err
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/asjard/asjard/core/status"
 	pb "github.com/asjard/asjard/examples/protobuf/mysql"
 	"github.com/asjard/asjard/pkg/database"
+	"github.com/asjard/asjard/pkg/database/cache"
 	"github.com/asjard/asjard/pkg/database/mysql"
 	"github.com/asjard/asjard/pkg/database/redis"
 	"github.com/asjard/asjard/pkg/protobuf/requestpb"
@@ -54,7 +55,12 @@ func NewExampleModel() *ExampleModel {
 
 // Bootstrap 缓存初始化
 func (model *ExampleModel) Bootstrap() (err error) {
-	model.kvCache, err = redis.NewKeyValueCache(model.ExampleTable)
+	localCache, err := cache.NewLocalCache(model.ExampleTable)
+	if err != nil {
+		return err
+	}
+	model.kvCache, err = redis.NewKeyValueCache(model.ExampleTable,
+		redis.WithLocalCache(localCache))
 	if err != nil {
 		return err
 	}
@@ -142,14 +148,14 @@ func (t ExampleTable) Create(ctx context.Context, in *pb.CreateOrUpdateReq) erro
 	if err != nil {
 		return err
 	}
+	if err := db.Where("name=?", in.Name).First(&ExampleTable{}).Error; err == nil {
+		return status.Errorf(codes.AlreadyExists, "record %s already exist", in.Name)
+	}
 
 	if err := db.Create(&ExampleTable{
 		Name: in.Name,
 		Age:  in.Age,
 	}).Error; err != nil {
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			return status.Errorf(codes.AlreadyExists, "record %s already exist", in.Name)
-		}
 		logger.Error("create fail", "name", in.Name, "err", err)
 		return status.InternalServerError
 	}

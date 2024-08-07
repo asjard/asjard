@@ -49,14 +49,17 @@ type Cache struct {
 	tp     CacheType
 	groups []string
 
-	client  *redis.Client
-	options *CacheOptions
+	modelName string
+	client    *redis.Client
+	options   *CacheOptions
 }
 
+// CacheOptions 初始化redis缓存的一些参数
 type CacheOptions struct {
 	localCache database.Cacher
 }
 
+// CacheConfig 缓存配置
 type CacheConfig struct {
 	database.CacheConfig
 	Client string `json:"client"`
@@ -65,8 +68,9 @@ type CacheConfig struct {
 type CacheOption func(options *CacheOptions)
 
 var (
-	_                  database.Cacher = &Cache{}
-	defaultCacheConfig                 = CacheConfig{
+	_ database.Cacher = &Cache{}
+	// 默认缓存配置
+	defaultCacheConfig = CacheConfig{
 		CacheConfig: database.DefaultCacheConfig,
 		Client:      DefaultClientName,
 	}
@@ -107,31 +111,17 @@ func WithLocalCache(cache database.Cacher) CacheOption {
 }
 
 // NewCache 缓存初始化
-// TODO 配置监听
 func NewCache(model database.Modeler, options ...CacheOption) (*Cache, error) {
-	conf := defaultCacheConfig
-	if err := config.GetWithUnmarshal("asjard.cache",
-		&conf,
-		config.WithChain([]string{
-			fmt.Sprintf("asjard.cache.models.%s", model.ModelName()),
-			"asjard.cache.redis",
-			fmt.Sprintf("asjard.cache.redis.models.%s", model.ModelName()),
-		})); err != nil {
-		return nil, err
-	}
-	client, err := Client(WithClientName(conf.Client))
-	if err != nil {
-		return nil, err
-	}
 	cacheOptions := &CacheOptions{}
 	for _, opt := range options {
 		opt(cacheOptions)
 	}
-	return &Cache{
-		Cache:   database.NewCache(model).WithConf(&conf.CacheConfig),
-		client:  client,
-		options: cacheOptions,
-	}, nil
+	cache := &Cache{
+		Cache:     database.NewCache(model),
+		modelName: model.ModelName(),
+		options:   cacheOptions,
+	}
+	return cache.loadAndWatch()
 }
 
 // WithGroup 分组
@@ -363,4 +353,41 @@ func (c Cache) delGroup(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// 加载并监听配置变化
+func (c *Cache) loadAndWatch() (*Cache, error) {
+	if err := c.load(); err != nil {
+		logger.Error("redis cache load config fail", "err", err)
+		return nil, err
+	}
+	config.AddPatternListener("asjard.cache.redis.*", c.watch)
+	return c, nil
+}
+
+func (c *Cache) load() error {
+	conf := defaultCacheConfig
+	if err := config.GetWithUnmarshal("asjard.cache",
+		&conf,
+		config.WithChain([]string{
+			fmt.Sprintf("asjard.cache.models.%s", c.modelName),
+			"asjard.cache.redis",
+			fmt.Sprintf("asjard.cache.redis.models.%s", c.modelName),
+		})); err != nil {
+		return err
+	}
+	logger.Debug("load redis cache", "conf", conf)
+	c.Cache.WithConf(&conf.CacheConfig)
+	client, err := Client(WithClientName(conf.Client))
+	if err != nil {
+		return err
+	}
+	c.client = client
+	return nil
+}
+
+func (c *Cache) watch(event *config.Event) {
+	if err := c.load(); err != nil {
+		logger.Error("redis cache watch config fail", "err", err)
+	}
 }

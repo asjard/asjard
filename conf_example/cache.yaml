@@ -12,6 +12,7 @@ asjard:
         autoRefresh: true
     # redis缓存相关配置
     redis:
+      enabled: true
       client: default
       # 是否自动刷新
       autoRefresh: true
@@ -25,8 +26,7 @@ asjard:
       # 是否开启本地缓存
       # 过期时间
       expiresIn: 5m
-      # 最大占用空间,单位MB
-      maxSize: 10240
+      publishClient: default
       models:
         modelName:
           enabled: true
