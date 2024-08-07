@@ -1,17 +1,20 @@
 asjard:
   cache:
-    # 全局是否开启缓存
+    ## 全局是否开启缓存
     enabled: true
-    # 全局是否自动刷新
+    ## 全局是否自动刷新
     autoRefresh: true
-    # 全局过期时间
+    ## 全局过期时间
     expiresIn: 5m
+    ## 全局表缓存配置
     models:
+      ## 表名
       modelName:
         enabled: true
         autoRefresh: true
-    # redis缓存相关配置
+    ## redis缓存相关配置
     redis:
+      ## redis客户端
       client: default
       # 是否自动刷新
       autoRefresh: true
@@ -21,12 +24,16 @@ asjard:
       models:
         modelName:
           enabled: true
+    ## 本地缓存相关配置
     local:
-      # 是否开启本地缓存
-      # 过期时间
+      ## 是否开启本地缓存
+      enabled: true
+      ## 过期时间
       expiresIn: 5m
-      # 最大占用空间,单位MB
-      maxSize: 10240
+      ## 最大占用空间,单位MB
+      maxSize: 102400
+      ## 多个实例时删除缓存广播redis客户端
+      publishClient: default
       models:
         modelName:
           enabled: true
