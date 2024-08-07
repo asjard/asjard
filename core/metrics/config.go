@@ -33,7 +33,9 @@ var defaultConfig = Config{
 		"process_collector",
 		"db_default",
 		"api_requests_total",
-		"api_requests_latency_ms",
+		"api_requests_latency_seconds",
+		"api_request_size_bytes",
+		"api_response_size_bytes",
 	},
 	PushGateway: PushGatewayConfig{
 		Interval: utils.JSONDuration{Duration: 5 * time.Second},

@@ -9,6 +9,7 @@ import (
 	"github.com/asjard/asjard/core/metrics/collectors"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/core/status"
+	"github.com/asjard/asjard/pkg/server/rest"
 )
 
 const (
@@ -17,8 +18,10 @@ const (
 
 // Metrics 监控拦截器
 type Metrics struct {
-	requestTotal    *collectors.APIRequestCounter
-	requestDuration *collectors.APIRequestDuration
+	requestTotal   *collectors.APIRequestCounter
+	requestLatency *collectors.APIRequestLatency
+	requestSize    *collectors.APIRequestSize
+	responseSize   *collectors.APIResponseSize
 }
 
 func init() {
@@ -28,8 +31,10 @@ func init() {
 
 func NewMetricsInterceptor() server.ServerInterceptor {
 	return &Metrics{
-		requestTotal:    collectors.NewAPIRequestCounter(),
-		requestDuration: collectors.NewAPIRequestDuratin(),
+		requestTotal:   collectors.NewAPIRequestCounter(),
+		requestLatency: collectors.NewAPIRequestLatency(),
+		requestSize:    collectors.NewAPIRequestSize(),
+		responseSize:   collectors.NewAPIResponseSize(),
 	}
 }
 
@@ -42,16 +47,24 @@ func (m Metrics) Interceptor() server.UnaryServerInterceptor {
 		now := time.Now()
 		resp, err = handler(ctx, req)
 		latency := time.Since(now)
-		go func(latency time.Duration, fullMethod, protocol string, err error) {
-			st := status.FromError(err)
-			codeStr := strconv.Itoa(int(st.Code))
-			fullMethod = strings.ReplaceAll(strings.Trim(info.FullMethod, "/"), "/", ".")
-			m.requestTotal.Inc(codeStr,
-				fullMethod, protocol)
-			time.Since(now)
-			m.requestDuration.Observe(fullMethod,
-				protocol, float64(latency.Milliseconds()))
-		}(latency, info.FullMethod, info.Protocol, err)
+		st := status.FromError(err)
+		codeStr := strconv.Itoa(int(st.Code))
+		fullMethod := strings.ReplaceAll(strings.Trim(info.FullMethod, "/"), "/", ".")
+		m.requestTotal.Inc(codeStr, fullMethod, info.Protocol)
+		m.requestLatency.Observe(fullMethod, info.Protocol, latency.Seconds())
+		if rtx, ok := ctx.(*rest.Context); ok {
+			m.requestSize.Observe(fullMethod, info.Protocol, float64(computeApproximateRequestSize(rtx)))
+			m.responseSize.Observe(fullMethod, info.Protocol, float64(rtx.Response.Header.ContentLength()))
+		}
 		return resp, err
 	}
+}
+
+func computeApproximateRequestSize(r *rest.Context) int {
+	s := len(r.RequestURI())
+	s += len(r.Method())
+	s += len(r.Request.Header.Protocol())
+	s += r.Request.Header.Len()
+	s += r.Request.Header.ContentLength()
+	return s
 }

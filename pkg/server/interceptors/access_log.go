@@ -2,12 +2,11 @@ package interceptors
 
 import (
 	"context"
-	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/pkg/server/rest"
@@ -22,7 +21,8 @@ const (
 // AccessLog access日志拦截器
 type AccessLog struct {
 	enabled bool
-	cfg     accessLogConfig
+	cfg     *accessLogConfig
+	m       sync.RWMutex
 }
 
 type accessLogConfig struct {
@@ -35,8 +35,7 @@ type accessLogConfig struct {
 }
 
 var defaultAccessLogConfig = accessLogConfig{
-	SkipMethods:    utils.JSONStrings{"grpc", "asjard.api.health.Health.Check"},
-	skipMethodsMap: make(map[string]struct{}),
+	SkipMethods: utils.JSONStrings{"grpc", "asjard.api.health.Health.Check"},
 }
 
 func init() {
@@ -45,41 +44,25 @@ func init() {
 
 // NewAccessLogInterceptor .
 func NewAccessLogInterceptor() server.ServerInterceptor {
-	conf := defaultAccessLogConfig
-	config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigInterceptorServerWithNamePrefix, AccessLogInterceptorName), &conf)
-	for _, skipMethod := range conf.SkipMethods {
-		conf.skipMethodsMap[skipMethod] = struct{}{}
-	}
-	accessLog := &AccessLog{
-		enabled: config.GetBool(constant.ConfigLoggerAccessEnabled, false),
-		cfg:     conf,
-	}
+	accessLog := &AccessLog{}
+	accessLog.loadAndWatch()
 	return accessLog
 }
 
 // Name 日志拦截器名称
-func (AccessLog) Name() string {
+func (*AccessLog) Name() string {
 	return AccessLogInterceptorName
 }
 
 // Interceptor 拦截器实现
 // 垮协议拦截器
-func (al AccessLog) Interceptor() server.UnaryServerInterceptor {
+func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
 		if !al.enabled {
 			return handler(ctx, req)
 		}
 		fullMethod := strings.ReplaceAll(strings.Trim(info.FullMethod, "/"), "/", ".")
-		// 是否拦截协议
-		if _, ok := al.cfg.skipMethodsMap[info.Protocol]; ok {
-			return handler(ctx, req)
-		}
-		// 是否拦截方法
-		if _, ok := al.cfg.skipMethodsMap[fullMethod]; ok {
-			return handler(ctx, req)
-		}
-		// 是否拦截协议方法
-		if _, ok := al.cfg.skipMethodsMap[info.Protocol+"://"+fullMethod]; ok {
+		if al.skipped(info.Protocol, fullMethod) {
 			return handler(ctx, req)
 		}
 		now := time.Now()
@@ -105,4 +88,46 @@ func (al AccessLog) Interceptor() server.UnaryServerInterceptor {
 		}
 		return resp, err
 	}
+}
+
+func (al *AccessLog) skipped(protocol, method string) bool {
+	al.m.RLock()
+	defer al.m.RUnlock()
+	// 是否拦截协议
+	if _, ok := al.cfg.skipMethodsMap[protocol]; ok {
+		return true
+	}
+	// 是否拦截方法
+	if _, ok := al.cfg.skipMethodsMap[method]; ok {
+		return true
+	}
+	// 是否拦截协议方法
+	if _, ok := al.cfg.skipMethodsMap[protocol+"://"+method]; ok {
+		return true
+	}
+	return false
+}
+
+func (al *AccessLog) loadAndWatch() {
+	al.load()
+	config.AddListener("asjard.logger.accessEnabled", al.watch)
+	config.AddPatternListener("asjard.interceptors.server.accessLog.*", al.watch)
+}
+
+func (al *AccessLog) load() {
+	conf := defaultAccessLogConfig
+	config.GetWithUnmarshal("asjard.interceptors.server.accessLog",
+		&conf)
+	conf.skipMethodsMap = make(map[string]struct{}, len(conf.SkipMethods))
+	for _, skipMethod := range conf.SkipMethods {
+		conf.skipMethodsMap[skipMethod] = struct{}{}
+	}
+	al.m.Lock()
+	al.enabled = config.GetBool("asjard.logger.accessEnabled", false)
+	al.cfg = &conf
+	al.m.Unlock()
+}
+
+func (al *AccessLog) watch(_ *config.Event) {
+	al.load()
 }
