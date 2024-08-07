@@ -235,14 +235,8 @@ func (m *ClientManager) watch(event *config.Event) {
 		return
 	}
 	m.clients.Range(func(key, value any) bool {
-		exist := false
-		for clientName := range clients {
-			if key.(string) == clientName {
-				exist = true
-				break
-			}
-		}
-		if !exist {
+		if _, ok := clients[key.(string)]; !ok {
+			logger.Debug("delete etcd client", "client", key)
 			m.clients.Delete(key)
 		}
 		return true

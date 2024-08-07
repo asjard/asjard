@@ -397,10 +397,7 @@ func (m *ConfigManager) setValue(key string, value any, ops *Options) error {
 		setValue = encyptedValue
 	}
 	if len(ops.sourceNames) == 0 {
-		if defaultSource := GetString("config.setDefaultSource", ""); defaultSource != "" {
-			return m.setValueToSource(key, defaultSource, setValue)
-		}
-		return m.setValueToSource(key, "", setValue)
+		return m.setValueToSource(key, GetString("asjard.config.setDefaultSource", "mem"), setValue)
 	}
 	for _, sourceName := range ops.sourceNames {
 		if err := m.setValueToSource(key, sourceName, setValue); err != nil {

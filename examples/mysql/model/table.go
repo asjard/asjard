@@ -38,7 +38,7 @@ func (ExampleTable) TableName() string {
 	return "example_table"
 }
 
-// ModelName 全局唯一的表明
+// ModelName 全局唯一的表名
 func (ExampleTable) ModelName() string {
 	return "example_database_example_table"
 }

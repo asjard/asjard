@@ -46,5 +46,5 @@ run_example: ## 运行examples/server/hello/main.go
 	ASJARD_CONF_DIR=$(PWD)/conf_example go run examples/server/hello/main.go
 
 test: ## 运行测试用例
-	go test -cover -coverprofile=cover.out ./...
+	go test -cover -coverprofile=cover.out $$(go list ./...|grep -v examples)
 	# go tool cover -html=cover.out

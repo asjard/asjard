@@ -25,12 +25,13 @@ type testSource struct {
 func newTestSource() (Sourcer, error) {
 	return &testSource{
 		configs: map[string]any{
-			"testInt":      1,
-			"testStr":      "test data",
-			"testFloat":    0.01,
-			"testDuration": "10m",
-			"testBool":     true,
-			"test_del_ref": "test_del_ref_value",
+			"asjard.config.setDefaultSource": testSourceName,
+			"testInt":                        1,
+			"testStr":                        "test data",
+			"testFloat":                      0.01,
+			"testDuration":                   "10m",
+			"testBool":                       true,
+			"test_del_ref":                   "test_del_ref_value",
 		},
 	}, nil
 }

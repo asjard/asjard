@@ -271,14 +271,7 @@ func (m *DBManager) watch(event *config.Event) {
 	}
 	// 删除被删除的数据库
 	m.dbs.Range(func(key, value any) bool {
-		exist := false
-		for dbName := range conf {
-			if key.(string) == dbName {
-				exist = true
-				break
-			}
-		}
-		if !exist {
+		if _, ok := conf[key.(string)]; !ok {
 			m.dbs.Delete(key)
 		}
 		return true
