@@ -1,55 +1,84 @@
-> protobuf驱动插件式的微服务框架,通过简单的配置即可实现相应功能或者变更程序逻辑,插件式按需加载自己想要的功能或者定制自己的插件以满足业务需求
+## Asjard
 
-## 开发日志
+Asjard是一个用[Go](https://go.dev/)语言实现的由[protobuf](https://protobuf.dev/)和配置驱动的微服务框架
 
-- [x] [系统启动](./core/bootstrap/README.md)
-- [x] [客户端管理](./core/client/README.md)
-- [x] [配置管理](./core/config/README.md)
-- [x] [日志管理](./core/logger/README.md)
-- [x] [注册发现管理](./core/registry/REAME.md)
-- [x] [运行时](./core/runtime/README.md)
-- [x] [安全管理](./core/security/README.md)
-- [x] [服务管理](./core/server/README.md)
-- [x] 添加循环调用拦截器
-- [x] 熔断拦截器
-- [x] rest请求头注入到rpc上下文
-- [x] accesslog拦截器按错误级别输出日志
-- [x] rest添加metrics接口
-- [x] rest添加swagger
-- [x] 所有协议添加health接口
-- [x] server new方法使用options方式传参
-- [x] protoc-gen-rest-go支持自定义api类型和version(api: "api", version:"v1")
-- [x] 修复文件配置源更新事件问题
-- [x] 所有配置添加默认配置，在不配置的情况下也能正常运行
+### 特性
+
+- [x] 多服务端/客户端协议
+
+  - 服务端
+    - [x] grpc
+    - [x] http
+    - [x] pprof
+  - 客户端
+    - [x] grpc
+
+- [x] 多配置源,异步实时生效
+
+  - [x] 环境变量
+  - [x] 文件
+  - [x] 内存
+  - [x] etcd
+
+- [x] 自动服务注册/发现
+
+  - 发现
+    - [x] 本地配置文件服务发现
+    - [x] etcd
+  - 注册
+    - [x] etcd
+
+- [x] 统一日志处理
+
+  - [x] mysql慢日志
+  - [x] accesslog
+
+- [x] 统一的错误处理
+
+- [x] 拦截器
+
+  - 服务端
+
+    - [x] i18n
+    - [x] accessLog
+    - [x] metrics
+    - [ ] 限速
+
+  - 客户端
+    - [x] 熔断降级
+    - [x] 循环调用拦截
+    - [ ] 限速
+    - [x] http转grpc
+
 - [x] 监控
-- [x] rest gateway
-- [x] 添加grafana看板
-- [x] api添加i18n拦截器
-- [x] client支持指定实例直连
-- [x] 支持mysql连接
-- [x] 支持etcd连接
-- [x] 添加etcd服务发现注册中心
-- [x] 支持redis连接
-- [x] 添加ETCD远程配置中心
-- [ ] 限速
-- [ ] 链路追踪
-- [ ] 拦截器配置自动更新，无需重启
-- [ ] stream支持
-- [ ] openapi更新default response
-- [ ] 添加rest服务返回自定义拦截器
-- [ ] 添加测试用例，文档，cli工具
-- [ ] 配置监听添加方法监听
-- [ ] 修复文件配置源同一个配置在不同配置文件中优先级问题
-- [ ] protoc-gen-ts实现
-- [ ] access_log支持和主日志分不同文件存放
-- [ ] 支持mongo连接
-- [ ] 不同服务，方法，支持指定负载均衡策略，从指定服务发现中心发现服务
 
-## 背景
+  - [x] go_collector
+  - [x] process_collector
+  - [x] mysql
+  - [x] api_requests_total
+  - [x] api_requests_latency_seconds
+  - [x] api_requests_size_bytes
+  - [x] api_response_size_bytes
 
-## 特性
+- [x] protobuf自动生成代码
 
-- []
+  - [x] rest route
+  - [x] openapi
+  - [x] gateway
+  - [x] rest转grpc
+  - [ ] ts
+
+- [x] 数据库
+
+  - [x] mysql
+  - [x] etcd
+  - [x] redis
+  - [ ] mongo
+
+- [x] 多级缓存
+
+  - [x] redis缓存
+  - [x] 本地缓存
 
 ## 快速开始
 
@@ -188,4 +217,28 @@ func main() {
 
 ```
 
-## [变更日志](CHANGELOG.md)
+## 三方库
+
+下面是一些本框架中用到的开源库
+
+| 库                                                                  | 描述               |
+| ------------------------------------------------------------------- | ------------------ |
+| [fasthttp](https://github.com/valyala/fasthttp)                     | http协议           |
+| [fasthttp-router](https://github.com/fasthttp/router)               | http路由管理       |
+| [grpc](https://google.golang.org/grpc)                              | grpc协议           |
+| [protobuf](https://google.golang.org/protobuf)                      | protobuf协议       |
+| [hystrix-go](https://github.com/afex/hystrix-go)                    | 熔断/降级          |
+| [fsnotify](https://github.com/fsnotify/fsnotify)                    | 配置文件监听       |
+| [prometheus-client-go](https://github.com/prometheus/client_golang) | prometheus监控上报 |
+| [etcd](https://go.etcd.io/etcd/client/v3)                           | etcd连接           |
+| [gorm](https://gorm.io/gorm)                                        | 数据库连接         |
+| [redis](https://github.com/redis/go-redis/v9)                       | redis连接          |
+| [yaml-v2](https://gopkg.in/yaml.v2)                                 | yaml解析           |
+| [fressache](https://github.com/coocood/freecache)                   | 本地缓存           |
+| [gnostic](https://github.com/google/gnostic)                        | openapiv3文档生成  |
+| [cast](https://github.com/spf13/cast)                               | 配置类型转换       |
+| [lumberjack](gopkg.in/natefinch/lumberjack.v2)                      | 日志防爆           |
+
+## License
+
+[MIT](https://github.com/asjard/asjard?tab=MIT-1-ov-file)

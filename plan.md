@@ -1,0 +1,44 @@
+## 开发日志
+
+- [x] [系统启动](./core/bootstrap/README.md)
+- [x] [客户端管理](./core/client/README.md)
+- [x] [配置管理](./core/config/README.md)
+- [x] [日志管理](./core/logger/README.md)
+- [x] [注册发现管理](./core/registry/REAME.md)
+- [x] [运行时](./core/runtime/README.md)
+- [x] [安全管理](./core/security/README.md)
+- [x] [服务管理](./core/server/README.md)
+- [x] 添加循环调用拦截器
+- [x] 熔断拦截器
+- [x] rest请求头注入到rpc上下文
+- [x] accesslog拦截器按错误级别输出日志
+- [x] rest添加metrics接口
+- [x] rest添加swagger
+- [x] 所有协议添加health接口
+- [x] server new方法使用options方式传参
+- [x] protoc-gen-rest-go支持自定义api类型和version(api: "api", version:"v1")
+- [x] 修复文件配置源更新事件问题
+- [x] 所有配置添加默认配置，在不配置的情况下也能正常运行
+- [x] 监控
+- [x] rest gateway
+- [x] 添加grafana看板
+- [x] api添加i18n拦截器
+- [x] client支持指定实例直连
+- [x] 支持mysql连接
+- [x] 支持etcd连接
+- [x] 添加etcd服务发现注册中心
+- [x] 支持redis连接
+- [x] 添加ETCD远程配置中心
+- [ ] 限速
+- [ ] 链路追踪
+- [ ] 拦截器配置自动更新，无需重启
+- [ ] stream支持
+- [ ] openapi更新default response
+- [ ] 添加rest服务返回自定义拦截器
+- [ ] 添加测试用例，文档，cli工具
+- [ ] 配置监听添加方法监听
+- [ ] 修复文件配置源同一个配置在不同配置文件中优先级问题
+- [ ] protoc-gen-ts实现
+- [ ] access_log支持和主日志分不同文件存放
+- [ ] 支持mongo连接
+- [ ] 不同服务，方法，支持指定负载均衡策略，从指定服务发现中心发现服务
