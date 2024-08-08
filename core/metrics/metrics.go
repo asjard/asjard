@@ -82,7 +82,7 @@ func (m *MetricsManager) register(name string, collector prometheus.Collector) p
 	col, ok := m.collectors[name]
 	m.cm.RUnlock()
 	if ok {
-		registry.Unregister(col)
+		return col
 	}
 	registry.MustRegister(collector)
 	m.cm.Lock()
@@ -133,8 +133,6 @@ func RegisterCollector(name string, collector prometheus.Collector) prometheus.C
 // 如果没有开启监控或者收集指标不在配置范围内则返回true
 func RegisterCounter(name, help string, labelNames []string) *prometheus.CounterVec {
 	if counter := metricsManager.register(name, prometheus.NewCounterVec(prometheus.CounterOpts{
-		// Namespace: runtime.APP,
-		// Subsystem: runtime.Name,
 		Name: name,
 		Help: help,
 	}, labelNames)); counter != nil {
@@ -145,7 +143,6 @@ func RegisterCounter(name, help string, labelNames []string) *prometheus.Counter
 
 func RegisterGauge(name, help string, labelNames []string) *prometheus.GaugeVec {
 	if gauge := metricsManager.register(name, prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		// Namespace: runtime.APP,
 		Name: name,
 		Help: help,
 	}, labelNames)); gauge != nil {
@@ -156,7 +153,6 @@ func RegisterGauge(name, help string, labelNames []string) *prometheus.GaugeVec 
 
 func RegisterHistogram(name, help string, labelNames []string, buckets []float64) *prometheus.HistogramVec {
 	if histogram := metricsManager.register(name, prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		// Namespace: runtime.APP,
 		Name:    name,
 		Help:    help,
 		Buckets: buckets,
@@ -168,7 +164,6 @@ func RegisterHistogram(name, help string, labelNames []string, buckets []float64
 
 func RegisterSummaryVec(name, help string, labelNames []string, objectives map[float64]float64) *prometheus.SummaryVec {
 	if summary := metricsManager.register(name, prometheus.NewSummaryVec(prometheus.SummaryOpts{
-		// Namespace:  runtime.APP,
 		Name:       name,
 		Help:       help,
 		Objectives: objectives,
