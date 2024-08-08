@@ -1,4 +1,0 @@
-asjard:
-  clients:
-    grpc:
-      loadbalance: localityRoundRobin

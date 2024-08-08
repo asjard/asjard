@@ -1,3 +1,6 @@
+/*
+Package constant 框架定义的一些常量信息
+*/
 package constant
 
 const (

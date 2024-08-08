@@ -94,12 +94,12 @@ protobuf编译命令安装
 # rest 代码生成命令
 go install github.com/asjard/asjard/cmd/protoc-gen-go-rest
 # rest -> grpc gateway代码生成命令
-go install github.com/asjard/asjard/cmd/protoc-gen-go-rest
+go install github.com/asjard/asjard/cmd/protoc-gen-go-rest2grpc-gw
 ```
 
 ## 快速开始
 
-> 更多示例请参考[examples](./examples)
+> 更多示例请参考[asjard-example](https://github.com/asjard/examples)
 
 ### 编写proto协议文件
 

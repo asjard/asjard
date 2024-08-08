@@ -1,3 +1,7 @@
+/*
+Package status 对grpc错误的一层包装，添加了系统码，http状态码，错误码的概念
+以及一些框架定义的错误
+*/
 package status
 
 import (

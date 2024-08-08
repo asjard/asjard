@@ -1,3 +1,6 @@
+/*
+Package bootstrap 服务初始化后启动之前执行的一些初始化任务，加载一些内建功能
+*/
 package bootstrap
 
 import (

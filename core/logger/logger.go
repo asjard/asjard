@@ -1,3 +1,6 @@
+/*
+Package logger 根据配置定义日志级别，防爆，输出位置等维护日志
+*/
 package logger
 
 import (

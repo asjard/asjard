@@ -1,3 +1,6 @@
+/*
+Package client 不同协议的客户端维护，通过配置提供统一连接，拦截器的加载，负载均衡策略的选择
+*/
 package client
 
 import (

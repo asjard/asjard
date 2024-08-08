@@ -1,5 +1,0 @@
-asjard:
-  topology:
-    services:
-      hello:
-        name: exampleService

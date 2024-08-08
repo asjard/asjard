@@ -27,9 +27,6 @@ update: .gitmodules ## 更新本地代码
 	git submodule update --remote
 	git submodule foreach  --recursive 'tag="$$(git config -f $$toplevel/.gitmodules submodule.$$name.tag)";[ -n $$tag ] && git reset --hard  $$tag || echo "this module has no tag"'
 
-gen_example_proto: ## 生成examples目录下的协议
-	GEN_PROTO_GO=$(GEN_PROTO_GO) GEN_PROTO_GO_GRPC=$(GEN_PROTO_GO_GRPC) GEN_PROTO_GO_REST=$(GEN_PROTO_GO_REST) GEN_PROTO_GO_REST_GW=$(GEN_PROTO_GO_REST_GW) GEN_PROTO_TS=$(GEN_PROTO_TS) /bin/bash scripts/gen_example_proto.sh
-
 build_cipher_aes: ## 生成asjard_cipher_aes命令
 	go build -o $(GOPATH)/bin/asjard_cipher_aes -ldflags '-w -s' ./cmd/asjard_cipher_aes/*.go
 
@@ -42,9 +39,7 @@ build_gen_go_rest2grpc_gw: ## 生成protoc-gen-go-rest2grpc-gw命令
 build_gen_ts: ## 生成protoc-gen-ts命令
 	go build -o $(GOPATH)/bin/protoc-gen-ts -ldflags '-w -s' ./cmd/protoc-gen-ts/*.go
 
-run_example: ## 运行examples/server/hello/main.go
-	ASJARD_CONF_DIR=$(PWD)/conf_example go run examples/server/hello/main.go
 
 test: ## 运行测试用例
-	go test -cover -coverprofile=cover.out $$(go list ./...|grep -v examples)
+	go test -cover -coverprofile=cover.out $$(go list ./...|grep -v cmd)
 	# go tool cover -html=cover.out

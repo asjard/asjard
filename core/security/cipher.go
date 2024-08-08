@@ -1,3 +1,6 @@
+/*
+Package security 安全组件, 数据加解密
+*/
 package security
 
 import (

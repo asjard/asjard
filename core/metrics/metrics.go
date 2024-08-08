@@ -1,3 +1,6 @@
+/*
+Package metrics 监控维护，根据配置过滤需要上报的指标
+*/
 package metrics
 
 import (
