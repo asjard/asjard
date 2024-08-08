@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asjard/asjard/core/metrics/collectors"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/core/status"
+	"github.com/asjard/asjard/pkg/metrics/collectors"
 	"github.com/asjard/asjard/pkg/server/rest"
 )
 

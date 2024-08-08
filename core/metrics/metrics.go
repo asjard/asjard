@@ -24,11 +24,12 @@ type MetricsManager struct {
 }
 
 var (
-	registry       = prometheus.NewRegistry()
+	registry       *prometheus.Registry
 	metricsManager *MetricsManager
 )
 
 func init() {
+	registry = prometheus.NewRegistry()
 	metricsManager = &MetricsManager{
 		collectors: map[string]prometheus.Collector{
 			"go_collector":      collectors.NewGoCollector(),
@@ -55,6 +56,11 @@ func Init() error {
 	metricsManager.conf = conf
 	go metricsManager.push()
 	return nil
+}
+
+// Registry 返回prometheus.Registry
+func Registry() *prometheus.Registry {
+	return registry
 }
 
 // 注册成功返回collector,否则返回nil

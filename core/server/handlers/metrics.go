@@ -13,11 +13,13 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+// MetricsAPI metrics相关接口
 type MetricsAPI struct {
 	reg prometheus.TransactionalGatherer
 	metricspb.UnimplementedMetricsServer
 }
 
+// NewMetricsAPI metrics接口
 func NewMetricsAPI(gather prometheus.Gatherer) *MetricsAPI {
 	return &MetricsAPI{reg: prometheus.ToTransactionalGatherer(gather)}
 }
