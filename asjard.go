@@ -42,7 +42,7 @@ const (
  `
 )
 
-// Asjard .
+// Asjard 维护框架所需启动的服务，以及每个服务的handler，用以在start阶段使用
 type Asjard struct {
 	// 注册的服务列表
 	servers []server.Server
@@ -68,7 +68,9 @@ func New() *Asjard {
 	}
 }
 
-// AddHandler 同AddHandler方法，可以让一个handler支持多个协议
+// AddHandler 给协议添加handler，一个handler可以处理不同的协议
+// 具体handler需要实现什么方法需要每个协议自行定义
+// 这里只是维护不同协议的handler列表，待到start时使用
 func (asd *Asjard) AddHandler(handler any, protocols ...string) error {
 	asd.hm.Lock()
 	defer asd.hm.Unlock()
@@ -85,7 +87,7 @@ func (asd *Asjard) AddHandler(handler any, protocols ...string) error {
 	return nil
 }
 
-// AddHandlers 添加同一个协议的多个handler
+// AddHandlers 功能同AddHandler方法, 添加同一个协议的多个handler
 func (asd *Asjard) AddHandlers(protocol string, handlers ...any) error {
 	for _, handler := range handlers {
 		if err := asd.AddHandler(handler, protocol); err != nil {
@@ -95,7 +97,7 @@ func (asd *Asjard) AddHandlers(protocol string, handlers ...any) error {
 	return nil
 }
 
-// Start 系统启动
+// Start 系统启动, 现根据配置初始化各个组件
 func (asd *Asjard) Start() error {
 	if err := asd.Init(); err != nil {
 		return err

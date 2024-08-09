@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asjard/asjard/core/metrics/collectors"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/core/status"
+	"github.com/asjard/asjard/pkg/metrics/collectors"
 	"github.com/asjard/asjard/pkg/server/rest"
 )
 
@@ -46,12 +46,11 @@ func (m Metrics) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
 		now := time.Now()
 		resp, err = handler(ctx, req)
-		latency := time.Since(now)
 		st := status.FromError(err)
 		codeStr := strconv.Itoa(int(st.Code))
 		fullMethod := strings.ReplaceAll(strings.Trim(info.FullMethod, "/"), "/", ".")
 		m.requestTotal.Inc(codeStr, fullMethod, info.Protocol)
-		m.requestLatency.Observe(fullMethod, info.Protocol, latency.Seconds())
+		m.requestLatency.Observe(fullMethod, info.Protocol, time.Since(now).Seconds())
 		if rtx, ok := ctx.(*rest.Context); ok {
 			m.requestSize.Observe(fullMethod, info.Protocol, float64(computeApproximateRequestSize(rtx)))
 			m.responseSize.Observe(fullMethod, info.Protocol, float64(rtx.Response.Header.ContentLength()))

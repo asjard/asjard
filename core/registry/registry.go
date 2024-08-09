@@ -1,3 +1,6 @@
+/*
+Package registry 自动服务发现/注册，自定义发现/注册管理
+*/
 package registry
 
 import (

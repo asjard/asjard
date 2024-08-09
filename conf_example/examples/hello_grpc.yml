@@ -1,3 +1,0 @@
-examples:
-  timeout: 2ms
-  fieldInDifferentFileUnderSameSection: this is value in hello_grpc.yml

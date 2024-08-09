@@ -319,7 +319,7 @@
               }
             ]
           },
-          "unit": "ms"
+          "unit": "s"
         },
         "overrides": []
       },
@@ -355,7 +355,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "api_requests_latency_ms{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\", quantile=\"0.5\"}",
+          "expr": "histogram_quantile(0.5, sum(irate(api_requests_latency_seconds_bucket{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\"}[$__rate_interval])) by (api,le)) / 1000",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -371,7 +371,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "api_requests_latency_ms{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\", quantile=\"0.9\"}",
+          "expr": "histogram_quantile(0.9, sum(irate(api_requests_latency_seconds_bucket{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\"}[$__rate_interval])) by (api,le)) / 1000",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -387,7 +387,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "api_requests_latency_ms{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\", quantile=\"0.99\"}",
+          "expr": "histogram_quantile(0.99, sum(irate(api_requests_latency_seconds_bucket{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\"}[$__rate_interval])) by (api,le)) / 1000",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -753,7 +753,7 @@
               }
             ]
           },
-          "unit": "ms"
+          "unit": "s"
         },
         "overrides": []
       },
@@ -784,11 +784,24 @@
           },
           "editorMode": "code",
           "expr": "api_requests_latency_ms{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\", quantile=\"0.99\"}",
-          "hide": false,
+          "hide": true,
           "instant": false,
           "legendFormat": "{{api}}",
           "range": true,
           "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bdrt1npzytlhcf"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99, sum(irate(api_requests_latency_seconds_bucket{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\"}[$__rate_interval])) by (api,le)) / 1000",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{api}}",
+          "range": true,
+          "refId": "A"
         }
       ],
       "title": "Request latency P99",
@@ -948,8 +961,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1166,8 +1178,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1299,8 +1310,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1415,8 +1425,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1579,8 +1588,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1743,8 +1751,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1844,8 +1851,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1945,8 +1951,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2046,8 +2051,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2125,8 +2129,8 @@
       {
         "current": {
           "selected": false,
-          "text": "projectAsjardExample",
-          "value": "projectAsjardExample"
+          "text": "examples",
+          "value": "examples"
         },
         "datasource": {
           "type": "prometheus",
@@ -2151,9 +2155,9 @@
       },
       {
         "current": {
-          "selected": true,
-          "text": "region-conf-example",
-          "value": "region-conf-example"
+          "selected": false,
+          "text": "default",
+          "value": "default"
         },
         "datasource": {
           "type": "prometheus",
@@ -2179,8 +2183,8 @@
       {
         "current": {
           "selected": false,
-          "text": "region-conf-example-1",
-          "value": "region-conf-example-1"
+          "text": "default",
+          "value": "default"
         },
         "datasource": {
           "type": "prometheus",
@@ -2206,8 +2210,8 @@
       {
         "current": {
           "selected": true,
-          "text": ["exampleService"],
-          "value": ["exampleService"]
+          "text": ["All"],
+          "value": ["$__all"]
         },
         "datasource": {
           "type": "prometheus",
@@ -2260,8 +2264,8 @@
       {
         "current": {
           "selected": true,
-          "text": ["api.v1.hello.Hello.Hello"],
-          "value": ["api.v1.hello.Hello.Hello"]
+          "text": ["All"],
+          "value": ["$__all"]
         },
         "datasource": {
           "type": "prometheus",
@@ -2286,9 +2290,9 @@
       },
       {
         "current": {
-          "selected": true,
-          "text": "All",
-          "value": "$__all"
+          "selected": false,
+          "text": "rest",
+          "value": "rest"
         },
         "datasource": {
           "type": "prometheus",
@@ -2349,6 +2353,6 @@
   "timezone": "browser",
   "title": "ASJARD",
   "uid": "adrteheceyigwd",
-  "version": 35,
+  "version": 36,
   "weekStart": ""
 }

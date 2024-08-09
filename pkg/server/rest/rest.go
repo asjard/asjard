@@ -126,7 +126,7 @@ func (s *RestServer) AddHandler(handler any) error {
 	return s.addRouter(h)
 }
 
-// Start .
+// Start 启动rest服务
 func (s *RestServer) Start(startErr chan error) error {
 	s.router.NotFound = s.newHandler(_ErrorHandler_NotFound_RestHandler, s.errorHandler)
 	s.router.MethodNotAllowed = s.newHandler(_ErrorHandler_MethodNotAllowed_RestHandler, s.errorHandler)

@@ -27,9 +27,12 @@ type GrpcServer struct {
 	conf   Config
 }
 
+// ServiceDesc gpc.ServiceDesc别名
+type ServiceDesc = grpc.ServiceDesc
+
 // Handler .
 type Handler interface {
-	GrpcServiceDesc() *grpc.ServiceDesc
+	GrpcServiceDesc() *ServiceDesc
 }
 
 var _ server.Server = &GrpcServer{}

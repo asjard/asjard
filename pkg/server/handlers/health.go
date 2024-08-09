@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 
+	"github.com/asjard/asjard/core/server/handlers"
 	"github.com/asjard/asjard/pkg/protobuf/healthpb"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"google.golang.org/grpc"
@@ -13,7 +14,7 @@ type Health struct {
 }
 
 func init() {
-	AddServerDefaultHandler("health", &Health{})
+	handlers.AddServerDefaultHandler("health", &Health{})
 }
 
 // Check 健康检查
