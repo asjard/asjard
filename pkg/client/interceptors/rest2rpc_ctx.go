@@ -24,6 +24,7 @@ type Rest2RpcContext struct {
 
 // Rest2RpcContextConfig 拦截器配置
 type rest2RpcContextConfig struct {
+	allowAllHeaders     bool
 	AllowHeaders        utils.JSONStrings `json:"allowHeaders"`
 	BuiltInAllowHeaders utils.JSONStrings `json:"builtInAllowHeaders"`
 }
@@ -34,14 +35,19 @@ var defaultRest2RpcContextConfig = rest2RpcContextConfig{
 		"x-request-az",
 		"x-request-id",
 		"x-forward-for",
+		"traceparent",
 	},
 }
 
 func (r rest2RpcContextConfig) complete() rest2RpcContextConfig {
 	allowHeaders := r.BuiltInAllowHeaders
 	for _, allowHeader := range r.AllowHeaders {
+		if allowHeader == constant.AllProtocol {
+			r.allowAllHeaders = true
+			return r
+		}
 		exist := false
-		for _, ah := range r.BuiltInAllowHeaders {
+		for _, ah := range allowHeaders {
 			if allowHeader == ah {
 				exist = true
 				break
@@ -60,7 +66,7 @@ func init() {
 }
 
 // NewRest2RpcContext context转换初始化
-func NewRest2RpcContext() client.ClientInterceptor {
+func NewRest2RpcContext() (client.ClientInterceptor, error) {
 	rest2RpcContext := Rest2RpcContext{
 		cfg: defaultRest2RpcContextConfig,
 	}
@@ -68,9 +74,10 @@ func NewRest2RpcContext() client.ClientInterceptor {
 		&rest2RpcContext.cfg,
 		config.WithWatch(rest2RpcContext.watch)); err != nil {
 		logger.Error("get interceptor config fail", "interceptor", "rest2RpcContext", "err", err)
+		return nil, err
 	}
 	rest2RpcContext.cfg = rest2RpcContext.cfg.complete()
-	return &rest2RpcContext
+	return &rest2RpcContext, nil
 }
 
 // Name 拦截器名称
@@ -82,12 +89,16 @@ func (Rest2RpcContext) Name() string {
 // 来源为rest，去往rpc则把rest的请求头添加在rpc的上下文中
 func (r *Rest2RpcContext) Interceptor() client.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
-		restCtx, ok := ctx.(*rest.Context)
+		rtx, ok := ctx.(*rest.Context)
 		if !ok || cc.Protocol() == rest.Protocol {
 			return invoker(ctx, method, req, reply, cc)
 		}
 		md := make(metadata.MD)
-		for k, v := range restCtx.ReadHeaderParams() {
+		for k, v := range rtx.ReadHeaderParams() {
+			if r.cfg.allowAllHeaders {
+				md[k] = v
+				continue
+			}
 			for _, alk := range r.cfg.AllowHeaders {
 				if k == alk {
 					md[k] = v
@@ -95,7 +106,8 @@ func (r *Rest2RpcContext) Interceptor() client.UnaryClientInterceptor {
 				}
 			}
 		}
-		return invoker(metadata.NewIncomingContext(ctx, md), method, req, reply, cc)
+		return invoker(metadata.NewIncomingContext(ctx, md),
+			method, req, reply, cc)
 	}
 }
 

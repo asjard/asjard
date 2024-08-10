@@ -20,7 +20,7 @@ func _OpenAPI_Yaml_RestHandler(ctx *Context, srv any, interceptor server.UnarySe
 	}
 	info := &server.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "asjard.api.OpenAPI.Yaml",
+		FullMethod: OpenAPI_Yaml_FullMethodName,
 		Protocol:   Protocol,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
@@ -37,7 +37,7 @@ func _OpenAPI_Page_RestHandler(ctx *Context, srv any, interceptor server.UnarySe
 	}
 	info := &server.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "asjard.api.OpenAPI.Page",
+		FullMethod: OpenAPI_Page_FullMethodName,
 		Protocol:   Protocol,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {

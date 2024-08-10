@@ -37,8 +37,12 @@ func Init() ([]Server, error) {
 	// defer logger.Debug("init server done")
 	var servers []Server
 	for protocol, newServer := range newServerFuncs {
+		interceptor, err := getChainUnaryInterceptors(protocol)
+		if err != nil {
+			return servers, err
+		}
 		server, err := newServer(&ServerOptions{
-			Interceptor: getChainUnaryInterceptors(protocol),
+			Interceptor: interceptor,
 		})
 		if err != nil {
 			return servers, err

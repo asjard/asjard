@@ -2,7 +2,9 @@ package interceptors
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"google.golang.org/protobuf/proto"
@@ -26,16 +28,20 @@ func (r *ReadEntity) Name() string {
 }
 
 // NewReadEntityInterceptor 初始化序列化参数拦截器
-func NewReadEntityInterceptor() server.ServerInterceptor {
-	return &ReadEntity{}
+func NewReadEntityInterceptor() (server.ServerInterceptor, error) {
+	return &ReadEntity{}, nil
 }
 
 // Interceptor .
 func (r *ReadEntity) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
-		rc := ctx.(*rest.Context)
-		if err := rc.ReadEntity(req.(proto.Message)); err != nil {
-			return nil, err
+		rtx, ok := ctx.(*rest.Context)
+		if ok {
+			if err := rtx.ReadEntity(req.(proto.Message)); err != nil {
+				return nil, err
+			}
+		} else {
+			logger.Error("readEntity ctx must be *rest.Context", "current", fmt.Sprintf("%T", ctx))
 		}
 		return handler(ctx, req)
 	}

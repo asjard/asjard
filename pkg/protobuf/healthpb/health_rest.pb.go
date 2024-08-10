@@ -20,7 +20,7 @@ func _Health_Check_RestHandler(ctx *rest.Context, srv any, interceptor server.Un
 	}
 	info := &server.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "asjard.api.health.Health.Check",
+		FullMethod: Health_Check_FullMethodName,
 		Protocol:   rest.Protocol,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {

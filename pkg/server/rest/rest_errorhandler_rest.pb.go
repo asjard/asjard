@@ -20,7 +20,7 @@ func _ErrorHandler_NotFound_RestHandler(ctx *Context, srv any, interceptor serve
 	}
 	info := &server.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "asjard.api.ErrorHandler.NotFound",
+		FullMethod: ErrorHandler_NotFound_FullMethodName,
 		Protocol:   Protocol,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
@@ -37,7 +37,7 @@ func _ErrorHandler_MethodNotAllowed_RestHandler(ctx *Context, srv any, intercept
 	}
 	info := &server.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "asjard.api.ErrorHandler.MethodNotAllowed",
+		FullMethod: ErrorHandler_MethodNotAllowed_FullMethodName,
 		Protocol:   Protocol,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
@@ -54,7 +54,7 @@ func _ErrorHandler_Panic_RestHandler(ctx *Context, srv any, interceptor server.U
 	}
 	info := &server.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "asjard.api.ErrorHandler.Panic",
+		FullMethod: ErrorHandler_Panic_FullMethodName,
 		Protocol:   Protocol,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
@@ -71,7 +71,7 @@ func _ErrorHandler_Error_RestHandler(ctx *Context, srv any, interceptor server.U
 	}
 	info := &server.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "asjard.api.ErrorHandler.Error",
+		FullMethod: ErrorHandler_Error_FullMethodName,
 		Protocol:   Protocol,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
@@ -122,10 +122,10 @@ var ErrorHandlerRestServiceDesc = ServiceDesc{
 }
 
 const (
-	ErrorHandler_Error_RestPath            = "/asjard/api/error"
 	ErrorHandler_NotFound_RestPath         = "/asjard/api/not_found"
 	ErrorHandler_MethodNotAllowed_RestPath = "/asjard/api/method_not_allowed"
 	ErrorHandler_Panic_RestPath            = "/asjard/api/panic"
+	ErrorHandler_Error_RestPath            = "/asjard/api/error"
 )
 
 var file_rest_errorhandler_proto_openapi = []byte{

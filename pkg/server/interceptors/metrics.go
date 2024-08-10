@@ -3,7 +3,6 @@ package interceptors
 import (
 	"context"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/asjard/asjard/core/server"
@@ -29,13 +28,13 @@ func init() {
 	server.AddInterceptor(MetricsInterceptorName, NewMetricsInterceptor)
 }
 
-func NewMetricsInterceptor() server.ServerInterceptor {
+func NewMetricsInterceptor() (server.ServerInterceptor, error) {
 	return &Metrics{
 		requestTotal:   collectors.NewAPIRequestCounter(),
 		requestLatency: collectors.NewAPIRequestLatency(),
 		requestSize:    collectors.NewAPIRequestSize(),
 		responseSize:   collectors.NewAPIResponseSize(),
-	}
+	}, nil
 }
 
 func (Metrics) Name() string {
@@ -48,12 +47,11 @@ func (m Metrics) Interceptor() server.UnaryServerInterceptor {
 		resp, err = handler(ctx, req)
 		st := status.FromError(err)
 		codeStr := strconv.Itoa(int(st.Code))
-		fullMethod := strings.ReplaceAll(strings.Trim(info.FullMethod, "/"), "/", ".")
-		m.requestTotal.Inc(codeStr, fullMethod, info.Protocol)
-		m.requestLatency.Observe(fullMethod, info.Protocol, time.Since(now).Seconds())
+		m.requestTotal.Inc(codeStr, info.FullMethod, info.Protocol)
+		m.requestLatency.Observe(info.FullMethod, info.Protocol, time.Since(now).Seconds())
 		if rtx, ok := ctx.(*rest.Context); ok {
-			m.requestSize.Observe(fullMethod, info.Protocol, float64(computeApproximateRequestSize(rtx)))
-			m.responseSize.Observe(fullMethod, info.Protocol, float64(rtx.Response.Header.ContentLength()))
+			m.requestSize.Observe(info.FullMethod, info.Protocol, float64(computeApproximateRequestSize(rtx)))
+			m.responseSize.Observe(info.FullMethod, info.Protocol, float64(rtx.Response.Header.ContentLength()))
 		}
 		return resp, err
 	}

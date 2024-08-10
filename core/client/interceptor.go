@@ -16,7 +16,7 @@ type ClientInterceptor interface {
 }
 
 // NewClientInterceptor 客户端拦截器初始化方法
-type NewClientInterceptor func() ClientInterceptor
+type NewClientInterceptor func() (ClientInterceptor, error)
 
 var (
 	newClientInterceptors = make(map[string]map[string]NewClientInterceptor)
@@ -61,8 +61,11 @@ type UnaryInvoker func(ctx context.Context, method string, req, reply any, cc Cl
 // The returned error must be compatible with the status package.
 type UnaryClientInterceptor func(ctx context.Context, method string, req, reply any, cc ClientConnInterface, invoker UnaryInvoker) error
 
-func getChainUnaryInterceptors(protocol string, conf Config) UnaryClientInterceptor {
-	interceptors := getClientInterceptors(protocol, conf)
+func getChainUnaryInterceptors(protocol string, conf Config) (UnaryClientInterceptor, error) {
+	interceptors, err := getClientInterceptors(protocol, conf)
+	if err != nil {
+		return nil, err
+	}
 	var chainedInt UnaryClientInterceptor
 	if len(interceptors) == 0 {
 		chainedInt = nil
@@ -71,11 +74,11 @@ func getChainUnaryInterceptors(protocol string, conf Config) UnaryClientIntercep
 	} else {
 		chainedInt = chainUnaryInterceptors(interceptors)
 	}
-	return chainedInt
+	return chainedInt, nil
 }
 
 // 添加默认拦截器
-func getClientInterceptors(protocol string, conf Config) []UnaryClientInterceptor {
+func getClientInterceptors(protocol string, conf Config) ([]UnaryClientInterceptor, error) {
 	var interceptors []UnaryClientInterceptor
 	ncm.RLock()
 	defer ncm.RUnlock()
@@ -89,10 +92,14 @@ func getClientInterceptors(protocol string, conf Config) []UnaryClientIntercepto
 	// 顺序需要按照配置执行
 	for _, interceptorName := range conf.Interceptors {
 		if newInterceptor, ok := newInterceptors[interceptorName]; ok {
-			interceptors = append(interceptors, newInterceptor().Interceptor())
+			interceptor, err := newInterceptor()
+			if err != nil {
+				return interceptors, err
+			}
+			interceptors = append(interceptors, interceptor.Interceptor())
 		}
 	}
-	return interceptors
+	return interceptors, nil
 }
 
 func chainUnaryInterceptors(interceptors []UnaryClientInterceptor) UnaryClientInterceptor {

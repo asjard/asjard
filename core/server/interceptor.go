@@ -42,7 +42,7 @@ type ServerInterceptor interface {
 	Interceptor() UnaryServerInterceptor
 }
 
-type NewServerInterceptor func() ServerInterceptor
+type NewServerInterceptor func() (ServerInterceptor, error)
 
 var (
 	newServerInterceptors = make(map[string]map[string]NewServerInterceptor)
@@ -68,7 +68,7 @@ func AddInterceptor(name string, newInterceptor NewServerInterceptor, supportPro
 }
 
 // 获取协议拦截器
-func getServerInterceptors(protocol string) []UnaryServerInterceptor {
+func getServerInterceptors(protocol string) ([]UnaryServerInterceptor, error) {
 	logger.Debug("get server intereptors", "protocol", protocol)
 	var interceptors []UnaryServerInterceptor
 	nsm.RLock()
@@ -84,14 +84,21 @@ func getServerInterceptors(protocol string) []UnaryServerInterceptor {
 	// 自定义拦截器
 	for _, interceptorName := range conf.Interceptors {
 		if newInerceptor, ok := newInterceptors[interceptorName]; ok {
-			interceptors = append(interceptors, newInerceptor().Interceptor())
+			interceptor, err := newInerceptor()
+			if err != nil {
+				return interceptors, err
+			}
+			interceptors = append(interceptors, interceptor.Interceptor())
 		}
 	}
-	return interceptors
+	return interceptors, nil
 }
 
-func getChainUnaryInterceptors(protocol string) UnaryServerInterceptor {
-	interceptors := getServerInterceptors(protocol)
+func getChainUnaryInterceptors(protocol string) (UnaryServerInterceptor, error) {
+	interceptors, err := getServerInterceptors(protocol)
+	if err != nil {
+		return nil, err
+	}
 	var chainedInt UnaryServerInterceptor
 	if len(interceptors) == 0 {
 		chainedInt = nil
@@ -100,7 +107,7 @@ func getChainUnaryInterceptors(protocol string) UnaryServerInterceptor {
 	} else {
 		chainedInt = chainUnaryInterceptors(interceptors)
 	}
-	return chainedInt
+	return chainedInt, nil
 }
 
 func chainUnaryInterceptors(interceptors []UnaryServerInterceptor) UnaryServerInterceptor {
