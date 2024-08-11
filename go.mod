@@ -14,6 +14,7 @@ require (
 	github.com/magiconair/properties v1.8.7
 	github.com/prometheus/client_golang v1.19.1
 	github.com/prometheus/common v0.48.0
+	github.com/redis/go-redis/extra/redisotel/v9 v9.0.5
 	github.com/redis/go-redis/v9 v9.6.1
 	github.com/spf13/cast v1.6.0
 	github.com/stretchr/testify v1.9.0
@@ -39,6 +40,7 @@ require (
 	gorm.io/driver/sqlite v1.5.6
 	gorm.io/driver/sqlserver v1.5.3
 	gorm.io/gorm v1.25.10
+	gorm.io/plugin/opentelemetry v0.1.4
 )
 
 require (
@@ -80,6 +82,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
+	github.com/redis/go-redis/extra/rediscmd/v9 v9.0.5 // indirect
 	github.com/savsgio/gotils v0.0.0-20240303185622-093b76447511 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect

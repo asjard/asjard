@@ -15,6 +15,7 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
+	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -203,6 +204,9 @@ func (m *ClientManager) newClient(name string, conf *ClientConnConfig) error {
 	defer cancel()
 	if status := client.Ping(ctx); status.Err() != nil {
 		return status.Err()
+	}
+	if err := redisotel.InstrumentTracing(client, redisotel.WithDBSystem(name)); err != nil {
+		return err
 	}
 	m.clients.Store(name, &ClientConn{
 		name:   name,

@@ -20,6 +20,7 @@ import (
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/core/server/handlers"
+	"github.com/asjard/asjard/core/trace"
 	"github.com/asjard/asjard/utils"
 )
 
@@ -159,6 +160,11 @@ func (asd *Asjard) Init() error {
 
 	// 监控初始化
 	if err := metrics.Init(); err != nil {
+		return err
+	}
+
+	// 链路追踪初始化
+	if err := trace.Init(); err != nil {
 		return err
 	}
 

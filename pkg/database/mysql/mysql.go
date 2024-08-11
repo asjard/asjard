@@ -19,6 +19,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
+	"gorm.io/plugin/opentelemetry/tracing"
 )
 
 const (
@@ -181,6 +182,7 @@ func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) error {
 	if err != nil {
 		return fmt.Errorf("connect to %s fail[%s]", dbName, err.Error())
 	}
+	db.Use(tracing.NewPlugin(tracing.WithDBName(dbName), tracing.WithoutMetrics()))
 	sqlDB, err := db.DB()
 	if err != nil {
 		return err

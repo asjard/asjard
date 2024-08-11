@@ -34,6 +34,7 @@ var defaultRest2RpcContextConfig = rest2RpcContextConfig{
 		"x-request-region",
 		"x-request-az",
 		"x-request-id",
+		"x-request-instance",
 		"x-forward-for",
 		"traceparent",
 	},
