@@ -70,7 +70,7 @@ services:
     networks:
       - example
     volumes:
-      - ./prometheus.yaml:/opt/bitnami/prometheus/conf/prometheus.yml
+      - ./.github/prometheus.yml:/opt/bitnami/prometheus/conf/prometheus.yml
     external_links:
       - asjard-pushgateway-1:pushgateway
   pushgateway:
