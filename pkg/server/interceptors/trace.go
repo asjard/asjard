@@ -22,9 +22,10 @@ const (
 
 // Trace 链路追踪
 type Trace struct {
+	conf *mtrace.Config
+	app  runtime.APP
+
 	tracer     trace.Tracer
-	conf       *mtrace.Config
-	app        runtime.APP
 	propagator propagation.TextMapPropagator
 }
 
@@ -51,7 +52,7 @@ func (*Trace) Name() string {
 // Interceptor 链路追踪拦截器实现
 func (t *Trace) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
-		if t.tracer == nil || !t.conf.Enabled {
+		if !t.conf.Enabled {
 			return handler(ctx, req)
 		}
 		carrier := mtrace.NewTraceCarrier(ctx)

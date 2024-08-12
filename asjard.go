@@ -14,6 +14,7 @@ import (
 	cfgenv "github.com/asjard/asjard/core/config/sources/env"
 	cfgfile "github.com/asjard/asjard/core/config/sources/file"
 	"github.com/asjard/asjard/core/constant"
+	"github.com/asjard/asjard/core/initator"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/metrics"
 	"github.com/asjard/asjard/core/registry"
@@ -158,6 +159,15 @@ func (asd *Asjard) Init() error {
 		return err
 	}
 
+	if err := initator.Start(); err != nil {
+		return err
+	}
+
+	// 其他配置加载
+	if err := config.Load(-1); err != nil {
+		return err
+	}
+
 	// 监控初始化
 	if err := metrics.Init(); err != nil {
 		return err
@@ -187,11 +197,6 @@ func (asd *Asjard) Init() error {
 
 	// 系统启动
 	if err := bootstrap.Start(); err != nil {
-		return err
-	}
-
-	// 其他配置加载
-	if err := config.Load(-1); err != nil {
 		return err
 	}
 	asd.inited = true
@@ -258,6 +263,7 @@ func (asd *Asjard) stop() {
 	// 配置中心断开连接
 	config.Disconnect()
 	bootstrap.Stop()
+	initator.Stop()
 	logger.Info("system exited")
 }
 
