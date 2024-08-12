@@ -43,33 +43,38 @@ func init() {
 }
 
 // NewCircuitBreaker 拦截器初始化
-func NewCircuitBreaker() client.ClientInterceptor {
+func NewCircuitBreaker() (client.ClientInterceptor, error) {
 	commandConfig := make(map[string]hystrix.CommandConfig)
 	defaultCommandConfig := defaultConfig
 	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientCircuitBreakerPrefix, &defaultCommandConfig); err != nil {
 		logger.Error("get default circuit breaker fail", "err", err)
+		return nil, err
 	}
 	serviceConfig := make(map[string]any)
 	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientCircuitBreakerServicePrefix, &serviceConfig); err != nil {
 		logger.Error("get service circuit breaker fail", "err", err)
+		return nil, err
 	}
 	for name := range serviceConfig {
 		serviceCommandConfig := defaultCommandConfig
 		if err := config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigInterceptorClientCircuitBreakerWithServicePrefix, name),
 			&serviceCommandConfig); err != nil {
 			logger.Error("get service circuit breaker fail", "service", name, "err", err)
+			return nil, err
 		}
 		commandConfig[name] = serviceCommandConfig
 	}
 	methodsConfig := make(map[string]any)
 	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientCircuitBreakerMethodPrefix, &methodsConfig); err != nil {
 		logger.Error("get method circuit breaker fail", "err", err)
+		return nil, err
 	}
 	for name := range methodsConfig {
 		methodCommandConfig := defaultCommandConfig
 		if err := config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigInterceptorClientCircuitBreakerWithMethodPrefix, name),
 			&methodCommandConfig); err != nil {
 			logger.Error("get method circuit breaker fail", "method", name, "err", err)
+			return nil, err
 		}
 		commandConfig[name] = methodCommandConfig
 	}
@@ -77,7 +82,7 @@ func NewCircuitBreaker() client.ClientInterceptor {
 	hystrix.Configure(commandConfig)
 	return &CircuitBreaker{
 		commandConfig: commandConfig,
-	}
+	}, nil
 }
 
 // Name 拦截器名称

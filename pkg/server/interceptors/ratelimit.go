@@ -12,8 +12,8 @@ import (
 // 如需精确限制访问速度，请参考quota拦截器
 type RateLimiter struct{}
 
-func NewRateLimiterInterceptor() server.ServerInterceptor {
-	return &RateLimiter{}
+func NewRateLimiterInterceptor() (server.ServerInterceptor, error) {
+	return &RateLimiter{}, nil
 }
 
 // Interceptor 拦截器实现

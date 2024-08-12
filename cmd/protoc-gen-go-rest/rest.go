@@ -206,7 +206,7 @@ func (g *RestGenerator) genServiceMethod(service *protogen.Service, serverType s
 	g.gen.P("}")
 	g.gen.P("info := &", serverPackage.Ident("UnaryServerInfo"), "{")
 	g.gen.P("Server: srv,")
-	g.gen.P("FullMethod: \"", service.Desc.FullName(), ".", method.Desc.Name(), "\",")
+	g.gen.P("FullMethod: ", fmt.Sprintf("%s_%s_FullMethodName,", service.GoName, method.GoName))
 	g.gen.P("Protocol: ", restPackage.Ident("Protocol"), ",")
 	g.gen.P("}")
 	g.gen.P("handler := func(ctx ", contextPackage.Ident("Context"), ",req any)(any, error) {")

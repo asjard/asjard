@@ -16,6 +16,8 @@ import (
 	_ "github.com/asjard/asjard/pkg/server/pprof"
 	// 导入内存配置源
 	_ "github.com/asjard/asjard/pkg/config/mem"
+	// 导入环境变量配置源
+	_ "github.com/asjard/asjard/pkg/config/env"
 )
 
 // BootstrapHandler 启动引导需实现的方法

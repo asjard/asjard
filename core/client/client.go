@@ -50,10 +50,14 @@ func AddClient(protocol string, newClient NewClientFunc) {
 func Init() error {
 	for protocol, newClient := range newClients {
 		conf := GetConfigWithProtocol(protocol)
+		interceptor, err := getChainUnaryInterceptors(protocol, conf)
+		if err != nil {
+			return err
+		}
 		clients[protocol] = newClient(&ClientOptions{
 			Resolver:    &ClientBuilder{},
 			Balancer:    NewBalanceBuilder(conf.Loadbalance),
-			Interceptor: getChainUnaryInterceptors(protocol, conf),
+			Interceptor: interceptor,
 		})
 	}
 	return nil
@@ -81,10 +85,14 @@ func (c Client) Conn(ops ...ConnOption) (grpc.ClientConnInterface, error) {
 		return nil, fmt.Errorf("protocol %s client not found", c.protocol)
 	}
 	conf := serviceConfig(c.protocol, c.serverName)
+	interceptor, err := getChainUnaryInterceptors(c.protocol, conf)
+	if err != nil {
+		return nil, err
+	}
 	// 设置置指定服务的负载均衡
 	options := &ClientOptions{
 		Balancer:    NewBalanceBuilder(conf.Loadbalance),
-		Interceptor: getChainUnaryInterceptors(c.protocol, conf),
+		Interceptor: interceptor,
 	}
 	return cc.NewConn(fmt.Sprintf("%s://%s/%s?%s",
 		constant.Framework, c.protocol, c.serverName, c.connOptions(ops...).queryString()),

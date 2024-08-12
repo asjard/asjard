@@ -32,8 +32,8 @@ func init() {
 }
 
 // CycleChainInterceptor 初始化来源拦截器
-func NewCycleChainInterceptor() client.ClientInterceptor {
-	return &CycleChainInterceptor{}
+func NewCycleChainInterceptor() (client.ClientInterceptor, error) {
+	return &CycleChainInterceptor{}, nil
 }
 
 // Name 拦截器名称

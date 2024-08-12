@@ -31,34 +31,14 @@ const (
 // Context fasthttp.RequestCtx的封装
 type Context struct {
 	*fasthttp.RequestCtx
-	// errorHandler ErrorHandler
-	errPage     string
-	queryParams map[string][]string
-	queryLoaded bool
-	// 例如路由为: /region/{region_id}/project/{project_id}/user/{user_id}
-	// 请求路径为: /region/1/project/2/user/3
-	// {"region_id":"1","project_id":"2","user_id":"3"}
-	pathParams   map[string][]string
-	pathLoaded   bool
-	headerParams map[string][]string
-	headLoaded   bool
-	postBody     []byte
-	postLoaded   bool
-	write        Writer
+	errPage string
+	write   Writer
 }
-
-// KV .
-// type KV struct {
-// 	Key, Value string
-// }
 
 var contextPool = sync.Pool{
 	New: func() any {
 		return &Context{
-			errPage:      config.GetString(constant.ConfigWebsite, ""),
-			queryParams:  make(map[string][]string),
-			pathParams:   make(map[string][]string),
-			headerParams: make(map[string][]string),
+			errPage: config.GetString(constant.ConfigWebsite, ""),
 		}
 	},
 }
@@ -137,25 +117,16 @@ func (c *Context) SetWriter(writer Writer) {
 
 // Close .
 func (c *Context) Close() {
-	c.queryParams = make(map[string][]string)
-	c.queryLoaded = false
-	c.headerParams = make(map[string][]string)
-	c.headLoaded = false
-	c.pathParams = make(map[string][]string)
-	c.pathLoaded = false
-	c.postBody = []byte{}
-	c.postLoaded = false
 	c.write = nil
 	contextPool.Put(c)
 }
 
 // ReadBodyParams 读取请求体
 func (c *Context) ReadBodyParams() []byte {
-	if !c.postLoaded && string(c.Request.Header.ContentType()) == "application/json" {
-		c.postBody = c.Request.Body()
-		c.postLoaded = true
+	if string(c.Request.Header.ContentType()) == "application/json" {
+		return c.Request.Body()
 	}
-	return c.postBody
+	return []byte{}
 }
 
 func (c *Context) readBodyParamsToEntity(entity proto.Message) error {
@@ -173,19 +144,17 @@ func (c *Context) readBodyParamsToEntity(entity proto.Message) error {
 
 // ReadQueryParams 获取query参数
 func (c *Context) ReadQueryParams() map[string][]string {
-	if !c.queryLoaded {
-		c.QueryArgs().VisitAll(func(key, value []byte) {
-			k := string(key)
-			v := string(value)
-			if _, ok := c.queryParams[k]; !ok {
-				c.queryParams[k] = []string{v}
-			} else {
-				c.queryParams[k] = append(c.queryParams[k], v)
-			}
-		})
-		c.queryLoaded = true
-	}
-	return c.queryParams
+	params := make(map[string][]string)
+	c.QueryArgs().VisitAll(func(key, value []byte) {
+		k := string(key)
+		v := string(value)
+		if _, ok := params[k]; !ok {
+			params[k] = []string{v}
+		} else {
+			params[k] = append(params[k], v)
+		}
+	})
+	return params
 }
 
 func (c *Context) readQueryParamsToEntity(entity any) error {
@@ -200,19 +169,17 @@ func (c *Context) readQueryParamsToEntity(entity any) error {
 
 // ReadHeaderParams 读取header请求参数
 func (c *Context) ReadHeaderParams() map[string][]string {
-	if !c.headLoaded {
-		c.Request.Header.VisitAll(func(key, value []byte) {
-			k := strings.ToLower(string(key))
-			v := string(value)
-			if _, ok := c.headerParams[k]; !ok {
-				c.headerParams[k] = []string{v}
-			} else {
-				c.headerParams[k] = append(c.headerParams[k], v)
-			}
-		})
-		c.headLoaded = true
-	}
-	return c.headerParams
+	params := make(map[string][]string)
+	c.Request.Header.VisitAll(func(key, value []byte) {
+		k := strings.ToLower(string(key))
+		v := string(value)
+		if _, ok := params[k]; !ok {
+			params[k] = []string{v}
+		} else {
+			params[k] = append(params[k], v)
+		}
+	})
+	return params
 }
 
 func (c *Context) readHeaderParamsToEntity(entity any) error {
@@ -227,19 +194,17 @@ func (c *Context) readHeaderParamsToEntity(entity any) error {
 
 // ReadPathParams 读取path请求参数
 func (c *Context) ReadPathParams() map[string][]string {
-	if !c.pathLoaded {
-		c.VisitUserValues(func(key []byte, value any) {
-			keyStr := string(key)
-			valueStr := cast.ToString(value)
-			if _, ok := c.pathParams[keyStr]; ok {
-				c.pathParams[keyStr] = append(c.pathParams[keyStr], valueStr)
-			} else {
-				c.pathParams[keyStr] = []string{valueStr}
-			}
-		})
-		c.pathLoaded = true
-	}
-	return c.pathParams
+	params := make(map[string][]string)
+	c.VisitUserValues(func(key []byte, value any) {
+		keyStr := string(key)
+		valueStr := cast.ToString(value)
+		if _, ok := params[keyStr]; ok {
+			params[keyStr] = append(params[keyStr], valueStr)
+		} else {
+			params[keyStr] = []string{valueStr}
+		}
+	})
+	return params
 }
 
 func (c *Context) readPathParamsToEntity(entity any) error {

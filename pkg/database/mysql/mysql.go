@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/initator"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/metrics"
 	"github.com/asjard/asjard/core/status"
@@ -19,6 +19,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
+	"gorm.io/plugin/opentelemetry/tracing"
 )
 
 const (
@@ -107,7 +108,7 @@ var (
 
 func init() {
 	dbManager = &DBManager{}
-	bootstrap.AddBootstrap(dbManager)
+	initator.AddInitator(dbManager)
 }
 
 // DB 数据库连接地址
@@ -132,9 +133,9 @@ func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 	return db.db.WithContext(ctx), nil
 }
 
-// 连接到数据库
-func (m *DBManager) Bootstrap() error {
-	logger.Debug("database mysql bootstrap")
+// Start 连接到数据库
+func (m *DBManager) Start() error {
+	logger.Debug("database mysql start")
 	conf, err := m.loadAndWatchConfig()
 	if err != nil {
 		return err
@@ -142,8 +143,8 @@ func (m *DBManager) Bootstrap() error {
 	return m.connDBs(conf)
 }
 
-// Shutdown 和数据库断开连接
-func (m *DBManager) Shutdown() {
+// Stop 和数据库断开连接
+func (m *DBManager) Stop() {
 	m.dbs.Range(func(key, value any) bool {
 		conn, ok := value.(*DBConn)
 		if ok {
@@ -181,6 +182,7 @@ func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) error {
 	if err != nil {
 		return fmt.Errorf("connect to %s fail[%s]", dbName, err.Error())
 	}
+	db.Use(tracing.NewPlugin(tracing.WithDBName(dbName), tracing.WithoutMetrics()))
 	sqlDB, err := db.DB()
 	if err != nil {
 		return err

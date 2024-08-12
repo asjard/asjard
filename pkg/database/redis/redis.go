@@ -10,11 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/initator"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
+	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -85,7 +86,7 @@ var (
 
 func init() {
 	clientManager = &ClientManager{}
-	bootstrap.AddBootstrap(clientManager)
+	initator.AddInitator(clientManager)
 }
 
 func WithClientName(clientName string) func(*ClientOptions) {
@@ -112,7 +113,7 @@ func Client(opts ...Option) (*redis.Client, error) {
 	return client.client, nil
 }
 
-func (m *ClientManager) Bootstrap() error {
+func (m *ClientManager) Start() error {
 	clients, err := m.loadAndWatch()
 	if err != nil {
 		return err
@@ -120,7 +121,7 @@ func (m *ClientManager) Bootstrap() error {
 	return m.newClients(clients)
 }
 
-func (m *ClientManager) Shutdown() {
+func (m *ClientManager) Stop() {
 	m.clients.Range(func(key, value any) bool {
 		conn, ok := value.(*ClientConn)
 		if ok {
@@ -203,6 +204,9 @@ func (m *ClientManager) newClient(name string, conf *ClientConnConfig) error {
 	defer cancel()
 	if status := client.Ping(ctx); status.Err() != nil {
 		return status.Err()
+	}
+	if err := redisotel.InstrumentTracing(client, redisotel.WithDBSystem(name)); err != nil {
+		return err
 	}
 	m.clients.Store(name, &ClientConn{
 		name:   name,

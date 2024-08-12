@@ -42,6 +42,7 @@ Asjard是一个用[Go](https://go.dev/)语言实现的由[protobuf](https://prot
     - [x] i18n
     - [x] accessLog
     - [x] metrics
+    - [x] trace
     - [ ] 限速
 
   - [客户端](docs/user-guide/client-interceptor.md)
@@ -172,9 +173,8 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	pb "github.com/asjard/asjard/examples/protobuf/hello"
 	_ "github.com/asjard/asjard/pkg/client/grpc"
-	mgrpc "github.com/asjard/asjard/pkg/server/grpc"
+	"github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 

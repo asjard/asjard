@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/asjard/asjard/core/runtime"
+	"github.com/asjard/asjard/utils"
 )
 
 // Service 服务详情
@@ -51,7 +52,11 @@ func (s *Service) AddEndpoint(protocol string, address AddressConfig) error {
 
 	s.em.Lock()
 	if address.Listen != "" {
-		s.Endpoints[protocol].Listen = append(s.Endpoints[protocol].Listen, address.Listen)
+		listenAddress, err := utils.GetListenAddress(address.Listen)
+		if err != nil {
+			return err
+		}
+		s.Endpoints[protocol].Listen = append(s.Endpoints[protocol].Listen, listenAddress)
 	}
 	if address.Advertise != "" {
 		s.Endpoints[protocol].Advertise = append(s.Endpoints[protocol].Advertise, address.Advertise)

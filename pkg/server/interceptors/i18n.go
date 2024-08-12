@@ -52,14 +52,14 @@ func init() {
 }
 
 // I18n拦截器初始化
-func NewI18nInterceptor() server.ServerInterceptor {
+func NewI18nInterceptor() (server.ServerInterceptor, error) {
 	logger.Debug("new i18 interceptor")
 	if !config.GetBool("asjard.servers.rest.i18n.enabled", false) {
-		return &I18n{}
+		return &I18n{}, nil
 	}
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	i18n := &I18n{
 		enabled: true,
@@ -68,7 +68,7 @@ func NewI18nInterceptor() server.ServerInterceptor {
 	}
 	confDir := getI18nDir()
 	if !utils.IsPathExists(confDir) {
-		panic(fmt.Sprintf("path %s not exist", confDir))
+		return nil, fmt.Errorf("path %s not exist", confDir)
 	}
 	go i18n.watch()
 	i18n.watcher.Add(confDir)
@@ -78,9 +78,9 @@ func NewI18nInterceptor() server.ServerInterceptor {
 		}
 		return nil
 	}); err != nil {
-		panic(err)
+		return nil, err
 	}
-	return i18n
+	return i18n, nil
 }
 
 func (*I18n) Name() string {

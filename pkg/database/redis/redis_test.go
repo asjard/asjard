@@ -35,6 +35,7 @@ func newTestSource() (config.Sourcer, error) {
 	return &testSource{
 		configs: map[string]any{
 			"asjard.database.redis.clients.default.address": s.Addr(),
+			"asjard.config.setDefaultSource":                testSourceName,
 			// "asjard.database.redis.clients.another.address": "localhost:1",
 		},
 	}, nil
@@ -94,11 +95,11 @@ func initTestConfig() {
 
 func TestMain(m *testing.M) {
 	initTestConfig()
-	if err := clientManager.Bootstrap(); err != nil {
+	if err := clientManager.Start(); err != nil {
 		panic(err)
 	}
 	m.Run()
-	clientManager.Shutdown()
+	clientManager.Stop()
 	if miniredisSever != nil {
 		miniredisSever.Close()
 	}
@@ -125,7 +126,7 @@ func TestNewClients(t *testing.T) {
 		s.Close()
 	})
 	t.Run("shudown", func(t *testing.T) {
-		clientManager.Shutdown()
+		clientManager.Stop()
 		client, err := Client()
 		assert.NotNil(t, err)
 		assert.Nil(t, client)

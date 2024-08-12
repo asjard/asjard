@@ -19,6 +19,12 @@ const (
 	AllProtocol = "*"
 )
 
+type TraceContextKeyType int
+
+const (
+	CurrentSpanKey TraceContextKeyType = iota
+)
+
 const (
 	// ConfigServerRestPrefix rest服务配置前缀
 	ConfigServerRestPrefix = "asjard.servers.rest"

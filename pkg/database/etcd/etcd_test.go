@@ -26,6 +26,7 @@ func newTestSource() (config.Sourcer, error) {
 		configs: map[string]any{
 			"asjard.database.etcd.clients.default.endpoints": "localhost:0",
 			"asjard.database.etcd.clients.another.endpoints": "localhost:1",
+			"asjard.config.setDefaultSource":                 testSourceName,
 		},
 	}, nil
 }
@@ -85,11 +86,11 @@ func initTestConfig() {
 func TestMain(m *testing.M) {
 	initTestConfig()
 	mockserver.StartMockServers(1)
-	if err := clientManager.Bootstrap(); err != nil {
+	if err := clientManager.Start(); err != nil {
 		panic(err)
 	}
 	m.Run()
-	clientManager.Shutdown()
+	clientManager.Stop()
 }
 
 func TestNewClients(t *testing.T) {
@@ -117,7 +118,7 @@ func TestNewClients(t *testing.T) {
 		assert.Nil(t, err)
 	})
 	t.Run("shutdown", func(t *testing.T) {
-		clientManager.Shutdown()
+		clientManager.Stop()
 		_, err := Client()
 		assert.NotNil(t, err)
 	})

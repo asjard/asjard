@@ -2,13 +2,14 @@ package interceptors
 
 import (
 	"context"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/pkg/client/grpc"
+	"github.com/asjard/asjard/pkg/protobuf/healthpb"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/asjard/asjard/utils"
 )
@@ -35,7 +36,7 @@ type accessLogConfig struct {
 }
 
 var defaultAccessLogConfig = accessLogConfig{
-	SkipMethods: utils.JSONStrings{"grpc", "asjard.api.health.Health.Check"},
+	SkipMethods: utils.JSONStrings{grpc.Protocol, healthpb.Health_Check_FullMethodName},
 }
 
 func init() {
@@ -43,10 +44,12 @@ func init() {
 }
 
 // NewAccessLogInterceptor .
-func NewAccessLogInterceptor() server.ServerInterceptor {
+func NewAccessLogInterceptor() (server.ServerInterceptor, error) {
 	accessLog := &AccessLog{}
-	accessLog.loadAndWatch()
-	return accessLog
+	if err := accessLog.loadAndWatch(); err != nil {
+		return nil, err
+	}
+	return accessLog, nil
 }
 
 // Name 日志拦截器名称
@@ -61,20 +64,20 @@ func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 		if !al.enabled {
 			return handler(ctx, req)
 		}
-		fullMethod := strings.ReplaceAll(strings.Trim(info.FullMethod, "/"), "/", ".")
-		if al.skipped(info.Protocol, fullMethod) {
+		if al.skipped(info.Protocol, info.FullMethod) {
 			return handler(ctx, req)
 		}
 		now := time.Now()
 		var fields []any
 		fields = append(fields, []any{"protocol", info.Protocol}...)
-		fields = append(fields, []any{"full_method", fullMethod}...)
+		fields = append(fields, []any{"full_method", info.FullMethod}...)
 		switch info.Protocol {
 		case rest.Protocol:
-			rc := ctx.(*rest.Context)
-			fields = append(fields, []any{"header", rc.ReadHeaderParams()}...)
-			fields = append(fields, []any{"method", string(rc.Method())}...)
-			fields = append(fields, []any{"path", string(rc.Path())}...)
+			if rc, ok := ctx.(*rest.Context); ok {
+				fields = append(fields, []any{"header", rc.ReadHeaderParams()}...)
+				fields = append(fields, []any{"method", string(rc.Method())}...)
+				fields = append(fields, []any{"path", string(rc.Path())}...)
+			}
 		}
 		resp, err = handler(ctx, req)
 		fields = append(fields, []any{"cost", time.Since(now).String()}...)
@@ -108,16 +111,21 @@ func (al *AccessLog) skipped(protocol, method string) bool {
 	return false
 }
 
-func (al *AccessLog) loadAndWatch() {
-	al.load()
+func (al *AccessLog) loadAndWatch() error {
+	if err := al.load(); err != nil {
+		return err
+	}
 	config.AddListener("asjard.logger.accessEnabled", al.watch)
 	config.AddPatternListener("asjard.interceptors.server.accessLog.*", al.watch)
+	return nil
 }
 
-func (al *AccessLog) load() {
+func (al *AccessLog) load() error {
 	conf := defaultAccessLogConfig
-	config.GetWithUnmarshal("asjard.interceptors.server.accessLog",
-		&conf)
+	if err := config.GetWithUnmarshal("asjard.interceptors.server.accessLog",
+		&conf); err != nil {
+		return err
+	}
 	conf.skipMethodsMap = make(map[string]struct{}, len(conf.SkipMethods))
 	for _, skipMethod := range conf.SkipMethods {
 		conf.skipMethodsMap[skipMethod] = struct{}{}
@@ -126,6 +134,7 @@ func (al *AccessLog) load() {
 	al.enabled = config.GetBool("asjard.logger.accessEnabled", false)
 	al.cfg = &conf
 	al.m.Unlock()
+	return nil
 }
 
 func (al *AccessLog) watch(_ *config.Event) {

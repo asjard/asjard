@@ -11,15 +11,16 @@ import (
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/config"
-	cfgenv "github.com/asjard/asjard/core/config/sources/env"
 	cfgfile "github.com/asjard/asjard/core/config/sources/file"
 	"github.com/asjard/asjard/core/constant"
+	"github.com/asjard/asjard/core/initator"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/metrics"
 	"github.com/asjard/asjard/core/registry"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/core/server/handlers"
+	"github.com/asjard/asjard/core/trace"
 	"github.com/asjard/asjard/utils"
 )
 
@@ -147,18 +148,28 @@ func (asd *Asjard) Init() error {
 	if asd.inited {
 		return nil
 	}
-	// 环境变量配置源加载
-	if err := config.Load(cfgenv.Priority); err != nil {
-		return err
-	}
-
 	// 文件配置源加载
 	if err := config.Load(cfgfile.Priority); err != nil {
 		return err
 	}
 
+	// 其他组件初始化之前的组件初始化
+	if err := initator.Start(); err != nil {
+		return err
+	}
+
+	// 其他配置加载
+	if err := config.Load(-1); err != nil {
+		return err
+	}
+
 	// 监控初始化
 	if err := metrics.Init(); err != nil {
+		return err
+	}
+
+	// 链路追踪初始化
+	if err := trace.Init(); err != nil {
 		return err
 	}
 
@@ -181,11 +192,6 @@ func (asd *Asjard) Init() error {
 
 	// 系统启动
 	if err := bootstrap.Start(); err != nil {
-		return err
-	}
-
-	// 其他配置加载
-	if err := config.Load(-1); err != nil {
 		return err
 	}
 	asd.inited = true
@@ -252,6 +258,7 @@ func (asd *Asjard) stop() {
 	// 配置中心断开连接
 	config.Disconnect()
 	bootstrap.Stop()
+	initator.Stop()
 	logger.Info("system exited")
 }
 

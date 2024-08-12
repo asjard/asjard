@@ -21,7 +21,7 @@ type Mem struct {
 }
 
 func init() {
-	config.AddSource(Name, Priority, New)
+	config.AddSource(Name, Priority*-1, New)
 }
 
 // New .s

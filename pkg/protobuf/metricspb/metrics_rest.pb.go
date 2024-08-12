@@ -21,7 +21,7 @@ func _Metrics_Fetch_RestHandler(ctx *rest.Context, srv any, interceptor server.U
 	}
 	info := &server.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "asjard.api.Metrics.Fetch",
+		FullMethod: Metrics_Fetch_FullMethodName,
 		Protocol:   rest.Protocol,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {

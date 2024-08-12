@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/initator"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
@@ -85,7 +85,7 @@ var (
 
 func init() {
 	clientManager = &ClientManager{}
-	bootstrap.AddBootstrap(clientManager)
+	initator.AddInitator(clientManager)
 }
 
 // WithClientName 设置客户端名称
@@ -113,7 +113,7 @@ func Client(opts ...Option) (*clientv3.Client, error) {
 	return client.client, nil
 }
 
-func (m *ClientManager) Bootstrap() error {
+func (m *ClientManager) Start() error {
 	clients, err := m.loadAndWatchConfig()
 	if err != nil {
 		return err
@@ -121,7 +121,7 @@ func (m *ClientManager) Bootstrap() error {
 	return m.newClients(clients)
 }
 
-func (m *ClientManager) Shutdown() {
+func (m *ClientManager) Stop() {
 	m.clients.Range(func(key, value any) bool {
 		conn, ok := value.(*ClientConn)
 		if ok {
