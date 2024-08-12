@@ -65,9 +65,9 @@ var (
 )
 
 // GetInstance 获取服务实例详情
-func GetInstance() Instance {
-	return GetAPP().Instance
-}
+// func GetInstance() Instance {
+// 	return GetAPP("instance").Instance
+// }
 
 // GetAPP 获取项目详情
 func GetAPP() APP {
@@ -79,6 +79,7 @@ func GetAPP() APP {
 			app.Instance.SystemCode = 100
 		}
 		app.Instance.ID = uuid.NewString()
+		logger.Debug("get app", "app", app)
 	})
 	return app
 }

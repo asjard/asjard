@@ -103,12 +103,12 @@ func Client(opts ...Option) (*clientv3.Client, error) {
 	conn, ok := clientManager.clients.Load(options.clientName)
 	if !ok {
 		logger.Error("etcd not found", "name", options.clientName)
-		return nil, status.DatabaseNotFoundError
+		return nil, status.DatabaseNotFoundError()
 	}
 	client, ok := conn.(*ClientConn)
 	if !ok {
 		logger.Error("invalid etcd client, must be *ClientConn", "current", fmt.Sprintf("%T", conn))
-		return nil, status.InternalServerError
+		return nil, status.InternalServerError()
 	}
 	return client.client, nil
 }

@@ -12,19 +12,19 @@ type ErrorHandlerAPI struct {
 }
 
 func (ErrorHandlerAPI) Error(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
-	return &emptypb.Empty{}, status.InternalServerError
+	return &emptypb.Empty{}, status.InternalServerError()
 }
 
 func (ErrorHandlerAPI) NotFound(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
-	return &emptypb.Empty{}, status.PageNotFoundError
+	return &emptypb.Empty{}, status.PageNotFoundError()
 }
 
 func (ErrorHandlerAPI) MethodNotAllowed(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
-	return &emptypb.Empty{}, status.MethodNotAllowedError
+	return &emptypb.Empty{}, status.MethodNotAllowedError()
 }
 
 func (ErrorHandlerAPI) Panic(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
-	return &emptypb.Empty{}, status.InternalServerError
+	return &emptypb.Empty{}, status.InternalServerError()
 }
 
 func (ErrorHandlerAPI) RestServiceDesc() *ServiceDesc {

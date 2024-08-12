@@ -120,12 +120,12 @@ func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 	conn, ok := dbManager.dbs.Load(options.connName)
 	if !ok {
 		logger.Error("db not found", "db", options.connName)
-		return nil, status.DatabaseNotFoundError
+		return nil, status.DatabaseNotFoundError()
 	}
 	db, ok := conn.(*DBConn)
 	if !ok {
 		logger.Error("invalid db type, must be *DBConn", "current", fmt.Sprintf("%T", conn))
-		return nil, status.InternalServerError
+		return nil, status.InternalServerError()
 	}
 	if db.debug {
 		return db.db.Debug().WithContext(ctx), nil

@@ -178,6 +178,7 @@ func (s *Etcd) watchPrefix(prefix string, priority int) {
 	watchChan := s.client.Watch(context.Background(), prefix, clientv3.WithPrefix())
 	for resp := range watchChan {
 		for _, event := range resp.Events {
+			logger.Debug("etcd config event", "event", event.Type, "key", string(event.Kv.Key))
 			callbackEvent := &config.Event{
 				Key: s.configKey(prefix, event.Kv.Key),
 				Value: &config.Value{
