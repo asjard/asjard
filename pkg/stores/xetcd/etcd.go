@@ -1,4 +1,4 @@
-package etcd
+package xetcd
 
 import (
 	"crypto/tls"
@@ -202,22 +202,22 @@ func (m *ClientManager) loadAndWatchConfig() (map[string]*ClientConnConfig, erro
 	if err != nil {
 		return clients, err
 	}
-	config.AddPatternListener("asjard.database.etcd.*", m.watch)
+	config.AddPatternListener("asjard.stores.etcd.*", m.watch)
 	return clients, nil
 }
 
 func (m *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 	clients := make(map[string]*ClientConnConfig)
 	options := defaultOptions
-	if err := config.GetWithUnmarshal("asjard.database.etcd.options", &options); err != nil {
+	if err := config.GetWithUnmarshal("asjard.stores.etcd.options", &options); err != nil {
 		return clients, err
 	}
-	if err := config.GetWithUnmarshal("asjard.database.etcd.clients", &clients); err != nil {
+	if err := config.GetWithUnmarshal("asjard.stores.etcd.clients", &clients); err != nil {
 		return clients, err
 	}
 	for name, client := range clients {
 		client.Options = options
-		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.database.etcd.clients.%s.options", name), &client.Options); err != nil {
+		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.stores.etcd.clients.%s.options", name), &client.Options); err != nil {
 			return clients, err
 		}
 	}

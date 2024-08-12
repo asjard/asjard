@@ -13,7 +13,7 @@ import (
 	"github.com/asjard/asjard/core/registry"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server"
-	"github.com/asjard/asjard/pkg/database/etcd"
+	"github.com/asjard/asjard/pkg/stores/xetcd"
 	"github.com/asjard/asjard/utils"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -42,7 +42,7 @@ var (
 	_ registry.Discovery = &Etcd{}
 	// 默认配置
 	defaultConfig = Config{
-		Client:  etcd.DefaultClientName,
+		Client:  xetcd.DefaultClientName,
 		Timeout: utils.JSONDuration{Duration: 5 * time.Second},
 	}
 	newEtcd *Etcd
@@ -76,7 +76,7 @@ func New() (*Etcd, error) {
 		if err != nil {
 			return
 		}
-		etcdRegistry.client, err = etcd.Client(etcd.WithClientName(etcdRegistry.conf.Client))
+		etcdRegistry.client, err = xetcd.Client(xetcd.WithClientName(etcdRegistry.conf.Client))
 		if err != nil {
 			return
 		}

@@ -1,4 +1,4 @@
-package redis
+package xredis
 
 import (
 	"context"
@@ -220,22 +220,22 @@ func (m *ClientManager) loadAndWatch() (map[string]*ClientConnConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	config.AddPatternListener("asjard.database.redis.*", m.watch)
+	config.AddPatternListener("asjard.stores.redis.*", m.watch)
 	return clients, nil
 }
 
 func (m *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 	clients := make(map[string]*ClientConnConfig)
 	options := defaultOptions
-	if err := config.GetWithUnmarshal("asjard.database.redis.options", &options); err != nil {
+	if err := config.GetWithUnmarshal("asjard.stores.redis.options", &options); err != nil {
 		return clients, err
 	}
-	if err := config.GetWithUnmarshal("asjard.database.redis.clients", &clients); err != nil {
+	if err := config.GetWithUnmarshal("asjard.stores.redis.clients", &clients); err != nil {
 		return clients, err
 	}
 	for name, client := range clients {
 		client.Options = options
-		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.database.redis.clients.%s.options", name), &client.Options); err != nil {
+		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.stores.redis.clients.%s.options", name), &client.Options); err != nil {
 			return clients, err
 		}
 	}

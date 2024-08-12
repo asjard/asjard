@@ -1,14 +1,13 @@
-package mysql
+package xetcd
 
 import (
-	"context"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
+	"go.etcd.io/etcd/client/v3/mock/mockserver"
 )
 
 const (
@@ -25,13 +24,9 @@ type testSource struct {
 func newTestSource() (config.Sourcer, error) {
 	return &testSource{
 		configs: map[string]any{
-			"asjard.database.mysql.dbs.default.dsn":    "test_default.db",
-			"asjard.database.mysql.dbs.default.driver": "sqlite",
-
-			"asjard.database.mysql.dbs.another.dsn":    "test_another.db",
-			"asjard.database.mysql.dbs.another.driver": "sqlite",
-
-			"asjard.config.setDefaultSource": testSourceName,
+			"asjard.stores.etcd.clients.default.endpoints": "localhost:0",
+			"asjard.stores.etcd.clients.another.endpoints": "localhost:1",
+			"asjard.config.setDefaultSource":               testSourceName,
 		},
 	}, nil
 }
@@ -90,69 +85,41 @@ func initTestConfig() {
 
 func TestMain(m *testing.M) {
 	initTestConfig()
-	if err := dbManager.Start(); err != nil {
+	mockserver.StartMockServers(1)
+	if err := clientManager.Start(); err != nil {
 		panic(err)
 	}
 	m.Run()
-	dbManager.Stop()
-
+	clientManager.Stop()
 }
 
-func TestLoadAndWatchConfig(t *testing.T) {
-	conf, err := dbManager.loadAndWatchConfig()
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(conf))
-}
-
-type testTable struct {
-	gorm.Model
-	DBName string `gorm:"column:db_name"`
-}
-
-func TestConnDBs(t *testing.T) {
+func TestNewClients(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
-		db, err := DB(context.Background())
+		client, err := Client()
 		assert.Nil(t, err)
-		assert.NotNil(t, db)
-		err = db.AutoMigrate(&testTable{})
-		assert.Nil(t, err)
-		err = db.Create(&testTable{DBName: "default"}).Error
-		assert.Nil(t, err)
-		var result testTable
-		err = db.Where("db_name=?", "default").First(&result).Error
-		assert.Nil(t, err)
-		assert.NotEmpty(t, result.DBName)
+		assert.NotNil(t, client)
+		assert.Equal(t, config.GetStrings("asjard.stores.etcd.clients.default.endpoints", []string{}), client.Endpoints())
 	})
 	t.Run("another", func(t *testing.T) {
-		db, err := DB(context.Background(), WithConnName("another"))
+		client, err := Client(WithClientName("another"))
 		assert.Nil(t, err)
-		assert.NotNil(t, db)
-		err = db.AutoMigrate(&testTable{})
-		assert.Nil(t, err)
-		err = db.Create(&testTable{DBName: "another"}).Error
-		assert.Nil(t, err)
-		var result testTable
-		err = db.Where("db_name=?", "another").First(&result).Error
-		assert.Nil(t, err)
-		assert.NotEmpty(t, result.DBName)
-		var result1 testTable
-		err = db.Where("db_name=?", "default").First(&result1).Error
-		assert.NotNil(t, err)
-		assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
-		assert.Empty(t, result1.DBName)
+		assert.NotNil(t, client)
+		assert.Equal(t, config.GetStrings("asjard.stores.etcd.clients.another.endpoints", []string{}), client.Endpoints())
 	})
-	t.Run("newdb", func(t *testing.T) {
-		config.Set("asjard.database.mysql.dbs.newdb.dsn", "test_new.db")
-		config.Set("asjard.database.mysql.dbs.newdb.driver", "sqlite")
-		// 设置配置是异步过程，等待数据库连接刷新
+
+	t.Run("new", func(t *testing.T) {
+		config.Set("asjard.stores.etcd.clients.new.endpoints", "localhost:2")
 		time.Sleep(200 * time.Millisecond)
-		db, err := DB(context.Background(), WithConnName("newdb"))
+		_, err := Client(WithClientName("new"))
+		if err != nil {
+			t.Error(err.Error())
+			t.FailNow()
+		}
 		assert.Nil(t, err)
-		assert.NotNil(t, db)
 	})
 	t.Run("shutdown", func(t *testing.T) {
-		dbManager.Stop()
-		_, err := DB(context.TODO())
+		clientManager.Stop()
+		_, err := Client()
 		assert.NotNil(t, err)
 	})
 }
