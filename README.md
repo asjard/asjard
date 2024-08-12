@@ -102,7 +102,7 @@ go install github.com/asjard/asjard/cmd/protoc-gen-go-rest2grpc-gw
 
 > 更多示例请参考[asjard-example](https://github.com/asjard/examples)
 
-### 编写proto协议文件
+### 编写[proto](docs/user-guide/protobuf.md)协议文件
 
 ```proto
 syntax = "proto3";

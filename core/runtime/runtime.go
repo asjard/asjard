@@ -4,6 +4,8 @@ Package runtime 系统运行时一些参数，系统启动时初始化，后续�
 package runtime
 
 import (
+	"sync"
+
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
@@ -54,12 +56,12 @@ var (
 		AZ:          "default",
 		Website:     website,
 		Instance: Instance{
-			ID:         uuid.NewString(),
 			SystemCode: 100,
 			Name:       constant.Framework,
 			Version:    "1.0.0",
 		},
 	}
+	appOnce sync.Once
 )
 
 // GetInstance 获取服务实例详情
@@ -69,11 +71,14 @@ func GetInstance() Instance {
 
 // GetAPP 获取项目详情
 func GetAPP() APP {
-	if err := config.GetWithUnmarshal(constant.ConfigServicePrefix, &app); err != nil {
-		logger.Error("get instance conf fail", "err", err)
-	}
-	if app.Instance.SystemCode < 100 || app.Instance.SystemCode > 999 {
-		app.Instance.SystemCode = 100
-	}
+	appOnce.Do(func() {
+		if err := config.GetWithUnmarshal(constant.ConfigServicePrefix, &app); err != nil {
+			logger.Error("get instance conf fail", "err", err)
+		}
+		if app.Instance.SystemCode < 100 || app.Instance.SystemCode > 999 {
+			app.Instance.SystemCode = 100
+		}
+		app.Instance.ID = uuid.NewString()
+	})
 	return app
 }
