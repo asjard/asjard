@@ -41,5 +41,6 @@ build_gen_ts: ## 生成protoc-gen-ts命令
 
 
 test: ## 运行测试用例
+	docker run -d redis
 	go test -cover -coverprofile=cover.out $$(go list ./...|grep -v cmd)
 	# go tool cover -html=cover.out
