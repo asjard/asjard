@@ -1,0 +1,87 @@
+version: "3"
+networks:
+  example:
+
+services:
+  etcd:
+    image: bitnami/etcd:latest
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "10"
+    ports:
+      - 2379:2379
+    networks:
+      - example
+    environment:
+      ALLOW_NONE_AUTHENTICATION: yes
+  mariadb:
+    image: mariadb
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "10"
+    networks:
+      - example
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: my-secret-pw
+      MYSQL_DATABASE: example-database
+      TZ: "Asia/Shanghai"
+  redis:
+    image: redis
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "10"
+    networks:
+      - example
+    ports:
+      - 6379:6379
+  jeager:
+    image: jaegertracing/all-in-one:latest
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "10"
+    networks:
+      - example
+    ports:
+      - 4318:4318
+    environment:
+      COLLECTOR_ZIPKIN_HTTP_PORT: 9441
+  prometheus:
+    image: bitnami/prometheus:latest
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "10"
+    networks:
+      - example
+    volumes:
+      - ./prometheus.yaml:/opt/bitnami/prometheus/conf/prometheus.yml
+    external_links:
+      - asjard-pushgateway-1:pushgateway
+  pushgateway:
+    image: bitnami/pushgateway:latest
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "10"
+    ports:
+      - 9091:9091
+    networks:
+      - example

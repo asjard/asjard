@@ -11,6 +11,8 @@ GEN_PROTO_GO_REST_GW ?= true
 ##env 是否根据protobuf文件生成*_ts.pb.go文件
 GEN_PROTO_TS ?= false
 
+.PHONY: test
+
 help: ## 使用帮助
 	@echo "Commands:"
 	@echo "$$(grep -hE '^\S+:.*##' $(MAKEFILE_LIST) | sed -e 's/:.*##\s*/:/' -e 's/^\(.\+\):\(.*\)/  \\033[35m\1\\033[m:\2/' | column -c2 -t -s :)"
@@ -39,8 +41,11 @@ build_gen_go_rest2grpc_gw: ## 生成protoc-gen-go-rest2grpc-gw命令
 build_gen_ts: ## 生成protoc-gen-ts命令
 	go build -o $(GOPATH)/bin/protoc-gen-ts -ldflags '-w -s' ./cmd/protoc-gen-ts/*.go
 
+github_workflows_dependices: docker-compose.yaml ## github workflows 依赖环境
+	docker compose -p asjard up -d
+
+github_workflows_test: github_workflows_dependices test ## github workflow 运行测试用例
 
 test: ## 运行测试用例
-	docker run -d redis
 	go test -cover -coverprofile=cover.out $$(go list ./...|grep -v cmd)
 	# go tool cover -html=cover.out
