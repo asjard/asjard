@@ -1,18 +1,53 @@
 > 可以通过暴露已有的服务，或者自行实现相应的协议对外暴露服务
 
-### 已实现服务
+## 已实现服务
 
 - [x] [rest](./server-rest.md)
 - [x] [grpc](./server-grpc.md)
 - [x] [pprof](./server-pprof.md)
 
-### 如何实现自己的服务
+## 公共配置
 
-#### 配置约定
+```yaml
+asjard:
+  servers:
+    ## 是否开启某种协议的服务
+    enabled: true
+    ## 自定义拦截器
+    interceptors:
+      - "custome_interceptors"
+    ## 内建拦截器, 框架已实现的一些拦截器, 并已自动导入
+    ## 默认值查看core/server/config.go#DefaultConfig
+    ## 如果需要修改默认拦截器可修改该配置
+    builtInInterceptors:
+      - "metrics"
+    ## 默认处理器
+    defaultHandlers:
+      - "custome_default_handlers"
+    ## 内建默认处理器
+    ## 功能同内建拦截器
+    builtInDefaultHandlers:
+      - health
+      - metrics
+    ## 协议的监听地址
+    addresses:
+      ## 监听地址
+      listen: 0.0.0.0:8080
+      ## 广播地址
+      advertise: https://xxx.com
+    ## 证书文件,相对于ASJARD_CONF_DIR/certs目录的相对路径
+    certFile: "xxx.crt"
+    ## 同certFile
+    keyFile: "xxx.key"
+```
+
+## 如何实现自己的服务
+
+### 配置约定
 
 - 配置应都放在`asjard.servers.{自定义服务名称}`该命名空间下
 
-#### 自定义服务
+### 自定义服务
 
 > 具体可参考`core/server/server.go`中的代码
 
@@ -117,9 +152,8 @@ import (
 
 	"github.com/asjard/asjard"
 	"github.com/asjard/asjard/examples/example/hellopb"
-	mgrpc "github.com/asjard/asjard/pkg/server/grpc"
+	"github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
-	"google.golang.org/grpc"
 )
 
 // HelloAPI hello相关接口
@@ -146,7 +180,7 @@ func (api *HelloAPI) RestServiceDesc() *rest.ServiceDesc {
 func main() {
 	server := asjard.New()
 	// 同时提供grpc和rest服务
-	server.AddHandlerV2(&HelloAPI{}, rest.Protocol, mgrpc.Protocol)
+	server.AddHandlerV2(&HelloAPI{}, rest.Protocol, grpc.Protocol)
 	// 启动服务
 	if err := server.Start(); err != nil {
 		panic(err)
