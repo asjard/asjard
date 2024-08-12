@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/asjard/asjard/core/config"
-	_ "github.com/asjard/asjard/core/config/sources/env"
+	_ "github.com/asjard/asjard/pkg/config/env"
 )
 
 func TestAES(t *testing.T) {

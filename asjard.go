@@ -11,7 +11,6 @@ import (
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/config"
-	cfgenv "github.com/asjard/asjard/core/config/sources/env"
 	cfgfile "github.com/asjard/asjard/core/config/sources/file"
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/initator"
@@ -149,16 +148,12 @@ func (asd *Asjard) Init() error {
 	if asd.inited {
 		return nil
 	}
-	// 环境变量配置源加载
-	if err := config.Load(cfgenv.Priority); err != nil {
-		return err
-	}
-
 	// 文件配置源加载
 	if err := config.Load(cfgfile.Priority); err != nil {
 		return err
 	}
 
+	// 其他组件初始化之前的组件初始化
 	if err := initator.Start(); err != nil {
 		return err
 	}

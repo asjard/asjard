@@ -30,6 +30,8 @@ func newTestSource() (config.Sourcer, error) {
 
 			"asjard.database.mysql.dbs.another.dsn":    "test_another.db",
 			"asjard.database.mysql.dbs.another.driver": "sqlite",
+
+			"asjard.config.setDefaultSource": testSourceName,
 		},
 	}, nil
 }
@@ -88,11 +90,11 @@ func initTestConfig() {
 
 func TestMain(m *testing.M) {
 	initTestConfig()
-	if err := dbManager.Bootstrap(); err != nil {
+	if err := dbManager.Start(); err != nil {
 		panic(err)
 	}
 	m.Run()
-	dbManager.Shutdown()
+	dbManager.Stop()
 
 }
 
@@ -149,7 +151,7 @@ func TestConnDBs(t *testing.T) {
 		assert.NotNil(t, db)
 	})
 	t.Run("shutdown", func(t *testing.T) {
-		dbManager.Shutdown()
+		dbManager.Stop()
 		_, err := DB(context.TODO())
 		assert.NotNil(t, err)
 	})
