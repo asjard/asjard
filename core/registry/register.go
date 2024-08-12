@@ -6,8 +6,7 @@ import (
 
 // Register 服务注册相关功能
 type Register interface {
-	// 将服务注册到不同的配置中心
-	// 如果开启心跳，则每隔一个心跳间隔注册一次
+	// 将服务注册到不同的注册中心
 	Registe(instance *server.Service) error
 	// 从配置中心移除服务实例
 	Remove(instance *server.Service)

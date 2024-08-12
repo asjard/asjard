@@ -40,3 +40,6 @@ asjard:
     etcd:
       ## 配置asjard.database.etcd.client中的数据库名称(key)
       client: default
+
+    consul:
+      endpoint: 127.0.0.1:8500
