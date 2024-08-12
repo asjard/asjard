@@ -17,7 +17,7 @@ func TestNewCode(t *testing.T) {
 		{input: 4001, output: 1004001},
 	}
 	for _, data := range datas {
-		output := newWithSystemCode(100, data.input)
+		output := newCode(data.input)
 		t.Log("input", data.input, "output", output)
 		if output != data.output {
 			t.Errorf("test %d fail, current: %d, want: %d", data.input, output, data.output)
