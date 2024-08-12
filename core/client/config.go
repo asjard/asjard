@@ -21,7 +21,7 @@ type Config struct {
 }
 
 var DefaultConfig = Config{
-	Loadbalance:         "roundRobin",
+	Loadbalance:         "localityRoundRobin",
 	BuiltInInterceptors: utils.JSONStrings{"rest2RpcContext", "circuitBreaker", "cycleChainInterceptor"},
 }
 
