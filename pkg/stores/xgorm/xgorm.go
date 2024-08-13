@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/initator"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/metrics"
 	"github.com/asjard/asjard/core/status"
@@ -108,7 +108,7 @@ var (
 
 func init() {
 	dbManager = &DBManager{}
-	initator.AddInitator(dbManager)
+	bootstrap.AddBootstrap(dbManager)
 }
 
 // DB 数据库连接地址
@@ -134,7 +134,7 @@ func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 }
 
 // Start 连接到数据库
-func (m *DBManager) Start() error {
+func (m *DBManager) Bootstrap() error {
 	logger.Debug("store gorm start")
 	conf, err := m.loadAndWatchConfig()
 	if err != nil {
@@ -144,7 +144,7 @@ func (m *DBManager) Start() error {
 }
 
 // Stop 和数据库断开连接
-func (m *DBManager) Stop() {
+func (m *DBManager) Shutdown() {
 	m.dbs.Range(func(key, value any) bool {
 		conn, ok := value.(*DBConn)
 		if ok {

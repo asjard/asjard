@@ -13,7 +13,7 @@ import (
 
 const (
 	testSourceName     = "testSource"
-	testSourcePriority = 0
+	testSourcePriority = 4
 )
 
 type testSource struct {
@@ -90,11 +90,11 @@ func initTestConfig() {
 
 func TestMain(m *testing.M) {
 	initTestConfig()
-	if err := dbManager.Start(); err != nil {
+	if err := dbManager.Bootstrap(); err != nil {
 		panic(err)
 	}
 	m.Run()
-	dbManager.Stop()
+	dbManager.Shutdown()
 
 }
 
@@ -151,7 +151,7 @@ func TestConnDBs(t *testing.T) {
 		assert.NotNil(t, db)
 	})
 	t.Run("shutdown", func(t *testing.T) {
-		dbManager.Stop()
+		dbManager.Shutdown()
 		_, err := DB(context.TODO())
 		assert.NotNil(t, err)
 	})

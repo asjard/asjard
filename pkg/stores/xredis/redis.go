@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/initator"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
@@ -86,7 +86,7 @@ var (
 
 func init() {
 	clientManager = &ClientManager{}
-	initator.AddInitator(clientManager)
+	bootstrap.AddBootstrap(clientManager)
 }
 
 func WithClientName(clientName string) func(*ClientOptions) {
@@ -113,7 +113,7 @@ func Client(opts ...Option) (*redis.Client, error) {
 	return client.client, nil
 }
 
-func (m *ClientManager) Start() error {
+func (m *ClientManager) Bootstrap() error {
 	clients, err := m.loadAndWatch()
 	if err != nil {
 		return err
@@ -121,7 +121,7 @@ func (m *ClientManager) Start() error {
 	return m.newClients(clients)
 }
 
-func (m *ClientManager) Stop() {
+func (m *ClientManager) Shutdown() {
 	m.clients.Range(func(key, value any) bool {
 		conn, ok := value.(*ClientConn)
 		if ok {

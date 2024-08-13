@@ -13,7 +13,7 @@ import (
 
 const (
 	testSourceName     = "testSource"
-	testSourcePriority = 0
+	testSourcePriority = 4
 )
 
 type testSource struct {
@@ -94,11 +94,11 @@ func initTestConfig() {
 
 func TestMain(m *testing.M) {
 	initTestConfig()
-	if err := clientManager.Start(); err != nil {
+	if err := clientManager.Bootstrap(); err != nil {
 		panic(err)
 	}
 	m.Run()
-	clientManager.Stop()
+	clientManager.Shutdown()
 	if miniredisSever != nil {
 		miniredisSever.Close()
 	}
@@ -125,7 +125,7 @@ func TestNewClients(t *testing.T) {
 		s.Close()
 	})
 	t.Run("shudown", func(t *testing.T) {
-		clientManager.Stop()
+		clientManager.Shutdown()
 		client, err := Client()
 		assert.NotNil(t, err)
 		assert.Nil(t, client)
