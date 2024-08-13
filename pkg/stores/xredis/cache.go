@@ -1,4 +1,4 @@
-package redis
+package xredis
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/pkg/database"
+	"github.com/asjard/asjard/pkg/stores"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -39,7 +39,7 @@ func (c CacheType) String() string {
 
 // RedisCache redis缓存
 type Cache struct {
-	*database.Cache
+	*stores.Cache
 
 	// 缓存key
 	key string
@@ -56,28 +56,28 @@ type Cache struct {
 
 // CacheOptions 初始化redis缓存的一些参数
 type CacheOptions struct {
-	localCache database.Cacher
+	localCache stores.Cacher
 }
 
 // CacheConfig 缓存配置
 type CacheConfig struct {
-	database.CacheConfig
+	stores.CacheConfig
 	Client string `json:"client"`
 }
 
 type CacheOption func(options *CacheOptions)
 
 var (
-	_ database.Cacher = &Cache{}
+	_ stores.Cacher = &Cache{}
 	// 默认缓存配置
 	defaultCacheConfig = CacheConfig{
-		CacheConfig: database.DefaultCacheConfig,
+		CacheConfig: stores.DefaultCacheConfig,
 		Client:      DefaultClientName,
 	}
 )
 
 // NewKeyValueCache key/value缓存初始化
-func NewKeyValueCache(model database.Modeler, options ...CacheOption) (*Cache, error) {
+func NewKeyValueCache(model stores.Modeler, options ...CacheOption) (*Cache, error) {
 	newCache, err := NewCache(model, options...)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func NewKeyValueCache(model database.Modeler, options ...CacheOption) (*Cache, e
 }
 
 // NewHashCache hash缓存
-func NewHashCache(model database.Modeler, options ...CacheOption) (*Cache, error) {
+func NewHashCache(model stores.Modeler, options ...CacheOption) (*Cache, error) {
 	newCache, err := NewCache(model, options...)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func NewHashCache(model database.Modeler, options ...CacheOption) (*Cache, error
 }
 
 // NewSetCache set缓存
-func NewSetCache(model database.Modeler, options ...CacheOption) (*Cache, error) {
+func NewSetCache(model stores.Modeler, options ...CacheOption) (*Cache, error) {
 	newCache, err := NewCache(model, options...)
 	if err != nil {
 		return nil, err
@@ -104,20 +104,20 @@ func NewSetCache(model database.Modeler, options ...CacheOption) (*Cache, error)
 }
 
 // WithLocalCache 设置本地缓存
-func WithLocalCache(cache database.Cacher) CacheOption {
+func WithLocalCache(cache stores.Cacher) CacheOption {
 	return func(options *CacheOptions) {
 		options.localCache = cache
 	}
 }
 
 // NewCache 缓存初始化
-func NewCache(model database.Modeler, options ...CacheOption) (*Cache, error) {
+func NewCache(model stores.Modeler, options ...CacheOption) (*Cache, error) {
 	cacheOptions := &CacheOptions{}
 	for _, opt := range options {
 		opt(cacheOptions)
 	}
 	cache := &Cache{
-		Cache:     database.NewCache(model),
+		Cache:     stores.NewCache(model),
 		modelName: model.ModelName(),
 		options:   cacheOptions,
 	}

@@ -1,4 +1,4 @@
-package database
+package stores
 
 import (
 	"context"
@@ -33,7 +33,7 @@ const (
 func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (any, error)) (err error) {
 	if out == nil {
 		logger.Error("GetData out is nil")
-		return status.InternalServerError
+		return status.InternalServerError()
 	}
 	if cache == nil || !cache.Enabled() || cache.Key() == "" {
 		result, err := get()
@@ -94,7 +94,7 @@ func (m *Model) delCache(ctx context.Context, cache Cacher) error {
 	// 删除缓存数据
 	if err := cache.Del(ctx, cache.Key()); err != nil {
 		logger.Error("delete cache fail", "key", cache.Key(), "err", err)
-		return status.DeleteCacheFailError
+		return status.DeleteCacheFailError()
 	}
 	return nil
 }
@@ -117,11 +117,11 @@ func (m *Model) copy(from, to any) error {
 	toVal := reflect.ValueOf(to)
 	if toVal.Kind() != reflect.Ptr || toVal.IsNil() {
 		logger.Error("out must be a non-nil ptr")
-		return status.InternalServerError
+		return status.InternalServerError()
 	}
 	if fromVal.Type() != toVal.Type() {
 		logger.Error("type mismatch: get func return type must be same with out type")
-		return status.InternalServerError
+		return status.InternalServerError()
 	}
 	toVal.Elem().Set(fromVal.Elem())
 	return nil

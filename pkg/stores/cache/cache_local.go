@@ -8,15 +8,15 @@ import (
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/pkg/database"
-	mredis "github.com/asjard/asjard/pkg/database/redis"
+	"github.com/asjard/asjard/pkg/stores"
+	"github.com/asjard/asjard/pkg/stores/xredis"
 	"github.com/coocood/freecache"
 	"github.com/redis/go-redis/v9"
 )
 
 // CacheLocal 本地缓存
 type CacheLocal struct {
-	*database.Cache
+	*stores.Cache
 
 	// 缓存Key
 	key string
@@ -33,7 +33,7 @@ type CacheLocal struct {
 
 // CacheLocalConfig 本地缓存配置
 type CacheLocalConfig struct {
-	database.CacheConfig
+	stores.CacheConfig
 	// 广播redis客户端
 	// 多个实例下，需要所有实例删除本地缓存
 	PublishClient string `json:"publishClient"`
@@ -42,17 +42,17 @@ type CacheLocalConfig struct {
 }
 
 var (
-	_                  database.Cacher = &CacheLocal{}
-	defaultCacheConfig                 = CacheLocalConfig{
-		CacheConfig: database.DefaultCacheConfig,
+	_                  stores.Cacher = &CacheLocal{}
+	defaultCacheConfig               = CacheLocalConfig{
+		CacheConfig: stores.DefaultCacheConfig,
 		MaxSize:     100 * 1024 * 1024,
 	}
 )
 
 // NewLocalCache 本地缓存初始化
-func NewLocalCache(model database.Modeler) (*CacheLocal, error) {
+func NewLocalCache(model stores.Modeler) (*CacheLocal, error) {
 	cache := &CacheLocal{
-		Cache:      database.NewCache(model),
+		Cache:      stores.NewCache(model),
 		modelName:  model.ModelName(),
 		instanceId: runtime.GetAPP().Instance.ID,
 	}
@@ -191,7 +191,7 @@ func (c *CacheLocal) load() error {
 	logger.Debug("load local cache", "conf", conf)
 	c.Cache.WithConf(&conf.CacheConfig)
 	if conf.PublishClient != "" {
-		client, err := mredis.Client(mredis.WithClientName(conf.PublishClient))
+		client, err := xredis.Client(xredis.WithClientName(conf.PublishClient))
 		if err != nil {
 			return err
 		}

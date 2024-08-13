@@ -1,6 +1,6 @@
 > 可以通过暴露rest服务对外提供HTTP服务
 
-### 配置
+## 配置
 
 ```yaml
 asjard:
@@ -303,7 +303,7 @@ asjard:
         exposeHeaders: []
 ```
 
-### 示例
+## 示例
 
 ```go
 package main

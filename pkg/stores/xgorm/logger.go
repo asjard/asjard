@@ -1,4 +1,4 @@
-package mysql
+package xgorm
 
 import (
 	"context"
@@ -11,17 +11,17 @@ import (
 	"gorm.io/gorm/utils"
 )
 
-type mysqlLogger struct {
+type xgormLogger struct {
 	logLevel                  gormLogger.LogLevel
 	ignoreRecordNotFoundError bool
 	slowThreshold             time.Duration
 	name                      string
 }
 
-var _ gormLogger.Interface = &mysqlLogger{}
+var _ gormLogger.Interface = &xgormLogger{}
 
-func (l *mysqlLogger) LogMode(level gormLogger.LogLevel) gormLogger.Interface {
-	return &mysqlLogger{
+func (l *xgormLogger) LogMode(level gormLogger.LogLevel) gormLogger.Interface {
+	return &xgormLogger{
 		logLevel:                  level,
 		ignoreRecordNotFoundError: l.ignoreRecordNotFoundError,
 		slowThreshold:             l.slowThreshold,
@@ -29,17 +29,17 @@ func (l *mysqlLogger) LogMode(level gormLogger.LogLevel) gormLogger.Interface {
 	}
 }
 
-func (l mysqlLogger) Info(ctx context.Context, format string, v ...any) {
+func (l xgormLogger) Info(ctx context.Context, format string, v ...any) {
 	logger.Info(fmt.Sprintf(format, v...), "db", l.name)
 }
 
-func (l mysqlLogger) Warn(ctx context.Context, format string, v ...any) {
+func (l xgormLogger) Warn(ctx context.Context, format string, v ...any) {
 	logger.Warn(fmt.Sprintf(format, v...), "db", l.name)
 }
-func (l mysqlLogger) Error(ctx context.Context, format string, v ...any) {
+func (l xgormLogger) Error(ctx context.Context, format string, v ...any) {
 	logger.Error(fmt.Sprintf(format, v...), "db", l.name)
 }
-func (l mysqlLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
+func (l xgormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
 	elapsed := time.Since(begin)
 	sql, rows := fc()
 	switch {

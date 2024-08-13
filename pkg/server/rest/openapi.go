@@ -58,7 +58,7 @@ func (api *OpenAPI) Yaml(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 			constant.Framework, constant.FrameworkVersion, constant.FrameworkGithub))
 		if err != nil {
 			logger.Error("openapi yaml value fail", "err", err)
-			return nil, status.InternalServerError
+			return nil, status.InternalServerError()
 		}
 		rtx.RequestCtx.Write(b)
 		return nil, nil

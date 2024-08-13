@@ -22,8 +22,6 @@ type Instance struct {
 // 服务发现缓存
 type cache struct {
 	// 服务列表
-	// TODO 需要更新存储结构
-	// services []*Instance
 	services map[string]*Instance
 	sm       sync.RWMutex
 

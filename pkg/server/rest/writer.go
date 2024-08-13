@@ -51,7 +51,7 @@ func writeJSON(c *Context, statusCode int, body proto.Message) error {
 	if err != nil {
 		return err
 	}
-	if _, err := c.RequestCtx.Write(b); err != nil {
+	if _, err := c.Write(b); err != nil {
 		return err
 	}
 	return nil

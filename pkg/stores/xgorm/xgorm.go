@@ -1,4 +1,4 @@
-package mysql
+package xgorm
 
 import (
 	"context"
@@ -120,12 +120,12 @@ func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 	conn, ok := dbManager.dbs.Load(options.connName)
 	if !ok {
 		logger.Error("db not found", "db", options.connName)
-		return nil, status.DatabaseNotFoundError
+		return nil, status.DatabaseNotFoundError()
 	}
 	db, ok := conn.(*DBConn)
 	if !ok {
 		logger.Error("invalid db type, must be *DBConn", "current", fmt.Sprintf("%T", conn))
-		return nil, status.InternalServerError
+		return nil, status.InternalServerError()
 	}
 	if db.debug {
 		return db.db.Debug().WithContext(ctx), nil
@@ -135,7 +135,7 @@ func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 
 // Start 连接到数据库
 func (m *DBManager) Start() error {
-	logger.Debug("database mysql start")
+	logger.Debug("store gorm start")
 	conf, err := m.loadAndWatchConfig()
 	if err != nil {
 		return err
@@ -173,7 +173,7 @@ func (m *DBManager) connDBs(dbsConf map[string]*DBConnConfig) error {
 func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) error {
 	db, err := gorm.Open(m.dialector(cfg), &gorm.Config{
 		SkipDefaultTransaction: cfg.Options.SkipDefaultTransaction,
-		Logger: &mysqlLogger{
+		Logger: &xgormLogger{
 			ignoreRecordNotFoundError: cfg.Options.IgnoreRecordNotFoundError,
 			slowThreshold:             cfg.Options.SlowThreshold.Duration,
 			name:                      dbName,
@@ -238,22 +238,22 @@ func (m *DBManager) loadAndWatchConfig() (map[string]*DBConnConfig, error) {
 	if err != nil {
 		return conf, err
 	}
-	config.AddPatternListener("asjard.database.mysql.*", m.watch)
+	config.AddPatternListener("asjard.stores.gorm.*", m.watch)
 	return conf, nil
 }
 
 func (m *DBManager) loadConfig() (map[string]*DBConnConfig, error) {
 	dbs := make(map[string]*DBConnConfig)
 	options := defaultConnOptions
-	if err := config.GetWithUnmarshal("asjard.database.mysql.options", &options); err != nil {
+	if err := config.GetWithUnmarshal("asjard.stores.gorm.options", &options); err != nil {
 		return dbs, err
 	}
-	if err := config.GetWithUnmarshal("asjard.database.mysql.dbs", &dbs); err != nil {
+	if err := config.GetWithUnmarshal("asjard.stores.gorm.dbs", &dbs); err != nil {
 		return dbs, err
 	}
 	for dbName, dbConfig := range dbs {
 		dbConfig.Options.Options = options
-		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.database.mysql.dbs.%s.options", dbName),
+		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.database.gorm.dbs.%s.options", dbName),
 			&dbConfig.Options.Options); err != nil {
 			return dbs, err
 		}
@@ -264,7 +264,7 @@ func (m *DBManager) loadConfig() (map[string]*DBConnConfig, error) {
 func (m *DBManager) watch(event *config.Event) {
 	conf, err := m.loadConfig()
 	if err != nil {
-		logger.Error("load mysql config fail", "err", err)
+		logger.Error("load gorm config fail", "err", err)
 		return
 	}
 	if err := m.connDBs(conf); err != nil {

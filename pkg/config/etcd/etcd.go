@@ -9,7 +9,7 @@ import (
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/pkg/database/etcd"
+	"github.com/asjard/asjard/pkg/stores/xetcd"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
@@ -44,7 +44,7 @@ type Config struct {
 
 var (
 	defaultConfig = Config{
-		Client:    etcd.DefaultClientName,
+		Client:    xetcd.DefaultClientName,
 		Delimiter: defaultDelimiter,
 	}
 )
@@ -62,7 +62,7 @@ func New() (config.Sourcer, error) {
 	if err != nil {
 		return nil, err
 	}
-	sourcer.client, err = etcd.Client(etcd.WithClientName(sourcer.conf.Client))
+	sourcer.client, err = xetcd.Client(xetcd.WithClientName(sourcer.conf.Client))
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func (s *Etcd) watchConfig(event *config.Event) {
 		return
 	}
 	s.conf = conf
-	client, err := etcd.Client(etcd.WithClientName(s.conf.Client))
+	client, err := xetcd.Client(xetcd.WithClientName(s.conf.Client))
 	if err != nil {
 		logger.Error("new etcd client fail", "err")
 		return
@@ -178,6 +178,7 @@ func (s *Etcd) watchPrefix(prefix string, priority int) {
 	watchChan := s.client.Watch(context.Background(), prefix, clientv3.WithPrefix())
 	for resp := range watchChan {
 		for _, event := range resp.Events {
+			logger.Debug("etcd config event", "event", event.Type, "key", string(event.Kv.Key))
 			callbackEvent := &config.Event{
 				Key: s.configKey(prefix, event.Kv.Key),
 				Value: &config.Value{

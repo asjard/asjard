@@ -90,8 +90,8 @@ func (c *Context) GetQueryParam(key string) []string {
 	return c.ReadQueryParams()[strings.ToLower(key)]
 }
 
-// Write 请求返回
-func (c *Context) Write(data any, err error) {
+// WriteData 请求返回
+func (c *Context) WriteData(data any, err error) {
 	if c.write == nil {
 		DefaultWriter(c, data, err)
 	} else {

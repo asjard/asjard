@@ -31,6 +31,12 @@ const (
 	CustomeXXXNotFoundErrorCode = 404_201
 )
 
+var (
+	// 自定义错误，注意这里需要使用匿名函数的方式定义
+	// 里面包含获取systemCode逻辑，如果定义为全局错误则会出现没有加载配置文件问题
+	CustomeXXXError = func() error {return status.Error(CustomeXXXNotFoundErrorCode, "define error as a variable")}
+)
+
 func(api XXXAPI) YYY(ctx context, in *pb.Req) (*pb.Resp, error) {
 	if in.Name == "" {
 		// 此处返回的是全局共享错误码

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/utils"
 )
@@ -56,6 +57,7 @@ func (s *Service) AddEndpoint(protocol string, address AddressConfig) error {
 		if err != nil {
 			return err
 		}
+		logger.Debug("service listen address", "protocol", protocol, "listen", listenAddress)
 		s.Endpoints[protocol].Listen = append(s.Endpoints[protocol].Listen, listenAddress)
 	}
 	if address.Advertise != "" {

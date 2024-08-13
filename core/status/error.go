@@ -34,22 +34,24 @@ const (
 
 var (
 	// InternalServerError 系统内部错误
-	InternalServerError = Error(codes.Internal, InternalServerErrorStr)
+	// 这里的error不能直接用变量的方式定义，因为里面包含了系统码的概念
+	// 如果是变量在import的时候就执行了，那个时候配置文件还没有加载
+	InternalServerError = func() error { return Error(codes.Internal, InternalServerErrorStr) }
 	// PageNotFoundError 页面找不到
-	PageNotFoundError = Error(codes.NotFound, "page not found")
+	PageNotFoundError = func() error { return Error(codes.NotFound, "page not found") }
 	// MethodNotAllowedError 请求方法不匹配
-	MethodNotAllowedError = Error(MethodNotAllowedCode, "method not allowed")
+	MethodNotAllowedError = func() error { return Error(MethodNotAllowedCode, "method not allowed") }
 	// UnsupportProtocol 暂不支持的协议
-	UnsupportProtocol = Error(UnsupportProtocolCode, "unsupport protocol")
+	UnsupportProtocol = func() error { return Error(UnsupportProtocolCode, "unsupport protocol") }
 
 	// SetCacheFailError 设置缓存失败错误
-	SetCacheFailError = Error(SetCacheFailCode, InternalServerErrorStr)
+	SetCacheFailError = func() error { return Error(SetCacheFailCode, InternalServerErrorStr) }
 	// RefreCacheFailError 刷新缓存失败错误
-	RefreCacheFailError = Error(RefreshCacheFailCode, InternalServerErrorStr)
+	RefreCacheFailError = func() error { return Error(RefreshCacheFailCode, InternalServerErrorStr) }
 	// DeleteCacheFailError 删除缓存失败错误
-	DeleteCacheFailError = Error(DeleteCacheFailCode, InternalServerErrorStr)
+	DeleteCacheFailError = func() error { return Error(DeleteCacheFailCode, InternalServerErrorStr) }
 	// DatabaseNotFoundError 数据库不存在
-	DatabaseNotFoundError = Error(DatabaseNotFoundCode, InternalServerErrorStr)
+	DatabaseNotFoundError = func() error { return Error(DatabaseNotFoundCode, InternalServerErrorStr) }
 )
 
 // Error 添加系统码
@@ -58,16 +60,16 @@ var (
 // YYY HTTP状态码,固定三位
 // Z 错误码位数不固定
 func Error(c codes.Code, msg string) error {
-	return status.Error(newWithSystemCode(runtime.GetAPP().Instance.SystemCode, c), msg)
+	return status.Error(newCode(c), msg)
 }
 
 func Errorf(c codes.Code, format string, a ...any) error {
-	return status.Errorf(newWithSystemCode(runtime.GetAPP().Instance.SystemCode, c), format, a...)
+	return status.Errorf(newCode(c), format, a...)
 }
 
 // https://datatracker.ietf.org/doc/html/rfc7231#section-6
-func newCode(c codes.Code) (httpCode, errCode uint32) {
-	// var httpCode, errCode uint32
+func newCode(c codes.Code) codes.Code {
+	var httpCode, errCode uint32
 	// 没有定义http状态码，从codes.Code中推断
 	if c < 100 {
 		httpCode = httpStatusCode(c)
@@ -84,7 +86,8 @@ func newCode(c codes.Code) (httpCode, errCode uint32) {
 		}
 		errCode = uint32(c) % uint32(math.Pow10(n))
 	}
-	return
+	errCode = httpCode*uint32(math.Pow10(int(utils.Uint32Len(errCode)))) + errCode
+	return codes.Code(runtime.GetAPP().Instance.SystemCode*uint32(math.Pow10(int(utils.Uint32Len(errCode)))) + errCode)
 }
 
 func parseCode(c codes.Code) (systemCode, httpCode, errCode uint32) {
@@ -108,12 +111,6 @@ func parseCode(c codes.Code) (systemCode, httpCode, errCode uint32) {
 		errCode = systemCode*uint32(math.Pow10(int(errCodeLen))) + errCode
 	}
 	return
-}
-
-func newWithSystemCode(systemCode uint32, c codes.Code) codes.Code {
-	httpCode, errCode := newCode(c)
-	errCode = httpCode*uint32(math.Pow10(int(utils.Uint32Len(errCode)))) + errCode
-	return codes.Code(systemCode*uint32(math.Pow10(int(utils.Uint32Len(errCode)))) + errCode)
 }
 
 // 从code解析到http状态码

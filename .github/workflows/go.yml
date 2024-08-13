@@ -10,7 +10,7 @@ on:
     branches: ["develop"]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,4 +21,4 @@ jobs:
           go-version: "1.21"
 
       - name: Test
-        run: go test -v ./...
+        run: make github_workflows_test

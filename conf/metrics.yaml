@@ -8,6 +8,6 @@ asjard:
     ## 推送到pushgateway中
     pushGateway:
       ## gateway地址
-      endpoint: http://xxx
+      endpoint: http://127.0.0.1:9091
       ## 推送间隔
       interval: 5s
