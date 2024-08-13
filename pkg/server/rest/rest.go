@@ -138,7 +138,7 @@ func (s *RestServer) Start(startErr chan error) error {
 			"err", err,
 			"stack", string(debug.Stack()))
 		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
-		cc.Write(_ErrorHandler_Panic_RestHandler(cc, s.errorHandler, s.interceptor))
+		cc.WriteData(_ErrorHandler_Panic_RestHandler(cc, s.errorHandler, s.interceptor))
 	}
 	s.server.ErrorHandler = func(ctx *fasthttp.RequestCtx, err error) {
 		logger.Error("request error",
@@ -147,7 +147,7 @@ func (s *RestServer) Start(startErr chan error) error {
 			"header", ctx.Request.Header.String(),
 			"err", err)
 		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
-		cc.Write(_ErrorHandler_Error_RestHandler(cc, s.errorHandler, s.interceptor))
+		cc.WriteData(_ErrorHandler_Error_RestHandler(cc, s.errorHandler, s.interceptor))
 	}
 	if s.conf.Openapi.Enabled {
 		// 添加openapi接口
@@ -241,7 +241,7 @@ func (s *RestServer) newHandler(methodHandler methodHandler, svc Handler) fastht
 	return func(ctx *fasthttp.RequestCtx) {
 		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
 		reply, err := methodHandler(cc, svc, s.interceptor)
-		cc.Write(reply, err)
+		cc.WriteData(reply, err)
 	}
 }
 
