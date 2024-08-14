@@ -31,6 +31,8 @@ type ClientConnInterface interface {
 type ConnOptions struct {
 	// 实例ID
 	InstanceID string
+	// 注册发现中心名称
+	RegistryName string
 }
 
 type ConnOption func(opts *ConnOptions)
@@ -114,8 +116,16 @@ func (o ConnOptions) queryString() string {
 
 }
 
+// WithInstanceID 客户端连接设置实例ID
 func WithInstanceID(instanceID string) func(opts *ConnOptions) {
 	return func(opts *ConnOptions) {
 		opts.InstanceID = instanceID
+	}
+}
+
+// WithRegistryName 客户端连接设置服务发现中心名称
+func WithRegistryName(registryName string) func(opts *ConnOptions) {
+	return func(opts *ConnOptions) {
+		opts.RegistryName = registryName
 	}
 }
