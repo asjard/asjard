@@ -6,6 +6,7 @@ import (
 
 	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server/handlers"
 	_ "github.com/asjard/asjard/pkg/client/grpc"
@@ -34,6 +35,7 @@ func (Health) Check(ctx context.Context, in *healthpb.HealthCheckRequest) (*heal
 			}
 		}
 		if err != nil {
+			logger.Error("health check fail", "service", in.Service, "err", err)
 			return &healthpb.HealthCheckResponse{
 				Status:  healthpb.HealthCheckResponse_NOT_SERVING,
 				Service: in.Service,
