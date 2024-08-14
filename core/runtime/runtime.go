@@ -59,15 +59,11 @@ var (
 			SystemCode: 100,
 			Name:       constant.Framework,
 			Version:    "1.0.0",
+			MetaData:   make(map[string]string),
 		},
 	}
 	appOnce sync.Once
 )
-
-// GetInstance 获取服务实例详情
-// func GetInstance() Instance {
-// 	return GetAPP("instance").Instance
-// }
 
 // GetAPP 获取项目详情
 func GetAPP() APP {
