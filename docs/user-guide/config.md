@@ -7,6 +7,7 @@
 - [x] 环境变量, 优先级: 0
 - [ ] cli, 优先级: 1
 - [x] etcd, 优先级: 10
+- [x] consul, 优先级: 11
 
 ## 配置优先级
 
@@ -48,14 +49,24 @@ config.GetString("asjard.app", "")
 > 从上向下优先级依次递增,多个字段之间以英文`/`分隔,不以`/`结尾
 
 - `/{app}/configs/global/`: 项目相关全局配置
+- `/{app}/configs/global/{env}/`: 项目相关全局配置
 - `/{app}/configs/service/{service}/`: 服务相关配置
 - `/{app}/configs/service/{service}/{region}/`: 服务region相关配置
 - `/{app}/configs/service/{service}/{region}/{az}/`: 服务region，az配置
+- `/{app}/configs/service/{env}/{service}/`: 服务相关配置
+- `/{app}/configs/service/{env}/{service}/{region}/`: 服务region相关配置
+- `/{app}/configs/service/{env}/{service}/{region}/{az}/`: 服务region，az配置
 - `/{app}/configs/runtime/{instance.ID}/`: 实例配置
 
 ### 使用
 
 ```go
+
+import (
+	// 导入etcd配置源
+	_ "github.com/asjard/asjard/pkg/config/etcd"
+)
+
 // 例如全局配置
 // /app/configs/global/examples/timeout => 5ms
 config.GetDuration("examples.timeout", time.Second)
@@ -67,4 +78,31 @@ config.GetDuration("examples.timeout", time.Second)
 // Output: 6ms
 
 // 其他同上
+```
+
+## Consul配置
+
+> 配置同ETCD
+
+### 使用
+
+```go
+import (
+	// 导入consul配置源
+	_ "github.com/asjard/asjard/pkg/config/consul"
+)
+
+// 其他使用方法同ETCD
+```
+
+## 多配置源同时使用
+
+```go
+import (
+	// 导入etcd配置源
+	_ "github.com/asjard/asjard/pkg/config/etcd"
+	// 导入consul配置源
+	_ "github.com/asjard/asjard/pkg/config/consul"
+)
+// 同一个配置项始终会获得最高优先级配置源的值
 ```

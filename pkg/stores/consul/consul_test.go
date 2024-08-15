@@ -1,12 +1,10 @@
-package xetcd
+package consul
 
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/asjard/asjard/core/config"
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -23,8 +21,7 @@ type testSource struct {
 func newTestSource() (config.Sourcer, error) {
 	return &testSource{
 		configs: map[string]any{
-			"asjard.stores.etcd.clients.default.endpoints": "127.0.0.1:2379",
-			"asjard.stores.etcd.clients.another.endpoints": "127.0.0.1:2379",
+			"asjard.stores.consul.clients.default.address": "127.0.0.1:8500",
 			"asjard.config.setDefaultSource":               testSourceName,
 		},
 	}, nil
@@ -89,35 +86,4 @@ func TestMain(m *testing.M) {
 	}
 	m.Run()
 	clientManager.Stop()
-}
-
-func TestNewClients(t *testing.T) {
-	t.Run("default", func(t *testing.T) {
-		client, err := Client()
-		assert.Nil(t, err)
-		assert.NotNil(t, client)
-		assert.Equal(t, config.GetStrings("asjard.stores.etcd.clients.default.endpoints", []string{}), client.Endpoints())
-	})
-	t.Run("another", func(t *testing.T) {
-		client, err := Client(WithClientName("another"))
-		assert.Nil(t, err)
-		assert.NotNil(t, client)
-		assert.Equal(t, config.GetStrings("asjard.stores.etcd.clients.another.endpoints", []string{}), client.Endpoints())
-	})
-
-	t.Run("new", func(t *testing.T) {
-		config.Set("asjard.stores.etcd.clients.new.endpoints", "127.0.0.1:2379")
-		time.Sleep(200 * time.Millisecond)
-		_, err := Client(WithClientName("new"))
-		if err != nil {
-			t.Error(err.Error())
-			t.FailNow()
-		}
-		assert.Nil(t, err)
-	})
-	t.Run("shutdown", func(t *testing.T) {
-		clientManager.Stop()
-		_, err := Client()
-		assert.NotNil(t, err)
-	})
 }

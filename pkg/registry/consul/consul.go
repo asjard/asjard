@@ -2,6 +2,7 @@ package consul
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/asjard/asjard/pkg/stores/consul"
 	"github.com/asjard/asjard/utils"
 	"github.com/hashicorp/consul/api"
+	"github.com/hashicorp/consul/api/watch"
 )
 
 const (
@@ -22,12 +24,10 @@ const (
 )
 
 type Consul struct {
-	client     *api.Client
-	cb         func(event *registry.Event)
-	conf       *Config
-	exit       chan struct{}
-	serviceMap map[string]*server.Service
-	sm         sync.RWMutex
+	client *api.Client
+	cb     func(event *registry.Event)
+	conf   *Config
+	exit   chan struct{}
 }
 
 type Config struct {
@@ -61,7 +61,9 @@ func NewDiscovery() (registry.Discovery, error) {
 	if err != nil {
 		return nil, err
 	}
-	go discovery.watch()
+	if err := newServiceWatch(discovery); err != nil {
+		return nil, err
+	}
 	return discovery, nil
 }
 
@@ -69,8 +71,7 @@ func New() (*Consul, error) {
 	var err error
 	newOnce.Do(func() {
 		consulRegistry := &Consul{
-			exit:       make(chan struct{}),
-			serviceMap: make(map[string]*server.Service),
+			exit: make(chan struct{}),
 		}
 		err = consulRegistry.loadConfig()
 		if err != nil {
@@ -147,9 +148,6 @@ func (c *Consul) GetAll() ([]*registry.Instance, error) {
 	if err != nil {
 		return []*registry.Instance{}, err
 	}
-	c.sm.Lock()
-	c.serviceMap = serviceMap
-	c.sm.Unlock()
 	instances := make([]*registry.Instance, 0, len(serviceMap))
 	for _, service := range serviceMap {
 		instances = append(instances, &registry.Instance{
@@ -199,42 +197,158 @@ func (c *Consul) loadConfig() error {
 	return nil
 }
 
-func (c *Consul) watch() {
-	for {
-		select {
-		case <-time.After(c.conf.Timeout.Duration):
-			serviceMap, err := c.getAgentServices()
-			if err == nil {
-				c.sm.Lock()
-				for serviceId, service := range serviceMap {
-					if _, ok := c.serviceMap[serviceId]; !ok {
-						if c.cb != nil {
-							c.cb(&registry.Event{
-								Type: registry.EventTypeCreate,
-								Instance: &registry.Instance{
-									DiscoverName: NAME,
-									Service:      service,
-								},
-							})
-						}
-					}
-				}
-				for serviceId, service := range c.serviceMap {
-					if _, ok := serviceMap[serviceId]; !ok {
-						if c.cb != nil {
-							c.cb(&registry.Event{
-								Type: registry.EventTypeDelete,
-								Instance: &registry.Instance{
-									DiscoverName: NAME,
-									Service:      service,
-								},
-							})
-						}
-					}
-				}
-				c.serviceMap = serviceMap
-				c.sm.Unlock()
+type serviceWatch struct {
+	services map[string]*watch.Plan
+	sm       sync.RWMutex
+	c        *Consul
+}
+
+func newServiceWatch(c *Consul) error {
+	watcher := &serviceWatch{
+		services: make(map[string]*watch.Plan),
+		c:        c,
+	}
+	pl, err := watch.Parse(map[string]any{
+		"type": "services",
+	})
+	if err != nil {
+		return err
+	}
+	pl.Handler = watcher.serviceHandler
+	go func() {
+		if err := pl.RunWithClientAndHclog(watcher.c.client, nil); err != nil {
+			logger.Error("consul watch service fail", "err", err)
+		}
+	}()
+	return nil
+}
+
+func (s *serviceWatch) serviceHandler(_ uint64, data any) {
+	switch d := data.(type) {
+	case map[string][]string:
+		for service := range d {
+			if service == "consul" {
+				continue
+			}
+			s.sm.RLock()
+			_, ok := s.services[service]
+			s.sm.RUnlock()
+			if !ok {
+				s.instanceWatch(service)
 			}
 		}
+		s.sm.Lock()
+		for service, plan := range s.services {
+			if _, ok := d[service]; !ok {
+				plan.Stop()
+				delete(s.services, service)
+			}
+		}
+		s.sm.Unlock()
+	default:
+		logger.Error("can not decide the wath type, must be map[string][]string")
+
+	}
+}
+
+func (s *serviceWatch) instanceWatch(service string) {
+	pl, err := newInstanceWatch(s.c, service)
+	if err != nil {
+		logger.Error("new instance watch fail", "err", err)
+		return
+	}
+	s.sm.Lock()
+	s.services[service] = pl
+	s.sm.Unlock()
+}
+
+type instanceWatch struct {
+	instances map[string]uint64
+	im        sync.RWMutex
+	c         *Consul
+	service   string
+}
+
+func newInstanceWatch(c *Consul, service string) (*watch.Plan, error) {
+	watcher := &instanceWatch{
+		instances: make(map[string]uint64),
+		c:         c,
+		service:   service,
+	}
+	pl, err := watch.Parse(map[string]any{
+		"type":    "service",
+		"service": service,
+	})
+	if err != nil {
+		return nil, err
+	}
+	pl.Handler = watcher.handler
+	go func() {
+		if err := pl.RunWithClientAndHclog(watcher.c.client, nil); err != nil {
+			logger.Error("consul watch service instance fail", "service", service)
+		}
+	}()
+	return pl, nil
+}
+
+func (s *instanceWatch) handler(_ uint64, data any) {
+	switch d := data.(type) {
+	case []*api.ServiceEntry:
+		for _, entry := range d {
+			s.im.Lock()
+			if modifyIndex, ok := s.instances[entry.Service.ID]; !ok || modifyIndex != entry.Service.ModifyIndex {
+				s.instances[entry.Service.ID] = entry.Service.ModifyIndex
+				if s.c.cb != nil {
+					var service server.Service
+					if err := json.Unmarshal([]byte(entry.Service.Meta["endpoints"]), &service.Endpoints); err != nil {
+						logger.Error("consul unmarshal appDetail fail", "endpoints", entry.Service.Meta["endpoints"], "err", err)
+						continue
+					}
+					if err := json.Unmarshal([]byte(entry.Service.Meta["app_detail"]), &service.APP); err != nil {
+						logger.Error("consul unmarshal app fail", "app_detail", entry.Service.Meta["app_detail"], "err", err)
+						continue
+					}
+					s.c.cb(&registry.Event{
+						Type: registry.EventTypeCreate,
+						Instance: &registry.Instance{
+							DiscoverName: NAME,
+							Service:      &service,
+						},
+					})
+				}
+			}
+			s.im.Unlock()
+		}
+		s.im.Lock()
+		for key := range s.instances {
+			exist := false
+			for _, entry := range d {
+				if entry.Service.ID == key {
+					exist = true
+					break
+				}
+			}
+			if !exist {
+				if s.c.cb != nil {
+					s.c.cb(&registry.Event{
+						Type: registry.EventTypeDelete,
+						Instance: &registry.Instance{
+							DiscoverName: NAME,
+							Service: &server.Service{
+								APP: runtime.APP{
+									Instance: runtime.Instance{
+										ID: key,
+									},
+								},
+							},
+						},
+					})
+				}
+				delete(s.instances, key)
+			}
+		}
+		s.im.Unlock()
+	default:
+		logger.Error("consul instance watch fail, invalid type, must be []*api.ServiceEntry", "service", s.service, "type", fmt.Sprintf("%T", data))
 	}
 }

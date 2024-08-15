@@ -58,12 +58,7 @@ func New() (config.Sourcer, error) {
 	sourcer := &Etcd{
 		app: runtime.GetAPP(),
 	}
-	err := sourcer.loadAndWatchConfig()
-	if err != nil {
-		return nil, err
-	}
-	sourcer.client, err = xetcd.Client(xetcd.WithClientName(sourcer.conf.Client))
-	if err != nil {
+	if err := sourcer.loadAndWatchConfig(); err != nil {
 		return nil, err
 	}
 	if err := sourcer.watch(); err != nil {
@@ -135,36 +130,31 @@ func (s *Etcd) Disconnect() {
 }
 
 func (s *Etcd) loadAndWatchConfig() error {
-	conf, err := s.loadConfig()
-	if err != nil {
+	if err := s.loadConfig(); err != nil {
 		return err
 	}
-	s.conf = conf
 	config.AddListener("asjard.config.etcd.*", s.watchConfig)
 	return nil
 }
 
-func (s *Etcd) loadConfig() (*Config, error) {
+func (s *Etcd) loadConfig() error {
 	conf := defaultConfig
 	if err := config.GetWithUnmarshal("asjard.config.etcd", &conf); err != nil {
-		return nil, err
+		logger.Error("get etcd config fail", "err", err)
+		return err
 	}
-	return &conf, nil
+	s.conf = &conf
+	client, err := xetcd.Client(xetcd.WithClientName(s.conf.Client))
+	if err != nil {
+		logger.Error("new etcd client fail", "err", err)
+		return err
+	}
+	s.client = client
+	return nil
 }
 
 func (s *Etcd) watchConfig(event *config.Event) {
-	conf, err := s.loadConfig()
-	if err != nil {
-		logger.Error("load config fail", "err")
-		return
-	}
-	s.conf = conf
-	client, err := xetcd.Client(xetcd.WithClientName(s.conf.Client))
-	if err != nil {
-		logger.Error("new etcd client fail", "err")
-		return
-	}
-	s.client = client
+	s.loadConfig()
 }
 
 func (s *Etcd) watch() error {
@@ -201,6 +191,7 @@ func (s *Etcd) watchPrefix(prefix string, priority int) {
 }
 
 // /{app}/configs/global/
+// /{app}/configs/global/{env}/
 // /{app}/configs/service/{service}/
 // /{app}/configs/service/{service}/{region}/
 // /{app}/configs/service/{service}/{region}/{az}/
@@ -211,6 +202,7 @@ func (s *Etcd) watchPrefix(prefix string, priority int) {
 func (s *Etcd) prefixs() []string {
 	return []string{
 		s.globalPrefix(),
+		strings.Join([]string{s.globalPrefix(), s.app.Environment, ""}, s.conf.Delimiter),
 		strings.Join([]string{s.prefix(), s.app.Instance.Name, ""}, s.conf.Delimiter),
 		strings.Join([]string{s.prefix(), s.app.Instance.Name, s.app.Region, ""}, s.conf.Delimiter),
 		strings.Join([]string{s.prefix(), s.app.Instance.Name, s.app.Region, s.app.AZ, ""}, s.conf.Delimiter),

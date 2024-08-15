@@ -121,6 +121,9 @@ func (m *ClientManager) newClient(name string, conf *ClientConnConfig) error {
 	if err != nil {
 		return err
 	}
+	if _, err := client.Status().Leader(); err != nil {
+		return err
+	}
 	m.clients.Store(name, &ClientConn{
 		name:   name,
 		client: client,

@@ -19,14 +19,17 @@ Asjard是一个用[Go](https://go.dev/)语言实现的由[protobuf](https://prot
   - [x] 文件
   - [x] 内存
   - [x] etcd
+  - [x] consul
 
 - [x] [自动服务注册/发现](docs/user-guide/registry.md)
 
   - 发现
     - [x] 本地配置文件服务发现
     - [x] etcd
+    - [x] consul
   - 注册
     - [x] etcd
+    - [x] consul
 
 - [x] 统一日志处理
 
