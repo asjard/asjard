@@ -10,6 +10,7 @@ import (
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/pkg/stores"
 	"github.com/asjard/asjard/pkg/stores/xredis"
+	"github.com/asjard/asjard/utils"
 	"github.com/coocood/freecache"
 	"github.com/redis/go-redis/v9"
 )
@@ -73,7 +74,10 @@ func (c *CacheLocal) WithKey(key string) *CacheLocal {
 
 // 从缓存获取数据
 func (c *CacheLocal) Get(ctx context.Context, key string, out any) error {
-	value, err := c.cache.Get([]byte(key))
+	if key == "" {
+		return nil
+	}
+	value, err := c.cache.Get(utils.String2Byte(key))
 	if err != nil {
 		return err
 	}
@@ -82,6 +86,9 @@ func (c *CacheLocal) Get(ctx context.Context, key string, out any) error {
 
 // 从缓存删除数据
 func (c *CacheLocal) Del(ctx context.Context, keys ...string) error {
+	if len(keys) == 0 {
+		return nil
+	}
 	if err := c.del(keys...); err != nil {
 		return err
 	}
@@ -90,18 +97,21 @@ func (c *CacheLocal) Del(ctx context.Context, keys ...string) error {
 
 func (c *CacheLocal) del(keys ...string) error {
 	for _, key := range keys {
-		c.cache.Del([]byte(key))
+		c.cache.Del(utils.String2Byte(key))
 	}
 	return nil
 }
 
 // 设置缓存数据
 func (c *CacheLocal) Set(ctx context.Context, key string, in any) error {
+	if key == "" {
+		return nil
+	}
 	value, err := json.Marshal(in)
 	if err != nil {
 		return err
 	}
-	return c.cache.Set([]byte(key), value, int(c.ExpiresIn().Seconds()))
+	return c.cache.Set(utils.String2Byte(key), value, int(c.ExpiresIn().Seconds()))
 }
 
 // 刷新缓存过期时间
@@ -162,7 +172,7 @@ func (c *CacheLocal) delSubscribe() {
 	for msg := range c.pubsub.Channel() {
 		logger.Debug("local cache del subscribe recive", "msg", msg.Payload)
 		var delMsg cacheLocalDelPublishMessage
-		if err := json.Unmarshal([]byte(msg.Payload), &delMsg); err != nil {
+		if err := json.Unmarshal(utils.String2Byte(msg.Payload), &delMsg); err != nil {
 			logger.Error("local cache pubsub unmarshal fail", "payload", msg.Payload, "err", err)
 		}
 		if delMsg.InstanceId != c.instanceId {
