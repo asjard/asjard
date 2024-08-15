@@ -100,6 +100,8 @@ func TestNewClients(t *testing.T) {
 		assert.NotNil(t, client)
 		result := client.Set(context.Background(), "test_default_redis_key", "test_default_redis_value", 5*time.Second)
 		assert.Nil(t, result.Err())
+		delResult := client.Del(context.Background(), "test_default_redis_key")
+		assert.Nil(t, delResult.Err())
 	})
 	t.Run("another", func(t *testing.T) {
 		s := miniredis.RunT(t)
@@ -110,6 +112,8 @@ func TestNewClients(t *testing.T) {
 		assert.NotNil(t, client)
 		result := client.Set(context.Background(), "test_another_redis_key", "test_another_redis_value", 5*time.Second)
 		assert.Nil(t, result.Err())
+		delResult := client.Del(context.Background(), "test_another_redis_key")
+		assert.Nil(t, delResult.Err())
 		s.Close()
 	})
 	t.Run("shudown", func(t *testing.T) {

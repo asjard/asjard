@@ -55,7 +55,7 @@ func TestCache(t *testing.T) {
 		t.Run("TestWithGroup", func(t *testing.T) {
 			testGroup := "test_redis_group"
 			cache = cache.WithGroup(testGroup)
-			for i := 0; i < 1; i++ {
+			for i := 0; i < 100; i++ {
 				key := fmt.Sprintf("%s_%d", testKey, i)
 				value := fmt.Sprintf("%s_%d", testValue, i)
 				assert.Nil(t, cache.Set(context.Background(), key, value))
