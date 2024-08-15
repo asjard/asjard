@@ -69,16 +69,11 @@ func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (
 	return nil
 }
 
-// SetData 创建、更新、或删除数据
+// SetData 更新数据源并删除缓存
 // 先更新数据源，然后删除缓存
 // set: 更新数据源数据, 如果删除缓存过程中出现失败则会通过管道通知
-// caches: 缓存列表
+// caches: 缓存
 func (m *Model) SetData(ctx context.Context, cache Cacher, set func() error) error {
-	// 删除缓存
-	// TODO 如果set出错,这里缓存会被删除
-	if err := m.delCache(ctx, cache); err != nil {
-		return err
-	}
 	// 更新数据源数据
 	if err := set(); err != nil {
 		return err
@@ -90,22 +85,38 @@ func (m *Model) SetData(ctx context.Context, cache Cacher, set func() error) err
 	return nil
 }
 
+// SetAndGetData 更新数据并返回更新后的数据
+func (m *Model) SetAndGetData(ctx context.Context, out any, cache Cacher, set func() (any, error)) error {
+	if out == nil {
+		logger.Error("SetAndGetData out is nil")
+		return status.InternalServerError()
+	}
+	result, err := set()
+	if err != nil {
+		return err
+	}
+
+	if err := m.delCache(ctx, cache); err != nil {
+		return err
+	}
+
+	if cache != nil && cache.Enabled() {
+		if err := cache.Set(ctx, cache.Key(), result); err != nil {
+			logger.Error("SetAndGetData set cache fail", "key", cache.Key(), "err", err)
+		}
+	}
+	return m.copy(result, out)
+}
+
 func (m *Model) delCache(ctx context.Context, cache Cacher) error {
+	if cache == nil {
+		return nil
+	}
 	// 删除缓存数据
 	if err := cache.Del(ctx, cache.Key()); err != nil {
 		logger.Error("delete cache fail", "key", cache.Key(), "err", err)
 		return status.DeleteCacheFailError()
 	}
-	return nil
-}
-
-// UpdateData TODO 更新数据
-func (m *Model) UpdateData() error {
-	return nil
-}
-
-// DeleteData TODO 删除数据
-func (m *Model) DeleteData() error {
 	return nil
 }
 

@@ -141,6 +141,7 @@ func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 		if err := m.newClient(name, conf); err != nil {
 			return err
 		}
+		logger.Debug("connect to redis success", "name", name)
 	}
 	return nil
 }

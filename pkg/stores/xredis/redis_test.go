@@ -22,19 +22,10 @@ type testSource struct {
 	cm      sync.RWMutex
 }
 
-var (
-	miniredisSever *miniredis.Miniredis
-)
-
 func newTestSource() (config.Sourcer, error) {
-	s, err := miniredis.Run()
-	if err != nil {
-		return nil, err
-	}
-	miniredisSever = s
 	return &testSource{
 		configs: map[string]any{
-			"asjard.stores.redis.clients.default.address": s.Addr(),
+			"asjard.stores.redis.clients.default.address": "127.0.0.1:6379",
 			"asjard.config.setDefaultSource":              testSourceName,
 		},
 	}, nil
@@ -99,9 +90,6 @@ func TestMain(m *testing.M) {
 	}
 	m.Run()
 	clientManager.Shutdown()
-	if miniredisSever != nil {
-		miniredisSever.Close()
-	}
 }
 
 func TestNewClients(t *testing.T) {
@@ -115,7 +103,7 @@ func TestNewClients(t *testing.T) {
 	})
 	t.Run("another", func(t *testing.T) {
 		s := miniredis.RunT(t)
-		config.Set("asjard.stores.redis.clients.another.address", s.Addr())
+		config.Set("asjard.stores.redis.clients.another.address", "127.0.0.1:6379")
 		time.Sleep(time.Second)
 		client, err := Client(WithClientName("another"))
 		assert.Nil(t, err)

@@ -142,6 +142,7 @@ func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 		if err := m.newClient(name, cfg); err != nil {
 			return err
 		}
+		logger.Debug("connect to etcd success", "name", name)
 	}
 	return nil
 }
