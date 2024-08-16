@@ -691,6 +691,15 @@ func TestGetTime(t *testing.T) {
 	}
 }
 
+func TestExist(t *testing.T) {
+	if err := Set("test_exist_key", "exist"); err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	assert.Equal(t, true, Exist("test_exist_key"))
+	assert.Equal(t, false, Exist("test_not_found_key"))
+}
+
 func TestGetAndUnmarshal(t *testing.T) {
 	t.Run("JsonUnmarshal", func(t *testing.T) {
 		if err := Set("test_json_content", `{"a":1}`); err != nil {

@@ -789,6 +789,12 @@ func GetTime(key string, defaultValue time.Time, opts ...Option) time.Time {
 	return value
 }
 
+// Exist 配置是否存在
+func Exist(key string) bool {
+	options := GetOptions()
+	return Get(key, options) != nil
+}
+
 // GetAndUnmarshal 获取结果并序列化
 func GetAndUnmarshal(key string, outPtr any, opts ...Option) error {
 	options := GetOptions(opts...)
