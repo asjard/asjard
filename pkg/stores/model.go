@@ -49,11 +49,11 @@ func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (
 		if err != nil {
 			// 如果从数据源也没有获取到数据
 			// 则可以设置一个空值
-			cache.Set(ctx, cache.Key(), out)
+			cache.Set(ctx, cache.Key(), out, cache.EmptyExpiresIn())
 			return err
 		}
 		// 设置缓存
-		if err := cache.Set(ctx, cache.Key(), result); err != nil {
+		if err := cache.Set(ctx, cache.Key(), result, cache.ExpiresIn()); err != nil {
 			logger.Error("set cache fail", "key", cache.Key(), "err", err)
 			// return status.SetCacheFailError
 		}
@@ -61,7 +61,7 @@ func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (
 	}
 	// 刷新缓存时间
 	if cache.AutoRefresh() {
-		if err := cache.Refresh(ctx, cache.Key()); err != nil {
+		if err := cache.Refresh(ctx, cache.Key(), cache.ExpiresIn()); err != nil {
 			logger.Error("refresh cache fail", "key", cache.Key(), "err", err)
 			// return status.RefreCacheFailError
 		}
@@ -101,7 +101,7 @@ func (m *Model) SetAndGetData(ctx context.Context, out any, cache Cacher, set fu
 	}
 
 	if cache != nil && cache.Enabled() {
-		if err := cache.Set(ctx, cache.Key(), result); err != nil {
+		if err := cache.Set(ctx, cache.Key(), result, cache.ExpiresIn()); err != nil {
 			logger.Error("SetAndGetData set cache fail", "key", cache.Key(), "err", err)
 		}
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -28,7 +29,7 @@ func TestCache(t *testing.T) {
 			for i := 0; i < 100; i++ {
 				key := fmt.Sprintf("%s_%d", testKey, i)
 				value := fmt.Sprintf("%s_%d", testValue, i)
-				assert.Nil(t, cache.Set(context.Background(), key, value))
+				assert.Nil(t, cache.Set(context.Background(), key, value, 5*time.Minute))
 				setCheck := client.Get(context.Background(), key)
 				assert.Nil(t, setCheck.Err())
 
@@ -58,7 +59,7 @@ func TestCache(t *testing.T) {
 			for i := 0; i < 100; i++ {
 				key := fmt.Sprintf("%s_%d", testKey, i)
 				value := fmt.Sprintf("%s_%d", testValue, i)
-				assert.Nil(t, cache.Set(context.Background(), key, value))
+				assert.Nil(t, cache.Set(context.Background(), key, value, 5*time.Minute))
 				hcheck := client.HGet(context.Background(), cache.Group(testGroup), key)
 				assert.Nil(t, hcheck.Err())
 				assert.NotEmpty(t, hcheck.Val())

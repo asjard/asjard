@@ -6,6 +6,8 @@ asjard:
     autoRefresh: true
     ## 全局过期时间
     expiresIn: 5m
+    ## 空值过期时间
+    emptyExpiresIn: 2m
     ## 全局表缓存配置
     models:
       ## 表名

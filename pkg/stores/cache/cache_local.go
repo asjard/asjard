@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
@@ -103,7 +104,7 @@ func (c *CacheLocal) del(keys ...string) error {
 }
 
 // 设置缓存数据
-func (c *CacheLocal) Set(ctx context.Context, key string, in any) error {
+func (c *CacheLocal) Set(ctx context.Context, key string, in any, expiresIn time.Duration) error {
 	if key == "" {
 		return nil
 	}
@@ -111,12 +112,12 @@ func (c *CacheLocal) Set(ctx context.Context, key string, in any) error {
 	if err != nil {
 		return err
 	}
-	return c.cache.Set(utils.String2Byte(key), value, int(c.ExpiresIn().Seconds()))
+	return c.cache.Set(utils.String2Byte(key), value, int(expiresIn.Seconds()))
 }
 
 // 刷新缓存过期时间
 // 不实现缓存刷新，强制自动过期
-func (c *CacheLocal) Refresh(ctx context.Context, key string) error {
+func (c *CacheLocal) Refresh(ctx context.Context, key string, expiresIn time.Duration) error {
 	return nil
 }
 

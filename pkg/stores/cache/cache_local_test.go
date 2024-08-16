@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -23,7 +24,7 @@ func TestCache(t *testing.T) {
 	for i := 0; i < 5000; i++ {
 		key := fmt.Sprintf("%s_%d", testKey, i)
 		value := fmt.Sprintf("%s_%d", testValue, i)
-		assert.Nil(t, localCache.Set(context.Background(), key, value))
+		assert.Nil(t, localCache.Set(context.Background(), key, value, 5*time.Minute))
 		var result string
 		assert.Nil(t, localCache.Get(context.Background(), key, &result))
 		assert.Equal(t, value, result)

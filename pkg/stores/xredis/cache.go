@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
@@ -243,20 +244,20 @@ func (c Cache) Del(ctx context.Context, keys ...string) error {
 	return c.delGroup(ctx)
 }
 
-func (c Cache) Set(ctx context.Context, key string, in any) error {
+func (c Cache) Set(ctx context.Context, key string, in any, expiresIn time.Duration) error {
 	if key == "" {
 		return nil
 	}
 	switch c.tp {
 	case CacheTypeKeyValue:
 		if c.options.localCache != nil {
-			c.options.localCache.Set(ctx, key, in)
+			c.options.localCache.Set(ctx, key, in, expiresIn)
 		}
 		b, err := json.Marshal(in)
 		if err != nil {
 			return err
 		}
-		if err := c.client.Set(ctx, key, string(b), c.ExpiresIn()).Err(); err != nil {
+		if err := c.client.Set(ctx, key, string(b), expiresIn).Err(); err != nil {
 			return err
 		}
 	case CacheTypeHash:
@@ -281,16 +282,16 @@ func (c Cache) Set(ctx context.Context, key string, in any) error {
 	return c.addGroup(ctx, key)
 }
 
-func (c Cache) Refresh(ctx context.Context, key string) (err error) {
+func (c Cache) Refresh(ctx context.Context, key string, expiresIn time.Duration) (err error) {
 	if key == "" {
 		return nil
 	}
 	switch c.tp {
 	case CacheTypeKeyValue:
-		err = c.client.Expire(ctx, key, c.ExpiresIn()).Err()
+		err = c.client.Expire(ctx, key, expiresIn).Err()
 	case CacheTypeHash:
 		if c.field != "" {
-			err = c.client.HExpire(ctx, key, c.ExpiresIn(), c.field).Err()
+			err = c.client.HExpire(ctx, key, expiresIn, c.field).Err()
 		}
 	case CacheTypeSet:
 	default:

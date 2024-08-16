@@ -15,9 +15,9 @@ type Cacher interface {
 	// 从缓存删除数据
 	Del(ctx context.Context, keys ...string) error
 	// 设置缓存数据
-	Set(ctx context.Context, key string, in any) error
+	Set(ctx context.Context, key string, in any, expiresIn time.Duration) error
 	// 刷新缓存过期时间
-	Refresh(ctx context.Context, key string) error
+	Refresh(ctx context.Context, key string, expiresIn time.Duration) error
 	// 返回缓存Key名称
 	Key() string
 
@@ -25,6 +25,10 @@ type Cacher interface {
 	Enabled() bool
 	// 是否自动刷新缓存
 	AutoRefresh() bool
+	// 过期时间
+	ExpiresIn() time.Duration
+	// 空值过期时间
+	EmptyExpiresIn() time.Duration
 }
 
 // 缓存配置
@@ -35,6 +39,8 @@ type CacheConfig struct {
 	AutoRefresh bool `json:"autoRefresh"`
 	// 缓存过期时间
 	ExpiresIn utils.JSONDuration `json:"expiresIn"`
+	// 空值缓存过期时间
+	EmptyExpiresIn utils.JSONDuration `json:"emptyExpiresIn"`
 }
 
 // Cache 缓存相关
@@ -49,9 +55,10 @@ type Cache struct {
 var (
 	// DefaultCacheConfig 默认配置
 	DefaultCacheConfig = CacheConfig{
-		Enabled:     true,
-		AutoRefresh: true,
-		ExpiresIn:   utils.JSONDuration{Duration: 5 * time.Minute},
+		Enabled:        true,
+		AutoRefresh:    true,
+		ExpiresIn:      utils.JSONDuration{Duration: 10 * time.Minute},
+		EmptyExpiresIn: utils.JSONDuration{Duration: 5 * time.Minute},
 	}
 )
 
@@ -94,4 +101,9 @@ func (c *Cache) NewKey(key string) string {
 // ExpiresIn 缓存过期时间
 func (c *Cache) ExpiresIn() time.Duration {
 	return c.conf.ExpiresIn.Duration
+}
+
+// EmptyExpiresIn 空值缓存过期时间
+func (c *Cache) EmptyExpiresIn() time.Duration {
+	return c.conf.EmptyExpiresIn.Duration
 }
