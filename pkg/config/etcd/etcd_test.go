@@ -12,7 +12,5 @@ func TestPrefix(t *testing.T) {
 		app:  runtime.GetAPP(),
 	}
 	t.Log(source.prefix())
-	t.Log(source.globalPrefix())
-	t.Log(source.runtimePrefix())
 	t.Log(source.prefixs())
 }

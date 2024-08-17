@@ -190,40 +190,37 @@ func (s *Etcd) watchPrefix(prefix string, priority int) {
 	}
 }
 
-// /{app}/configs/global/
-// /{app}/configs/global/{env}/
+// /{app}/configs/
+// /{app}/configs/{env}/
+//
 // /{app}/configs/service/{service}/
 // /{app}/configs/service/{service}/{region}/
 // /{app}/configs/service/{service}/{region}/{az}/
-// /{app}/configs/service/{env}/{service}/
-// /{app}/configs/service/{env}/{service}/{region}/
-// /{app}/configs/service/{env}/{service}/{region}/{az}/
+
+// /{app}/configs/{env}/service/{service}/
+// /{app}/configs/{env}/service/{service}/{region}/
+// /{app}/configs/{env}/service/{service}/{region}/{az}/
+//
 // /{app}/configs/runtime/{instance.ID}/
 func (s *Etcd) prefixs() []string {
 	return []string{
-		s.globalPrefix(),
-		strings.Join([]string{s.globalPrefix(), s.app.Environment, ""}, s.conf.Delimiter),
-		strings.Join([]string{s.prefix(), s.app.Instance.Name, ""}, s.conf.Delimiter),
-		strings.Join([]string{s.prefix(), s.app.Instance.Name, s.app.Region, ""}, s.conf.Delimiter),
-		strings.Join([]string{s.prefix(), s.app.Instance.Name, s.app.Region, s.app.AZ, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), s.app.Environment, ""}, s.conf.Delimiter),
 
-		strings.Join([]string{s.prefix(), s.app.Environment, s.app.Instance.Name, ""}, s.conf.Delimiter),
-		strings.Join([]string{s.prefix(), s.app.Environment, s.app.Instance.Name, s.app.Region, ""}, s.conf.Delimiter),
-		strings.Join([]string{s.prefix(), s.app.Environment, s.app.Instance.Name, s.app.Region, s.app.AZ, ""}, s.conf.Delimiter),
-		s.runtimePrefix(),
+		strings.Join([]string{s.prefix(), "service", s.app.Instance.Name, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), "service", s.app.Instance.Name, s.app.Region, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), "service", s.app.Instance.Name, s.app.Region, s.app.AZ, ""}, s.conf.Delimiter),
+
+		strings.Join([]string{s.prefix(), s.app.Environment, "service", s.app.Instance.Name, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), s.app.Environment, "service", s.app.Instance.Name, s.app.Region, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), s.app.Environment, "service", s.app.Instance.Name, s.app.Region, s.app.AZ, ""}, s.conf.Delimiter),
+
+		strings.Join([]string{s.prefix(), "runtime", s.app.Instance.ID, ""}, s.conf.Delimiter),
 	}
 }
 
 func (s *Etcd) prefix() string {
 	return strings.Join([]string{"", s.app.App, "configs"}, s.conf.Delimiter)
-}
-
-func (s *Etcd) runtimePrefix() string {
-	return strings.Join([]string{s.prefix(), "runtime", s.app.Instance.ID, ""}, s.conf.Delimiter)
-}
-
-func (s *Etcd) globalPrefix() string {
-	return strings.Join([]string{s.prefix(), "global", ""}, s.conf.Delimiter)
 }
 
 func (s *Etcd) configKey(prefix string, key []byte) string {

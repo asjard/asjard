@@ -240,6 +240,7 @@ func (s *serviceWatch) serviceHandler(_ uint64, data any) {
 		s.sm.Lock()
 		for service, plan := range s.services {
 			if _, ok := d[service]; !ok {
+				time.Sleep(time.Second)
 				plan.Stop()
 				delete(s.services, service)
 			}

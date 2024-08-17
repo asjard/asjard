@@ -11,7 +11,7 @@ import (
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/config"
-	cfgfile "github.com/asjard/asjard/core/config/sources/file"
+	"github.com/asjard/asjard/core/config/sources/file"
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/initator"
 	"github.com/asjard/asjard/core/logger"
@@ -149,7 +149,7 @@ func (asd *Asjard) Init() error {
 		return nil
 	}
 	// 文件配置源加载
-	if err := config.Load(cfgfile.Priority); err != nil {
+	if err := config.Load(file.Priority); err != nil {
 		return err
 	}
 

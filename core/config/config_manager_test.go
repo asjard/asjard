@@ -2,6 +2,8 @@ package config
 
 import (
 	"encoding/base64"
+	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -836,4 +838,69 @@ func TestGetBool(t *testing.T) {
 			}
 		}
 	})
+}
+
+// 异步更新配置
+func asyncUpdateConfig(exit <-chan struct{}) {
+	i := 0
+	for {
+		select {
+		case _, ok := <-exit:
+			if !ok {
+				return
+			}
+			return
+		case <-time.After(10 * time.Millisecond):
+			Set(fmt.Sprintf("async_insert_%d", i), i)
+			i++
+		}
+
+	}
+}
+
+func BenchmarkGet(b *testing.B) {
+	exit := make(chan struct{})
+	go asyncUpdateConfig(exit)
+	b.Run("GetString", func(b *testing.B) {
+		b.Run("Exist-Key", func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				GetString("testStr", "")
+			}
+		})
+		b.Run("Not-Exist-Key", func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				GetString("bench_not_exist_key", "")
+			}
+		})
+	})
+	b.Run("GetBytes", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			GetByte("testStr", []byte{})
+		}
+	})
+	b.Run("GetBool", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			GetBool("testStr", true)
+		}
+	})
+	close(exit)
+}
+
+func BenchmarkSetGet(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		// b.StopTimer()
+		istr := strconv.Itoa(i)
+		key := "bench_test_set_get_key" + istr
+		value := "bench_test_set_get_value" + istr
+		Set(key, value)
+		// b.StartTimer()
+
+		for GetString(key, "") != "" {
+			break
+		}
+	}
 }

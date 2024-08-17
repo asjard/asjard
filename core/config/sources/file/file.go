@@ -1,11 +1,10 @@
 /*
-Package file 监听，读取，解析本地文件中的配置，
+Package filesource 监听，读取，解析本地文件中的配置，
 当配置发生变更时通知config_manager变更配置
 */
 package file
 
 import (
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -13,12 +12,9 @@ import (
 	"sync"
 
 	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/security"
 	"github.com/asjard/asjard/utils"
-	"github.com/magiconair/properties"
-	"gopkg.in/yaml.v2"
 
 	"github.com/fsnotify/fsnotify"
 )
@@ -349,107 +345,11 @@ func (s *File) convertToProperties(ext string, content []byte) (map[string]any, 
 	var err error
 	switch strings.ToLower(strings.Trim(ext, ".")) {
 	case ContentFormatYaml, ContentFormatYml:
-		configs, err = s.convertYamlToProperties(content)
+		configs, err = utils.ConvertYamlToProperties(content)
 	case ContentFormatJson:
-		configs, err = s.convertJsonToProperties(content)
+		configs, err = utils.ConvertJsonToProperties(content)
 	case ContentFormatProps, ContentFormatProperties:
-		configs, err = s.convertPropsToProperties(content)
+		configs, err = utils.ConvertPropsToProperties(content)
 	}
 	return configs, err
-}
-
-/*
-yaml格式转换为properties格式
-
-yaml内容:
-
-	a: 1
-	b:
-	  c: 1
-	  d: [1, 2]
-	  e:
-	  - f: 3
-		g: 4
-
-解析后的内容应该为:
-
-	a=1
-	b.c=1
-	b.d[0]=1
-	b.d[1]=2
-	b.e[0].f=3
-	b.e[0].g=4
-*/
-func (s *File) convertYamlToProperties(yamlContent []byte) (map[string]any, error) {
-	ms := yaml.MapSlice{}
-	if err := yaml.Unmarshal(yamlContent, &ms); err != nil {
-		return nil, fmt.Errorf("yaml unmarshal fail[%s]", err.Error())
-	}
-	configs := make(map[string]any)
-	if err := s.doConvertYamlToProperties("", ms, configs); err != nil {
-		return nil, err
-	}
-	return configs, nil
-}
-
-func (s *File) doConvertYamlToProperties(prefix string, mapSlice yaml.MapSlice, configs map[string]any) error {
-	if prefix != "" {
-		prefix += constant.ConfigDelimiter
-	}
-	for _, item := range mapSlice {
-		key, ok := item.Key.(string)
-		if !ok {
-			continue
-		}
-		switch item.Value.(type) {
-		case yaml.MapSlice:
-			if err := s.doConvertYamlToProperties(prefix+key, item.Value.(yaml.MapSlice), configs); err != nil {
-				return err
-			}
-		case []any:
-			if err := s.convertYamlToPropertiesWithSlice(prefix+key, item.Value.([]any), configs); err != nil {
-				return err
-			}
-		default:
-			configs[prefix+key] = item.Value
-		}
-	}
-	return nil
-}
-
-func (s *File) convertYamlToPropertiesWithSlice(prefix string, items []any, configs map[string]any) error {
-	for index, value := range items {
-		listKey := fmt.Sprintf("%s[%d]", prefix, index)
-		switch value.(type) {
-		case yaml.MapSlice:
-			if err := s.doConvertYamlToProperties(listKey, value.(yaml.MapSlice), configs); err != nil {
-				return err
-			}
-		case []any:
-			if err := s.convertYamlToPropertiesWithSlice(listKey, value.([]any), configs); err != nil {
-				return err
-			}
-		default:
-			configs[listKey] = value
-		}
-	}
-	return nil
-}
-
-// json格式转换为properties格式
-func (s *File) convertJsonToProperties(_ []byte) (map[string]any, error) {
-	return nil, nil
-}
-
-// props格式转换为props
-func (s *File) convertPropsToProperties(propsContent []byte) (map[string]any, error) {
-	props, err := properties.Load(propsContent, properties.UTF8)
-	if err != nil {
-		return nil, err
-	}
-	configs := make(map[string]any)
-	for key, value := range props.Map() {
-		configs[key] = value
-	}
-	return configs, nil
 }

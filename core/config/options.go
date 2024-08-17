@@ -33,9 +33,9 @@ type Options struct {
 	unmarshaler Unmarshaler
 	// 忽略大小写
 	ignoreCase bool
-	// 转换为大写
+	// value转换为大写
 	toUpper bool
-	// 转换为小写
+	// value转换为小写
 	toLower bool
 	// key列表，按顺序获取,如果获取不到则获取下一个
 	keys []string

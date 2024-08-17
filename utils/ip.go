@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 )
 
@@ -80,4 +81,14 @@ func IsIPv6(ip net.IP) bool {
 		return true
 	}
 	return false
+}
+
+// ParseAddress 解析监听地址为host和port
+func ParseAddress(address string) (string, int, error) {
+	var portInt int
+	host, port, err := net.SplitHostPort(address)
+	if err == nil {
+		portInt, err = strconv.Atoi(port)
+	}
+	return host, portInt, err
 }

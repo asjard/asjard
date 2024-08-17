@@ -15,6 +15,7 @@ import (
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/security"
+	"github.com/asjard/asjard/utils"
 	ccast "github.com/asjard/asjard/utils/cast"
 
 	"github.com/spf13/cast"
@@ -512,7 +513,7 @@ func GetStrings(key string, defaultValue []string, opts ...Option) []string {
 	return value
 }
 
-// GetByte .
+// GetByte 获取配置并返回[]byte类型
 func GetByte(key string, defaultValue []byte, opts ...Option) []byte {
 	options := GetOptions(opts...)
 	v := Get(key, options)
@@ -523,7 +524,7 @@ func GetByte(key string, defaultValue []byte, opts ...Option) []byte {
 	if err != nil {
 		return defaultValue
 	}
-	return []byte(value)
+	return utils.String2Byte(value)
 }
 
 // GetBool 获取配置并转化为bool类型
@@ -879,6 +880,7 @@ func RemoveListener(key string) {
 	configmanager.removeListener(key)
 }
 
+// 将props格式的map展开
 func getConfigMap(configs map[string]any) map[string]any {
 	result := make(map[string]any)
 	skipKeys := make(map[string]struct{})
@@ -888,7 +890,6 @@ func getConfigMap(configs map[string]any) map[string]any {
 			continue
 		}
 		mergeConfigMap(getConfigValue(0, keyList, value, configs, skipKeys), result)
-
 	}
 	return result
 }

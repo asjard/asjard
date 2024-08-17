@@ -36,10 +36,17 @@ asjard:
       #   - grpc://127.0.0.1:9081
 
     ## etcd注册发现中心相关配置
-    ## 依赖asjard.database.etcd
+    ## 依赖asjard.stores.etcd
     etcd:
-      ## 配置asjard.database.etcd.client中的数据库名称(key)
+      ## 配置asjard.stores.etcd.clientss中的数据库名称(key)
       client: default
 
     consul:
-      endpoint: 127.0.0.1:8500
+      client: default
+
+    nacos:
+      ## 客户端名称
+      ## asjard.stores.nacos.clients中的名称
+      client: default
+      ## 命名空间
+      namespaceId: ""

@@ -50,3 +50,18 @@ asjard:
         default:
           hosts:
             - "127.0.0.1:2370"
+    consul:
+      clients:
+        default:
+          address: 127.0.0.1:8500
+    nacos:
+      clients:
+        default:
+          ## 请求超时时间
+          timeout: 100ms
+          # endpoint: ""
+          # regionId: ""
+          # 服务端列表
+          servers:
+            - address: 127.0.0.1
+              port: 8848

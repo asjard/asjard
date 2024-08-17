@@ -1,101 +1,243 @@
 > 配置相关
 
-## 支持配置源
+## 配置
 
-- [x] 文件, 优先级: 2
-- [x] 内存, 优先级: 99
-- [x] 环境变量, 优先级: 0
-- [ ] cli, 优先级: 1
-- [x] etcd, 优先级: 10
-- [x] consul, 优先级: 11
+```yaml
+asjard:
+  ## 配置中心相关
+  config:
+    ## 添加配置默认配置源
+    ## Set方法默认配置源, 如果不配置或者为空，则发送给所有配置源, 默认mem
+    ## 具体是否能够添加配置到配置源中要看具体配置源是否实现Set功能
+    ## 目前只有mem实现了Set功能
+    setDefaultSource: mem
 
-## 配置优先级
+    ## 配置源相关配置
+    ## key为配置源名称
+    ## value为配置源相关的配置
+    ## etcd配置中心配置
+    etcd:
+      ## 配置中心地址
+      client: default
+```
+
+### 获取配置
+
+- `Get(key string, options *Options) any`: 根据`key`获取配置
+
+```go
+import "github.com/asjard/asjard/core/config"
+
+val := config.Get("key", &Options{})
+if val == nil {
+ 	// 配置不存在
+ 	// 或者使用config.Exist("key")判断
+}
+```
+
+- `GetWithPrefix(prefix string, opts ...Option) map[string]any`: 根据前缀获取所有配置
+
+```go
+import "github.com/asjard/asjard/core/config"
+
+valMap := config.GetWithPrefix("asjard.service")
+/* Output:
+{
+ 	"app": "asjard"
+ 	"environment": "dev"
+}
+*/
+```
+
+- `GetString(key string, defaultValue string, opts ...Option) string`: 获取配置并返回string类型,如果配置不存在则返回默认值
+
+```go
+import "github.com/asjard/asjard/core/config"
+
+valStr := config.GetString("key", "default_value")
+```
+
+- `GetStrings(key string, defaultValue []string, opts ...Option) []string`: 获取配置并返回[]string类型, 如果配置不存在则返回默认值
+
+```go
+import "github.com/asjard/asjard/core/config"
+
+valStrs := config.GetStrings("key", []string{})
+```
+
+- `GetByte(key string, defaultValue []byte, opts ...Option) []byte`: 获取配置并返回[]byte类型, 如果配置不存在则返回默认值
+
+```go
+import "github.com/asjard/asjard/core/config"
+
+valByte := config.GetByte("key", []byte{})
+```
+
+- `GetBool(key string, defaultValue bool, opts ...Option) bool`: 获取配置并返回bool类型
+
+```go
+import "github.com/asjard/asjard/core/config"
+
+// 字符串则除0, f, false, n, no, off为false为其他均为true
+// 数字不等于0则为true
+valBool := config.GetBool("key", false)
+```
+
+- `GetBools(key string, defaultValue []bool, opts ...Option) []bool`
+- `GetInt(key string, defaultValue int, opts ...Option) int `
+- `GetInts(key string, defaultValue []int, opts ...Option) []int `
+- `GetInt64(key string, defaultValue int64, opts ...Option) int64 `
+- `GetInt64s(key string, defaultValue []int64, opts ...Option) []int64 `
+- `GetInt32(key string, defaultValue int32, opts ...Option) int32 `
+- `GetInt32s(key string, defaultValue []int32, opts ...Option) []int32 `
+- `GetFloat64(key string, defaultValue float64, opts ...Option) float64`
+- `GetFloat64s(key string, defaultValue []float64, opts ...Option) []float64 `
+- `GetFloat32(key string, defaultValue float32, opts ...Option) float32 `
+- `GetFloat32s(key string, defaultValue []float32, opts ...Option) []float32 `
+- `GetDuration(key string, defaultValue time.Duration, opts ...Option) time.Duration`
+
+字符串配置可参考`time.ParseDuration`, 支持单位"ns", "us" (or "µs"), "ms", "s", "m", "h".
+
+```go
+import "github.com/asjard/asjard/core/config"
+
+conf := `
+examples:
+	timeoutInt: 1 # 1ns
+	timeoutStr: 1s  # 1s
+	timeoutStr1: "1" # 1ns
+`
+valDura := config.GetDuration("key", time.Second)
+```
+
+- `GetTime(key string, defaultValue time.Time, opts ...Option) time.Time `
+- `Exist(key string) bool `
+- `GetAndUnmarshal(key string, outPtr any, opts ...Option) error `: 获取配置并将对值反序列化
+
+```go
+import "github.com/asjard/asjard/core/config"
+
+conf := `
+examples:
+	mysql: |
+		db: database
+		user: user
+		password: pwd
+`
+
+type Config struct{
+	DB string `json:"db"`
+	User string `json:"user"`
+	Password string `json:"pw"`
+}
+
+var dbConf Config
+// 默认使用json反序列化
+if err := config.GetAndUnmarshal("examples.mysql", &dbConf); err != nil {
+	// TODO err
+}
+
+// 自定义反序列化
+// Unmarshaler 反序列化需要实现的方法
+type Unmarshaler interface {
+	Unmarshal(data []byte, v any) error
+}
+
+type CustomeUnmarshal struct{}
+
+func (CustomeUnmarshal) Unmarshal(data []byte, v any) error {
+	return nil
+}
+
+if err := config.GetWithUnmarshal("examples.mysql", &dbConf, config.WithUnmarshaler(&CustomeUnmarshal{})); err != nil {
+	// TODO err
+}
+```
+
+- `GetAndJsonUnmarshal(key string, outPtr any, opts ...Option) error`: 配置值json反序列化
+- `GetAndYamlUnmarshal(key string, outPtr any, opts ...Option) error `: 配置值yaml反序列化
+- `GetWithUnmarshal(prefix string, outPtr any, opts ...Option) error `
+
+```go
+import "github.com/asjard/asjard/core/config"
+
+conf := `
+examples:
+	mysql:
+		db: xx
+		user: user
+		password: pwd
+`
+
+type Config struct{
+	DB string `json:"db"`
+	User string `json:"user"`
+	Password string `json:"pw"`
+}
+
+var dbConf Config
+// 默认使用json反序列化
+if err := config.GetWithUnmarshal("examples.mysql", &dbConf); err != nil {
+	// TODO err
+}
+```
+
+- `GetWithJsonUnmarshal(prefix string, outPtr any, opts ...Option) error `
+- `GetWithYamlUnmarshal(prefix string, outPtr any, opts ...Option) error `
+
+### 配置[加解密](security.md)
+
+> 加密内容始终都是以密文存储在内存中的，只有在获取时才会解密
+
+```go
+import "github.com/asjard/asjard/core/config"
+
+// base64解码后返回
+val := config.GetString("encrypted_key","default_value", config.WithCipher("base64"))
+```
+
+### 配置监听
+
+```go
+import "github.com/asjard/asjard/core/config"
+
+var val string
+
+val = config.GetString("key", "default_value", config.WithWatch(func(event *config.Event){
+	val = cast.ToString(event.Value.Value)
+})
+```
+
+或者
+
+- `AddListener(key string, callback func(*Event)) `: 当key发生变化时通过callback通知
+- `AddPatternListener(pattern string, callback func(*Event)) `: pattern正则表达式匹配key变化时通过callback通知
+
+## 配置源
+
+> 框架内置`环境变量`,`文件`,`内存`配置源, 无需导入
+
+| 支持 | 配置源                           | 优先级 | 描述              |
+| :--: | :------------------------------- | :----: | ----------------- |
+|  x   | [环境变量](config_env.md)        |   0    |
+|      | cli                              |   1    |
+|  x   | [文件](config_file.md)           |   2    |
+|  x   | [etcd](config_etcd.md)           |   10   | key/value模式配置 |
+|      | [etcdv2](config_etcdv2.md)       |   10   | 文件模式配置      |
+|  x   | [consul](config_consul.md)       |   11   | ket/value模式配置 |
+|      | [consulv2](config_consul.md)     |   11   | 文件模式配置      |
+|      | [nacos](config_nacos.md)         |   12   | 没有删除事件      |
+|      | [apollo](config_appolo.md)       |   13   |
+|      | [configmap](config_configmap.md) |   14   |
+|  x   | [本地内存](config_mem.md)        |   99   |
+
+### 配置源优先级
 
 数字越大的优先级越高, 相同key的配置,优先级高的覆盖优先级低的
 
-## 文件配置
+### 自定义配置源
 
-### 配置所在目录
-
-- 如果配置了环境变量`ASJARD_CONF_DIR`则读取该目录及子目录下的所有文件
-- 否则读取环境变量`ASJARD_HOME_DIR`的值并拼接`conf`目录,读取该目录下及子目录下的所有文件
-- 如果以上两个环境变量都没有设置,则读取`可执行程序`平级目录下的`conf`目录下及子目录下的所有文件
-
-### 支持文件格式
-
-- [x] yaml,yml
-- [ ] json
-- [ ] ini
-- [ ] prop,properties
-
-## 环境变量配置
-
-- 框架配置都会以`asjard`为前缀
-- 不同层级的配置中间以`_`分隔, 例如`asjard_app`, 程序使用`asjard.app`读取
-- 大小写敏感, 例如`asjard_app`和`asjard_APP`为两个不同的配置i
-
-```go
-// 在环境变量中配置如下配置
-// export asjard_app=asjard
-// 程序中可以这样读
-config.GetString("asjard.app", "")
-// Output: asjard
-```
-
-## ETCD配置
-
-### 配置优先级
-
-> 从上向下优先级依次递增,多个字段之间以英文`/`分隔,不以`/`结尾
-
-- `/{app}/configs/global/`: 项目相关全局配置
-- `/{app}/configs/global/{env}/`: 项目相关全局配置
-- `/{app}/configs/service/{service}/`: 服务相关配置
-- `/{app}/configs/service/{service}/{region}/`: 服务region相关配置
-- `/{app}/configs/service/{service}/{region}/{az}/`: 服务region，az配置
-- `/{app}/configs/service/{env}/{service}/`: 服务相关配置
-- `/{app}/configs/service/{env}/{service}/{region}/`: 服务region相关配置
-- `/{app}/configs/service/{env}/{service}/{region}/{az}/`: 服务region，az配置
-- `/{app}/configs/runtime/{instance.ID}/`: 实例配置
-
-### 使用
-
-```go
-
-import (
-	// 导入etcd配置源
-	_ "github.com/asjard/asjard/pkg/config/etcd"
-)
-
-// 例如全局配置
-// /app/configs/global/examples/timeout => 5ms
-config.GetDuration("examples.timeout", time.Second)
-// Output: 5ms
-
-// 服务配置
-// /app/configs/service/exampleService/examples/timeout => 6ms
-config.GetDuration("examples.timeout", time.Second)
-// Output: 6ms
-
-// 其他同上
-```
-
-## Consul配置
-
-> 配置同ETCD
-
-### 使用
-
-```go
-import (
-	// 导入consul配置源
-	_ "github.com/asjard/asjard/pkg/config/consul"
-)
-
-// 其他使用方法同ETCD
-```
-
-## 多配置源同时使用
+### 多配置源同时使用
 
 ```go
 import (

@@ -88,9 +88,9 @@ func (c *Cache) AutoRefresh() bool {
 }
 
 // Prefix 缓存前缀
-// {app}:caches:service:{service}:{region}:{az}:{model_name}
+// {app}:caches:{env}:service:{service}:{region}:{az}:{model_name}
 func (c *Cache) Prefix() string {
-	return c.app.App + ":caches:service:" + c.app.Environment + ":" + c.app.Instance.Name + ":" + c.app.Region + ":" + c.app.AZ + ":" + c.model.ModelName()
+	return c.app.App + ":caches:" + c.app.Environment + ":service:" + c.app.Instance.Name + ":" + c.app.Region + ":" + c.app.AZ + ":" + c.model.ModelName()
 }
 
 // NewKey 缓存key
