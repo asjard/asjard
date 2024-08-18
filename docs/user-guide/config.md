@@ -223,9 +223,7 @@ val = config.GetString("key", "default_value", config.WithWatch(func(event *conf
 |      | cli                              |   1    |
 |  x   | [文件](config_file.md)           |   2    |
 |  x   | [etcd](config_etcd.md)           |   10   | key/value模式配置 |
-|      | [etcdv2](config_etcdv2.md)       |   10   | 文件模式配置      |
 |  x   | [consul](config_consul.md)       |   11   | ket/value模式配置 |
-|      | [consulv2](config_consul.md)     |   11   | 文件模式配置      |
 |      | [nacos](config_nacos.md)         |   12   | 没有删除事件      |
 |      | [apollo](config_appolo.md)       |   13   |
 |      | [configmap](config_configmap.md) |   14   |

@@ -83,6 +83,7 @@ func (s *Etcd) GetAll() map[string]*config.Value {
 				Sourcer:  s,
 				Value:    kv.Value,
 				Priority: priority,
+				Ref:      string(kv.Key),
 			}
 		}
 	}
@@ -174,6 +175,7 @@ func (s *Etcd) watchPrefix(prefix string, priority int) {
 				Value: &config.Value{
 					Sourcer:  s,
 					Priority: priority,
+					Ref:      string(event.Kv.Key),
 				},
 			}
 			switch event.Type {
