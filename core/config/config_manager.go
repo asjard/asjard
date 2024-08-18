@@ -28,11 +28,12 @@ var (
 	configParamCompile = regexp.MustCompile("\\${(.*?)}")
 )
 
-// Sourcer 配置源需要时间的方法
+// Sourcer 配置源需要实现的方法
 type Sourcer interface {
 	// 获取所有配置,首次初始化完毕后会去配置源获取一次所有配置,
 	// 维护在config_manager的本地内存中,
 	// 返回的配置应该为properties格式的，并区分大小写。
+	// 返回值可以通过ConvertToProperties方法获取
 	GetAll() map[string]*Value
 	// 添加配置到配置源中,
 	// 慎用,存在安全隐患和配置源实现复杂问题

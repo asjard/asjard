@@ -21,7 +21,7 @@ asjard:
       client: default
 ```
 
-### 获取配置
+## 配置获取
 
 - `Get(key string, options *Options) any`: 根据`key`获取配置
 
@@ -185,7 +185,7 @@ if err := config.GetWithUnmarshal("examples.mysql", &dbConf); err != nil {
 - `GetWithJsonUnmarshal(prefix string, outPtr any, opts ...Option) error `
 - `GetWithYamlUnmarshal(prefix string, outPtr any, opts ...Option) error `
 
-### 配置[加解密](security.md)
+## 配置[加解密](security.md)
 
 > 加密内容始终都是以密文存储在内存中的，只有在获取时才会解密
 
@@ -196,7 +196,7 @@ import "github.com/asjard/asjard/core/config"
 val := config.GetString("encrypted_key","default_value", config.WithCipher("base64"))
 ```
 
-### 配置监听
+## 配置监听
 
 ```go
 import "github.com/asjard/asjard/core/config"
@@ -217,25 +217,51 @@ val = config.GetString("key", "default_value", config.WithWatch(func(event *conf
 
 > 框架内置`环境变量`,`文件`,`内存`配置源, 无需导入
 
-| 支持 | 配置源                           | 优先级 | 描述              |
-| :--: | :------------------------------- | :----: | ----------------- |
+| 支持 | 配置源                           | 优先级 | 描述                    |
+| :--: | :------------------------------- | :----: | ----------------------- |
 |  x   | [环境变量](config_env.md)        |   0    |
 |      | cli                              |   1    |
 |  x   | [文件](config_file.md)           |   2    |
-|  x   | [etcd](config_etcd.md)           |   10   | key/value模式配置 |
-|  x   | [consul](config_consul.md)       |   11   | ket/value模式配置 |
-|      | [nacos](config_nacos.md)         |   12   | 没有删除事件      |
+|  x   | [etcd](config_etcd.md)           |   10   | key/value, file模式配置 |
+|  x   | [consul](config_consul.md)       |   11   | ket/value模式配置       |
+|      | [nacos](config_nacos.md)         |   12   | 没有删除事件            |
 |      | [apollo](config_appolo.md)       |   13   |
 |      | [configmap](config_configmap.md) |   14   |
 |  x   | [本地内存](config_mem.md)        |   99   |
 
-### 配置源优先级
+## 配置源优先级
 
-数字越大的优先级越高, 相同key的配置,优先级高的覆盖优先级低的
+数字越大的优先级越高, 相同key的配置,优先级高的配置源覆盖优先级低的配置源
 
-### 自定义配置源
+## 自定义配置源
 
-### 多配置源同时使用
+实现如下方法
+
+```go
+// Sourcer 配置源需要实现的方法
+type Sourcer interface {
+	// 获取所有配置,首次初始化完毕后会去配置源获取一次所有配置,
+	// 维护在config_manager的本地内存中,
+	// 返回的配置应该为properties格式的，并区分大小写。
+	// 返回值可以通过ConvertToProperties方法获取
+	GetAll() map[string]*Value
+	// 添加配置到配置源中,
+	// 慎用,存在安全隐患和配置源实现复杂问题
+	// 理论只应该在mem配置源中使用,非必要不要使用
+	Set(key string, value any) error
+	// 监听配置变化,当配置源中的配置发生变化时,
+	// 通过此回调方法通知config_manager进行配置变更
+	Watch(func(event *Event)) error
+	// 和配置中心断开连接
+	Disconnect()
+	// 配置中心的优先级
+	Priority() int
+	// 配置源名称
+	Name() string
+}
+```
+
+## 多配置源同时使用
 
 ```go
 import (

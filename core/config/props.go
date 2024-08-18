@@ -46,6 +46,8 @@ var (
 )
 
 // ConvertToProperties 不同格式的内容化为props格式的map
+// 其中ext是指文件格式例如,yaml,yml,json等
+// 具体支持的文件格式可参考propsDecodes这个map的值
 func ConvertToProperties(ext string, content []byte) (map[string]any, error) {
 	decodeFunc, ok := propsDecodes[strings.ToLower(strings.Trim(ext, "."))]
 	if !ok {
@@ -56,7 +58,7 @@ func ConvertToProperties(ext string, content []byte) (map[string]any, error) {
 		return nil, err
 	}
 	propsMap := make(map[string]any)
-	if err := map2Props("", configMap, propsMap); err != nil {
+	if err := Map2Props("", configMap, propsMap); err != nil {
 		return nil, err
 	}
 	return propsMap, nil
@@ -68,14 +70,16 @@ func IsExtSupport(ext string) bool {
 	return ok
 }
 
-func map2Props(prefix string, configMap, propsMap map[string]any) error {
+// Map2Props map转化为props格式的map
+// 也就是map的key为a.b.c这种prop格式的
+func Map2Props(prefix string, configMap, propsMap map[string]any) error {
 	if prefix != "" {
 		prefix += constant.ConfigDelimiter
 	}
 	for key, val := range configMap {
 		switch value := val.(type) {
 		case map[string]any:
-			if err := map2Props(prefix+key, value, propsMap); err != nil {
+			if err := Map2Props(prefix+key, value, propsMap); err != nil {
 				return err
 			}
 		case []any:
@@ -94,7 +98,7 @@ func slice2Props(prefix string, items []any, propsMap map[string]any) error {
 		listKey := fmt.Sprintf("%s[%d]", prefix, index)
 		switch value := val.(type) {
 		case map[string]any:
-			if err := map2Props(listKey, value, propsMap); err != nil {
+			if err := Map2Props(listKey, value, propsMap); err != nil {
 				return err
 			}
 		case []any:
