@@ -29,21 +29,6 @@ const (
 	FileNameSplitSymbol = "_"
 	// FileEncryptFlag 文件加密标志
 	FileEncryptFlag = "encrypted"
-
-	// ContentFormatYaml yaml格式
-	ContentFormatYaml = "yaml"
-	// ContentFormatYml yml格式
-	ContentFormatYml = "yml"
-	// ContentFormatJson json格式
-	ContentFormatJson = "json"
-	// ContentFormatProps props文件格式
-	ContentFormatProps = "props"
-	// ContentFormatProperties properties文件格式
-	ContentFormatProperties = "properties"
-	// ContentFormatIni ini 格式
-	ContentFormatIni = "ini"
-	// ContentFormatEnv env格式
-	ContentFormatEnv = "env"
 )
 
 // File 文件配置源
@@ -163,7 +148,7 @@ func (s *File) read(file string) (map[string]*config.Value, error) {
 		}
 		content = []byte(decryptContent)
 	}
-	contentMap, err := s.convertToProperties(filepath.Ext(file), content)
+	contentMap, err := config.ConvertToProperties(filepath.Ext(file), content)
 	if err != nil {
 		return nil, err
 	}
@@ -337,19 +322,4 @@ func (s *File) delConfig(file, key string) {
 	if _, ok := s.configs[file]; ok {
 		delete(s.configs[file], key)
 	}
-}
-
-// 转成properties格式
-func (s *File) convertToProperties(ext string, content []byte) (map[string]any, error) {
-	configs := make(map[string]any)
-	var err error
-	switch strings.ToLower(strings.Trim(ext, ".")) {
-	case ContentFormatYaml, ContentFormatYml:
-		configs, err = utils.ConvertYamlToProperties(content)
-	case ContentFormatJson:
-		configs, err = utils.ConvertJsonToProperties(content)
-	case ContentFormatProps, ContentFormatProperties:
-		configs, err = utils.ConvertPropsToProperties(content)
-	}
-	return configs, err
 }

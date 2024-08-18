@@ -15,11 +15,11 @@ Asjard是一个用[Go](https://go.dev/)语言实现的由[protobuf](https://prot
 
 - [x] [多配置源](docs/user-guide/config.md),异步实时生效
 
-  - [x] 环境变量
-  - [x] 文件
-  - [x] 内存
-  - [x] etcd
-  - [x] consul
+  - [x] [环境变量](docs/user-guide/config-env.md)
+  - [x] [文件](docs/user-guide/config-file.md)
+  - [x] [内存](docs/user-guide/config-mem.md)
+  - [x] [etcd](docs/user-guide/config-etcd.md)
+  - [x] [consul](docs/user-guide/config-consul.md)
 
 - [x] [自动服务注册/发现](docs/user-guide/registry.md)
 

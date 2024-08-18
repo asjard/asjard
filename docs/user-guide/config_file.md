@@ -11,6 +11,6 @@
 ### 支持文件格式
 
 - [x] yaml,yml
-- [ ] json
-- [ ] ini
-- [ ] prop,properties
+- [x] json
+- [x] toml
+- [x] props,properties
