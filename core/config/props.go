@@ -62,6 +62,12 @@ func ConvertToProperties(ext string, content []byte) (map[string]any, error) {
 	return propsMap, nil
 }
 
+// IsExtSupport 文件扩展是否支持
+func IsExtSupport(ext string) bool {
+	_, ok := propsDecodes[strings.ToLower(strings.Trim(ext, "."))]
+	return ok
+}
+
 func map2Props(prefix string, configMap, propsMap map[string]any) error {
 	if prefix != "" {
 		prefix += constant.ConfigDelimiter

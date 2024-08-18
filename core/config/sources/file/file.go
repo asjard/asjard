@@ -286,23 +286,9 @@ func (s *File) getUpdateEvents(file string, configs map[string]*config.Value) []
 		}
 	}
 	for key, value := range configs {
-		keyExist := false
-		for oldKey, oldValue := range s.configs[file] {
-			if oldKey == key {
-				keyExist = true
-				if value.Value != oldValue {
-					events = append(events, &config.Event{
-						Type:  config.EventTypeUpdate,
-						Key:   key,
-						Value: value,
-					})
-					s.configs[file][key] = value.Value
-				}
-			}
-		}
-		if !keyExist {
+		if oldValue, ok := s.configs[file][key]; !ok || oldValue != value.Value {
 			events = append(events, &config.Event{
-				Type:  config.EventTypeCreate,
+				Type:  config.EventTypeUpdate,
 				Key:   key,
 				Value: value,
 			})

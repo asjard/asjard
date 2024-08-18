@@ -58,9 +58,6 @@ func New() (config.Sourcer, error) {
 	if err := sourcer.loadAndWatchConfig(); err != nil {
 		return nil, err
 	}
-	if err := sourcer.watch(); err != nil {
-		return nil, err
-	}
 	return sourcer, nil
 }
 
@@ -129,7 +126,7 @@ func (s *Consul) loadAndWatchConfig() error {
 		return err
 	}
 	config.AddListener("asjard.config.consul.*", s.watchConfig)
-	return nil
+	return s.watch()
 }
 
 func (s *Consul) loadConfig() error {
@@ -199,17 +196,15 @@ func (w *configWatch) handler(_ uint64, data any) {
 			w.cm.Lock()
 			if modifyIndex, ok := w.configs[kv.Key]; !ok || modifyIndex != kv.ModifyIndex {
 				w.configs[kv.Key] = kv.ModifyIndex
-				if w.s.cb != nil {
-					w.s.cb(&config.Event{
-						Type: config.EventTypeCreate,
-						Key:  strings.TrimPrefix(kv.Key, w.prefix),
-						Value: &config.Value{
-							Sourcer:  w.s,
-							Value:    kv.Value,
-							Priority: w.priority,
-						},
-					})
-				}
+				w.s.cb(&config.Event{
+					Type: config.EventTypeCreate,
+					Key:  strings.TrimPrefix(kv.Key, w.prefix),
+					Value: &config.Value{
+						Sourcer:  w.s,
+						Value:    kv.Value,
+						Priority: w.priority,
+					},
+				})
 			}
 			w.cm.Unlock()
 		}
@@ -223,16 +218,14 @@ func (w *configWatch) handler(_ uint64, data any) {
 				}
 			}
 			if !exist {
-				if w.s.cb != nil {
-					w.s.cb(&config.Event{
-						Type: config.EventTypeDelete,
-						Key:  strings.TrimPrefix(key, w.prefix),
-						Value: &config.Value{
-							Sourcer:  w.s,
-							Priority: w.priority,
-						},
-					})
-				}
+				w.s.cb(&config.Event{
+					Type: config.EventTypeDelete,
+					Key:  strings.TrimPrefix(key, w.prefix),
+					Value: &config.Value{
+						Sourcer:  w.s,
+						Priority: w.priority,
+					},
+				})
 				delete(w.configs, key)
 			}
 		}
