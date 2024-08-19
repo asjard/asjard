@@ -11,13 +11,14 @@ import (
 // Cacher 缓存需要实现的方法
 type Cacher interface {
 	// 从缓存获取数据
-	Get(ctx context.Context, key string, out any) error
+	// fromCurrent 获取到的数据是从当前缓存中获取到的
+	Get(ctx context.Context, key string, out any) (fromCurrent bool, err error)
 	// 从缓存删除数据
 	Del(ctx context.Context, keys ...string) error
 	// 设置缓存数据
 	Set(ctx context.Context, key string, in any, expiresIn time.Duration) error
 	// 刷新缓存过期时间
-	Refresh(ctx context.Context, key string, expiresIn time.Duration) error
+	Refresh(ctx context.Context, key string, in any, expiresIn time.Duration) error
 	// 返回缓存Key名称
 	Key() string
 

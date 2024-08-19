@@ -34,8 +34,9 @@ asjard:
       expiresIn: 5m
       ## 最大占用空间,单位MB
       maxSize: 102400
-      ## 多个实例时删除缓存广播redis客户端
-      publishClient: default
+      ## redis客户端
+      ## 多实例情况下需要通过redis删除其他节点的缓存
+      redisClient: default
       models:
         modelName:
           enabled: true

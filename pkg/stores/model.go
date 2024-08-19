@@ -43,7 +43,8 @@ func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (
 		return m.copy(result, out)
 	}
 	// 从缓存获取数据
-	if err = cache.Get(ctx, cache.Key(), out); err != nil {
+	fromCurrent, err := cache.Get(ctx, cache.Key(), out)
+	if err != nil {
 		// 从数据源获取数据
 		result, err, _ := m.sg.Do(cache.Key(), get)
 		if err != nil {
@@ -60,10 +61,10 @@ func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (
 		return m.copy(result, out)
 	}
 	// 刷新缓存时间
-	if cache.AutoRefresh() {
-		if err := cache.Refresh(ctx, cache.Key(), cache.ExpiresIn()); err != nil {
-			logger.Error("refresh cache fail", "key", cache.Key(), "err", err)
-			// return status.RefreCacheFailError
+	// 如果获取到的数据是从当前缓存中获取到的则刷新缓存
+	if fromCurrent && cache.AutoRefresh() {
+		if err := cache.Refresh(ctx, cache.Key(), out, cache.ExpiresIn()); err != nil {
+			logger.Error("refresh cache expire fail", "key", cache.Key(), "err", err)
 		}
 	}
 	return nil

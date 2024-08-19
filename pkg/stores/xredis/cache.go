@@ -174,37 +174,39 @@ func (c *Cache) WithType(tp CacheType) *Cache {
 	}
 }
 
-func (c Cache) Get(ctx context.Context, key string, out any) error {
+func (c Cache) Get(ctx context.Context, key string, out any) (bool, error) {
 	if key == "" {
-		return nil
+		return true, nil
 	}
 	switch c.tp {
 	case CacheTypeKeyValue:
 		// 先从本地缓存获取，如果获取到则直接返回
 		if c.options.localCache != nil {
-			if err := c.options.localCache.Get(ctx, key, out); err == nil {
-				return nil
+			if _, err := c.options.localCache.Get(ctx, key, out); err == nil {
+				return false, nil
+			} else {
+				logger.Debug("redis cache read data from local fail", "key", key, "err", err)
 			}
 		}
 		result := c.client.Get(ctx, key)
 		if result.Err() != nil {
-			return result.Err()
+			return true, result.Err()
 		}
-		return json.Unmarshal([]byte(result.Val()), &out)
+		return true, json.Unmarshal([]byte(result.Val()), &out)
 	case CacheTypeHash:
 		result := c.client.HGet(ctx, key, c.field)
 		if result.Err() != nil {
-			return result.Err()
+			return true, result.Err()
 		}
-		return json.Unmarshal([]byte(result.Val()), out)
+		return true, json.Unmarshal([]byte(result.Val()), out)
 	case CacheTypeSet:
 		result := c.client.SIsMember(ctx, key, c.field)
 		if result.Err() == nil {
-			return result.Err()
+			return true, result.Err()
 		}
-		return json.Unmarshal([]byte(result.String()), out)
+		return true, json.Unmarshal([]byte(result.String()), out)
 	default:
-		return fmt.Errorf("unimplement cache type %d", c.tp)
+		return true, fmt.Errorf("unimplement cache type %d", c.tp)
 	}
 }
 
@@ -251,7 +253,9 @@ func (c Cache) Set(ctx context.Context, key string, in any, expiresIn time.Durat
 	switch c.tp {
 	case CacheTypeKeyValue:
 		if c.options.localCache != nil {
-			c.options.localCache.Set(ctx, key, in, expiresIn)
+			if err := c.options.localCache.Set(ctx, key, in, expiresIn); err != nil {
+				logger.Error("redis cache set local cache fail", "key", key, "err", err)
+			}
 		}
 		b, err := json.Marshal(in)
 		if err != nil {
@@ -282,12 +286,17 @@ func (c Cache) Set(ctx context.Context, key string, in any, expiresIn time.Durat
 	return c.addGroup(ctx, key)
 }
 
-func (c Cache) Refresh(ctx context.Context, key string, expiresIn time.Duration) (err error) {
+func (c Cache) Refresh(ctx context.Context, key string, in any, expiresIn time.Duration) (err error) {
 	if key == "" {
 		return nil
 	}
 	switch c.tp {
 	case CacheTypeKeyValue:
+		if c.options.localCache != nil {
+			if err := c.options.localCache.Set(ctx, key, in, expiresIn); err != nil {
+				logger.Error("redis cache refresh local cache fail", "err", err)
+			}
+		}
 		err = c.client.Expire(ctx, key, expiresIn).Err()
 	case CacheTypeHash:
 		if c.field != "" {
