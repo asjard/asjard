@@ -171,13 +171,13 @@ func (m *DBManager) connDBs(dbsConf map[string]*DBConnConfig) error {
 }
 
 func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) error {
+	gormLogger, err := NewLogger(dbName, cfg.Options.IgnoreRecordNotFoundError, cfg.Options.SlowThreshold.Duration)
+	if err != nil {
+		return err
+	}
 	db, err := gorm.Open(m.dialector(cfg), &gorm.Config{
 		SkipDefaultTransaction: cfg.Options.SkipDefaultTransaction,
-		Logger: &xgormLogger{
-			ignoreRecordNotFoundError: cfg.Options.IgnoreRecordNotFoundError,
-			slowThreshold:             cfg.Options.SlowThreshold.Duration,
-			name:                      dbName,
-		},
+		Logger:                 gormLogger,
 	})
 	if err != nil {
 		return fmt.Errorf("connect to %s fail[%s]", dbName, err.Error())
