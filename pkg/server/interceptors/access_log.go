@@ -21,12 +21,12 @@ const (
 
 // AccessLog access日志拦截器
 type AccessLog struct {
-	enabled bool
-	cfg     *accessLogConfig
-	m       sync.RWMutex
+	cfg *accessLogConfig
+	m   sync.RWMutex
 }
 
 type accessLogConfig struct {
+	Enabled bool `json:"enabled"`
 	// 配置格式: [protocol://]{fullMethod}
 	// 例如grpc协议的某个方法: grpc://api.v1.hello.Hello.Call
 	// 或者协议无关的某个方法: api.v1.hello.Hello.Call
@@ -36,6 +36,7 @@ type accessLogConfig struct {
 }
 
 var defaultAccessLogConfig = accessLogConfig{
+	Enabled:     true,
 	SkipMethods: utils.JSONStrings{grpc.Protocol, healthpb.Health_Check_FullMethodName},
 }
 
@@ -61,7 +62,7 @@ func (*AccessLog) Name() string {
 // 垮协议拦截器
 func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
-		if !al.enabled {
+		if !al.cfg.Enabled {
 			return handler(ctx, req)
 		}
 		if al.skipped(info.Protocol, info.FullMethod) {
@@ -115,14 +116,13 @@ func (al *AccessLog) loadAndWatch() error {
 	if err := al.load(); err != nil {
 		return err
 	}
-	config.AddListener("asjard.logger.accessEnabled", al.watch)
-	config.AddPatternListener("asjard.interceptors.server.accessLog.*", al.watch)
+	config.AddPatternListener("asjard.logger.accessLog.*", al.watch)
 	return nil
 }
 
 func (al *AccessLog) load() error {
 	conf := defaultAccessLogConfig
-	if err := config.GetWithUnmarshal("asjard.interceptors.server.accessLog",
+	if err := config.GetWithUnmarshal("asjard.logger.accessLog",
 		&conf); err != nil {
 		return err
 	}
@@ -131,7 +131,6 @@ func (al *AccessLog) load() error {
 		conf.skipMethodsMap[skipMethod] = struct{}{}
 	}
 	al.m.Lock()
-	al.enabled = config.GetBool("asjard.logger.accessEnabled", false)
 	al.cfg = &conf
 	al.m.Unlock()
 	return nil
