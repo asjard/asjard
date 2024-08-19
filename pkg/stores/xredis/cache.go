@@ -181,7 +181,7 @@ func (c Cache) Get(ctx context.Context, key string, out any) (bool, error) {
 	switch c.tp {
 	case CacheTypeKeyValue:
 		// 先从本地缓存获取，如果获取到则直接返回
-		if c.options.localCache != nil {
+		if c.options.localCache != nil && c.options.localCache.Enabled() {
 			if _, err := c.options.localCache.Get(ctx, key, out); err == nil {
 				return false, nil
 			} else {
@@ -216,7 +216,7 @@ func (c Cache) Del(ctx context.Context, keys ...string) error {
 	}
 	switch c.tp {
 	case CacheTypeKeyValue:
-		if c.options.localCache != nil {
+		if c.options.localCache != nil && c.options.localCache.Enabled() {
 			if err := c.options.localCache.Del(ctx, keys...); err != nil {
 				return err
 			}
@@ -252,7 +252,7 @@ func (c Cache) Set(ctx context.Context, key string, in any, expiresIn time.Durat
 	}
 	switch c.tp {
 	case CacheTypeKeyValue:
-		if c.options.localCache != nil {
+		if c.options.localCache != nil && c.options.localCache.Enabled() {
 			if err := c.options.localCache.Set(ctx, key, in, expiresIn); err != nil {
 				logger.Error("redis cache set local cache fail", "key", key, "err", err)
 			}
@@ -292,7 +292,7 @@ func (c Cache) Refresh(ctx context.Context, key string, in any, expiresIn time.D
 	}
 	switch c.tp {
 	case CacheTypeKeyValue:
-		if c.options.localCache != nil {
+		if c.options.localCache != nil && c.options.localCache.Enabled() {
 			if err := c.options.localCache.Set(ctx, key, in, expiresIn); err != nil {
 				logger.Error("redis cache refresh local cache fail", "err", err)
 			}
@@ -349,7 +349,7 @@ func (c Cache) delGroup(ctx context.Context) error {
 				keys = append(keys, key)
 			}
 			logger.Debug("delete group", "group", group, "keys", keys)
-			if c.options.localCache != nil {
+			if c.options.localCache != nil && c.options.localCache.Enabled() {
 				if err := c.options.localCache.Del(ctx, keys...); err != nil {
 					return err
 				}
