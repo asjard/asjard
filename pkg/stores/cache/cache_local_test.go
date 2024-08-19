@@ -26,10 +26,12 @@ func TestCache(t *testing.T) {
 		value := fmt.Sprintf("%s_%d", testValue, i)
 		assert.Nil(t, localCache.Set(context.Background(), key, value, 5*time.Minute))
 		var result string
-		assert.Nil(t, localCache.Get(context.Background(), key, &result))
+		_, err := localCache.Get(context.Background(), key, &result)
+		assert.Nil(t, err)
 		assert.Equal(t, value, result)
 		assert.Nil(t, localCache.Del(context.Background(), key))
 		result = ""
-		assert.NotNil(t, localCache.Get(context.Background(), key, &result))
+		_, err = localCache.Get(context.Background(), key, &result)
+		assert.NotNil(t, err)
 	}
 }

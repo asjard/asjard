@@ -39,7 +39,8 @@ func TestCache(t *testing.T) {
 				assert.NotZero(t, ttl.Val())
 
 				var result string
-				assert.Nil(t, cache.Get(context.Background(), key, &result))
+				_, err := cache.Get(context.Background(), key, &result)
+				assert.Nil(t, err)
 				assert.Equal(t, value, result)
 
 				// 删除
@@ -49,7 +50,8 @@ func TestCache(t *testing.T) {
 				assert.NotNil(t, existCheck.Err())
 
 				result = ""
-				assert.NotNil(t, cache.Get(context.Background(), key, &result))
+				_, err = cache.Get(context.Background(), key, &result)
+				assert.NotNil(t, err)
 
 			}
 		})
