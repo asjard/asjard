@@ -873,7 +873,13 @@ func AddListener(key string, callback func(*Event)) {
 // AddPatternListener 添加匹配监听
 func AddPatternListener(pattern string, callback func(*Event)) {
 	options := GetOptions(WithMatchWatch(pattern, callback))
-	configmanager.addListener(pattern, options)
+	configmanager.addListener("", options)
+}
+
+// AddPrefixListener 添加前缀监听
+func AddPrefixListener(prefix string, callback func(*Event)) {
+	options := GetOptions(WithPrefixWatch(prefix, callback))
+	configmanager.addListener("", options)
 }
 
 // RemoveListener 移除监听器

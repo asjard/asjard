@@ -80,6 +80,16 @@ func WithMatchWatch(pattern string, callback ListenCallback) func(opts *Options)
 	}
 }
 
+// WithPrefixWatch 前缀监听
+func WithPrefixWatch(prefix string, callback ListenCallback) Option {
+	return func(opts *Options) {
+		opts.watch = &watchOptions{
+			pattern:  prefix + ".*",
+			callback: callback,
+		}
+	}
+}
+
 // WithFuncWatch 方法监听
 // func WithFuncWatch(f WatchFunc, callback func(*Event)) func(opts *Options) {
 // 	return func(opts *Options) {

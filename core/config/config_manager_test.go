@@ -329,6 +329,23 @@ func TestListener(t *testing.T) {
 		}
 		assert.Equal(t, value, GetString(key, ""))
 	})
+	t.Run("AddPrefixListener", func(t *testing.T) {
+		key := "test_add_listener_prefix"
+		value := "test_add_listener_prefix_value"
+		recived := make(chan struct{})
+		AddPrefixListener(key, func(event *Event) {
+			recived <- struct{}{}
+		})
+		assert.Nil(t, Set(key, value))
+		select {
+		case <-recived:
+			break
+		case <-time.After(time.Millisecond * 10):
+			t.Error("after 10ms not recived event")
+			t.FailNow()
+		}
+		assert.Equal(t, value, GetString(key, ""))
+	})
 }
 
 func TestGetBytes(t *testing.T) {
