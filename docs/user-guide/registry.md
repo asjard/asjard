@@ -4,10 +4,12 @@
 
 - [x] local
 - [x] etcd
+- [x] consul
 
 ### 已实现服务注册
 
 - [x] etcd
+- [x] consul
 
 ### 本地服务发现
 
