@@ -34,6 +34,8 @@ const (
 // DBManager 数据连接维护
 type DBManager struct {
 	dbs sync.Map
+
+	// lg gormLogger.Interface
 }
 
 // DBConn 数据库连接
@@ -51,13 +53,11 @@ type Config struct {
 
 // Options 数据库连接全局配置
 type Options struct {
-	MaxIdleConns              int                `json:"maxIdleConns"`
-	MaxOpenConns              int                `json:"maxOpenConns"`
-	ConnMaxIdleTime           utils.JSONDuration `json:"connMaxIdleTime"`
-	ConnMaxLifeTime           utils.JSONDuration `json:"connMaxLifeTime"`
-	Debug                     bool               `json:"debug"`
-	IgnoreRecordNotFoundError bool               `json:"ignoreRecordNotFoundError"`
-	SlowThreshold             utils.JSONDuration `json:"slowThreshold"`
+	MaxIdleConns    int                `json:"maxIdleConns"`
+	MaxOpenConns    int                `json:"maxOpenConns"`
+	ConnMaxIdleTime utils.JSONDuration `json:"connMaxIdleTime"`
+	ConnMaxLifeTime utils.JSONDuration `json:"connMaxLifeTime"`
+	Debug           bool               `json:"debug"`
 }
 
 // DBConnConfig 数据库连接配置
@@ -96,13 +96,11 @@ func WithConnName(connName string) func(*DBOptions) {
 var (
 	dbManager          *DBManager
 	defaultConnOptions = Options{
-		MaxIdleConns:              10,
-		MaxOpenConns:              100,
-		ConnMaxIdleTime:           utils.JSONDuration{Duration: 10 * time.Second},
-		ConnMaxLifeTime:           utils.JSONDuration{Duration: time.Hour},
-		Debug:                     false,
-		IgnoreRecordNotFoundError: true,
-		SlowThreshold:             utils.JSONDuration{Duration: 200 * time.Millisecond},
+		MaxIdleConns:    10,
+		MaxOpenConns:    100,
+		ConnMaxIdleTime: utils.JSONDuration{Duration: 10 * time.Second},
+		ConnMaxLifeTime: utils.JSONDuration{Duration: time.Hour},
+		Debug:           false,
 	}
 )
 
@@ -160,24 +158,19 @@ func (m *DBManager) Shutdown() {
 
 func (m *DBManager) connDBs(dbsConf map[string]*DBConnConfig) error {
 	for dbName, cfg := range dbsConf {
-		logger.Debug("connect to database", "database", dbName, "config", cfg)
 		if err := m.connDB(dbName, cfg); err != nil {
-			logger.Error("connect to database fail", "database", dbName, "err", err)
+			logger.Error("connect to database fail", "database", dbName, "config", cfg, "err", err)
 			return err
 		}
-		logger.Debug("connect to database success", "database", dbName)
+		logger.Debug("connect to database success", "database", dbName, "config", cfg)
 	}
 	return nil
 }
 
 func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) error {
-	gormLogger, err := NewLogger(dbName, cfg.Options.IgnoreRecordNotFoundError, cfg.Options.SlowThreshold.Duration)
-	if err != nil {
-		return err
-	}
 	db, err := gorm.Open(m.dialector(cfg), &gorm.Config{
 		SkipDefaultTransaction: cfg.Options.SkipDefaultTransaction,
-		Logger:                 gormLogger,
+		Logger:                 NewLogger(dbName),
 	})
 	if err != nil {
 		return fmt.Errorf("connect to %s fail[%s]", dbName, err.Error())
@@ -234,6 +227,9 @@ func (m *DBManager) dialector(cfg *DBConnConfig) gorm.Dialector {
 }
 
 func (m *DBManager) loadAndWatchConfig() (map[string]*DBConnConfig, error) {
+	if err := InitLogger(); err != nil {
+		return nil, err
+	}
 	conf, err := m.loadConfig()
 	if err != nil {
 		return conf, err
@@ -274,6 +270,7 @@ func (m *DBManager) watch(event *config.Event) {
 	// 删除被删除的数据库
 	m.dbs.Range(func(key, value any) bool {
 		if _, ok := conf[key.(string)]; !ok {
+			logger.Debug("gorm remove db", "db", key)
 			m.dbs.Delete(key)
 		}
 		return true

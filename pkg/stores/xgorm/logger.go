@@ -9,6 +9,7 @@ import (
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
+	ajutils "github.com/asjard/asjard/utils"
 	gormLogger "gorm.io/gorm/logger"
 	"gorm.io/gorm/utils"
 )
@@ -23,18 +24,40 @@ type xgormLogger struct {
 	slogger *slog.Logger
 }
 
-var _ gormLogger.Interface = &xgormLogger{}
+type loggerConfig struct {
+	*logger.Config
+	IgnoreRecordNotFoundError bool                 `json:"ignoreRecordNotFoundError"`
+	SlowThreshold             ajutils.JSONDuration `json:"slowThreshold"`
+}
 
-func NewLogger(name string, ignoreRecordNotFoundError bool, slowThreshold time.Duration) (gormLogger.Interface, error) {
-	lg := &xgormLogger{
-		ignoreRecordNotFoundError: ignoreRecordNotFoundError,
-		slowThreshold:             slowThreshold,
-		name:                      name,
+var (
+	_ gormLogger.Interface = &xgormLogger{}
+
+	defaultConfig = loggerConfig{
+		Config:                    logger.DefaultConfig,
+		IgnoreRecordNotFoundError: true,
 	}
+
+	glogger *xgormLogger
+)
+
+// InitLogger 日志初始化
+func InitLogger() error {
+	lg := &xgormLogger{}
 	if err := lg.loadAndWatch(); err != nil {
-		return nil, err
+		return err
 	}
-	return lg, nil
+	glogger = lg
+	return nil
+}
+
+func NewLogger(name string) gormLogger.Interface {
+	return &xgormLogger{
+		ignoreRecordNotFoundError: glogger.ignoreRecordNotFoundError,
+		slowThreshold:             glogger.slowThreshold,
+		name:                      name,
+		slogger:                   glogger.slogger,
+	}
 }
 
 func (l *xgormLogger) LogMode(level gormLogger.LogLevel) gormLogger.Interface {
@@ -79,11 +102,13 @@ func (l *xgormLogger) loadAndWatch() error {
 }
 
 func (l *xgormLogger) load() error {
-	conf := logger.DefaultConfig
+	conf := defaultConfig
 	if err := config.GetWithUnmarshal("asjard.logger.gorm", &conf); err != nil {
 		return err
 	}
-	l.slogger = slog.New(logger.NewSlogHandler(conf))
+	l.slogger = slog.New(logger.NewSlogHandler(conf.Config))
+	l.ignoreRecordNotFoundError = conf.IgnoreRecordNotFoundError
+	l.slowThreshold = conf.SlowThreshold.Duration
 	return nil
 }
 

@@ -27,8 +27,10 @@ asjard:
         - grpc
     gorm:
       level: DEBUG
-      format: json
+      format: text
       filePath: /dev/stdout
+      ignoreRecordNotFoundError: false
+      slowThreshold: 200ms
     ## 横幅，修改后需重新启动
     ## 开启后会在标准输出打印服务启动详情
     banner:

@@ -20,8 +20,6 @@ asjard:
         maxOpenConns: 1001
         # connMaxIdleTime: 10
         # connMaxLifeTime: 2h
-        ignoreRecordNotFoundError: false
-        slowThreshold: 200ms
         debug: false
 
     etcd:
