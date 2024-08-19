@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/pkg/metrics/collectors"
@@ -43,6 +44,7 @@ func (Metrics) Name() string {
 
 func (m Metrics) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
+		logger.Debug("start metrics interceptor")
 		now := time.Now()
 		resp, err = handler(ctx, req)
 		st := status.FromError(err)

@@ -32,7 +32,7 @@ type AddressConfig struct {
 }
 
 var DefaultConfig = Config{
-	BuiltInInterceptors:    utils.JSONStrings{"metrics", "accessLog", "restReadEntity", "restResponseHeader", "i18n", "trace"},
+	BuiltInInterceptors:    utils.JSONStrings{"ratelimiter", "metrics", "accessLog", "restReadEntity", "restResponseHeader", "i18n", "trace"},
 	BuiltInDefaultHandlers: utils.JSONStrings{"health", "metrics"},
 }
 

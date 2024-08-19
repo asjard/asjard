@@ -43,6 +43,8 @@ var (
 	MethodNotAllowedError = func() error { return Error(MethodNotAllowedCode, "method not allowed") }
 	// UnsupportProtocol 暂不支持的协议
 	UnsupportProtocol = func() error { return Error(UnsupportProtocolCode, "unsupport protocol") }
+	// TooManyRequest 请求过多
+	TooManyRequest = func() error { return Error(codes.ResourceExhausted, "too may request") }
 
 	// SetCacheFailError 设置缓存失败错误
 	SetCacheFailError = func() error { return Error(SetCacheFailCode, InternalServerErrorStr) }
