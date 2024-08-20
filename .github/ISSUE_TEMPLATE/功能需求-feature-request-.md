@@ -1,7 +1,7 @@
 ---
 name: 功能需求(Feature request)
 about: 您有什么建议吗(Suggest an idea for this project)
-title: ''
+title: 您有什么建议吗(Suggest an idea for this project)
 labels: ''
 assignees: ''
 
