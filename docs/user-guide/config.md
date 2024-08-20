@@ -217,14 +217,14 @@ val = config.GetString("key", "default_value", config.WithWatch(func(event *conf
 
 > 框架内置`环境变量`,`文件`,`内存`配置源, 无需导入
 
-| 支持 | 配置源                           | 优先级 | 描述                    |
-| :--: | :------------------------------- | :----: | ----------------------- |
+| 支持 | 配置源                           | 优先级 | 描述                           |
+| :--: | :------------------------------- | :----: | ------------------------------ |
 |  x   | [环境变量](config_env.md)        |   0    |
 |      | cli                              |   1    |
 |  x   | [文件](config_file.md)           |   2    |
-|  x   | [etcd](config_etcd.md)           |   10   | key/value, file模式配置 |
-|  x   | [consul](config_consul.md)       |   11   | ket/value模式配置       |
-|      | [nacos](config_nacos.md)         |   12   | 没有删除事件            |
+|  x   | [etcd](config_etcd.md)           |   10   | key/value, file模式配置        |
+|  x   | [consul](config_consul.md)       |   11   | ket/value模式配置,file模式配置 |
+|      | [nacos](config_nacos.md)         |   12   | 没有删除事件                   |
 |      | [apollo](config_appolo.md)       |   13   |
 |      | [configmap](config_configmap.md) |   14   |
 |  x   | [本地内存](config_mem.md)        |   99   |

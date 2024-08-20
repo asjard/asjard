@@ -52,10 +52,12 @@ func init() {
 	registry.AddDiscover(NAME, NewDiscovery)
 }
 
+// NewRegister 服务注册初始化
 func NewRegister() (registry.Register, error) {
 	return New()
 }
 
+// NewDiscovery 服务发现初始化
 func NewDiscovery() (registry.Discovery, error) {
 	discovery, err := New()
 	if err != nil {
@@ -67,6 +69,7 @@ func NewDiscovery() (registry.Discovery, error) {
 	return discovery, nil
 }
 
+// New consul初始化
 func New() (*Consul, error) {
 	var err error
 	newOnce.Do(func() {

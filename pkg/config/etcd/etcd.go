@@ -162,7 +162,7 @@ func (s *Etcd) getSetFileConfig(file, key string, priority int, value []byte) ma
 		}
 		return configMap
 	}
-	logger.Error("conver to props map fail", "file", file, "err", err)
+	logger.Error("convert to props map fail", "file", file, "err", err)
 	return map[string]*config.Value{}
 }
 

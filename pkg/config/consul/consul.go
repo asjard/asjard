@@ -2,6 +2,7 @@ package consul
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -23,6 +24,7 @@ const (
 	defaultDelimiter = "/"
 )
 
+// Consul consul配置中心实现
 type Consul struct {
 	cb     func(*config.Event)
 	app    runtime.APP
@@ -51,6 +53,7 @@ func init() {
 	config.AddSource(Name, Priority, New)
 }
 
+// New Consul配置中心初始化
 func New() (config.Sourcer, error) {
 	sourcer := &Consul{
 		app: runtime.GetAPP(),
@@ -146,7 +149,9 @@ func (s *Consul) loadConfig() error {
 }
 
 func (s *Consul) watchConfig(event *config.Event) {
-	s.loadConfig()
+	if err := s.loadConfig(); err != nil {
+		logger.Error("consul watch config fail", "err", err)
+	}
 }
 
 func (s *Consul) watch() error {
@@ -189,32 +194,63 @@ func newConfigWatch(s *Consul, prefix string, priority int) error {
 	return nil
 }
 
+func (w *configWatch) updateConfig(configs map[string]any, modifyIndex uint64) {
+	w.cm.Lock()
+	for key, value := range configs {
+		if oldModifyIndex, ok := w.configs[key]; !ok || oldModifyIndex != modifyIndex {
+			w.configs[key] = modifyIndex
+			w.s.cb(&config.Event{
+				Type: config.EventTypeCreate,
+				Key:  strings.TrimPrefix(key, w.prefix),
+				Value: &config.Value{
+					Sourcer:  w.s,
+					Value:    value,
+					Priority: w.priority,
+				},
+			})
+		}
+	}
+	w.cm.Unlock()
+}
+
 func (w *configWatch) handler(_ uint64, data any) {
 	switch d := data.(type) {
 	case api.KVPairs:
 		for _, kv := range d {
-			w.cm.Lock()
-			if modifyIndex, ok := w.configs[kv.Key]; !ok || modifyIndex != kv.ModifyIndex {
-				w.configs[kv.Key] = kv.ModifyIndex
-				w.s.cb(&config.Event{
-					Type: config.EventTypeCreate,
-					Key:  strings.TrimPrefix(kv.Key, w.prefix),
-					Value: &config.Value{
-						Sourcer:  w.s,
-						Value:    kv.Value,
-						Priority: w.priority,
-					},
-				})
+			ext := filepath.Ext(kv.Key)
+			configs := map[string]any{kv.Key: kv.Value}
+			var err error
+			if ext != "" && config.IsExtSupport(ext) {
+				configs, err = config.ConvertToProperties(ext, kv.Value)
+				if err != nil {
+					logger.Error("consul convert to props fail", "key", kv.Key, "err", err)
+					continue
+				}
+
 			}
-			w.cm.Unlock()
+			w.updateConfig(configs, kv.ModifyIndex)
 		}
+
 		w.cm.Lock()
 		for key := range w.configs {
 			exist := false
 			for _, kv := range d {
-				if kv.Key == key {
-					exist = true
-					break
+				ext := filepath.Ext(kv.Key)
+				if ext != "" && config.IsExtSupport(ext) {
+					configs, err := config.ConvertToProperties(ext, kv.Value)
+					if err != nil {
+						logger.Error("consul conver to props fail", "key", kv.Key, "err", err)
+						continue
+					}
+					if _, ok := configs[key]; ok {
+						exist = true
+						break
+					}
+				} else {
+					if kv.Key == key {
+						exist = true
+						break
+					}
 				}
 			}
 			if !exist {
