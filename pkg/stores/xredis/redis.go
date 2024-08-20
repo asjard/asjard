@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/initator"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
@@ -86,7 +86,7 @@ var (
 
 func init() {
 	clientManager = &ClientManager{}
-	initator.AddInitator(clientManager)
+	bootstrap.AddBootstrap(clientManager)
 }
 
 func WithClientName(clientName string) func(*ClientOptions) {
@@ -113,7 +113,7 @@ func Client(opts ...Option) (*redis.Client, error) {
 	return client.client, nil
 }
 
-func (m *ClientManager) Start() error {
+func (m *ClientManager) Bootstrap() error {
 	clients, err := m.loadAndWatch()
 	if err != nil {
 		return err
@@ -121,7 +121,7 @@ func (m *ClientManager) Start() error {
 	return m.newClients(clients)
 }
 
-func (m *ClientManager) Stop() {
+func (m *ClientManager) Shutdown() {
 	m.clients.Range(func(key, value any) bool {
 		conn, ok := value.(*ClientConn)
 		if ok {
@@ -135,12 +135,13 @@ func (m *ClientManager) Stop() {
 }
 
 func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
-	logger.Debug("new clients", "conf", clients)
+	logger.Debug("new clients", "clients", clients)
 	for name, conf := range clients {
-		logger.Debug("connect to redis", "name", name, "conf", conf)
 		if err := m.newClient(name, conf); err != nil {
+			logger.Debug("connect to redis fail", "name", name, "conf", conf, "err", err)
 			return err
 		}
+		logger.Debug("connect to redis success", "name", name, "conf", conf)
 	}
 	return nil
 }

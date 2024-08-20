@@ -11,7 +11,7 @@ import (
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/config"
-	cfgfile "github.com/asjard/asjard/core/config/sources/file"
+	"github.com/asjard/asjard/core/config/sources/file"
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/initator"
 	"github.com/asjard/asjard/core/logger"
@@ -149,7 +149,7 @@ func (asd *Asjard) Init() error {
 		return nil
 	}
 	// 文件配置源加载
-	if err := config.Load(cfgfile.Priority); err != nil {
+	if err := config.Load(file.Priority); err != nil {
 		return err
 	}
 
@@ -226,14 +226,16 @@ func (asd *Asjard) startServers() error {
 		}
 
 		// 补全服务实例详情
-		if err := svc.AddEndpoint(sv.Protocol(), sv.ListenAddresses()); err != nil {
+		listenAddresses := sv.ListenAddresses()
+		if err := svc.AddEndpoint(sv.Protocol(), listenAddresses); err != nil {
 			return fmt.Errorf("server '%s' add endpoint fail[%s]", sv.Protocol(), err.Error())
 		}
 		// 启动服务
 		if err := sv.Start(asd.startErr); err != nil {
 			return fmt.Errorf("start server '%s' fail[%s]", sv.Protocol(), err.Error())
 		}
-		asd.startedServers = append(asd.startedServers, sv.Protocol())
+		asd.startedServers = append(asd.startedServers,
+			sv.Protocol()+":"+strings.Join([]string{listenAddresses.Listen, listenAddresses.Advertise}, ","))
 		logger.Debug("server started",
 			"protocol", sv.Protocol())
 	}
@@ -274,6 +276,6 @@ func (asd *Asjard) printBanner() {
 		app.Instance.Name,
 		app.Instance.Version,
 		app.Website,
-		strings.Join(asd.startedServers, ","),
+		strings.Join(asd.startedServers, ";"),
 		utils.GetConfDir())
 }

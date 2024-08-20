@@ -2,6 +2,8 @@ package config
 
 import (
 	"encoding/base64"
+	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -315,6 +317,23 @@ func TestListener(t *testing.T) {
 		value := "test_add_listener_pattern_value"
 		recived := make(chan struct{})
 		AddPatternListener(key+".*", func(event *Event) {
+			recived <- struct{}{}
+		})
+		assert.Nil(t, Set(key, value))
+		select {
+		case <-recived:
+			break
+		case <-time.After(time.Millisecond * 10):
+			t.Error("after 10ms not recived event")
+			t.FailNow()
+		}
+		assert.Equal(t, value, GetString(key, ""))
+	})
+	t.Run("AddPrefixListener", func(t *testing.T) {
+		key := "test_add_listener_prefix"
+		value := "test_add_listener_prefix_value"
+		recived := make(chan struct{})
+		AddPrefixListener(key, func(event *Event) {
 			recived <- struct{}{}
 		})
 		assert.Nil(t, Set(key, value))
@@ -691,6 +710,15 @@ func TestGetTime(t *testing.T) {
 	}
 }
 
+func TestExist(t *testing.T) {
+	if err := Set("test_exist_key", "exist"); err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	assert.Equal(t, true, Exist("test_exist_key"))
+	assert.Equal(t, false, Exist("test_not_found_key"))
+}
+
 func TestGetAndUnmarshal(t *testing.T) {
 	t.Run("JsonUnmarshal", func(t *testing.T) {
 		if err := Set("test_json_content", `{"a":1}`); err != nil {
@@ -827,4 +855,69 @@ func TestGetBool(t *testing.T) {
 			}
 		}
 	})
+}
+
+// 异步更新配置
+func asyncUpdateConfig(exit <-chan struct{}) {
+	i := 0
+	for {
+		select {
+		case _, ok := <-exit:
+			if !ok {
+				return
+			}
+			return
+		case <-time.After(10 * time.Millisecond):
+			Set(fmt.Sprintf("async_insert_%d", i), i)
+			i++
+		}
+
+	}
+}
+
+func BenchmarkGet(b *testing.B) {
+	exit := make(chan struct{})
+	go asyncUpdateConfig(exit)
+	b.Run("GetString", func(b *testing.B) {
+		b.Run("Exist-Key", func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				GetString("testStr", "")
+			}
+		})
+		b.Run("Not-Exist-Key", func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				GetString("bench_not_exist_key", "")
+			}
+		})
+	})
+	b.Run("GetBytes", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			GetByte("testStr", []byte{})
+		}
+	})
+	b.Run("GetBool", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			GetBool("testStr", true)
+		}
+	})
+	close(exit)
+}
+
+func BenchmarkSetGet(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		// b.StopTimer()
+		istr := strconv.Itoa(i)
+		key := "bench_test_set_get_key" + istr
+		value := "bench_test_set_get_value" + istr
+		Set(key, value)
+		// b.StartTimer()
+
+		for GetString(key, "") != "" {
+			break
+		}
+	}
 }

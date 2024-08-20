@@ -15,6 +15,10 @@ import (
 const (
 	// QueryParamNeedStatusCode 需要http状态码query请求参数
 	QueryParamNeedStatusCode = "nsc"
+	// HeaderResponseRequestMethod 请求方法返回头
+	HeaderResponseRequestMethod = "x-request-method"
+	// HeaderResponseRequestID 请求ID返回头
+	HeaderResponseRequestID = "x-request-id"
 )
 
 // DefaultWriter 默认输出
@@ -28,6 +32,8 @@ func DefaultWriter(c *Context, data any, err error) {
 	if c.URI().QueryArgs().Has(QueryParamNeedStatusCode) {
 		statusCode = st.Status
 	}
+	st.RequestId = string(c.Response.Header.Peek(HeaderResponseRequestID))
+	st.RequestMethod = string(c.Response.Header.Peek(HeaderResponseRequestMethod))
 	if err == nil {
 		if d, err := anypb.New(data.(proto.Message)); err == nil {
 			st.Data = d

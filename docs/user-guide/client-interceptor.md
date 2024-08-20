@@ -20,3 +20,19 @@ asjard:
         ## 请求错误百分比
         error_percent_threshold: 50
 ```
+
+### rest转grpc协议
+
+```yaml
+asjard:
+  interceptors:
+    client:
+      rest2RpcContext:
+        allowHeaders:
+          - "x-request-region"
+          - "x-request-az"
+          - "x-request-id"
+          - "x-request-instance"
+          - "x-forward-for"
+          - "traceparent"
+```

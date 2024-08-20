@@ -13,7 +13,7 @@ import (
 
 const (
 	testSourceName     = "testSource"
-	testSourcePriority = 0
+	testSourcePriority = 4
 )
 
 type testSource struct {
@@ -90,11 +90,11 @@ func initTestConfig() {
 
 func TestMain(m *testing.M) {
 	initTestConfig()
-	if err := dbManager.Start(); err != nil {
+	if err := dbManager.Bootstrap(); err != nil {
 		panic(err)
 	}
 	m.Run()
-	dbManager.Stop()
+	dbManager.Shutdown()
 
 }
 
@@ -145,13 +145,13 @@ func TestConnDBs(t *testing.T) {
 		config.Set("asjard.stores.gorm.dbs.newdb.dsn", "test_new.db")
 		config.Set("asjard.stores.gorm.dbs.newdb.driver", "sqlite")
 		// 设置配置是异步过程，等待数据库连接刷新
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(5000 * time.Millisecond)
 		db, err := DB(context.Background(), WithConnName("newdb"))
 		assert.Nil(t, err)
 		assert.NotNil(t, db)
 	})
 	t.Run("shutdown", func(t *testing.T) {
-		dbManager.Stop()
+		dbManager.Shutdown()
 		_, err := DB(context.TODO())
 		assert.NotNil(t, err)
 	})

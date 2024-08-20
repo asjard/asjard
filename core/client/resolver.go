@@ -28,11 +28,13 @@ var _ resolver.Builder = &ClientBuilder{}
 // Build .
 // target: asjard://grpc/serviceName
 func (c *ClientBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
+	query := target.URL.Query()
 	cr := &clientResolver{
-		cc:          cc,
-		protocol:    target.URL.Host,
-		serviceName: target.Endpoint(),
-		instanceID:  target.URL.Query().Get("instanceID"),
+		cc:           cc,
+		protocol:     target.URL.Host,
+		serviceName:  target.Endpoint(),
+		instanceID:   query.Get("instanceID"),
+		registryName: query.Get("registryName"),
 	}
 
 	cr.ResolveNow(resolver.ResolveNowOptions{})
@@ -45,10 +47,15 @@ func (*ClientBuilder) Scheme() string {
 }
 
 type clientResolver struct {
-	cc          resolver.ClientConn
-	protocol    string
+	cc resolver.ClientConn
+	// 协议
+	protocol string
+	// 服务名称
 	serviceName string
-	instanceID  string
+	// 实例ID
+	instanceID string
+	// 注册/发现中心名称
+	registryName string
 }
 
 // Close .
@@ -68,6 +75,9 @@ func (r *clientResolver) ResolveNow(_ resolver.ResolveNowOptions) {
 	}
 	if r.instanceID != "" {
 		options = append(options, registry.WithInstanceID(r.instanceID))
+	}
+	if r.registryName != "" {
+		options = append(options, registry.WithRegistryName(r.registryName))
 	}
 	instances := registry.PickServices(options...)
 	r.update(instances)

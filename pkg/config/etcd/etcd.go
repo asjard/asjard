@@ -2,7 +2,9 @@ package etcd
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/asjard/asjard/core/config"
@@ -25,10 +27,12 @@ const (
 
 // Etcd etcd配置
 type Etcd struct {
-	cb     func(*config.Event)
-	app    runtime.APP
-	conf   *Config
-	client *clientv3.Client
+	cb          func(*config.Event)
+	app         runtime.APP
+	conf        *Config
+	client      *clientv3.Client
+	fileConfigs map[string]map[string]any
+	fcm         sync.RWMutex
 }
 
 type Value struct {
@@ -56,23 +60,16 @@ func init() {
 // New 配置源初始化
 func New() (config.Sourcer, error) {
 	sourcer := &Etcd{
-		app: runtime.GetAPP(),
+		app:         runtime.GetAPP(),
+		fileConfigs: make(map[string]map[string]any),
 	}
-	err := sourcer.loadAndWatchConfig()
-	if err != nil {
-		return nil, err
-	}
-	sourcer.client, err = xetcd.Client(xetcd.WithClientName(sourcer.conf.Client))
-	if err != nil {
-		return nil, err
-	}
-	if err := sourcer.watch(); err != nil {
+	if err := sourcer.loadAndWatchConfig(); err != nil {
 		return nil, err
 	}
 	return sourcer, nil
 }
 
-// GetAll .
+// GetAll 获取etcd中的所有配置
 func (s *Etcd) GetAll() map[string]*config.Value {
 	result := make(map[string]*config.Value)
 	for priority, prefix := range s.prefixs() {
@@ -84,10 +81,10 @@ func (s *Etcd) GetAll() map[string]*config.Value {
 			continue
 		}
 		for _, kv := range resp.Kvs {
-			result[s.configKey(prefix, kv.Key)] = &config.Value{
-				Sourcer:  s,
-				Value:    kv.Value,
-				Priority: priority,
+			key := s.configKey(prefix, kv.Key)
+			ref := string(kv.Key)
+			for k, v := range s.getSetFileConfig(ref, key, priority, kv.Value) {
+				result[k] = v
 			}
 		}
 	}
@@ -95,7 +92,7 @@ func (s *Etcd) GetAll() map[string]*config.Value {
 
 }
 
-// GetByKey .
+// GetByKey 根据key获取配置
 func (s *Etcd) GetByKey(key string) any {
 	for _, prefix := range s.prefixs() {
 		ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
@@ -114,7 +111,7 @@ func (s *Etcd) Set(key string, value any) error {
 	return nil
 }
 
-// Watch .
+// Watch 配置更新回调
 func (s *Etcd) Watch(cb func(*config.Event)) error {
 	s.cb = cb
 	return nil
@@ -134,37 +131,124 @@ func (s *Etcd) Name() string {
 func (s *Etcd) Disconnect() {
 }
 
-func (s *Etcd) loadAndWatchConfig() error {
-	conf, err := s.loadConfig()
+func (s *Etcd) getSetFileConfig(file, key string, priority int, value []byte) map[string]*config.Value {
+	ext := filepath.Ext(file)
+	if ext == "" || !config.IsExtSupport(ext) {
+		return map[string]*config.Value{
+			key: {
+				Sourcer:  s,
+				Value:    value,
+				Priority: priority,
+				Ref:      file,
+			},
+		}
+	}
+	s.fcm.Lock()
+	defer s.fcm.Unlock()
+	if _, ok := s.fileConfigs[file]; !ok {
+		s.fileConfigs[file] = make(map[string]any)
+	}
+	propsMap, err := config.ConvertToProperties(ext, value)
+	if err == nil {
+		configMap := make(map[string]*config.Value, len(propsMap))
+		for k, v := range propsMap {
+			s.fileConfigs[file][k] = v
+			configMap[k] = &config.Value{
+				Sourcer:  s,
+				Value:    v,
+				Priority: priority,
+				Ref:      file,
+			}
+		}
+		return configMap
+	}
+	logger.Error("convert to props map fail", "file", file, "err", err)
+	return map[string]*config.Value{}
+}
+
+func (s *Etcd) getUpdateEvents(file, key string, priority int, value []byte) []*config.Event {
+	var events []*config.Event
+	ext := filepath.Ext(file)
+	if ext == "" || !config.IsExtSupport(ext) {
+		events = append(events, &config.Event{
+			Type: config.EventTypeUpdate,
+			Key:  key,
+			Value: &config.Value{
+				Sourcer:  s,
+				Value:    value,
+				Priority: priority,
+				Ref:      file,
+			},
+		})
+		return events
+	}
+	s.fcm.Lock()
+	defer s.fcm.Unlock()
+	if _, ok := s.fileConfigs[file]; !ok {
+		s.fileConfigs[file] = map[string]any{}
+	}
+	propsMap, err := config.ConvertToProperties(ext, value)
 	if err != nil {
+		logger.Error("convert to props map fail", "file", file, "err", err)
+		return events
+	}
+	for key := range s.fileConfigs[file] {
+		if _, ok := propsMap[key]; !ok {
+			events = append(events, &config.Event{
+				Type: config.EventTypeDelete,
+				Key:  key,
+				Value: &config.Value{
+					Sourcer:  s,
+					Priority: priority,
+				},
+			})
+			delete(s.fileConfigs[file], key)
+		}
+	}
+	for k, v := range propsMap {
+		if oldValue, ok := s.fileConfigs[file][k]; !ok || oldValue != v {
+			events = append(events, &config.Event{
+				Type: config.EventTypeUpdate,
+				Key:  k,
+				Value: &config.Value{
+					Sourcer:  s,
+					Value:    v,
+					Priority: priority,
+					Ref:      file,
+				},
+			})
+			s.fileConfigs[file][k] = v
+		}
+	}
+	return events
+}
+
+func (s *Etcd) loadAndWatchConfig() error {
+	if err := s.loadConfig(); err != nil {
 		return err
 	}
-	s.conf = conf
 	config.AddListener("asjard.config.etcd.*", s.watchConfig)
+	return s.watch()
+}
+
+func (s *Etcd) loadConfig() error {
+	conf := defaultConfig
+	if err := config.GetWithUnmarshal("asjard.config.etcd", &conf); err != nil {
+		logger.Error("get etcd config fail", "err", err)
+		return err
+	}
+	s.conf = &conf
+	client, err := xetcd.Client(xetcd.WithClientName(s.conf.Client))
+	if err != nil {
+		logger.Error("new etcd client fail", "err", err)
+		return err
+	}
+	s.client = client
 	return nil
 }
 
-func (s *Etcd) loadConfig() (*Config, error) {
-	conf := defaultConfig
-	if err := config.GetWithUnmarshal("asjard.config.etcd", &conf); err != nil {
-		return nil, err
-	}
-	return &conf, nil
-}
-
 func (s *Etcd) watchConfig(event *config.Event) {
-	conf, err := s.loadConfig()
-	if err != nil {
-		logger.Error("load config fail", "err")
-		return
-	}
-	s.conf = conf
-	client, err := xetcd.Client(xetcd.WithClientName(s.conf.Client))
-	if err != nil {
-		logger.Error("new etcd client fail", "err")
-		return
-	}
-	s.client = client
+	s.loadConfig()
 }
 
 func (s *Etcd) watch() error {
@@ -178,60 +262,61 @@ func (s *Etcd) watchPrefix(prefix string, priority int) {
 	watchChan := s.client.Watch(context.Background(), prefix, clientv3.WithPrefix())
 	for resp := range watchChan {
 		for _, event := range resp.Events {
-			logger.Debug("etcd config event", "event", event.Type, "key", string(event.Kv.Key))
-			callbackEvent := &config.Event{
-				Key: s.configKey(prefix, event.Kv.Key),
-				Value: &config.Value{
-					Sourcer:  s,
-					Priority: priority,
-				},
-			}
+			key := s.configKey(prefix, event.Kv.Key)
+			ref := string(event.Kv.Key)
+			logger.Debug("etcd config event", "event", event.Type.String(), "key", key, "prefix", prefix)
 			switch event.Type {
 			case mvccpb.PUT:
-				callbackEvent.Type = config.EventTypeUpdate
-				callbackEvent.Value.Value = event.Kv.Value
+				for _, event := range s.getUpdateEvents(ref, key, priority, event.Kv.Value) {
+					s.cb(event)
+				}
 			case mvccpb.DELETE:
-				callbackEvent.Type = config.EventTypeDelete
-			}
-			if s.cb != nil {
-				s.cb(callbackEvent)
+				s.cb(&config.Event{
+					Type: config.EventTypeDelete,
+					Key:  key,
+					Value: &config.Value{
+						Sourcer:  s,
+						Ref:      ref,
+						Priority: priority,
+					},
+				})
 			}
 		}
 	}
 }
 
-// /{app}/configs/global/
+// /{app}/configs/
+// /{app}/configs/{env}/
+//
 // /{app}/configs/service/{service}/
 // /{app}/configs/service/{service}/{region}/
 // /{app}/configs/service/{service}/{region}/{az}/
-// /{app}/configs/service/{env}/{service}/
-// /{app}/configs/service/{env}/{service}/{region}/
-// /{app}/configs/service/{env}/{service}/{region}/{az}/
+
+// /{app}/configs/{env}/service/{service}/
+// /{app}/configs/{env}/service/{service}/{region}/
+// /{app}/configs/{env}/service/{service}/{region}/{az}/
+//
 // /{app}/configs/runtime/{instance.ID}/
+// 以文件名后缀结尾的展开
 func (s *Etcd) prefixs() []string {
 	return []string{
-		s.globalPrefix(),
-		strings.Join([]string{s.prefix(), s.app.Instance.Name, ""}, s.conf.Delimiter),
-		strings.Join([]string{s.prefix(), s.app.Instance.Name, s.app.Region, ""}, s.conf.Delimiter),
-		strings.Join([]string{s.prefix(), s.app.Instance.Name, s.app.Region, s.app.AZ, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), s.app.Environment, ""}, s.conf.Delimiter),
 
-		strings.Join([]string{s.prefix(), s.app.Environment, s.app.Instance.Name, ""}, s.conf.Delimiter),
-		strings.Join([]string{s.prefix(), s.app.Environment, s.app.Instance.Name, s.app.Region, ""}, s.conf.Delimiter),
-		strings.Join([]string{s.prefix(), s.app.Environment, s.app.Instance.Name, s.app.Region, s.app.AZ, ""}, s.conf.Delimiter),
-		s.runtimePrefix(),
+		strings.Join([]string{s.prefix(), "service", s.app.Instance.Name, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), "service", s.app.Instance.Name, s.app.Region, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), "service", s.app.Instance.Name, s.app.Region, s.app.AZ, ""}, s.conf.Delimiter),
+
+		strings.Join([]string{s.prefix(), s.app.Environment, "service", s.app.Instance.Name, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), s.app.Environment, "service", s.app.Instance.Name, s.app.Region, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), s.app.Environment, "service", s.app.Instance.Name, s.app.Region, s.app.AZ, ""}, s.conf.Delimiter),
+
+		strings.Join([]string{s.prefix(), "runtime", s.app.Instance.ID, ""}, s.conf.Delimiter),
 	}
 }
 
 func (s *Etcd) prefix() string {
 	return strings.Join([]string{"", s.app.App, "configs"}, s.conf.Delimiter)
-}
-
-func (s *Etcd) runtimePrefix() string {
-	return strings.Join([]string{s.prefix(), "runtime", s.app.Instance.ID, ""}, s.conf.Delimiter)
-}
-
-func (s *Etcd) globalPrefix() string {
-	return strings.Join([]string{s.prefix(), "global", ""}, s.conf.Delimiter)
 }
 
 func (s *Etcd) configKey(prefix string, key []byte) string {

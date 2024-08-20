@@ -82,10 +82,7 @@ func New() (*Etcd, error) {
 		}
 		newEtcd = etcdRegistry
 	})
-	if err != nil {
-		return nil, err
-	}
-	return newEtcd, nil
+	return newEtcd, err
 }
 
 // GetAll 获取服务实例
@@ -244,5 +241,5 @@ func (e *Etcd) registerKey(instance *server.Service) string {
 }
 
 func (e *Etcd) prefix() string {
-	return "/" + runtime.GetAPP().App + "/instances"
+	return "/" + runtime.GetAPP().App + "/instances/" + runtime.GetAPP().Environment
 }

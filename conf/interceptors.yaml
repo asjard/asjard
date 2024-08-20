@@ -31,18 +31,33 @@ asjard:
           - x-request-id
           - x-request-az
           - x-forward-for
-    ## 服务端拦截器
+
     server:
-      ## 拦截器名称
-      ## accessLog拦截器相关配置
-      accessLog:
-        ## 拦截器相关配置
-        ## 配置格式: [protocol://]{fullMethod}
-        ## 例如grpc协议的某个方法: grpc:///api.v1.hello.Hello/Call
-        ## 或者协议无关的某个方法: /api.v1.hello.Hello/Call
-        ## 拦截协议的所有方法: grpc
-        skipMethods:
-          ## - "grpc://api.v1.hello.Hello.Call"
-          ## - "api.v1.hello.Hello.Call"
-          - "grpc"
-          - "rest:///asjard.api.health.Health/Check"
+      ## 限速器配置
+      rateLimiter:
+        enabled: false
+        ## 每秒最多多少个请求
+        limit: -1
+        ## 桶容量大小,小于0则为limit值
+        burst: -1
+        ## 单独方法的限速配置
+        methods:
+          ## 方法名称
+          ## [{protocol}://]{method}
+          ## 所有协议健康检查限速每秒10个请求
+          - name: /asjard.api.health.Health/Check
+            limit: 10
+            burst: 10
+          ## grpc协议的/api.v1.server.Server/Hello限速每秒20个请求
+          - name: grpc:///api.v1.server.Server/Hello
+            limit: 20
+            burst: 20
+      ## redis实现的ratelimiter
+      redisRateLimiter:
+        enabled: true
+        limit: -1
+        burst: -1
+        methods:
+          - name: /asjard.api.health.Health/Check
+            limit: 10
+            burst: 10

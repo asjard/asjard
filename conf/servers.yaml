@@ -67,6 +67,7 @@ asjard:
     ## rest(HTTP)协议相关配置
     rest:
       ## 同grpc拦截器相关配置
+      ## 可配置accessLog,i18n,metrics,ratelimit,restResponseHeader,restReadEntity,trace
       interceptors: "accessLog,restReadEntity,restResponseHeader"
       ## 同grpc相关配置
       enabled: true
@@ -81,6 +82,8 @@ asjard:
         errPage: ""
       ## 是否开启openapi
       openapi:
+        enabled: false
+      i18n:
         enabled: false
       ## 同grpc相关配置
       addresses:

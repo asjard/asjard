@@ -42,8 +42,6 @@ func AddBootstrap(handler BootstrapHandler) {
 
 // Start 系统启动
 func Start() error {
-	// logger.Debug("bootstrap Start")
-	// defer logger.Debug("bootstrap Done")
 	for _, handler := range bootstrapHandlers {
 		if err := handler.Bootstrap(); err != nil {
 			return err

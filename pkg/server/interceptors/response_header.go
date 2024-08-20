@@ -10,8 +10,6 @@ import (
 )
 
 const (
-	// HeaderResponseRequestMethod 请求方法返回头
-	HeaderResponseRequestMethod       = "x-request-method"
 	RestResponseHeaderInterceptorName = "restResponseHeader"
 )
 
@@ -39,7 +37,7 @@ func (ResponseHeader) Interceptor() server.UnaryServerInterceptor {
 		rtx, ok := ctx.(*rest.Context)
 		if ok {
 			if info != nil {
-				rtx.Response.Header.Add(HeaderResponseRequestMethod, info.FullMethod)
+				rtx.Response.Header.Add(rest.HeaderResponseRequestMethod, info.FullMethod)
 			}
 		} else {
 			logger.Error("readEntity ctx must be *rest.Context", "current", fmt.Sprintf("%T", ctx))

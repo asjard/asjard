@@ -7,7 +7,6 @@ import (
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/stretchr/testify/assert"
-	"go.etcd.io/etcd/client/v3/mock/mockserver"
 )
 
 const (
@@ -24,8 +23,8 @@ type testSource struct {
 func newTestSource() (config.Sourcer, error) {
 	return &testSource{
 		configs: map[string]any{
-			"asjard.stores.etcd.clients.default.endpoints": "localhost:0",
-			"asjard.stores.etcd.clients.another.endpoints": "localhost:1",
+			"asjard.stores.etcd.clients.default.endpoints": "127.0.0.1:2379",
+			"asjard.stores.etcd.clients.another.endpoints": "127.0.0.1:2379",
 			"asjard.config.setDefaultSource":               testSourceName,
 		},
 	}, nil
@@ -85,7 +84,6 @@ func initTestConfig() {
 
 func TestMain(m *testing.M) {
 	initTestConfig()
-	mockserver.StartMockServers(1)
 	if err := clientManager.Start(); err != nil {
 		panic(err)
 	}
@@ -108,7 +106,7 @@ func TestNewClients(t *testing.T) {
 	})
 
 	t.Run("new", func(t *testing.T) {
-		config.Set("asjard.stores.etcd.clients.new.endpoints", "localhost:2")
+		config.Set("asjard.stores.etcd.clients.new.endpoints", "127.0.0.1:2379")
 		time.Sleep(200 * time.Millisecond)
 		_, err := Client(WithClientName("new"))
 		if err != nil {

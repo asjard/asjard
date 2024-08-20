@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asjard/asjard/utils/cast"
+	"github.com/spf13/cast"
 )
 
 /*

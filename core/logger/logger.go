@@ -37,7 +37,7 @@ var DefaultConfig = &Config{
 	MaxAge:     0,
 	MaxBackups: 10,
 	Compress:   true,
-	Level:      DEBUG.String(),
+	Level:      INFO.String(),
 	Format:     Json.String(),
 }
 
@@ -91,10 +91,6 @@ func (dl Logger) Error(msg string, v ...any) {
 	dl.log(slog.LevelError, msg, v...)
 }
 
-func Info(format string, kv ...any) {
-	L.Info(format, kv...)
-}
-
 func (dl Logger) log(level slog.Level, msg string, args ...any) {
 	_, f, l, ok := runtime.Caller(3)
 	if !ok {
@@ -107,6 +103,10 @@ func (dl Logger) log(level slog.Level, msg string, args ...any) {
 	}
 	args = append(args, []any{"source", f + ":" + strconv.Itoa(l)}...)
 	dl.slogger.Log(context.Background(), level, msg, args...)
+}
+
+func Info(format string, kv ...any) {
+	L.Info(format, kv...)
 }
 
 func Debug(format string, kv ...any) {

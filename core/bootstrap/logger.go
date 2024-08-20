@@ -4,7 +4,6 @@ import (
 	"log/slog"
 
 	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 )
 
@@ -18,7 +17,7 @@ func init() {
 // Bootstrap 监听日志变化
 func (l Logger) Bootstrap() error {
 	l.update()
-	config.AddPatternListener(constant.ConfigLoggerPrefix+".*", func(*config.Event) {
+	config.AddPrefixListener("asjard.logger", func(*config.Event) {
 		l.update()
 	})
 	return nil
@@ -26,7 +25,7 @@ func (l Logger) Bootstrap() error {
 
 func (l Logger) update() {
 	conf := logger.DefaultConfig
-	config.GetWithUnmarshal(constant.ConfigLoggerPrefix, &conf)
+	config.GetWithUnmarshal("asjard.logger", &conf)
 	logger.SetLoggerHandler(func() slog.Handler {
 		return logger.NewSlogHandler(conf)
 	})

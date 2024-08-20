@@ -35,9 +35,6 @@ func (l *Listener) watch(key string, opt *watchOptions) {
 	if opt == nil || opt.callback == nil {
 		return
 	}
-	// if opt.f != nil {
-
-	// }
 	// 正则匹配
 	if opt.pattern != "" {
 		l.mm.Lock()

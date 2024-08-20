@@ -1,6 +1,7 @@
 package xetcd
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/initator"
@@ -75,9 +77,9 @@ var (
 	clientManager  *ClientManager
 	defaultOptions = Options{
 		AutoSyncInterval:     utils.JSONDuration{},
-		DialTimeout:          utils.JSONDuration{},
-		DialKeepAliveTime:    utils.JSONDuration{},
-		DialKeepAliveTimeout: utils.JSONDuration{},
+		DialTimeout:          utils.JSONDuration{Duration: 3 * time.Second},
+		DialKeepAliveTime:    utils.JSONDuration{Duration: 3 * time.Second},
+		DialKeepAliveTimeout: utils.JSONDuration{Duration: 5 * time.Second},
 		MaxCallSendMsgSize:   2 * 1024 * 1024,
 		MaxCallRecvMsgSize:   math.MaxInt32,
 	}
@@ -140,6 +142,7 @@ func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 		if err := m.newClient(name, cfg); err != nil {
 			return err
 		}
+		logger.Debug("connect to etcd success", "name", name)
 	}
 	return nil
 }
@@ -189,6 +192,14 @@ func (m *ClientManager) newClient(name string, cfg *ClientConnConfig) error {
 	client, err := clientv3.New(clientConfig)
 	if err != nil {
 		return err
+	}
+	for _, endpoint := range cfg.Endpoints {
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.Options.DialTimeout.Duration)
+		_, err = client.Status(ctx, endpoint)
+		cancel()
+		if err != nil {
+			return err
+		}
 	}
 	m.clients.Store(name, &ClientConn{
 		name:   name,
