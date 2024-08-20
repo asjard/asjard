@@ -2,90 +2,6 @@
 
 Asjard是一个用[Go](https://go.dev/)语言实现的由[protobuf](https://protobuf.dev/)和配置驱动的微服务框架
 
-### 特性
-
-- [x] 多服务端/客户端协议
-
-  - 服务端
-    - [x] [grpc](docs/user-guide/server-grpc.md)
-    - [x] [http](docs/user-guide/server-rest.md)
-    - [x] [pprof](docs/user-guide/server-pprof.md)
-  - 客户端
-    - [x] [grpc](docs/user-guide/client-grpc.md)
-
-- [x] [多配置源](docs/user-guide/config.md),异步实时生效
-
-  - [x] [环境变量](docs/user-guide/config-env.md)
-  - [x] [文件](docs/user-guide/config-file.md)
-  - [x] [内存](docs/user-guide/config-mem.md)
-  - [x] [etcd](docs/user-guide/config-etcd.md)
-  - [x] [consul](docs/user-guide/config-consul.md)
-
-- [x] [自动服务注册/发现](docs/user-guide/registry.md)
-
-  - 发现
-    - [x] 本地配置文件服务发现
-    - [x] etcd
-    - [x] consul
-  - 注册
-    - [x] etcd
-    - [x] consul
-
-- [x] 统一日志处理
-
-  - [x] mysql慢日志
-  - [x] accesslog
-
-- [x] [统一的错误处理](docs/user-guide/error.md)
-
-- [x] 拦截器
-
-  - [服务端](docs/user-guide/server-interceptor.md)
-
-    - [x] i18n
-    - [x] accessLog
-    - [x] metrics
-    - [x] trace
-    - [ ] 限速
-
-  - [客户端](docs/user-guide/client-interceptor.md)
-    - [x] 熔断降级
-    - [x] 循环调用拦截
-    - [ ] 限速
-    - [x] http转grpc
-
-- [x] [监控](docs/user-guide/metrics.md)
-
-  - [x] go_collector
-  - [x] process_collector
-  - [x] mysql
-  - [x] api_requests_total
-  - [x] api_requests_latency_seconds
-  - [x] api_requests_size_bytes
-  - [x] api_response_size_bytes
-
-- [x] [protobuf自动生成代码](docs/user-guide/protobuf.md)
-
-  - [x] rest route
-  - [x] openapi
-  - [x] gateway
-  - [x] rest转grpc
-  - [ ] ts
-
-- [x] [数据库](docs/user-guide/database.md)
-
-  - [x] mysql
-  - [x] etcd
-  - [x] redis
-  - [ ] mongo
-
-- [x] [多级缓存](docs/user-guide/cache.md)
-
-  - [x] redis缓存
-  - [x] 本地缓存
-
-- [x] [安全](docs/user-guide/security.md)
-
 ## 安装
 
 ```bash
@@ -104,8 +20,11 @@ go install github.com/asjard/asjard/cmd/protoc-gen-go-rest2grpc-gw
 ## 快速开始
 
 > 更多示例请参考[asjard-example](https://github.com/asjard/examples)
+> 或者参考[文档](docs/user-guide/overview.md)
 
 ### 编写[proto](docs/user-guide/protobuf.md)协议文件
+
+> protobuf编写规范参考[这里](docs/user-guide/protobuf.md)
 
 ```proto
 syntax = "proto3";
@@ -237,6 +156,90 @@ func main() {
 }
 
 ```
+
+## 特性
+
+- [x] 多服务端/客户端协议
+
+  - 服务端
+    - [x] [grpc](docs/user-guide/server-grpc.md)
+    - [x] [http](docs/user-guide/server-rest.md)
+    - [x] [pprof](docs/user-guide/server-pprof.md)
+  - 客户端
+    - [x] [grpc](docs/user-guide/client-grpc.md)
+
+- [x] [多配置源](docs/user-guide/config.md),异步实时生效
+
+  - [x] [环境变量](docs/user-guide/config-env.md)
+  - [x] [文件](docs/user-guide/config-file.md)
+  - [x] [内存](docs/user-guide/config-mem.md)
+  - [x] [etcd](docs/user-guide/config-etcd.md)
+  - [x] [consul](docs/user-guide/config-consul.md)
+
+- [x] [自动服务注册/发现](docs/user-guide/registry.md)
+
+  - 发现
+    - [x] 本地配置文件服务发现
+    - [x] etcd
+    - [x] consul
+  - 注册
+    - [x] etcd
+    - [x] consul
+
+- [x] 统一日志处理
+
+  - [x] mysql慢日志
+  - [x] accesslog
+
+- [x] [统一的错误处理](docs/user-guide/error.md)
+
+- [x] 拦截器
+
+  - [服务端](docs/user-guide/server-interceptor.md)
+
+    - [x] i18n
+    - [x] accessLog
+    - [x] metrics
+    - [x] trace
+    - [ ] 限速
+
+  - [客户端](docs/user-guide/client-interceptor.md)
+    - [x] 熔断降级
+    - [x] 循环调用拦截
+    - [ ] 限速
+    - [x] http转grpc
+
+- [x] [监控](docs/user-guide/metrics.md)
+
+  - [x] go_collector
+  - [x] process_collector
+  - [x] mysql
+  - [x] api_requests_total
+  - [x] api_requests_latency_seconds
+  - [x] api_requests_size_bytes
+  - [x] api_response_size_bytes
+
+- [x] [protobuf自动生成代码](docs/user-guide/protobuf.md)
+
+  - [x] rest route
+  - [x] openapi
+  - [x] gateway
+  - [x] rest转grpc
+  - [ ] ts
+
+- [x] [数据库](docs/user-guide/database.md)
+
+  - [x] mysql
+  - [x] etcd
+  - [x] redis
+  - [ ] mongo
+
+- [x] [多级缓存](docs/user-guide/cache.md)
+
+  - [x] redis缓存
+  - [x] 本地缓存
+
+- [x] [安全](docs/user-guide/security.md)
 
 ## 三方库
 
