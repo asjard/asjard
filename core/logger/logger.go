@@ -37,7 +37,7 @@ var DefaultConfig = &Config{
 	MaxAge:     0,
 	MaxBackups: 10,
 	Compress:   true,
-	Level:      DEBUG.String(),
+	Level:      INFO.String(),
 	Format:     Json.String(),
 }
 

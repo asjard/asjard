@@ -226,14 +226,16 @@ func (asd *Asjard) startServers() error {
 		}
 
 		// 补全服务实例详情
-		if err := svc.AddEndpoint(sv.Protocol(), sv.ListenAddresses()); err != nil {
+		listenAddresses := sv.ListenAddresses()
+		if err := svc.AddEndpoint(sv.Protocol(), listenAddresses); err != nil {
 			return fmt.Errorf("server '%s' add endpoint fail[%s]", sv.Protocol(), err.Error())
 		}
 		// 启动服务
 		if err := sv.Start(asd.startErr); err != nil {
 			return fmt.Errorf("start server '%s' fail[%s]", sv.Protocol(), err.Error())
 		}
-		asd.startedServers = append(asd.startedServers, sv.Protocol())
+		asd.startedServers = append(asd.startedServers,
+			sv.Protocol()+":"+strings.Join([]string{listenAddresses.Listen, listenAddresses.Advertise}, ","))
 		logger.Debug("server started",
 			"protocol", sv.Protocol())
 	}
@@ -274,6 +276,6 @@ func (asd *Asjard) printBanner() {
 		app.Instance.Name,
 		app.Instance.Version,
 		app.Website,
-		strings.Join(asd.startedServers, ","),
+		strings.Join(asd.startedServers, ";"),
 		utils.GetConfDir())
 }
