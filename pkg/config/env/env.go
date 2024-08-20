@@ -57,7 +57,7 @@ func (s *Env) Set(key string, value any) error {
 	}
 	s.cb(&config.Event{
 		Type: config.EventTypeCreate,
-		Key:  envKey,
+		Key:  key,
 		Value: &config.Value{
 			Sourcer: s,
 			Value:   value,
