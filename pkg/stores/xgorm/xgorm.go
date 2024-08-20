@@ -34,8 +34,6 @@ const (
 // DBManager 数据连接维护
 type DBManager struct {
 	dbs sync.Map
-
-	// lg gormLogger.Interface
 }
 
 // DBConn 数据库连接
@@ -131,7 +129,7 @@ func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 	return db.db.WithContext(ctx), nil
 }
 
-// Start 连接到数据库
+// Bootstrap 连接到数据库
 func (m *DBManager) Bootstrap() error {
 	logger.Debug("store gorm start")
 	conf, err := m.loadAndWatchConfig()
@@ -141,7 +139,7 @@ func (m *DBManager) Bootstrap() error {
 	return m.connDBs(conf)
 }
 
-// Stop 和数据库断开连接
+// Shutdown 和数据库断开连接
 func (m *DBManager) Shutdown() {
 	m.dbs.Range(func(key, value any) bool {
 		conn, ok := value.(*DBConn)

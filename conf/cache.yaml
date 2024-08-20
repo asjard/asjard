@@ -15,6 +15,7 @@ asjard:
         enabled: true
         autoRefresh: true
     ## redis缓存相关配置
+    ## 如果不配置则继承asjard.cache
     redis:
       ## redis客户端
       client: default
@@ -27,8 +28,11 @@ asjard:
         modelName:
           enabled: true
     ## 本地缓存相关配置
+    ## 除redisClient字段其他字段如果不配置则继承asjard.cache
     local:
       ## 是否开启本地缓存
+      ## 如果不配置则继承asjard.cache.enabled
+      ## 除redisClient字段外其他同理
       enabled: true
       ## 过期时间
       expiresIn: 5m

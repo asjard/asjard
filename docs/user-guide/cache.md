@@ -4,6 +4,8 @@
 
 ## 全局配置
 
+> 其他自定义缓存如果没有配置如下字段，则继承全局配置
+
 ```yaml
 asjard:
   cache:
@@ -23,155 +25,34 @@ asjard:
         expiresIn: 5m
 ```
 
-## 本地缓存
+## 自定义缓存
 
-### 配置
-
-> 比全局配置多`publishClient`redis广播客户端配置,移除`autoRefresh`, 本地缓存不自动刷新过期时间，过期强制删除
-
-```yaml
-asjard:
-  cache:
-    ## 本地缓存相关配置
-    local:
-      ## 是否开启本地缓存
-      enabled: true
-      ## 过期时间
-      expiresIn: 5m
-      ## 最大占用空间,单位MB
-      maxSize: 102400
-      ## 多个实例时删除缓存广播redis客户端
-      publishClient: default
-      models:
-        modelName:
-          enabled: true
-        ## testNoCache表不开启缓存
-        testNoCache:
-          enabled: false
-```
-
-### 使用
+实现如下方法
 
 ```go
-import "github.com/asjard/asjard/pkg/database/cache"
+// Cacher 缓存需要实现的方法
+type Cacher interface {
+	// 从缓存获取数据
+	// fromCurrent 获取到的数据是从当前缓存中获取到的
+	Get(ctx context.Context, key string, out any) (fromCurrent bool, err error)
+	// 从缓存删除数据
+	Del(ctx context.Context, keys ...string) error
+	// 设置缓存数据
+	Set(ctx context.Context, key string, in any, expiresIn time.Duration) error
+	// 刷新缓存过期时间
+	Refresh(ctx context.Context, key string, in any, expiresIn time.Duration) error
+	// 返回缓存Key名称
+	Key() string
 
-type ExampleTable struct {
-	Id        int64  `gorm:"column:id;type:INT(20);primaryKey;autoIncrement"`
-	Name      string `gorm:"column:name;type:VARCHAR(20);uniqueIndex"`
-	Age       uint32 `gorm:"column:age;type:INT"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
-type ExampleModel struct {
-	database.Model
-	*ExampleTable
-	localCache *cache.CacheLocal
-}
-
-// TableName 数据库表名
-func (ExampleTable) TableName() string {
-	return "example_table"
-}
-
-// ModelName 全局唯一的表明
-func (ExampleTable) ModelName() string {
-	return "example_database_example_table"
-}
-
-// Bootstrap 缓存初始化
-func (model *ExampleModel) Bootstrap() (err error) {
-	// 本地缓存初始化
-	model.localCache, err = cache.NewLocalCache(model.ExampleTable)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (model *ExampleModel) Search(ctx context.Context, in *pb.SearchReq) (*pb.ExampleList, error) {
-	var result pb.ExampleList
-	if err := model.GetData(ctx, &result,
-		// 通过本地缓存获取数据
-		model.localCache.WithKey(model.searchCacheKey(in)),
-		func() (any, error) {
-			return model.ExampleTable.Search(ctx, in)
-		}); err != nil {
-		return nil, err
-	}
-	return &result, nil
+	// 是否开启了缓存
+	Enabled() bool
+	// 是否自动刷新缓存
+	AutoRefresh() bool
+	// 过期时间
+	ExpiresIn() time.Duration
+	// 空值过期时间
+	EmptyExpiresIn() time.Duration
 }
 ```
 
-## Redis缓存
-
-### 配置
-
-> 比全局配置多`client`redis客户端配置
-
-```yaml
-asjard:
-  cache:
-    ## redis缓存相关配置
-    redis:
-      ## redis客户端
-      client: default
-      # 是否自动刷新
-      autoRefresh: true
-      # 过期时间
-      expiresIn: 5m
-      # 是否开启某个表的缓存
-      models:
-        modelName:
-          enabled: true
-```
-
-### 使用
-
-```go
-
-// Bootstrap 缓存初始化
-func (model *ExampleModel) Bootstrap() (err error) {
-	localCache, err := cache.NewLocalCache(model.ExampleTable)
-	if err != nil {
-		return err
-	}
-	// redis缓存初始化, 本地缓存作为redis缓存的数据源
-	// 现获取本地缓存，如果不存在再获取redis缓存，都获取不到获取再去数据库获取
-	model.kvCache, err = redis.NewKeyValueCache(model.ExampleTable,
-		redis.WithLocalCache(localCache))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (model *ExampleModel) Update(ctx context.Context, in *pb.CreateOrUpdateReq) (*pb.ExampleInfo, error) {
-	if err := model.SetData(ctx,
-		// 删除缓存key，及分组下的所有缓存key
-		model.kvCache.WithGroup(model.searchGroup()).WithKey(model.getCacheKey(in.Name)),
-		func() error {
-			if _, err := model.ExampleTable.Update(ctx, in); err != nil {
-				return err
-			}
-			return nil
-		}); err != nil {
-		return nil, err
-	}
-	return model.Get(ctx, &pb.ReqWithName{Name: in.Name})
-}
-
-func (model *ExampleModel) Search(ctx context.Context, in *pb.SearchReq) (*pb.ExampleList, error) {
-	var result pb.ExampleList
-	if err := model.GetData(ctx, &result,
-		// 通过redis缓存获取
-		// 并将缓存key添加到一个分组中
-		model.kvCache.WithKey(model.searchCacheKey(in)).WithGroup(model.searchGroup()),
-		func() (any, error) {
-			return model.ExampleTable.Search(ctx, in)
-		}); err != nil {
-		return nil, err
-	}
-	return &result, nil
-}
-```
+具体实现可参考[https://github.com/asjard/asjard/blob/develop/pkg/cache/cache_redis.go](https://github.com/asjard/asjard/blob/develop/pkg/cache/cache_redis.go)redis缓存的实现

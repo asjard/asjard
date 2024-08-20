@@ -4,6 +4,7 @@ package initator
 type Initator interface {
 	// 启动
 	Start() error
+	// 停止
 	Stop()
 }
 

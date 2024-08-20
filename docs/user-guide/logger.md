@@ -1,3 +1,6 @@
+## 配置
+
+```yaml
 asjard:
   ## 日志相关配置
   logger:
@@ -29,7 +32,6 @@ asjard:
       level: DEBUG
       format: text
       filePath: /dev/stdout
-      ## 比公共配置多这两个字段
       ignoreRecordNotFoundError: false
       slowThreshold: 200ms
     ## 横幅，修改后需重新启动
@@ -37,3 +39,4 @@ asjard:
     banner:
       ## 是否打印横幅
       enabled: true
+```

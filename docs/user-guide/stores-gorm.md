@@ -1,3 +1,6 @@
+## 配置
+
+```yaml
 asjard:
   ## 数据相关配置
   stores:
@@ -21,34 +24,20 @@ asjard:
         # connMaxIdleTime: 10
         # connMaxLifeTime: 2h
         debug: false
+```
 
-    etcd:
-      clients:
-        default:
-          endpoints:
-            - 127.0.0.1:2379
-        config:
-          endpoints: 127.0.0.1:2379,127.0.0.1:2380
-        registry:
-          endpoints: 127.0.0.1:3379,127.0.0.1:3380
-          options:
-            dialTimeout: 5s
-      options:
-        dialTimeout: 5s
+## 使用
 
-    redis:
-      clients:
-        default:
-          host: 127.0.0.1
-          port: 6379
-          db: 0
-          auth: xxx
-    mongo:
-      dbs:
-        default:
-          hosts:
-            - "127.0.0.1:2370"
-    consul:
-      clients:
-        default:
-          address: 127.0.0.1:8500
+```go
+import "github.com/asjard/asjard/pkg/stores/xgorm"
+
+// 使用默认客户端
+db, err := xgorm.DB(context.Background())
+if err != nil {
+	return err
+}
+
+// 自定义客户端
+// 前提是你需要配置asjrd.stores.gorm.dbs.xxx
+db, err := xgorm.DB(context.Background(), xgorm.WithConnName("xxx"))
+```
