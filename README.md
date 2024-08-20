@@ -104,6 +104,7 @@ go install github.com/asjard/asjard/cmd/protoc-gen-go-rest2grpc-gw
 ## 快速开始
 
 > 更多示例请参考[asjard-example](https://github.com/asjard/examples)
+> 或者参考[文档](docs/user-guide/overview.md)
 
 ### 编写[proto](docs/user-guide/protobuf.md)协议文件
 
