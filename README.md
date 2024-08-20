@@ -24,6 +24,8 @@ go install github.com/asjard/asjard/cmd/protoc-gen-go-rest2grpc-gw
 
 ### 编写[proto](docs/user-guide/protobuf.md)协议文件
 
+> protobuf编写规范参考[这里](docs/user-guide/protobuf.md)
+
 ```proto
 syntax = "proto3";
 
