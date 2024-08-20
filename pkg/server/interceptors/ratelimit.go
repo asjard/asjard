@@ -25,10 +25,13 @@ const (
 type RateLimiter struct {
 	limiters map[string]*rate.Limiter
 	lm       sync.RWMutex
+
+	conf *RateLimiterConfig
 }
 
 // RateLimiterConfig 限速器配置
 type RateLimiterConfig struct {
+	Enabled bool `json:"enabled"`
 	// 每秒生成多少个Token
 	Limit int `json:"limit"`
 	// 桶大小
@@ -43,8 +46,9 @@ type MethodRateLimiterConfig struct {
 
 var (
 	defaultRateLimiteConfig = RateLimiterConfig{
-		Limit: -1,
-		Burst: -1,
+		Enabled: false,
+		Limit:   -1,
+		Burst:   -1,
 	}
 )
 
@@ -66,6 +70,9 @@ func NewRateLimiterInterceptor() (server.ServerInterceptor, error) {
 // Interceptor 拦截器实现
 func (rl *RateLimiter) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
+		if !rl.conf.Enabled {
+			return handler(ctx, req)
+		}
 		limiter := rl.getLimiter(info.Protocol, info.FullMethod)
 		logger.Debug("start ratelimiter interceptor", "protocol", info.Protocol, "limit", limiter.Limit(), "burst", limiter.Burst())
 		if limiter.Allow() {
@@ -95,6 +102,7 @@ func (rl *RateLimiter) load() error {
 	}
 	rl.setLimiters(&conf)
 	rl.cleanLimiters(&conf)
+	rl.conf = &conf
 	return nil
 }
 

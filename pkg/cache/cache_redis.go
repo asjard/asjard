@@ -1,4 +1,4 @@
-package xredis
+package cache
 
 import (
 	"context"
@@ -10,36 +10,37 @@ import (
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/pkg/stores"
+	"github.com/asjard/asjard/pkg/stores/xredis"
 	"github.com/redis/go-redis/v9"
 )
 
 // CacheType 缓存类型
-type CacheType uint
+type CacheRedisType uint
 
 const (
-	// CacheTypeKeyValue key-value缓存
-	CacheTypeKeyValue CacheType = iota
-	// CacheTypeHash hash缓存
-	CacheTypeHash
-	// CacheTypeSet 集合缓存
-	CacheTypeSet
+	// CacheRedisTypeKeyValue key-value缓存
+	CacheRedisTypeKeyValue CacheRedisType = iota
+	// CacheRedisTypeHash hash缓存
+	CacheRedisTypeHash
+	// CacheRedisTypeSet 集合缓存
+	CacheRedisTypeSet
 )
 
 var cacheTypeNames = []string{
-	CacheTypeKeyValue: "KV",
-	CacheTypeHash:     "Hash",
-	CacheTypeSet:      "Set",
+	CacheRedisTypeKeyValue: "KV",
+	CacheRedisTypeHash:     "Hash",
+	CacheRedisTypeSet:      "Set",
 }
 
-func (c CacheType) String() string {
+func (c CacheRedisType) String() string {
 	if uint(c) < uint(len(cacheTypeNames)) {
 		return cacheTypeNames[uint(c)]
 	}
 	return "Type:" + strconv.Itoa(int(c))
 }
 
-// RedisCache redis缓存
-type Cache struct {
+// CacheRedis redis缓存
+type CacheRedis struct {
 	*stores.Cache
 
 	// 缓存key
@@ -47,77 +48,77 @@ type Cache struct {
 	// hash中的field， set中的member
 	field string
 	// 缓存类型
-	tp     CacheType
+	tp     CacheRedisType
 	groups []string
 
 	modelName string
 	client    *redis.Client
-	options   *CacheOptions
+	options   *CacheRedisOptions
 }
 
-// CacheOptions 初始化redis缓存的一些参数
-type CacheOptions struct {
+// CacheRedisOptions 初始化redis缓存的一些参数
+type CacheRedisOptions struct {
 	localCache stores.Cacher
 }
 
-// CacheConfig 缓存配置
-type CacheConfig struct {
+// CacheRedisConfig 缓存配置
+type CacheRedisConfig struct {
 	stores.CacheConfig
 	Client string `json:"client"`
 }
 
-type CacheOption func(options *CacheOptions)
+type CacheRedisOption func(options *CacheRedisOptions)
 
 var (
-	_ stores.Cacher = &Cache{}
+	_ stores.Cacher = &CacheRedis{}
 	// 默认缓存配置
-	defaultCacheConfig = CacheConfig{
+	defaultCacheRedisConfig = CacheRedisConfig{
 		CacheConfig: stores.DefaultCacheConfig,
-		Client:      DefaultClientName,
+		Client:      xredis.DefaultClientName,
 	}
 )
 
 // NewKeyValueCache key/value缓存初始化
-func NewKeyValueCache(model stores.Modeler, options ...CacheOption) (*Cache, error) {
-	newCache, err := NewCache(model, options...)
+func NewRedisKeyValueCache(model stores.Modeler, options ...CacheRedisOption) (*CacheRedis, error) {
+	newCache, err := NewRedisCache(model, options...)
 	if err != nil {
 		return nil, err
 	}
-	return newCache.WithType(CacheTypeKeyValue), nil
+	return newCache.WithType(CacheRedisTypeKeyValue), nil
 }
 
 // NewHashCache hash缓存
-func NewHashCache(model stores.Modeler, options ...CacheOption) (*Cache, error) {
-	newCache, err := NewCache(model, options...)
+func NewRedisHashCache(model stores.Modeler, options ...CacheRedisOption) (*CacheRedis, error) {
+	newCache, err := NewRedisCache(model, options...)
 	if err != nil {
 		return nil, err
 	}
-	return newCache.WithType(CacheTypeHash), nil
+	return newCache.WithType(CacheRedisTypeHash), nil
 }
 
 // NewSetCache set缓存
-func NewSetCache(model stores.Modeler, options ...CacheOption) (*Cache, error) {
-	newCache, err := NewCache(model, options...)
+func NewRedisSetCache(model stores.Modeler, options ...CacheRedisOption) (*CacheRedis, error) {
+	newCache, err := NewRedisCache(model, options...)
 	if err != nil {
 		return nil, err
 	}
-	return newCache.WithType(CacheTypeSet), nil
+	return newCache.WithType(CacheRedisTypeSet), nil
 }
 
 // WithLocalCache 设置本地缓存
-func WithLocalCache(cache stores.Cacher) CacheOption {
-	return func(options *CacheOptions) {
+func WithLocalCache(cache stores.Cacher) CacheRedisOption {
+	return func(options *CacheRedisOptions) {
 		options.localCache = cache
 	}
 }
 
 // NewCache 缓存初始化
-func NewCache(model stores.Modeler, options ...CacheOption) (*Cache, error) {
-	cacheOptions := &CacheOptions{}
+func NewRedisCache(model stores.Modeler, options ...CacheRedisOption) (*CacheRedis, error) {
+	cacheOptions := &CacheRedisOptions{}
 	for _, opt := range options {
 		opt(cacheOptions)
 	}
-	cache := &Cache{
+	cache := &CacheRedis{
 		Cache:     stores.NewCache(model),
 		modelName: model.ModelName(),
 		options:   cacheOptions,
@@ -126,8 +127,8 @@ func NewCache(model stores.Modeler, options ...CacheOption) (*Cache, error) {
 }
 
 // WithGroup 分组
-func (c *Cache) WithGroup(group string) *Cache {
-	return &Cache{
+func (c *CacheRedis) WithGroup(group string) *CacheRedis {
+	return &CacheRedis{
 		Cache:   c.Cache,
 		key:     c.key,
 		field:   c.field,
@@ -138,8 +139,8 @@ func (c *Cache) WithGroup(group string) *Cache {
 	}
 }
 
-func (c *Cache) WithKey(key string) *Cache {
-	return &Cache{
+func (c *CacheRedis) WithKey(key string) *CacheRedis {
+	return &CacheRedis{
 		Cache:   c.Cache,
 		key:     c.NewKey(key),
 		field:   c.field,
@@ -150,8 +151,8 @@ func (c *Cache) WithKey(key string) *Cache {
 	}
 }
 
-func (c *Cache) WithField(field string) *Cache {
-	return &Cache{
+func (c *CacheRedis) WithField(field string) *CacheRedis {
+	return &CacheRedis{
 		Cache:   c.Cache,
 		key:     c.key,
 		field:   field,
@@ -162,8 +163,8 @@ func (c *Cache) WithField(field string) *Cache {
 	}
 }
 
-func (c *Cache) WithType(tp CacheType) *Cache {
-	return &Cache{
+func (c *CacheRedis) WithType(tp CacheRedisType) *CacheRedis {
+	return &CacheRedis{
 		Cache:   c.Cache,
 		key:     c.key,
 		field:   c.field,
@@ -174,12 +175,12 @@ func (c *Cache) WithType(tp CacheType) *Cache {
 	}
 }
 
-func (c Cache) Get(ctx context.Context, key string, out any) (bool, error) {
+func (c CacheRedis) Get(ctx context.Context, key string, out any) (bool, error) {
 	if key == "" {
 		return true, nil
 	}
 	switch c.tp {
-	case CacheTypeKeyValue:
+	case CacheRedisTypeKeyValue:
 		// 先从本地缓存获取，如果获取到则直接返回
 		if c.options.localCache != nil && c.options.localCache.Enabled() {
 			if _, err := c.options.localCache.Get(ctx, key, out); err == nil {
@@ -193,13 +194,13 @@ func (c Cache) Get(ctx context.Context, key string, out any) (bool, error) {
 			return true, result.Err()
 		}
 		return true, json.Unmarshal([]byte(result.Val()), &out)
-	case CacheTypeHash:
+	case CacheRedisTypeHash:
 		result := c.client.HGet(ctx, key, c.field)
 		if result.Err() != nil {
 			return true, result.Err()
 		}
 		return true, json.Unmarshal([]byte(result.Val()), out)
-	case CacheTypeSet:
+	case CacheRedisTypeSet:
 		result := c.client.SIsMember(ctx, key, c.field)
 		if result.Err() == nil {
 			return true, result.Err()
@@ -210,12 +211,12 @@ func (c Cache) Get(ctx context.Context, key string, out any) (bool, error) {
 	}
 }
 
-func (c Cache) Del(ctx context.Context, keys ...string) error {
+func (c CacheRedis) Del(ctx context.Context, keys ...string) error {
 	if len(keys) == 0 {
 		return nil
 	}
 	switch c.tp {
-	case CacheTypeKeyValue:
+	case CacheRedisTypeKeyValue:
 		if c.options.localCache != nil && c.options.localCache.Enabled() {
 			if err := c.options.localCache.Del(ctx, keys...); err != nil {
 				return err
@@ -224,7 +225,7 @@ func (c Cache) Del(ctx context.Context, keys ...string) error {
 		if err := c.client.Del(ctx, keys...).Err(); err != nil {
 			return err
 		}
-	case CacheTypeHash:
+	case CacheRedisTypeHash:
 		if c.field != "" {
 			for _, key := range keys {
 				if err := c.client.HDel(ctx, key, c.field).Err(); err != nil {
@@ -232,7 +233,7 @@ func (c Cache) Del(ctx context.Context, keys ...string) error {
 				}
 			}
 		}
-	case CacheTypeSet:
+	case CacheRedisTypeSet:
 		if c.field != "" {
 			for _, key := range keys {
 				if err := c.client.SRem(ctx, key, c.field).Err(); err != nil {
@@ -246,12 +247,12 @@ func (c Cache) Del(ctx context.Context, keys ...string) error {
 	return c.delGroup(ctx)
 }
 
-func (c Cache) Set(ctx context.Context, key string, in any, expiresIn time.Duration) error {
+func (c CacheRedis) Set(ctx context.Context, key string, in any, expiresIn time.Duration) error {
 	if key == "" {
 		return nil
 	}
 	switch c.tp {
-	case CacheTypeKeyValue:
+	case CacheRedisTypeKeyValue:
 		if c.options.localCache != nil && c.options.localCache.Enabled() {
 			if err := c.options.localCache.Set(ctx, key, in, expiresIn); err != nil {
 				logger.Error("redis cache set local cache fail", "key", key, "err", err)
@@ -264,7 +265,7 @@ func (c Cache) Set(ctx context.Context, key string, in any, expiresIn time.Durat
 		if err := c.client.Set(ctx, key, string(b), expiresIn).Err(); err != nil {
 			return err
 		}
-	case CacheTypeHash:
+	case CacheRedisTypeHash:
 		if c.field == "" {
 			break
 		}
@@ -273,7 +274,7 @@ func (c Cache) Set(ctx context.Context, key string, in any, expiresIn time.Durat
 		}).Err(); err != nil {
 			return err
 		}
-	case CacheTypeSet:
+	case CacheRedisTypeSet:
 		if c.field == "" {
 			break
 		}
@@ -286,40 +287,40 @@ func (c Cache) Set(ctx context.Context, key string, in any, expiresIn time.Durat
 	return c.addGroup(ctx, key)
 }
 
-func (c Cache) Refresh(ctx context.Context, key string, in any, expiresIn time.Duration) (err error) {
+func (c CacheRedis) Refresh(ctx context.Context, key string, in any, expiresIn time.Duration) (err error) {
 	if key == "" {
 		return nil
 	}
 	switch c.tp {
-	case CacheTypeKeyValue:
+	case CacheRedisTypeKeyValue:
 		if c.options.localCache != nil && c.options.localCache.Enabled() {
 			if err := c.options.localCache.Set(ctx, key, in, expiresIn); err != nil {
 				logger.Error("redis cache refresh local cache fail", "err", err)
 			}
 		}
 		err = c.client.Expire(ctx, key, expiresIn).Err()
-	case CacheTypeHash:
+	case CacheRedisTypeHash:
 		if c.field != "" {
 			err = c.client.HExpire(ctx, key, expiresIn, c.field).Err()
 		}
-	case CacheTypeSet:
+	case CacheRedisTypeSet:
 	default:
 		err = fmt.Errorf("unimplement cache type %d", c.tp)
 	}
 	return
 }
 
-func (c Cache) Key() string {
+func (c CacheRedis) Key() string {
 	return c.key
 }
 
 // 分组
-func (c Cache) Group(group string) string {
+func (c CacheRedis) Group(group string) string {
 	return c.Prefix() + ":groups:" + group
 }
 
 // 添加分组
-func (c Cache) addGroup(ctx context.Context, key string) error {
+func (c CacheRedis) addGroup(ctx context.Context, key string) error {
 	// 添加分组
 	if len(c.groups) != 0 {
 		for _, group := range c.groups {
@@ -333,7 +334,7 @@ func (c Cache) addGroup(ctx context.Context, key string) error {
 }
 
 // 删除分组
-func (c Cache) delGroup(ctx context.Context) error {
+func (c CacheRedis) delGroup(ctx context.Context) error {
 	// 删除分组内的所有缓存
 	if len(c.groups) != 0 {
 		for _, group := range c.groups {
@@ -366,7 +367,7 @@ func (c Cache) delGroup(ctx context.Context) error {
 }
 
 // 加载并监听配置变化
-func (c *Cache) loadAndWatch() (*Cache, error) {
+func (c *CacheRedis) loadAndWatch() (*CacheRedis, error) {
 	if err := c.load(); err != nil {
 		logger.Error("redis cache load config fail", "err", err)
 		return nil, err
@@ -375,8 +376,8 @@ func (c *Cache) loadAndWatch() (*Cache, error) {
 	return c, nil
 }
 
-func (c *Cache) load() error {
-	conf := defaultCacheConfig
+func (c *CacheRedis) load() error {
+	conf := defaultCacheRedisConfig
 	if err := config.GetWithUnmarshal("asjard.cache",
 		&conf,
 		config.WithChain([]string{
@@ -388,7 +389,7 @@ func (c *Cache) load() error {
 	}
 	logger.Debug("load redis cache", "conf", conf)
 	c.Cache.WithConf(&conf.CacheConfig)
-	client, err := Client(WithClientName(conf.Client))
+	client, err := xredis.Client(xredis.WithClientName(conf.Client))
 	if err != nil {
 		return err
 	}
@@ -396,7 +397,7 @@ func (c *Cache) load() error {
 	return nil
 }
 
-func (c *Cache) watch(event *config.Event) {
+func (c *CacheRedis) watch(event *config.Event) {
 	if err := c.load(); err != nil {
 		logger.Error("redis cache watch config fail", "err", err)
 	}

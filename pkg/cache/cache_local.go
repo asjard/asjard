@@ -43,8 +43,8 @@ type CacheLocalConfig struct {
 }
 
 var (
-	_                  stores.Cacher = &CacheLocal{}
-	defaultCacheConfig               = CacheLocalConfig{
+	_                       stores.Cacher = &CacheLocal{}
+	defaultCacheLocalConfig               = CacheLocalConfig{
 		CacheConfig: stores.DefaultCacheConfig,
 		MaxSize:     100 * 1024 * 1024,
 	}
@@ -189,7 +189,7 @@ func (c *CacheLocal) delChannel() string {
 }
 
 func (c *CacheLocal) load() error {
-	conf := defaultCacheConfig
+	conf := defaultCacheLocalConfig
 	if err := config.GetWithUnmarshal("asjard.cache",
 		&conf,
 		config.WithChain([]string{

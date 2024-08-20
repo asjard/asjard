@@ -1,4 +1,4 @@
-package xredis
+package cache
 
 import (
 	"context"
@@ -7,6 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/asjard/asjard/core/bootstrap"
+	"github.com/asjard/asjard/core/config"
+	_ "github.com/asjard/asjard/pkg/config/mem"
+	"github.com/asjard/asjard/pkg/stores/xredis"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,12 +20,24 @@ func (testTable) ModelName() string {
 	return "test_local_cache_model"
 }
 
-func TestCache(t *testing.T) {
-	client, err := Client()
+func TestMain(m *testing.M) {
+	if err := config.Load(-1); err != nil {
+		panic(err)
+	}
+	config.Set("asjard.stores.redis.clients.default.address", "127.0.0.1:6379")
+
+	if err := bootstrap.Start(); err != nil {
+		panic(err)
+	}
+	m.Run()
+}
+
+func TestRedisCache(t *testing.T) {
+	client, err := xredis.Client()
 	assert.Nil(t, err)
 	assert.NotNil(t, client)
 	t.Run("TestKeyValue", func(t *testing.T) {
-		cache, err := NewKeyValueCache(&testTable{})
+		cache, err := NewRedisKeyValueCache(&testTable{})
 		assert.Nil(t, err)
 		testKey := "test_redis_key"
 		testValue := "test_redis_value"

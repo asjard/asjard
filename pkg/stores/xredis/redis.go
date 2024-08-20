@@ -135,13 +135,13 @@ func (m *ClientManager) Shutdown() {
 }
 
 func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
-	logger.Debug("new clients", "conf", clients)
+	logger.Debug("new clients", "clients", clients)
 	for name, conf := range clients {
-		logger.Debug("connect to redis", "name", name, "conf", conf)
 		if err := m.newClient(name, conf); err != nil {
+			logger.Debug("connect to redis fail", "name", name, "conf", conf, "err", err)
 			return err
 		}
-		logger.Debug("connect to redis success", "name", name)
+		logger.Debug("connect to redis success", "name", name, "conf", conf)
 	}
 	return nil
 }

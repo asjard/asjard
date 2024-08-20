@@ -35,6 +35,7 @@ asjard:
     server:
       ## 限速器配置
       rateLimiter:
+        enabled: false
         ## 每秒最多多少个请求
         limit: -1
         ## 桶容量大小,小于0则为limit值
@@ -51,3 +52,12 @@ asjard:
           - name: grpc:///api.v1.server.Server/Hello
             limit: 20
             burst: 20
+      ## redis实现的ratelimiter
+      redisRateLimiter:
+        enabled: true
+        limit: -1
+        burst: -1
+        methods:
+          - name: /asjard.api.health.Health/Check
+            limit: 10
+            burst: 10
