@@ -294,8 +294,14 @@ func (m *ConfigManager) getConfigByChain(keys []string) (value *Value, ok bool) 
 	return
 }
 
+// 获取所有的配置
 func (m *ConfigManager) getConfigs() map[string]*Value {
 	return m.globalCfgs.getAll()
+}
+
+// 根据前缀列表获取配置,获取到的配置key是移除前缀的
+func (m *ConfigManager) getConfigsWithPrefixs(prefixs ...string) map[string]*Value {
+	return m.globalCfgs.getAllWithPrefixs(prefixs...)
 }
 
 func (m *ConfigManager) setConfig(sourceName, key string, value *Value) {
@@ -345,13 +351,8 @@ func (m *ConfigManager) getValueByPrefix(prefix string, opts *Options) map[strin
 		m.listener.watch(prefix, opts.watch)
 	}
 	out := make(map[string]any)
-	configs := m.getConfigs()
-	for _, p := range append([]string{prefix}, opts.keys...) {
-		for key, value := range configs {
-			if strings.HasPrefix(key, p) {
-				out[strings.TrimPrefix(key, p+constant.ConfigDelimiter)] = m.getValueWithOptions(value.Value, opts)
-			}
-		}
+	for key, value := range m.getConfigsWithPrefixs(append([]string{prefix}, opts.keys...)...) {
+		out[key] = m.getValueWithOptions(value.Value, opts)
 	}
 	return out
 }
