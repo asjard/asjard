@@ -128,8 +128,8 @@ func (s *RestServer) AddHandler(handler any) error {
 
 // Start 启动rest服务
 func (s *RestServer) Start(startErr chan error) error {
-	s.router.NotFound = s.newHandler(_ErrorHandler_NotFound_RestHandler, s.errorHandler)
-	s.router.MethodNotAllowed = s.newHandler(_ErrorHandler_MethodNotAllowed_RestHandler, s.errorHandler)
+	s.router.NotFound = s.newHandler(_ErrorHandler_NotFound_RestHandler, s.errorHandler, DefaultWriterName)
+	s.router.MethodNotAllowed = s.newHandler(_ErrorHandler_MethodNotAllowed_RestHandler, s.errorHandler, DefaultWriterName)
 	s.router.PanicHandler = func(ctx *fasthttp.RequestCtx, err any) {
 		logger.Error("request panic",
 			"method", string(ctx.Method()),
@@ -227,19 +227,22 @@ func (s *RestServer) addRouter(handler Handler) error {
 			if !st.Implements(ht) {
 				return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
 			}
-			s.addRouterHandler(method.Method, method, handler)
+			s.addRouterHandler(method.Method, method, handler, method.WriterName)
 		}
 	}
 	return nil
 }
 
-func (s *RestServer) addRouterHandler(method string, methodDesc MethodDesc, svc Handler) {
-	s.router.Handle(method, methodDesc.Path, s.applyMiddleware(s.newHandler(methodDesc.Handler, svc), s.middlewares...))
+func (s *RestServer) addRouterHandler(method string, methodDesc MethodDesc, svc Handler, writerName string) {
+	s.router.Handle(method, methodDesc.Path,
+		s.applyMiddleware(s.newHandler(methodDesc.Handler, svc, writerName),
+			s.middlewares...))
 }
 
-func (s *RestServer) newHandler(methodHandler methodHandler, svc Handler) fasthttp.RequestHandler {
+func (s *RestServer) newHandler(methodHandler methodHandler, svc Handler, writerName string) fasthttp.RequestHandler {
+	writer := GetWriter(writerName)
 	return func(ctx *fasthttp.RequestCtx) {
-		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
+		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage), WithWriter(writer))
 		reply, err := methodHandler(cc, svc, s.interceptor)
 		cc.WriteData(reply, err)
 	}

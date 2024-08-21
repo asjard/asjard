@@ -122,10 +122,10 @@ var ErrorHandlerRestServiceDesc = ServiceDesc{
 }
 
 const (
-	ErrorHandler_NotFound_RestPath         = "/asjard/api/not_found"
 	ErrorHandler_MethodNotAllowed_RestPath = "/asjard/api/method_not_allowed"
 	ErrorHandler_Panic_RestPath            = "/asjard/api/panic"
 	ErrorHandler_Error_RestPath            = "/asjard/api/error"
+	ErrorHandler_NotFound_RestPath         = "/asjard/api/not_found"
 )
 
 var file_rest_errorhandler_proto_openapi = []byte{

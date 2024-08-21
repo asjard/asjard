@@ -168,7 +168,7 @@ func (g *RestGenerator) genServiceDesc(service *protogen.Service, serverType str
 				g.gen.P("{")
 				g.gen.P("MethodName: ", strconv.Quote(string(method.Desc.Name())), ",")
 				g.gen.P("Desc: ", strconv.Quote(string(methodDesc)), ",")
-				fullPath, optionMethod, _ := utils.ParseMethodOption(service, httpOption)
+				fullPath, optionMethod, _, writerName := utils.ParseMethodOption(service, httpOption)
 				fullPathName := fmt.Sprintf("%s_%s_RestPath", service.GoName, method.GoName)
 				if index != 0 {
 					fullPathName += fmt.Sprintf("_%d", index)
@@ -177,6 +177,9 @@ func (g *RestGenerator) genServiceDesc(service *protogen.Service, serverType str
 				g.gen.P("Method:", strconv.Quote(optionMethod), ",")
 				g.gen.P("Path:", fullPathName, ",")
 				g.gen.P("Handler: ", handlerNames[i], ",")
+				if writerName != "" {
+					g.gen.P("WriterName:", strconv.Quote(writerName), ",")
+				}
 				g.gen.P("},")
 			}
 		}

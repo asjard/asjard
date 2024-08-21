@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func ParseMethodOption(service *protogen.Service, httpOption *httppb.Http) (path, method, body string) {
+func ParseMethodOption(service *protogen.Service, httpOption *httppb.Http) (path, method, body, writerName string) {
 	apiGroup := ""
 	apiClassify := ""
 	apiVersion := ""
@@ -18,6 +18,7 @@ func ParseMethodOption(service *protogen.Service, httpOption *httppb.Http) (path
 			apiGroup = serviceHttpOption.Group
 			apiClassify = serviceHttpOption.Api
 			apiVersion = serviceHttpOption.Version
+			writerName = serviceHttpOption.WriterName
 		}
 	}
 	switch httpOption.GetPattern().(type) {
@@ -63,6 +64,9 @@ func ParseMethodOption(service *protogen.Service, httpOption *httppb.Http) (path
 		if apiVersion == "" {
 			apiVersion = serviceFullNameList[1]
 		}
+	}
+	if httpOption.WriterName != "" {
+		writerName = httpOption.WriterName
 	}
 	if httpOption.Group != "" {
 		apiGroup = httpOption.Group

@@ -715,7 +715,7 @@ func (g *OpenAPIv3Generator) addPathsToDocumentV3(d *v3.Document, services []*pr
 					// var methodName string
 					// var body string
 
-					path, methodName, body := utils.ParseMethodOption(service, rule)
+					path, methodName, body, _ := utils.ParseMethodOption(service, rule)
 
 					// body = rule.Body
 					// switch pattern := rule.Pattern.(type) {
