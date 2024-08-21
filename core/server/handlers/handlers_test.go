@@ -3,10 +3,22 @@ package handlers
 import (
 	"testing"
 
+	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
+	_ "github.com/asjard/asjard/pkg/config/mem"
 )
 
 type testDefaultHandler struct{}
+
+var testDefaultHandlerName = "test_deault_handler"
+
+func TestMain(m *testing.M) {
+	if err := config.Load(-1); err != nil {
+		panic(err)
+	}
+	config.Set("asjard.servers.grpc.defaultHandlers", testDefaultHandlerName)
+	m.Run()
+}
 
 func TestDefaultHandlers(t *testing.T) {
 	t.Run("AddHandler", func(t *testing.T) {
@@ -35,6 +47,14 @@ func TestDefaultHandlers(t *testing.T) {
 		}
 	})
 	t.Run("GetHandlers", func(t *testing.T) {
-
+		// 全协议handler
+		AddServerDefaultHandler(testDefaultHandlerName, &testDefaultHandler{})
+		// 指定协议的handler
+		AddServerDefaultHandler(testDefaultHandlerName, &testDefaultHandler{}, "grpc")
+		handlers := GetServerDefaultHandlers("grpc")
+		if len(handlers) != 2 {
+			t.Error("get grpc default handlers length not 2")
+			t.FailNow()
+		}
 	})
 }
