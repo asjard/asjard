@@ -69,6 +69,10 @@ type Options struct {
 	KeyFile               string             `json:"keyFile"`
 	DisableIndentity      bool               `json:"disableIndentity"`
 	IndentitySuffix       string             `json:"indentitySuffix"`
+	// 关闭连接检查,如果不关闭则在连接到redis后会发起ping请求
+	DisableCheckStatus bool `json:"disableConnectCheck"`
+	// 是否开启链路追踪
+	Traceable bool `json:"Traceable"`
 }
 
 type ClientOptions struct {
@@ -201,13 +205,17 @@ func (m *ClientManager) newClient(name string, conf *ClientConnConfig) error {
 		}
 	}
 	client := redis.NewClient(clientOptions)
-	ctx, cancel := context.WithTimeout(context.Background(), conf.Options.DialTimeout.Duration)
-	defer cancel()
-	if status := client.Ping(ctx); status.Err() != nil {
-		return status.Err()
+	if !conf.Options.DisableCheckStatus {
+		ctx, cancel := context.WithTimeout(context.Background(), conf.Options.DialTimeout.Duration)
+		defer cancel()
+		if status := client.Ping(ctx); status.Err() != nil {
+			return status.Err()
+		}
 	}
-	if err := redisotel.InstrumentTracing(client, redisotel.WithDBSystem(name)); err != nil {
-		return err
+	if conf.Options.Traceable {
+		if err := redisotel.InstrumentTracing(client, redisotel.WithDBSystem(name)); err != nil {
+			return err
+		}
 	}
 	m.clients.Store(name, &ClientConn{
 		name:   name,

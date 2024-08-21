@@ -24,6 +24,10 @@ asjard:
         # connMaxIdleTime: 10
         # connMaxLifeTime: 2h
         debug: false
+        ## 是否开启链路追踪
+        traceable: false
+        ## 是否开启监控
+        metricsable: false
 ```
 
 ## 使用

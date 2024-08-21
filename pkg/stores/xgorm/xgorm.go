@@ -74,6 +74,10 @@ type DBConnOptions struct {
 	CustomeDriverName         string `json:"driverName"`
 	SkipInitializeWithVersion bool   `json:"skipInitializeWithVersion"`
 	SkipDefaultTransaction    bool   `json:"skipDefaultTransaction"`
+	// 是否开启链路追踪
+	Traceable bool `json:"traceable"`
+	// 是否开启监控
+	Metricsable bool `json:"metricsable"`
 }
 
 // DBOptions .
@@ -173,7 +177,9 @@ func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) error {
 	if err != nil {
 		return fmt.Errorf("connect to %s fail[%s]", dbName, err.Error())
 	}
-	db.Use(tracing.NewPlugin(tracing.WithDBName(dbName), tracing.WithoutMetrics()))
+	if cfg.Options.Traceable {
+		db.Use(tracing.NewPlugin(tracing.WithDBName(dbName), tracing.WithoutMetrics()))
+	}
 	sqlDB, err := db.DB()
 	if err != nil {
 		return err
@@ -188,7 +194,9 @@ func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) error {
 		debug: cfg.Options.Debug,
 	}
 	m.dbs.Store(dbName, conn)
-	metrics.RegisterCollector("db_"+dbName+"_collector", collectors.NewDBStatsCollector(sqlDB, dbName))
+	if cfg.Options.Metricsable {
+		metrics.RegisterCollector("db_"+dbName+"_collector", collectors.NewDBStatsCollector(sqlDB, dbName))
+	}
 	return nil
 }
 

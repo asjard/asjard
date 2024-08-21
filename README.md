@@ -201,7 +201,7 @@ func main() {
     - [x] accessLog
     - [x] metrics
     - [x] trace
-    - [ ] 限速
+    - [x] 限速
 
   - [客户端](docs/user-guide/client-interceptor.md)
     - [x] 熔断降级
