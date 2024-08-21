@@ -342,11 +342,57 @@ func (api *HelloAPI) RestServiceDesc() *rest.ServiceDesc {
 func main() {
 	server := asjard.New()
 	//提供rest服务
-	server.AddHandlerV2(&HelloAPI{}, rest.Protocol)
+	server.AddHandler(&HelloAPI{}, rest.Protocol)
 	// 启动服务
 	if err := server.Start(); err != nil {
 		panic(err)
 	}
+}
+
+```
+
+自定义writer,[protobuf](protobuf.md)中method的option添加`write_name`添加自定义输出
+
+```proto
+service Server {
+    option (asjard.api.serviceHttp) = {
+        group : "examples/server"
+    };
+
+    rpc Say(HelloReq) returns (HelloReq) {
+        option (asjard.api.http) = {
+            delete : "/region/{region_id}/project/{project_id}/user/{user_id}"
+            // 此接口自定义输出
+            writer_name : "custome_writer"
+        };
+    };
+}
+```
+
+代码中添加`writer`以便在加载路由时能找到自定义writer
+
+```go
+// Response 自定义rest输出
+type Response struct {
+	Err  error `json:"err"`
+	Data any   `json:"data"`
+}
+
+func init() {
+	// 添加自定义输出
+	rest.AddWriter("custome_writer", CustomeWriter)
+}
+
+// CustomeWriter 自定义输出
+func CustomeWriter(c *rest.Context, data any, err error) {
+	b, err := json.Marshal(&Response{
+		Err:  err,
+		Data: data,
+	})
+	if err != nil {
+		logger.Error("custome writer fail", "err", err)
+	}
+	c.Write(b)
 }
 
 ```
