@@ -41,7 +41,7 @@ type Sourcer interface {
 	Set(key string, value any) error
 	// 监听配置变化,当配置源中的配置发生变化时,
 	// 通过此回调方法通知config_manager进行配置变更
-	Watch(func(event *Event)) error
+	// Watch(func(event *Event)) error
 	// 和配置中心断开连接
 	Disconnect()
 	// 配置中心的优先级
@@ -56,7 +56,7 @@ type Sourcer interface {
 //
 //	@return Sourcer 配置源
 //	@return error
-type NewSourceFunc func() (Sourcer, error)
+type NewSourceFunc func(options *SourceOptions) (Sourcer, error)
 
 // Source 配置源结构，添加的配置源保存成如下结构，
 // 后续加载配置源时从此结构中读取配置源信息
@@ -84,6 +84,33 @@ type ConfigManager struct {
 	sourceCfgs *sourcesConfigs
 	// 监听配置变化
 	listener *Listener
+}
+
+// CallbackFunc 配置更新回调方法
+type CallbackFunc func(event *Event)
+
+// SourcerOptions 配置源初始化参数列表
+type SourceOptions struct {
+	Callback CallbackFunc
+}
+
+// SourceOption 设置配置源参数的别名
+type SourceOption func(options *SourceOptions)
+
+// WithCallback 设置回调函数
+func WithCallback(callback CallbackFunc) func(options *SourceOptions) {
+	return func(options *SourceOptions) {
+		options.Callback = callback
+	}
+}
+
+// NewSourceOptions 配置源参数初始化
+func NewSourceOptions(opts ...SourceOption) *SourceOptions {
+	options := &SourceOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	return options
 }
 
 var (
@@ -158,15 +185,11 @@ func (m *ConfigManager) load(priority int) error {
 			break
 		}
 		logger.Debug("load source", "source", source.name)
-		newSourcer, err := source.newSourceFunc()
+		newSourcer, err := source.newSourceFunc(NewSourceOptions(WithCallback(m.watch)))
 		if err != nil {
 			return err
 		}
 		m.addSourcer(newSourcer)
-		// 监听配置变化
-		if err := newSourcer.Watch(m.watch); err != nil {
-			return err
-		}
 		for key, value := range newSourcer.GetAll() {
 			m.watch(&Event{
 				Type:  EventTypeCreate,

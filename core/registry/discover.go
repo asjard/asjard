@@ -12,13 +12,40 @@ type Discovery interface {
 	// 获取所有服务实例
 	GetAll() ([]*Instance, error)
 	// 监听服务变化
-	Watch(callbak func(event *Event))
+	// Watch(callbak func(event *Event))
 	// 服务发现中心名称
 	Name() string
 }
 
+// CallbackFunc 回调方法
+type CallbackFunc func(event *Event)
+
+// DiscoveryOptions 服务发现初始化参数列表
+type DiscoveryOptions struct {
+	Callback CallbackFunc
+}
+
+// DiscoveryOption 服务发现初始化参数
+type DiscoveryOption func(options *DiscoveryOptions)
+
 // NewDiscoveryFunc 服务发现
-type NewDiscoveryFunc func() (Discovery, error)
+type NewDiscoveryFunc func(options *DiscoveryOptions) (Discovery, error)
+
+// WithDiscoveryCallback 设置服务发现回调函数
+func WithDiscoveryCallback(callback CallbackFunc) func(options *DiscoveryOptions) {
+	return func(options *DiscoveryOptions) {
+		options.Callback = callback
+	}
+}
+
+// NewDiscoveryOptions 服务发现参数初始化
+func NewDiscoveryOptions(opts ...DiscoveryOption) *DiscoveryOptions {
+	options := &DiscoveryOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	return options
+}
 
 var (
 	newDiscoverys = make(map[string]NewDiscoveryFunc)

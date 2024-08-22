@@ -27,7 +27,7 @@ const (
 
 // Etcd etcd配置
 type Etcd struct {
-	cb          func(*config.Event)
+	options     *config.SourceOptions
 	app         runtime.APP
 	conf        *Config
 	client      *clientv3.Client
@@ -58,10 +58,11 @@ func init() {
 }
 
 // New 配置源初始化
-func New() (config.Sourcer, error) {
+func New(options *config.SourceOptions) (config.Sourcer, error) {
 	sourcer := &Etcd{
 		app:         runtime.GetAPP(),
 		fileConfigs: make(map[string]map[string]any),
+		options:     options,
 	}
 	if err := sourcer.loadAndWatchConfig(); err != nil {
 		return nil, err
@@ -108,12 +109,6 @@ func (s *Etcd) GetByKey(key string) any {
 // Set 添加配置到etcd中
 // TODO 添加在runtime命名空间下, 需要带过期时间参数
 func (s *Etcd) Set(key string, value any) error {
-	return nil
-}
-
-// Watch 配置更新回调
-func (s *Etcd) Watch(cb func(*config.Event)) error {
-	s.cb = cb
 	return nil
 }
 
@@ -268,10 +263,10 @@ func (s *Etcd) watchPrefix(prefix string, priority int) {
 			switch event.Type {
 			case mvccpb.PUT:
 				for _, event := range s.getUpdateEvents(ref, key, priority, event.Kv.Value) {
-					s.cb(event)
+					s.options.Callback(event)
 				}
 			case mvccpb.DELETE:
-				s.cb(&config.Event{
+				s.options.Callback(&config.Event{
 					Type: config.EventTypeDelete,
 					Key:  key,
 					Value: &config.Value{

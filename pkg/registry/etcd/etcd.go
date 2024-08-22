@@ -26,9 +26,9 @@ const (
 
 // Etcd etcd注册中心
 type Etcd struct {
-	client *clientv3.Client
-	cb     func(event *registry.Event)
-	conf   *Config
+	client           *clientv3.Client
+	conf             *Config
+	discoveryOptions *registry.DiscoveryOptions
 }
 
 // etcd配置
@@ -56,11 +56,11 @@ func init() {
 
 // New .
 func NewRegister() (registry.Register, error) {
-	return New()
+	return New(nil)
 }
 
-func NewDiscovery() (registry.Discovery, error) {
-	discover, err := New()
+func NewDiscovery(options *registry.DiscoveryOptions) (registry.Discovery, error) {
+	discover, err := New(options)
 	if err != nil {
 		return discover, err
 	}
@@ -68,7 +68,7 @@ func NewDiscovery() (registry.Discovery, error) {
 	return discover, nil
 }
 
-func New() (*Etcd, error) {
+func New(options *registry.DiscoveryOptions) (*Etcd, error) {
 	var err error
 	newOnce.Do(func() {
 		etcdRegistry := &Etcd{}
@@ -82,6 +82,9 @@ func New() (*Etcd, error) {
 		}
 		newEtcd = etcdRegistry
 	})
+	if options != nil {
+		newEtcd.discoveryOptions = options
+	}
 	return newEtcd, err
 }
 
@@ -105,11 +108,6 @@ func (e *Etcd) GetAll() ([]*registry.Instance, error) {
 		})
 	}
 	return instances, nil
-}
-
-// Watch 监听服务变化
-func (e *Etcd) Watch(callbak func(event *registry.Event)) {
-	e.cb = callbak
 }
 
 // HealthCheck 监控检查
@@ -219,9 +217,7 @@ func (e *Etcd) watch() {
 					}
 				}
 			}
-			if e.cb != nil {
-				e.cb(callbackEvent)
-			}
+			e.discoveryOptions.Callback(callbackEvent)
 		}
 	}
 	logger.Debug("watch exit")

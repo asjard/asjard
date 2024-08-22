@@ -125,7 +125,7 @@ func (r *RegistryManager) discove() error {
 	}
 	for name, newDiscover := range newDiscoverys {
 		logger.Debug("add discover", "name", name)
-		discover, err := newDiscover()
+		discover, err := newDiscover(NewDiscoveryOptions(WithDiscoveryCallback(r.watch)))
 		if err != nil {
 			return err
 		}
@@ -138,7 +138,6 @@ func (r *RegistryManager) discove() error {
 		}
 		logger.Debug("discover get all service", "name", discover.Name(), "services", services)
 		r.cache.update(services)
-		discover.Watch(r.watch)
 	}
 	return nil
 }

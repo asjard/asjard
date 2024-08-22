@@ -19,13 +19,14 @@ const (
 )
 
 type testSource struct {
-	cb      func(*Event)
+	options *SourceOptions
 	configs map[string]any
 	cm      sync.RWMutex
 }
 
-func newTestSource() (Sourcer, error) {
+func newTestSource(options *SourceOptions) (Sourcer, error) {
 	return &testSource{
+		options: options,
 		configs: map[string]any{
 			"asjard.config.setDefaultSource": testSourceName,
 			"testInt":                        1,
@@ -62,7 +63,7 @@ func (s *testSource) Set(key string, value any) error {
 	s.configs[key] = value
 	s.cm.Unlock()
 	if key == "test_del" {
-		s.cb(&Event{
+		s.options.Callback(&Event{
 			Type: EventTypeDelete,
 			Key:  key,
 			Value: &Value{
@@ -71,7 +72,7 @@ func (s *testSource) Set(key string, value any) error {
 			},
 		})
 	} else if key == "test_del_ref" {
-		s.cb(&Event{
+		s.options.Callback(&Event{
 			Type: EventTypeDelete,
 			Value: &Value{
 				Sourcer: s,
@@ -80,7 +81,7 @@ func (s *testSource) Set(key string, value any) error {
 			},
 		})
 	} else {
-		s.cb(&Event{
+		s.options.Callback(&Event{
 			Type: EventTypeUpdate,
 			Key:  key,
 			Value: &Value{
@@ -89,11 +90,6 @@ func (s *testSource) Set(key string, value any) error {
 			},
 		})
 	}
-	return nil
-}
-
-func (s *testSource) Watch(callback func(event *Event)) error {
-	s.cb = callback
 	return nil
 }
 

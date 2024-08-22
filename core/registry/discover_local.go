@@ -17,8 +17,7 @@ const (
 
 // LocalRegistry 本地服务发现
 type LocalRegistry struct {
-	cb func(event *Event)
-	// key: serviceName
+	discoveryOptions        *DiscoveryOptions
 	instances               []*Instance
 	localDiscoverConfPrefix string
 	dm                      sync.RWMutex
@@ -30,9 +29,10 @@ func init() {
 }
 
 // NewLocalDiscover .
-func NewLocalDiscover() (Discovery, error) {
+func NewLocalDiscover(options *DiscoveryOptions) (Discovery, error) {
 	localDiscover := &LocalRegistry{
 		localDiscoverConfPrefix: constant.ConfigRegistryLocalDiscoverPrefix,
+		discoveryOptions:        options,
 	}
 	localDiscover.getAndWatch()
 	return localDiscover, nil
@@ -41,11 +41,6 @@ func NewLocalDiscover() (Discovery, error) {
 // GetAll 获取所有服务列表
 func (l *LocalRegistry) GetAll() ([]*Instance, error) {
 	return l.instances, nil
-}
-
-// Watch 监听配置变化
-func (l *LocalRegistry) Watch(callback func(event *Event)) {
-	l.cb = callback
 }
 
 // Name 返回本地注册中心名称
@@ -72,14 +67,14 @@ func (l *LocalRegistry) watch(event *config.Event) {
 	}
 	instances := l.getInstances(services)
 	for _, instance := range l.instances {
-		l.cb(&Event{
+		l.discoveryOptions.Callback(&Event{
 			Type:     EventTypeDelete,
 			Instance: instance,
 		})
 	}
 
 	for _, instance := range instances {
-		l.cb(&Event{
+		l.discoveryOptions.Callback(&Event{
 			Type:     EventTypeUpdate,
 			Instance: instance,
 		})

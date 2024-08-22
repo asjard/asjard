@@ -18,7 +18,7 @@ const (
 
 // Env 环境变量配置
 type Env struct {
-	cb func(*config.Event)
+	options *config.SourceOptions
 }
 
 func init() {
@@ -26,8 +26,10 @@ func init() {
 }
 
 // New .
-func New() (config.Sourcer, error) {
-	return &Env{}, nil
+func New(options *config.SourceOptions) (config.Sourcer, error) {
+	return &Env{
+		options: options,
+	}, nil
 }
 
 // GetAll get all environment
@@ -55,7 +57,7 @@ func (s *Env) Set(key string, value any) error {
 	if err := os.Setenv(envKey, cast.ToString(value)); err != nil {
 		return err
 	}
-	s.cb(&config.Event{
+	s.options.Callback(&config.Event{
 		Type: config.EventTypeCreate,
 		Key:  key,
 		Value: &config.Value{
@@ -63,12 +65,6 @@ func (s *Env) Set(key string, value any) error {
 			Value:   value,
 		},
 	})
-	return nil
-}
-
-// Watch .
-func (s *Env) Watch(cb func(*config.Event)) error {
-	s.cb = cb
 	return nil
 }
 

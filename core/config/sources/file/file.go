@@ -34,7 +34,7 @@ const (
 // File 文件配置源
 type File struct {
 	// 事件回调
-	cb func(event *config.Event)
+	options *config.SourceOptions
 	// 文件列表, 初始化时会将指定目录下的文件扫描到此列表中
 	// 后续增加文件时此处不会变更，只在初始化时有用
 	files []string
@@ -61,9 +61,10 @@ func init() {
 // New 初始化文件配置源,
 // 初始化需要读取的文件列表,
 // 监听文件的变化.
-func New() (config.Sourcer, error) {
+func New(options *config.SourceOptions) (config.Sourcer, error) {
 	fsource := &File{
 		configs: make(map[string]map[string]any),
+		options: options,
 	}
 
 	fsource.confDir = utils.GetConfDir()
@@ -103,12 +104,6 @@ func (s *File) GetAll() map[string]*config.Value {
 // Set 设置配置到文件配置源中,暂不实现
 // 本地文件中的配置应该做到只读权限，不可修改
 func (s *File) Set(key string, value any) error {
-	return nil
-}
-
-// Watch 监听回调，当配置发生变化后用来通知config_manager变更配置
-func (s *File) Watch(cb func(event *config.Event)) error {
-	s.cb = cb
 	return nil
 }
 
@@ -197,7 +192,7 @@ func (s *File) doWatch() {
 					configs, err := s.read(event.Name)
 					if err == nil {
 						for _, event := range s.getUpdateEvents(event.Name, configs) {
-							s.cb(event)
+							s.options.Callback(event)
 						}
 					} else {
 						logger.Error("read file fail",
@@ -214,7 +209,7 @@ func (s *File) doWatch() {
 					}
 				} else {
 					s.delConfig(event.Name, "")
-					s.cb(&config.Event{
+					s.options.Callback(&config.Event{
 						Type: config.EventTypeDelete,
 						Value: &config.Value{
 							Sourcer:  s,

@@ -23,10 +23,20 @@ func TestFile(t *testing.T) {
 	testValue := "test_value"
 	assert.Nil(t, os.WriteFile(filepath.Join(tmpDir, testFile),
 		[]byte(fmt.Sprintf("%s: %s", testKey, testValue)), 0640))
-	source, err := New()
+
+	var m sync.RWMutex
+	var eventKey string
+	var eventValue any
+	source, err := New(&config.SourceOptions{
+		Callback: func(event *config.Event) {
+			m.Lock()
+			defer m.Unlock()
+			eventKey = event.Key
+			eventValue = event.Value.Value
+		},
+	})
 	defer source.Disconnect()
 	assert.Nil(t, err)
-	source.Watch(func(event *config.Event) {})
 
 	t.Run("GetAll", func(t *testing.T) {
 		configs := source.GetAll()
@@ -38,16 +48,7 @@ func TestFile(t *testing.T) {
 		testFile := "encrypted_base64_file.yaml"
 		testKey := "base64_key"
 		testValue := "base64_value"
-		var m sync.RWMutex
 
-		var eventKey string
-		var eventValue any
-		source.Watch(func(event *config.Event) {
-			m.Lock()
-			defer m.Unlock()
-			eventKey = event.Key
-			eventValue = event.Value.Value
-		})
 		content := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s: %s", testKey, testValue)))
 		assert.Nil(t, os.WriteFile(filepath.Join(tmpDir, testFile), []byte(content), 0640))
 		time.Sleep(50 * time.Millisecond)

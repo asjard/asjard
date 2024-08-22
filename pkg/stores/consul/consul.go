@@ -158,7 +158,16 @@ func (m *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 	return clients, nil
 }
 
-func (m *ClientManager) watch(event *config.Event) {}
+func (m *ClientManager) watch(event *config.Event) {
+	clients, err := m.loadConfig()
+	if err != nil {
+		logger.Error("load consul config fail", "err", err)
+		return
+	}
+	if err := m.newClients(clients); err != nil {
+		logger.Error("new consul clients fail", "err", err)
+	}
+}
 
 func defaultClientOptions() *ClientOptions {
 	return &ClientOptions{
