@@ -36,7 +36,6 @@ type accessLogConfig struct {
 }
 
 var defaultAccessLogConfig = accessLogConfig{
-	Enabled:     true,
 	SkipMethods: utils.JSONStrings{grpc.Protocol, healthpb.Health_Check_FullMethodName},
 }
 

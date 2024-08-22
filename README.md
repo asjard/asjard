@@ -241,6 +241,13 @@ func main() {
 
 - [x] [安全](docs/user-guide/security.md)
 
+## Benchmark
+
+![latency](https://raw.githubusercontent.com/asjard/benchmark/main/benchmark_latency.png)
+![benchmark](https://raw.githubusercontent.com/asjard/benchmark/main/benchmark.png)
+
+[测试代码](https://github.com/asjard/benchmark)
+
 ## 三方库
 
 下面是一些本框架中用到的开源库
