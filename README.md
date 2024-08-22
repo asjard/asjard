@@ -26,7 +26,7 @@ go install github.com/asjard/asjard/cmd/protoc-gen-go-rest2grpc-gw
 
 > protobuf编写规范参考[这里](docs/user-guide/protobuf.md)
 
-例如`server.proto`
+`server.proto`
 
 ```proto
 syntax = "proto3";
@@ -40,10 +40,12 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/wrappers.proto";
 
 service Server {
+    // 对于Server这个服务设置全局配置
     option (asjard.api.serviceHttp) = {
         group : "examples/server"
     };
 
+    // 注释，描述这个接口的作用
     rpc Say(HelloReq) returns (HelloReq) {
         option (asjard.api.http) = {
             post : "/region/{region_id}/project/{project_id}/user/{user_id}"
@@ -62,7 +64,6 @@ service Server {
         option (asjard.api.http) = {
             get : "/hello"
         };
-        // 为benchmark设置一个路由
         option (asjard.api.http) = {
             get : "/hello"
             api : "/"
@@ -143,6 +144,7 @@ message HelloReq {
     string                     az                 = 22;
     Instance                   instance           = 23;
 }
+
 ```
 
 按需生成
@@ -159,6 +161,8 @@ protoc --go-rest_out=${GOPATH}/src -I${GOPATH}/src -I. ./server.proto
 ```
 
 编写服务
+
+`main.go`
 
 ```go
 package main
@@ -189,12 +193,6 @@ import (
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/asjard/examples/protobuf/serverpb"
 	"google.golang.org/protobuf/types/known/emptypb"
-)
-
-type traceContextKeyType int
-
-const (
-	currentSpanKey traceContextKeyType = iota
 )
 
 type ServerAPI struct {
@@ -285,13 +283,14 @@ func main() {
 		panic(err)
 	}
 }
+
 ```
 
 创建配置
 
 > 详细配置可参考[这里](docs/user-guide/config.md)
 
-例如`conf/server.yaml`
+`conf/server.yaml`
 
 ```yaml
 asjard:
@@ -318,6 +317,8 @@ ASJARD_CONF_DIR=${PWD}/conf go run main.go
 # 或者编译后执行
 go build -o example main.go && ./example
 ```
+
+本实例内容参考[这里](https://github.com/asjard/examples/tree/main/server)
 
 更多信息请参考[文档](docs/user-guide/overview.md)
 
