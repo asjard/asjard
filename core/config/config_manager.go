@@ -22,8 +22,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const ()
-
 var (
 	configParamCompile = regexp.MustCompile("\\${(.*?)}")
 )

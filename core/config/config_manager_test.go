@@ -293,16 +293,16 @@ func TestListener(t *testing.T) {
 	t.Run("AddListener", func(t *testing.T) {
 		key := "test_add_listener"
 		value := "test_add_listener_value"
-		recived := make(chan struct{})
+		received := make(chan struct{})
 		AddListener(key, func(event *Event) {
-			recived <- struct{}{}
+			received <- struct{}{}
 		})
 		assert.Nil(t, Set(key, value))
 		select {
-		case <-recived:
+		case <-received:
 			break
 		case <-time.After(time.Millisecond * 10):
-			t.Error("after 100ms not recived event")
+			t.Error("after 100ms not received event")
 			t.FailNow()
 		}
 		assert.Equal(t, value, GetString(key, ""))
@@ -311,16 +311,16 @@ func TestListener(t *testing.T) {
 	t.Run("AddPatternListener", func(t *testing.T) {
 		key := "test_add_listener_pattern"
 		value := "test_add_listener_pattern_value"
-		recived := make(chan struct{})
+		received := make(chan struct{})
 		AddPatternListener(key+".*", func(event *Event) {
-			recived <- struct{}{}
+			received <- struct{}{}
 		})
 		assert.Nil(t, Set(key, value))
 		select {
-		case <-recived:
+		case <-received:
 			break
 		case <-time.After(time.Millisecond * 10):
-			t.Error("after 10ms not recived event")
+			t.Error("after 10ms not received event")
 			t.FailNow()
 		}
 		assert.Equal(t, value, GetString(key, ""))
@@ -328,16 +328,16 @@ func TestListener(t *testing.T) {
 	t.Run("AddPrefixListener", func(t *testing.T) {
 		key := "test_add_listener_prefix"
 		value := "test_add_listener_prefix_value"
-		recived := make(chan struct{})
+		received := make(chan struct{})
 		AddPrefixListener(key, func(event *Event) {
-			recived <- struct{}{}
+			received <- struct{}{}
 		})
 		assert.Nil(t, Set(key, value))
 		select {
-		case <-recived:
+		case <-received:
 			break
 		case <-time.After(time.Millisecond * 10):
-			t.Error("after 10ms not recived event")
+			t.Error("after 10ms not received event")
 			t.FailNow()
 		}
 		assert.Equal(t, value, GetString(key, ""))
@@ -840,7 +840,7 @@ func TestGetBool(t *testing.T) {
 			}
 			out := GetBools(data.key, []bool{})
 			if len(out) != len(data.expect) {
-				t.Errorf("test %s fail, lenght not equal, current %d want %d", data.key, len(out), len(data.expect))
+				t.Errorf("test %s fail, length not equal, current %d want %d", data.key, len(out), len(data.expect))
 				t.FailNow()
 			}
 			for index, v := range out {
