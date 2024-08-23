@@ -415,6 +415,7 @@ go build -o example main.go && ./example
 
 ![latency](https://raw.githubusercontent.com/asjard/benchmark/main/benchmark_latency.png)
 ![benchmark](https://raw.githubusercontent.com/asjard/benchmark/main/benchmark.png)
+![alloc](https://raw.githubusercontent.com/asjard/benchmark/main/benchmark_alloc.png)
 
 [测试代码](https://github.com/asjard/benchmark)
 

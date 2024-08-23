@@ -11,8 +11,6 @@ const (
 type Discovery interface {
 	// 获取所有服务实例
 	GetAll() ([]*Instance, error)
-	// 监听服务变化
-	// Watch(callbak func(event *Event))
 	// 服务发现中心名称
 	Name() string
 }
