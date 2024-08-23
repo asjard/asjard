@@ -428,6 +428,7 @@ a: 1`
 	})
 }
 
+//gocyclo:ignore
 func TestGetInt(t *testing.T) {
 	t.Run("GetInt", func(t *testing.T) {
 		datas := []struct {
@@ -587,6 +588,7 @@ func TestGetInt(t *testing.T) {
 	})
 }
 
+//gocyclo:ignore
 func TestGetFloat(t *testing.T) {
 	t.Run("GetFloat32", func(t *testing.T) {
 		datas := []struct {
