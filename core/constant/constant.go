@@ -7,7 +7,7 @@ const (
 	// Framework 框架名称
 	Framework = "asjard"
 	// FrameworkVersion 框架版本号
-	FrameworkVersion = "1.0.0"
+	FrameworkVersion = "0.5.1"
 	FrameworkGithub  = "https://github.com/asjard/asjard"
 	// DefaultDelimiter 默认分隔符
 	DefaultDelimiter = ","
