@@ -3,6 +3,7 @@ package rest
 import (
 	"net/http"
 	"reflect"
+	"sync"
 
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
@@ -19,7 +20,37 @@ const (
 	HeaderResponseRequestMethod = "x-request-method"
 	// HeaderResponseRequestID 请求ID返回头
 	HeaderResponseRequestID = "x-request-id"
+	// 默认writer名称
+	DefaultWriterName = "default"
 )
+
+var (
+	writers = map[string]Writer{
+		DefaultWriterName: DefaultWriter,
+	}
+	wm sync.RWMutex
+)
+
+// AddWriter 添加writer
+func AddWriter(name string, writer Writer) {
+	wm.Lock()
+	writers[name] = writer
+	wm.Unlock()
+}
+
+// GetWriter 获取writer
+func GetWriter(name string) Writer {
+	wm.RLock()
+	defer wm.RUnlock()
+	if name == "" {
+		return writers[DefaultWriterName]
+	}
+	w, ok := writers[name]
+	if ok {
+		return w
+	}
+	return writers[DefaultWriterName]
+}
 
 // DefaultWriter 默认输出
 // 当data和err都为nil约定为已自行write

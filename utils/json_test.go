@@ -76,7 +76,7 @@ func TestStrings(t *testing.T) {
 				continue
 			}
 			if len(output) != len(data.output) {
-				t.Errorf("input %s lenght not equal, current %d, want: %d", data.input,
+				t.Errorf("input %s length not equal, current %d, want: %d", data.input,
 					len(output), len(data.output))
 				t.FailNow()
 			}

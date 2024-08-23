@@ -3,14 +3,29 @@ package env
 import (
 	"os"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEnv(t *testing.T) {
-	testEnv := &Env{}
+	var cbKey string
+	var cbValue any
+	var m sync.RWMutex
+	testEnv := &Env{
+		options: &config.SourceOptions{
+			Callback: func(event *config.Event) {
+				m.Lock()
+				defer m.Unlock()
+				cbValue = event.Value.Value
+				cbKey = event.Key
+			},
+		},
+	}
+
 	assert.Equal(t, Name, testEnv.Name())
 	assert.Equal(t, Priority, testEnv.Priority())
 	t.Run("TestGetAll", func(t *testing.T) {
@@ -34,15 +49,12 @@ func TestEnv(t *testing.T) {
 	t.Run("TestSet", func(t *testing.T) {
 		key := "test.set.key"
 		value := "test_set_value"
-		var cbKey string
-		var cbValue any
-		testEnv.cb = func(event *config.Event) {
-			cbValue = event.Value.Value
-			cbKey = event.Key
-		}
 
 		assert.Nil(t, testEnv.Set(key, value))
+		time.Sleep(50 * time.Millisecond)
 
+		m.RLock()
+		defer m.RUnlock()
 		assert.Equal(t, key, cbKey)
 		assert.Equal(t, value, cbValue)
 

@@ -11,6 +11,11 @@ asjard:
           port: 6379
           db: 0
           auth: xxx
+      options:
+        ## 是否检查状态, 如果为ture则在连接到redis后不执行Ping
+        disableCheckStatus: false
+        ## 是否开启链路追踪
+        traceable: false
 ```
 
 ## 使用

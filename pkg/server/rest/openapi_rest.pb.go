@@ -74,8 +74,8 @@ var OpenAPIRestServiceDesc = ServiceDesc{
 }
 
 const (
-	OpenAPI_Yaml_RestPath = "/openapi.yml"
 	OpenAPI_Page_RestPath = "/page/openapi"
+	OpenAPI_Yaml_RestPath = "/openapi.yml"
 )
 
 var file_openapi_proto_openapi = []byte{

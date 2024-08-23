@@ -31,7 +31,7 @@ Options:
 	flag.PrintDefaults()
 }
 
-func main() {
+func init() {
 	flag.BoolVar(&h, "h", false, "this help")
 	flag.StringVar(&f, "f", "", "encrypt or decrypt file")
 	flag.BoolVar(&d, "d", false, "decrypt")
@@ -42,6 +42,9 @@ func main() {
 	flag.BoolVar(&q, "q", false, "quite output")
 	flag.Usage = usage
 	flag.Parse()
+}
+
+func main() {
 	if h {
 		flag.Usage()
 		os.Exit(0)
@@ -57,85 +60,89 @@ func main() {
 		os.Exit(1)
 	}
 	if t != "" {
-		if !d {
-			result, err := c.Encrypt(t, nil)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			if q {
-				fmt.Print(result)
-			} else {
-				fmt.Println("encrypt text SUCCESS, base64 output:", result)
-			}
-		} else {
-			result, err := c.Decrypt(t, nil)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			if q {
-				fmt.Print(result)
-			} else {
-				fmt.Println("decrypt text SUCCESS, output:", result)
-			}
-
-		}
+		text(c)
 	}
+	if f != "" {
+		file(c)
+	}
+}
+func text(c *security.AESCipher) {
+	if !d {
+		result, err := c.Encrypt(t, nil)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		if !q {
+			fmt.Printf("encrypt text SUCCESS, base64 output: ")
+		}
+		fmt.Println(result)
+		return
+	}
+	result, err := c.Decrypt(t, nil)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if !q {
+		fmt.Printf("decrypt text SUCCESS, output: ")
+	}
+	fmt.Println(result)
+	return
+}
 
+func file(c *security.AESCipher) {
 	encryptedFileNamePrefix := "encrypted_" + security.AESCipherName + "_"
 	decryptedFileNamePrefix := "decrypted_" + security.AESCipherName + "_"
-	if f != "" {
-		if !d {
-			if o == "" {
-				dir := filepath.Dir(f)
-				fileName := filepath.Base(f)
-				o = filepath.Join(dir, encryptedFileNamePrefix+fileName)
-			}
-			content, err := os.ReadFile(f)
-			if err != nil {
-				fmt.Println("read file", f, "fail", err.Error())
-				os.Exit(1)
-			}
-			result, err := c.Encrypt(string(content), nil)
-			if err != nil {
-				fmt.Println("encrypt file", f, "fail", err.Error())
-				os.Exit(1)
-			}
-			if err := os.WriteFile(o, []byte(result), 0400); err != nil {
-				fmt.Println("write file", o, "fail", err.Error())
-				os.Exit(1)
-			}
-			if !q {
-				fmt.Println("encrypt file", f, "SUCCESS, output:", o)
-			}
-		} else {
-			if o == "" {
-				dir := filepath.Dir(f)
-				fileName := filepath.Base(f)
-				if strings.HasPrefix(fileName, encryptedFileNamePrefix) {
-					o = filepath.Join(dir, strings.TrimPrefix(fileName, encryptedFileNamePrefix))
-				} else {
-					o = filepath.Join(dir, decryptedFileNamePrefix+fileName)
-				}
-			}
-			content, err := os.ReadFile(f)
-			if err != nil {
-				fmt.Println("read file", f, "fail", err.Error())
-				os.Exit(1)
-			}
-			result, err := c.Decrypt(string(content), nil)
-			if err != nil {
-				fmt.Println("decrypt file", f, "fail", err.Error())
-				os.Exit(1)
-			}
-			if err := os.WriteFile(o, []byte(result), 0400); err != nil {
-				fmt.Println("write file", o, "fail", err.Error())
-				os.Exit(1)
-			}
-			if !q {
-				fmt.Println("decrypt file", f, "SUCCESS, output:", o)
-			}
+	if !d {
+		if o == "" {
+			dir := filepath.Dir(f)
+			fileName := filepath.Base(f)
+			o = filepath.Join(dir, encryptedFileNamePrefix+fileName)
 		}
+		content, err := os.ReadFile(f)
+		if err != nil {
+			fmt.Println("read file", f, "fail", err.Error())
+			os.Exit(1)
+		}
+		result, err := c.Encrypt(string(content), nil)
+		if err != nil {
+			fmt.Println("encrypt file", f, "fail", err.Error())
+			os.Exit(1)
+		}
+		if err := os.WriteFile(o, []byte(result), 0400); err != nil {
+			fmt.Println("write file", o, "fail", err.Error())
+			os.Exit(1)
+		}
+		if !q {
+			fmt.Println("encrypt file", f, "SUCCESS, output:", o)
+		}
+		return
+	}
+	if o == "" {
+		dir := filepath.Dir(f)
+		fileName := filepath.Base(f)
+		if strings.HasPrefix(fileName, encryptedFileNamePrefix) {
+			o = filepath.Join(dir, strings.TrimPrefix(fileName, encryptedFileNamePrefix))
+		} else {
+			o = filepath.Join(dir, decryptedFileNamePrefix+fileName)
+		}
+	}
+	content, err := os.ReadFile(f)
+	if err != nil {
+		fmt.Println("read file", f, "fail", err.Error())
+		os.Exit(1)
+	}
+	result, err := c.Decrypt(string(content), nil)
+	if err != nil {
+		fmt.Println("decrypt file", f, "fail", err.Error())
+		os.Exit(1)
+	}
+	if err := os.WriteFile(o, []byte(result), 0400); err != nil {
+		fmt.Println("write file", o, "fail", err.Error())
+		os.Exit(1)
+	}
+	if !q {
+		fmt.Println("decrypt file", f, "SUCCESS, output:", o)
 	}
 }

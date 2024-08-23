@@ -45,8 +45,9 @@ var contextPool = sync.Pool{
 
 // NewContext .
 func NewContext(ctx *fasthttp.RequestCtx, options ...Option) *Context {
-	c := contextPool.Get().(*Context)
-	c.RequestCtx = ctx
+	c := &Context{
+		RequestCtx: ctx,
+	}
 	for _, opt := range options {
 		opt(c)
 	}
@@ -97,7 +98,7 @@ func (c *Context) WriteData(data any, err error) {
 	} else {
 		c.write(c, data, err)
 	}
-	c.Close()
+	// c.Close()
 }
 
 // NewOutgoingContext .

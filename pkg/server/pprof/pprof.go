@@ -57,7 +57,7 @@ func (s *PprofServer) Start(startErr chan error) error {
 	}
 	go func() {
 		if err := http.ListenAndServe(s.conf.Addresses.Listen, nil); err != nil {
-			startErr <- fmt.Errorf("start pprof with adress %s fail %s", s.conf.Addresses.Listen, err.Error())
+			startErr <- fmt.Errorf("start pprof with address %s fail %s", s.conf.Addresses.Listen, err.Error())
 		}
 	}()
 	logger.Debug("start pprof server",

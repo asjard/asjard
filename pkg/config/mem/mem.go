@@ -15,7 +15,7 @@ const (
 
 // Mem .
 type Mem struct {
-	cb      func(*config.Event)
+	options *config.SourceOptions
 	configs map[string]any
 	cm      sync.RWMutex
 }
@@ -25,9 +25,10 @@ func init() {
 }
 
 // New .s
-func New() (config.Sourcer, error) {
+func New(options *config.SourceOptions) (config.Sourcer, error) {
 	return &Mem{
 		configs: make(map[string]any),
+		options: options,
 	}, nil
 }
 
@@ -47,7 +48,7 @@ func (m *Mem) GetAll() map[string]*config.Value {
 // Set .
 func (m *Mem) Set(key string, value any) error {
 	m.set(key, value)
-	m.cb(&config.Event{
+	m.options.Callback(&config.Event{
 		Type: config.EventTypeUpdate,
 		Key:  key,
 		Value: &config.Value{
@@ -55,12 +56,6 @@ func (m *Mem) Set(key string, value any) error {
 			Value:   value,
 		},
 	})
-	return nil
-}
-
-// Watch .
-func (m *Mem) Watch(callback func(event *config.Event)) error {
-	m.cb = callback
 	return nil
 }
 

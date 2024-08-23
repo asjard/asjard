@@ -24,10 +24,10 @@ const (
 )
 
 type Consul struct {
-	client *api.Client
-	cb     func(event *registry.Event)
-	conf   *Config
-	exit   chan struct{}
+	client           *api.Client
+	conf             *Config
+	exit             chan struct{}
+	discoveryOptions *registry.DiscoveryOptions
 }
 
 type Config struct {
@@ -54,12 +54,12 @@ func init() {
 
 // NewRegister 服务注册初始化
 func NewRegister() (registry.Register, error) {
-	return New()
+	return New(nil)
 }
 
 // NewDiscovery 服务发现初始化
-func NewDiscovery() (registry.Discovery, error) {
-	discovery, err := New()
+func NewDiscovery(options *registry.DiscoveryOptions) (registry.Discovery, error) {
+	discovery, err := New(options)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func NewDiscovery() (registry.Discovery, error) {
 }
 
 // New consul初始化
-func New() (*Consul, error) {
+func New(options *registry.DiscoveryOptions) (*Consul, error) {
 	var err error
 	newOnce.Do(func() {
 		consulRegistry := &Consul{
@@ -88,6 +88,9 @@ func New() (*Consul, error) {
 	})
 	if err != nil {
 		return nil, err
+	}
+	if options != nil {
+		newConsul.discoveryOptions = options
 	}
 	return newConsul, nil
 }
@@ -159,10 +162,6 @@ func (c *Consul) GetAll() ([]*registry.Instance, error) {
 		})
 	}
 	return instances, nil
-}
-
-func (c *Consul) Watch(callback func(event *registry.Event)) {
-	c.cb = callback
 }
 
 func (c *Consul) getAgentServices() (map[string]*server.Service, error) {
@@ -302,24 +301,22 @@ func (s *instanceWatch) handler(_ uint64, data any) {
 			s.im.Lock()
 			if modifyIndex, ok := s.instances[entry.Service.ID]; !ok || modifyIndex != entry.Service.ModifyIndex {
 				s.instances[entry.Service.ID] = entry.Service.ModifyIndex
-				if s.c.cb != nil {
-					var service server.Service
-					if err := json.Unmarshal([]byte(entry.Service.Meta["endpoints"]), &service.Endpoints); err != nil {
-						logger.Error("consul unmarshal appDetail fail", "endpoints", entry.Service.Meta["endpoints"], "err", err)
-						continue
-					}
-					if err := json.Unmarshal([]byte(entry.Service.Meta["app_detail"]), &service.APP); err != nil {
-						logger.Error("consul unmarshal app fail", "app_detail", entry.Service.Meta["app_detail"], "err", err)
-						continue
-					}
-					s.c.cb(&registry.Event{
-						Type: registry.EventTypeCreate,
-						Instance: &registry.Instance{
-							DiscoverName: NAME,
-							Service:      &service,
-						},
-					})
+				var service server.Service
+				if err := json.Unmarshal([]byte(entry.Service.Meta["endpoints"]), &service.Endpoints); err != nil {
+					logger.Error("consul unmarshal appDetail fail", "endpoints", entry.Service.Meta["endpoints"], "err", err)
+					continue
 				}
+				if err := json.Unmarshal([]byte(entry.Service.Meta["app_detail"]), &service.APP); err != nil {
+					logger.Error("consul unmarshal app fail", "app_detail", entry.Service.Meta["app_detail"], "err", err)
+					continue
+				}
+				s.c.discoveryOptions.Callback(&registry.Event{
+					Type: registry.EventTypeCreate,
+					Instance: &registry.Instance{
+						DiscoverName: NAME,
+						Service:      &service,
+					},
+				})
 			}
 			s.im.Unlock()
 		}
@@ -333,21 +330,19 @@ func (s *instanceWatch) handler(_ uint64, data any) {
 				}
 			}
 			if !exist {
-				if s.c.cb != nil {
-					s.c.cb(&registry.Event{
-						Type: registry.EventTypeDelete,
-						Instance: &registry.Instance{
-							DiscoverName: NAME,
-							Service: &server.Service{
-								APP: runtime.APP{
-									Instance: runtime.Instance{
-										ID: key,
-									},
+				s.c.discoveryOptions.Callback(&registry.Event{
+					Type: registry.EventTypeDelete,
+					Instance: &registry.Instance{
+						DiscoverName: NAME,
+						Service: &server.Service{
+							APP: runtime.APP{
+								Instance: runtime.Instance{
+									ID: key,
 								},
 							},
 						},
-					})
-				}
+					},
+				})
 				delete(s.instances, key)
 			}
 		}

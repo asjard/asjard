@@ -43,6 +43,9 @@ asjard:
           port: 6379
           db: 0
           auth: xxx
+      options:
+        disableConnectCheck: false
+        metricsable: true
     mongo:
       dbs:
         default:

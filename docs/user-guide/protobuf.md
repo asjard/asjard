@@ -24,7 +24,7 @@ import "github.com/asjard/protobuf/http.proto";
 // 建议一个protobuf文件中只写一个service
 service Hello {
   // 可以对整个服务定义路由信息
-  option(asjard.api.http) = {group: "hello"}
+  option(asjard.api.http) = {group: "hello", writer_name: "custome_writer"}
   // 功能描述,
   // 支持markdown
   // 可渲染在openapi文档的接口描述中
@@ -43,6 +43,8 @@ service Hello {
       version : ""
       // 如果不为空则使用此处的接口分组
       group : ""
+      // 当前接口自定义writer
+      writer_name: ""
     };
     option (asjard.api.http) = {
       post : "/hello"

@@ -1,6 +1,8 @@
 package client
 
 import (
+	"sync"
+
 	"github.com/asjard/asjard/core/registry"
 	"github.com/asjard/asjard/core/runtime"
 	"google.golang.org/grpc/balancer"
@@ -27,8 +29,11 @@ type PickResult struct {
 
 // WrapPicker 在本身的选择器上再添加一层，统一返回pickResult
 type WrapPicker struct {
+	app runtime.APP
+
+	// picker参数由mu锁保护
+	mu     sync.Mutex
 	picker Picker
-	app    runtime.APP
 }
 
 type PickerBase struct {
@@ -71,8 +76,10 @@ func NewPicker(newPicker NewBalancerPicker, scs map[balancer.SubConn]base.SubCon
 	}
 }
 
-func (p WrapPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
+func (p *WrapPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
+	p.mu.Lock()
 	result, err := p.picker.Pick(info)
+	p.mu.Unlock()
 	if err != nil {
 		return balancer.PickResult{}, err
 	}

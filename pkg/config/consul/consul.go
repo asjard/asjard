@@ -26,10 +26,10 @@ const (
 
 // Consul consul配置中心实现
 type Consul struct {
-	cb     func(*config.Event)
-	app    runtime.APP
-	conf   *Config
-	client *api.Client
+	options *config.SourceOptions
+	app     runtime.APP
+	conf    *Config
+	client  *api.Client
 }
 
 type Value struct {
@@ -54,9 +54,10 @@ func init() {
 }
 
 // New Consul配置中心初始化
-func New() (config.Sourcer, error) {
+func New(options *config.SourceOptions) (config.Sourcer, error) {
 	sourcer := &Consul{
-		app: runtime.GetAPP(),
+		app:     runtime.GetAPP(),
+		options: options,
 	}
 	if err := sourcer.loadAndWatchConfig(); err != nil {
 		return nil, err
@@ -69,11 +70,6 @@ func (s *Consul) GetAll() map[string]*config.Value {
 }
 
 func (s *Consul) Set(key string, value any) error {
-	return nil
-}
-
-func (s *Consul) Watch(callback func(event *config.Event)) error {
-	s.cb = callback
 	return nil
 }
 
@@ -199,7 +195,7 @@ func (w *configWatch) updateConfig(configs map[string]any, modifyIndex uint64) {
 	for key, value := range configs {
 		if oldModifyIndex, ok := w.configs[key]; !ok || oldModifyIndex != modifyIndex {
 			w.configs[key] = modifyIndex
-			w.s.cb(&config.Event{
+			w.s.options.Callback(&config.Event{
 				Type: config.EventTypeCreate,
 				Key:  strings.TrimPrefix(key, w.prefix),
 				Value: &config.Value{
@@ -254,7 +250,7 @@ func (w *configWatch) handler(_ uint64, data any) {
 				}
 			}
 			if !exist {
-				w.s.cb(&config.Event{
+				w.s.options.Callback(&config.Event{
 					Type: config.EventTypeDelete,
 					Key:  strings.TrimPrefix(key, w.prefix),
 					Value: &config.Value{

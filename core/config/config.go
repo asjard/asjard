@@ -2,7 +2,10 @@ package config
 
 import (
 	"sort"
+	"strings"
 	"sync"
+
+	"github.com/asjard/asjard/core/constant"
 )
 
 // configs 配置维护
@@ -25,10 +28,25 @@ func (c *configs) get(key string) (*Value, bool) {
 }
 
 func (c *configs) getAll() map[string]*Value {
-	cfgs := make(map[string]*Value, len(c.cfgs))
 	c.m.RLock()
+	cfgs := make(map[string]*Value, len(c.cfgs))
 	for key, value := range c.cfgs {
 		cfgs[key] = value
+	}
+	c.m.RUnlock()
+	return cfgs
+}
+
+// 根据前缀获取所有配置,并删除前缀
+func (c *configs) getAllWithPrefixs(prefixs ...string) map[string]*Value {
+	c.m.RLock()
+	cfgs := make(map[string]*Value)
+	for key, value := range c.cfgs {
+		for _, p := range prefixs {
+			if strings.HasPrefix(key, p) {
+				cfgs[strings.TrimPrefix(key, p+constant.ConfigDelimiter)] = value
+			}
+		}
 	}
 	c.m.RUnlock()
 	return cfgs

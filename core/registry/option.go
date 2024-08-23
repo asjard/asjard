@@ -8,25 +8,6 @@ import (
 
 // Options 服务注册发现相关参数
 type Options struct {
-	// // 项目名称
-	// App string
-	// // 区域
-	// Region string
-	// // 环境
-	// Environment string
-	// // 服务名称
-	// ServiceName string
-	// // 实例ID
-	// InstanceID string
-	// // 服务注册发现中心名称
-	// RegistryName string
-	// // 协议名称
-	// Protocol string
-	// // 版本
-	// Version string
-	// // 服务元数据
-	// MetaData map[string]string
-
 	// 自定义服务选择key
 	// 主要用来缓存
 	// customePickFuncKeys []string

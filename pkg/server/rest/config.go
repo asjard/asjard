@@ -67,7 +67,7 @@ type OptionsConfig struct {
 	TCPKeepalivePeriod                 utils.JSONDuration `json:"tCPKeepalivePeriod"`
 	MaxRequestBodySize                 int                `json:"maxRequestBodySize"`
 	DisableKeepalive                   bool               `json:"disableKeepalive"`
-	TCPKeepalive                       bool               `json:"tCPKeepalive"`
+	TCPKeepalive                       bool               `json:"tcpKeepalive"`
 	ReduceMemoryUsage                  bool               `json:"reduceMemoryUsage"`
 	GetOnly                            bool               `json:"getOnly"`
 	DisablePreParseMultipartForm       bool               `json:"disablePreParseMultipartForm"`

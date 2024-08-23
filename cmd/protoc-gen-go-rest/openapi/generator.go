@@ -100,6 +100,8 @@ func (g *OpenAPIv3Generator) Run(outputFile *protogen.GeneratedFile) error {
 }
 
 // buildDocumentV3 builds an OpenAPIv3 document for a plugin request.
+//
+//gocyclo:ignore
 func (g *OpenAPIv3Generator) BuildDocumentV3() *v3.Document {
 	d := &v3.Document{}
 	d.Openapi = "3.0.3"
@@ -295,7 +297,7 @@ func (g *OpenAPIv3Generator) _buildQueryParamsV3(field *protogen.Field, depths m
 	fieldDescription := g.filterCommentString(field.Comments.Leading)
 
 	if field.Desc.IsMap() {
-		// Map types are not allowed in query parameteres
+		// Map types are not allowed in query parameters
 		return parameters
 
 	} else if field.Desc.Kind() == protoreflect.MessageKind {
@@ -435,6 +437,8 @@ func (g *OpenAPIv3Generator) _buildQueryParamsV3(field *protogen.Field, depths m
 }
 
 // buildOperationV3 constructs an operation for a set of values.
+//
+//gocyclo:ignore
 func (g *OpenAPIv3Generator) buildOperationV3(
 	d *v3.Document,
 	operationID string,
@@ -571,7 +575,7 @@ func (g *OpenAPIv3Generator) buildOperationV3(
 		},
 	}
 
-	// Add the default reponse if needed
+	// Add the default response if needed
 	if *g.conf.DefaultResponse {
 		anySchemaName := g.reflect.formatMessageName(anyProtoDesc)
 		anySchema := wk.NewGoogleProtobufAnySchema(anySchemaName)
@@ -711,40 +715,12 @@ func (g *OpenAPIv3Generator) addPathsToDocumentV3(d *v3.Document, services []*pr
 			extHTTPs, ok := proto.GetExtension(method.Desc.Options(), httppb.E_Http).([]*httppb.Http)
 			if ok {
 				for index, rule := range extHTTPs {
-					// var path string
-					// var methodName string
-					// var body string
-
-					path, methodName, body := utils.ParseMethodOption(service, rule)
-
-					// body = rule.Body
-					// switch pattern := rule.Pattern.(type) {
-					// case *httppb.Http_Get:
-					// 	path = pattern.Get
-					// 	methodName = "GET"
-					// case *httppb.Http_Post:
-					// 	path = pattern.Post
-					// 	methodName = "POST"
-					// 	body = "*"
-					// case *httppb.Http_Put:
-					// 	path = pattern.Put
-					// 	methodName = "PUT"
-					// 	body = "*"
-					// case *httppb.Http_Delete:
-					// 	path = pattern.Delete
-					// 	methodName = "DELETE"
-					// case *httppb.Http_Patch:
-					// 	path = pattern.Patch
-					// 	methodName = "PATCH"
-					// 	body = "*"
-					// default:
-					// 	path = "unknown-unsupported"
-					// }
-
-					if methodName != "" {
+					httpOption := utils.ParseMethodHttpOption(service, rule)
+					if httpOption.Method != "" {
 						defaultHost := proto.GetExtension(service.Desc.Options(), annotations.E_DefaultHost).(string)
 						op, path2 := g.buildOperationV3(
-							d, operationID+"_"+strconv.Itoa(index), service.GoName, comment, defaultHost, path, body, inputMessage, outputMessage)
+							d, operationID+"_"+strconv.Itoa(index), service.GoName, comment, defaultHost,
+							httpOption.GetPath(), httpOption.Body, inputMessage, outputMessage)
 
 						// Merge any `Operation` annotations with the current
 						extOperation := proto.GetExtension(method.Desc.Options(), v3.E_Operation)
@@ -752,7 +728,7 @@ func (g *OpenAPIv3Generator) addPathsToDocumentV3(d *v3.Document, services []*pr
 							proto.Merge(op, extOperation.(*v3.Operation))
 						}
 
-						g.addOperationToDocumentV3(d, op, path2, methodName)
+						g.addOperationToDocumentV3(d, op, path2, httpOption.Method)
 					}
 				}
 			}
@@ -775,6 +751,8 @@ func (g *OpenAPIv3Generator) addSchemaToDocumentV3(d *v3.Document, schema *v3.Na
 }
 
 // addSchemasForMessagesToDocumentV3 adds info from one file descriptor.
+//
+//gocyclo:ignore
 func (g *OpenAPIv3Generator) addSchemasForMessagesToDocumentV3(d *v3.Document, messages []*protogen.Message) {
 	// For each message, generate a definition.
 	for _, message := range messages {

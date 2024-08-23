@@ -27,5 +27,6 @@ type MethodDesc struct {
 	// 接口处理方法
 	Handler methodHandler
 	// 接口描述
-	Desc string
+	Desc       string
+	WriterName string
 }

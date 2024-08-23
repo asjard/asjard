@@ -11,6 +11,8 @@ import (
 )
 
 // ToBoolE casts an interface to a bool type.
+//
+//gocyclo:ignore
 func ToBoolE(i interface{}) (bool, error) {
 	i = indirect(i)
 
@@ -59,6 +61,8 @@ func ToBoolE(i interface{}) (bool, error) {
 }
 
 // ToStringSliceE casts an interface to a []string type.
+//
+//gocyclo:ignore
 func ToStringSliceE(i interface{}, delimiter string) ([]string, error) {
 	var a []string
 
