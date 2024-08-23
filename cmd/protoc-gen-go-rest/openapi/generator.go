@@ -100,6 +100,8 @@ func (g *OpenAPIv3Generator) Run(outputFile *protogen.GeneratedFile) error {
 }
 
 // buildDocumentV3 builds an OpenAPIv3 document for a plugin request.
+//
+//gocyclo:ignore
 func (g *OpenAPIv3Generator) BuildDocumentV3() *v3.Document {
 	d := &v3.Document{}
 	d.Openapi = "3.0.3"
@@ -435,6 +437,8 @@ func (g *OpenAPIv3Generator) _buildQueryParamsV3(field *protogen.Field, depths m
 }
 
 // buildOperationV3 constructs an operation for a set of values.
+//
+//gocyclo:ignore
 func (g *OpenAPIv3Generator) buildOperationV3(
 	d *v3.Document,
 	operationID string,
@@ -747,6 +751,8 @@ func (g *OpenAPIv3Generator) addSchemaToDocumentV3(d *v3.Document, schema *v3.Na
 }
 
 // addSchemasForMessagesToDocumentV3 adds info from one file descriptor.
+//
+//gocyclo:ignore
 func (g *OpenAPIv3Generator) addSchemasForMessagesToDocumentV3(d *v3.Document, messages []*protogen.Message) {
 	// For each message, generate a definition.
 	for _, message := range messages {

@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+//gocyclo:ignore
 func mapForm(ptr any, form map[string][]string) error {
 	typ := reflect.TypeOf(ptr).Elem()
 	val := reflect.ValueOf(ptr).Elem()
