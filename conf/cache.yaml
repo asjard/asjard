@@ -27,4 +27,6 @@ asjard:
     local:
       ## redis客户端
       ## 多实例情况下需要通过redis删除其他节点的缓存
-      redisClient: default
+      # redisClient: default
+      ## 最大内存使用, 默认100 * 1024 * 1024
+      # maxSize: 104857600

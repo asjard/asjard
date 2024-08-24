@@ -4,25 +4,27 @@
 
 ```yaml
 asjard:
+  ## 监控相关配置
   metrics:
-    ## 是否开启指标收集
-    ## 如果开启了rest服务，则rest服务会多一个/metrics路由
-    enabled: true
+    ## 是否开启监控
+    # enabled: false
     ## 需要收集的指标
-    ## *代表所有指标
-    collectors:
-      - go_collector
-      - process_collector
-      - db_default_collector
-      - api_requests_total
-      - api_requests_latency_ms
-    ## pushgateway配置
-    ## 建议使用pushgateway方式收集指标
+    # collectors: ""
+    ## 内建配置的收集指标
+    # builtInCollectors:
+    #   - go_collector
+    #   - process_collector
+    #   - db_default
+    #   - api_requests_total
+    #   - api_requests_latency_seconds
+    #   - api_requests_size_bytes
+    #   - api_response_size_bytes
+    ## 推送到pushgateway中
     pushGateway:
-      ## 地址,不要路由
-      endpoint: http://127.0.0.1:9091
-      ## push间隔
-      interval: 5s
+      ## gateway地址
+      # endpoint: http://127.0.0.1:9091
+      ## 推送间隔
+      # interval: 5s
 ```
 
 ### 自定义指标

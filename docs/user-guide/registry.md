@@ -1,43 +1,42 @@
 > 将本服务注册到注册中心，或者从服务发现中心发现服务
 
-### 已实现服务发现
+## 已实现服务发现
 
-- [x] local
-- [x] etcd
-- [x] consul
+- [x] [local](registry-local.md)
+- [x] [etcd](registry-etcd.md)
+- [x] [consul](registry-consul.md)
 
-### 已实现服务注册
+## 已实现服务注册
 
-- [x] etcd
-- [x] consul
+- [x] [etcd](registry-etcd.md)
+- [x] [consul](registry-consul.md)
 
-### 本地服务发现
-
-#### 配置
+## 配置
 
 ```yaml
 asjard:
+  ## 服务发现，注册相关配置
   registry:
-    localDiscover:
-      ## 服务名称
-      helloGrpc:
-        ## 服务列表, 格式: {protocol}://{ip}:{port}
-        - grpc://127.0.0.1:7010
+    ## 是否自动服务注册
+    # autoRegiste: true
+    ## 延迟注册, 服务启动后等待延迟时间后注册服务到注册中心
+    # delayRegiste: 0s
+    ## 注册心跳, 开启后每隔一个心跳时间注册服务到服务注册中心
+    # heartbeat: false
+    ## 心跳频率
+    # heartbeatInterval: 5s
+
+    ## 自动服务发现, 自动从配置中心发现服务
+    # autoDiscove: true
+    ## 服务健康检查，检查服务是否正常，如果不正常则从本地缓存中删除该服务
+    # healthCheck: false
+    ## 健康检查间隔时间
+    # healthCheckInterval: 10s
+    ## 认定检查失败的检查阈值(连续失败次数)
+    # failureThreshold: 1
 ```
 
-### etcd服务注册发现
-
-#### 配置
-
-```yaml
-asjard:
-  registry:
-    etcd:
-      ## 客户端名称, asjard.database.etcd.clients.{这里的名称}
-      client: default
-```
-
-#### 使用
+## 使用
 
 ```go
 package main
@@ -45,7 +44,7 @@ package main
 import _ "github.com/asjard/asjard/pkg/registry/etcd"
 ```
 
-### 自定义服务注册
+## 自定义服务注册
 
 > 实现如下方法
 
@@ -80,7 +79,7 @@ import _ "you_custome_register_dir"
 
 ```
 
-### 自定义服务发现
+## 自定义服务发现
 
 > 实现如下方法
 

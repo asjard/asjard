@@ -1,5 +1,21 @@
 ## ETCD配置源
 
+## 配置
+
+```yaml
+## 配置中心相关
+asjard:
+  config:
+    ## etcd配置中心配置
+    etcd:
+      ## 配置中心名称
+      ## 依赖asjard.stores.etcd.clients.{client}的配置
+      # client: default
+      ## 分隔符
+      ## etcd中多个key之间分隔符
+      # delimiter: "/"
+```
+
 ### 配置优先级
 
 > 从上向下优先级依次递增,多个字段之间以英文`/`分隔,不以`/`结尾

@@ -17,7 +17,7 @@ asjard:
     ## 健康检查间隔时间
     # healthCheckInterval: 10s
     ## 认定检查失败的检查阈值(连续失败次数)
-    failureThreshold: 1
+    # failureThreshold: 1
 
     ## 本地服务发现配置
     ## 实时生效，无需重启服务

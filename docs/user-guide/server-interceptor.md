@@ -38,3 +38,34 @@ asjard:
 ```
 
 其中`123`为错误码, 只包含`系统码`和`错误码`
+
+## ratelimiter
+
+```yaml
+asjard:
+  ## 拦截器相关配置
+  interceptors:
+    ## 服务端拦截器相关配置
+    server:
+      ## 限速器配置
+      rateLimiter:
+        ## 是否开启限速
+        # enabled: false
+        ## 每秒最多多少个请求
+        ## <0表示不限制
+        # limit: -1
+        ## 桶容量大小,小于0则为limit值
+        # burst: -1
+        ## 单独方法的限速配置
+        methods:
+          ## 方法名称
+          ## [{protocol}://]{method}
+          ## 所有协议健康检查限速每秒10个请求
+          # - name: /asjard.api.health.Health/Check
+          #   limit: 10
+          #   burst: 10
+          ## grpc协议的/api.v1.server.Server/Hello限速每秒20个请求
+          # - name: grpc:///api.v1.server.Server/Hello
+          #   limit: 20
+          #   burst: 20
+```
