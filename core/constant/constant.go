@@ -14,7 +14,7 @@ const (
 	// ConfigDelimiter 配置分隔符
 	ConfigDelimiter = "."
 	// DefaultCipherName 默认加解密名称
-	DefaultCipherName = "default"
+	// DefaultCipherName = "default"
 	// 全部协议
 	AllProtocol = "*"
 )

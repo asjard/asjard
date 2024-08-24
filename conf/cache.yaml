@@ -1,46 +1,30 @@
+## 缓存相关配置
 asjard:
   cache:
     ## 全局是否开启缓存
-    enabled: true
+    # enabled: false
     ## 全局是否自动刷新
-    autoRefresh: true
+    # autoRefresh: false
     ## 全局过期时间
-    expiresIn: 5m
+    # expiresIn: 10m
     ## 空值过期时间
-    emptyExpiresIn: 2m
+    # emptyExpiresIn: 5m
     ## 全局表缓存配置
     models:
       ## 表名
+      ## 配置同asjard.cache相关配置
       modelName:
-        enabled: true
-        autoRefresh: true
+        # enabled: false
+        # autoRefresh: false
     ## redis缓存相关配置
     ## 如果不配置则继承asjard.cache
     redis:
       ## redis客户端
-      client: default
-      # 是否自动刷新
-      autoRefresh: true
-      # 过期时间
-      expiresIn: 5m
-      # 是否开启某个表的缓存
-      models:
-        modelName:
-          enabled: true
+      ## asjard.stores.redis.clients.{这里的名称}
+      # client: default
     ## 本地缓存相关配置
     ## 除redisClient字段其他字段如果不配置则继承asjard.cache
     local:
-      ## 是否开启本地缓存
-      ## 如果不配置则继承asjard.cache.enabled
-      ## 除redisClient字段外其他同理
-      enabled: true
-      ## 过期时间
-      expiresIn: 5m
-      ## 最大占用空间,单位MB
-      maxSize: 102400
       ## redis客户端
       ## 多实例情况下需要通过redis删除其他节点的缓存
       redisClient: default
-      models:
-        modelName:
-          enabled: true

@@ -1,25 +1,21 @@
 asjard:
   ## 服务发现，注册相关配置
   registry:
-    registers: etcd
     ## 是否自动服务注册
-    ## TODO 实时生效
-    autoRegiste: true
+    # autoRegiste: true
     ## 延迟注册, 服务启动后等待延迟时间后注册服务到注册中心
-    delayRegiste: 10s
+    # delayRegiste: 0s
     ## 注册心跳, 开启后每隔一个心跳时间注册服务到服务注册中心
-    heartbeat: true
+    # heartbeat: false
     ## 心跳频率
-    heartbeatInterval: 5s
+    # heartbeatInterval: 5s
 
-    discovers: localDiscover,etcd
     ## 自动服务发现, 自动从配置中心发现服务
-    ## TODO 实时生效
-    autoDiscove: true
+    # autoDiscove: true
     ## 服务健康检查，检查服务是否正常，如果不正常则从本地缓存中删除该服务
-    healthCheck: true
+    # healthCheck: false
     ## 健康检查间隔时间
-    healthCheckInterval: 10s
+    # healthCheckInterval: 10s
     ## 认定检查失败的检查阈值(连续失败次数)
     failureThreshold: 1
 
@@ -28,25 +24,20 @@ asjard:
     localDiscover:
       ## 服务名称
       ## 配置格式{protocol}://{ip}:{port}
-      helloGrpc:
-        - grpc://127.0.0.1:7010
-        - grpc://127.0.0.1:7011
-      # helloGrpc1:
-      #   - grpc://127.0.0.1:8081
-      #   - grpc://127.0.0.1:9081
+      # helloGrpc:
+      # - grpc://127.0.0.1:7010
+      # - grpc://127.0.0.1:7011
 
     ## etcd注册发现中心相关配置
-    ## 依赖asjard.stores.etcd
     etcd:
-      ## 配置asjard.stores.etcd.clientss中的数据库名称(key)
-      client: default
+      ## 配置asjard.stores.etcd.clients中的数据库名称(key)
+      # client: default
+      ## 超时时间
+      # timeout: 5s
 
+    ## consul注册发现中心相关配置
     consul:
-      client: default
-
-    nacos:
-      ## 客户端名称
-      ## asjard.stores.nacos.clients中的名称
-      client: default
-      ## 命名空间
-      namespaceId: ""
+      ## 配置asjard.stores.consul.clients中的数据库名称
+      # client: default
+      ## 超时时间
+      # timeout: 5s

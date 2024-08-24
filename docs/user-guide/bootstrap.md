@@ -28,6 +28,7 @@ func(CustomeBootstrap) Bootstrap() error {return nil}
 func(CustomeBootstrap) Shutdown() {}
 
 func init() {
+	// 添加到启动引导队列
 	bootstrap.AddBootstrap(&CustomeBootstrap{})
 }
 ```

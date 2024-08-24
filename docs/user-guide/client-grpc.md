@@ -5,10 +5,10 @@ asjard:
   ## 客户端相关配置
   ## 不实时更新
   clients:
-    ## 客户端负载均衡, 不存在或者为空，则默认为roundRobin
-    loadbalance: "roundRobin"
+    ## 客户端负载均衡, 不存在或者为空，则默认为localityRoundRobin
+    loadbalance: "localityRoundRobin"
     ## 同servers.interceptors配置
-    interceptors: "rest2RpcContext,cycleChainInterceptor,circuitBreaker"
+    # interceptors: "rest2RpcContext,cycleChainInterceptor,circuitBreaker"
     ## 同servers.certFile配置
     certFile: ""
     ## grpc客户端相关配置

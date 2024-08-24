@@ -6,8 +6,6 @@ package security
 import (
 	"fmt"
 	"sync"
-
-	"github.com/asjard/asjard/core/constant"
 )
 
 // Cipher 加解密需要实现的接口
@@ -44,9 +42,9 @@ var (
 func init() {
 	cpm = &cipherManager{
 		ciphers:           make(map[string]Cipher),
-		defaultCipherName: constant.DefaultCipherName,
+		defaultCipherName: DefaultCipherName,
 	}
-	AddCipher(constant.DefaultCipherName, NewDefaultCipher)
+	AddCipher(DefaultCipherName, NewDefaultCipher)
 }
 
 // AddCipher 添加加解密组件
