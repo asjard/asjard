@@ -210,15 +210,15 @@ val = config.GetString("key", "default_value", config.WithWatch(func(event *conf
 
 | 支持 | 配置源                           | 优先级 | 描述                           |
 | :--: | :------------------------------- | :----: | ------------------------------ |
-|  x   | [环境变量](config_env.md)        |   0    |
+|  x   | [环境变量](config-env.md)        |   0    |
 |      | cli                              |   1    |
-|  x   | [文件](config_file.md)           |   2    |
-|  x   | [etcd](config_etcd.md)           |   10   | key/value, file模式配置        |
-|  x   | [consul](config_consul.md)       |   11   | ket/value模式配置,file模式配置 |
-|      | [nacos](config_nacos.md)         |   12   | 没有删除事件                   |
-|      | [apollo](config_appolo.md)       |   13   |
-|      | [configmap](config_configmap.md) |   14   |
-|  x   | [本地内存](config_mem.md)        |   99   |
+|  x   | [文件](config-file.md)           |   2    |
+|  x   | [etcd](config-etcd.md)           |   10   | key/value, file模式配置        |
+|  x   | [consul](config-consul.md)       |   11   | ket/value模式配置,file模式配置 |
+|      | [nacos](config-nacos.md)         |   12   | 没有删除事件                   |
+|      | [apollo](config-appolo.md)       |   13   |
+|      | [configmap](config-configmap.md) |   14   |
+|  x   | [本地内存](config-mem.md)        |   99   |
 
 ## 配置源优先级
 
