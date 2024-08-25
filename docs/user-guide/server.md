@@ -9,36 +9,32 @@
 ## 公共配置
 
 ```yaml
+## 服务欧相关配置
 asjard:
+  ## 多协议服务相关配置
+  ## 不实时生效，修改后需重新启动
   servers:
-    ## 是否开启某种协议的服务
-    enabled: true
-    ## 自定义拦截器
-    interceptors:
-      - "custome_interceptors"
-    ## 内建拦截器, 框架已实现的一些拦截器, 并已自动导入
-    ## 默认值查看core/server/config.go#DefaultConfig
-    ## 如果需要修改默认拦截器可修改该配置
-    builtInInterceptors:
-      - "metrics"
+    ## 协议无关的服务端拦截器列表,多个拦截器以英文逗号(,)分隔
+    # interceptors: ""
+    ## 内建配置的拦截器
+    # builtInInterceptors:
+    #   - ratelimiter
+    #   - metrics
+    #   - accessLog
+    #   - restReadEntity
+    #   - restResponseHeader
+    #   - i18n
+    #   - trace
     ## 默认处理器
-    defaultHandlers:
-      - "custome_default_handlers"
-    ## 内建默认处理器
-    ## 功能同内建拦截器
-    builtInDefaultHandlers:
-      - health
-      - metrics
-    ## 协议的监听地址
-    addresses:
-      ## 监听地址
-      listen: 0.0.0.0:8080
-      ## 广播地址
-      advertise: https://xxx.com
-    ## 证书文件,相对于ASJARD_CONF_DIR/certs目录的相对路径
-    certFile: "xxx.crt"
-    ## 同certFile
-    keyFile: "xxx.key"
+    # defaultHandlers: ""
+    ## 内建配置的默认处理器
+    # builtInDefaultHandlers:
+    #   - health
+    #   - metrics
+    ## 证书文件,ASJARD_CERT_DIR下的路径
+    certFile: ""
+    ## 私钥文件, ASJARD_CERT_DIR下的路径
+    keyFile: ""
 ```
 
 ## 如何实现自己的服务

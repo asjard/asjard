@@ -1,28 +1,30 @@
 > 缓存使用
 
-详细实例参考`examples/mysql`
+详细实例参考[examples/mysql](https://github.com/asjard/examples/blob/main/mysql/model/table.go)
 
 ## 全局配置
 
 > 其他自定义缓存如果没有配置如下字段，则继承全局配置
 
 ```yaml
+## 缓存相关配置
 asjard:
   cache:
     ## 全局是否开启缓存
-    enabled: true
+    # enabled: false
     ## 全局是否自动刷新
-    autoRefresh: true
+    # autoRefresh: false
     ## 全局过期时间
-    expiresIn: 5m
+    # expiresIn: 10m
+    ## 空值过期时间
+    # emptyExpiresIn: 5m
     ## 全局表缓存配置
     models:
       ## 表名
+      ## 配置同asjard.cache相关配置
       modelName:
-        ## 表级缓存配置
-        enabled: true
-        autoRefresh: true
-        expiresIn: 5m
+        # enabled: false
+        # autoRefresh: false
 ```
 
 ## 自定义缓存

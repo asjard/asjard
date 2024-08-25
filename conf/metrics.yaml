@@ -1,13 +1,22 @@
 asjard:
+  ## 监控相关配置
   metrics:
-    enabled: false
-    ## 支持特性
-    collectors:
-      - goruntime
-      - apirequests
+    ## 是否开启监控
+    # enabled: false
+    ## 需要收集的指标
+    # collectors: ""
+    ## 内建配置的收集指标
+    # builtInCollectors:
+    #   - go_collector
+    #   - process_collector
+    #   - db_default
+    #   - api_requests_total
+    #   - api_requests_latency_seconds
+    #   - api_requests_size_bytes
+    #   - api_response_size_bytes
     ## 推送到pushgateway中
     pushGateway:
       ## gateway地址
-      endpoint: http://127.0.0.1:9091
+      # endpoint: http://127.0.0.1:9091
       ## 推送间隔
-      interval: 5s
+      # interval: 5s

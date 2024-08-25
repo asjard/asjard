@@ -51,11 +51,17 @@ type Config struct {
 
 // Options 数据库连接全局配置
 type Options struct {
-	MaxIdleConns    int                `json:"maxIdleConns"`
-	MaxOpenConns    int                `json:"maxOpenConns"`
-	ConnMaxIdleTime utils.JSONDuration `json:"connMaxIdleTime"`
-	ConnMaxLifeTime utils.JSONDuration `json:"connMaxLifeTime"`
-	Debug           bool               `json:"debug"`
+	MaxIdleConns              int                `json:"maxIdleConns"`
+	MaxOpenConns              int                `json:"maxOpenConns"`
+	ConnMaxIdleTime           utils.JSONDuration `json:"connMaxIdleTime"`
+	ConnMaxLifeTime           utils.JSONDuration `json:"connMaxLifeTime"`
+	Debug                     bool               `json:"debug"`
+	SkipInitializeWithVersion bool               `json:"skipInitializeWithVersion"`
+	SkipDefaultTransaction    bool               `json:"skipDefaultTransaction"`
+	// 是否开启链路追踪
+	Traceable bool `json:"traceable"`
+	// 是否开启监控
+	Metricsable bool `json:"metricsable"`
 }
 
 // DBConnConfig 数据库连接配置
@@ -71,13 +77,7 @@ type DBConnConfig struct {
 // DBConnOptions 数据库连接自定义配置
 type DBConnOptions struct {
 	Options
-	CustomeDriverName         string `json:"driverName"`
-	SkipInitializeWithVersion bool   `json:"skipInitializeWithVersion"`
-	SkipDefaultTransaction    bool   `json:"skipDefaultTransaction"`
-	// 是否开启链路追踪
-	Traceable bool `json:"traceable"`
-	// 是否开启监控
-	Metricsable bool `json:"metricsable"`
+	CustomeDriverName string `json:"driverName"`
 }
 
 // DBOptions .
@@ -102,7 +102,6 @@ var (
 		MaxOpenConns:    100,
 		ConnMaxIdleTime: utils.JSONDuration{Duration: 10 * time.Second},
 		ConnMaxLifeTime: utils.JSONDuration{Duration: time.Hour},
-		Debug:           false,
 	}
 )
 

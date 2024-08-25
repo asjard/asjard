@@ -3,22 +3,13 @@
 ## 配置
 
 ```yaml
+## 配置中心相关
 asjard:
-  ## 配置中心相关
   config:
     ## 添加配置默认配置源
     ## Set方法默认配置源, 如果不配置或者为空，则发送给所有配置源, 默认mem
     ## 具体是否能够添加配置到配置源中要看具体配置源是否实现Set功能
-    ## 目前只有mem实现了Set功能
-    setDefaultSource: mem
-
-    ## 配置源相关配置
-    ## key为配置源名称
-    ## value为配置源相关的配置
-    ## etcd配置中心配置
-    etcd:
-      ## 配置中心地址
-      client: default
+    # setDefaultSource: mem
 ```
 
 ## 配置获取

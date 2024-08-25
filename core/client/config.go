@@ -20,6 +20,7 @@ type Config struct {
 	CertFile string `json:"ccertFile"`
 }
 
+// DefaultConfig 默认配置
 var DefaultConfig = Config{
 	Loadbalance:         "localityRoundRobin",
 	BuiltInInterceptors: utils.JSONStrings{"rest2RpcContext", "circuitBreaker", "cycleChainInterceptor"},

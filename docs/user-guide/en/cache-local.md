@@ -1,27 +1,24 @@
-## 本地缓存
+## Local Cache
 
-### 配置
+## Config
 
-> 比[全局配置](cache.md)多`redisClient` redis广播客户端配置,
-> 当有多个实例时可通过redis广播通知其他实例删除缓存
-> 如果不配置[全局配置](cache.md)中的字段则继承全局配置
+> Reference [Cache](cache.md)
+> If you have many instances, you can delete other instances local cache use redis
 
 ```yaml
-## 缓存相关配置
 asjard:
-  ## 本地缓存相关配置
-  ## 除redisClient字段其他字段如果不配置则继承asjard.cache
+  ## inherit from asjard.cache
   local:
-    ## redis客户端
-    ## 多实例情况下需要通过redis删除其他节点的缓存
+    ## Redis client
+    ## Delete other instances local cache
     # redisClient: default
-    ## 最大内存使用, 默认100 * 1024 * 1024
+    ## Max memory size use, default 100 * 1024 * 1024
     # maxSize: 104857600
 ```
 
-### 使用
+## Use
 
-您可以参考[https://github.com/asjard/examples/blob/main/mysql/model/table.go](https://github.com/asjard/examples/blob/main/mysql/model/table.go)
+Reference [https://github.com/asjard/examples/blob/main/mysql/model/table.go](https://github.com/asjard/examples/blob/main/mysql/model/table.go)
 
 ```go
 import "github.com/asjard/asjard/pkg/database/cache"
@@ -40,19 +37,18 @@ type ExampleModel struct {
 	localCache *cache.CacheLocal
 }
 
-// TableName 数据库表名
+// TableName table name
 func (ExampleTable) TableName() string {
 	return "example_table"
 }
 
-// ModelName 全局唯一的表明
+// ModelName model name will used at cache key
 func (ExampleTable) ModelName() string {
 	return "example_database_example_table"
 }
 
-// Bootstrap 缓存初始化
+// Bootstrap use bootstrap to init local cache
 func (model *ExampleModel) Bootstrap() (err error) {
-	// 本地缓存初始化
 	model.localCache, err = cache.NewLocalCache(model.ExampleTable)
 	if err != nil {
 		return err
@@ -63,7 +59,6 @@ func (model *ExampleModel) Bootstrap() (err error) {
 func (model *ExampleModel) Search(ctx context.Context, in *pb.SearchReq) (*pb.ExampleList, error) {
 	var result pb.ExampleList
 	if err := model.GetData(ctx, &result,
-		// 通过本地缓存获取数据
 		model.localCache.WithKey(model.searchCacheKey(in)),
 		func() (any, error) {
 			return model.ExampleTable.Search(ctx, in)

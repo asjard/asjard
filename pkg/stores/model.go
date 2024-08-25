@@ -50,13 +50,14 @@ func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (
 		if err != nil {
 			// 如果从数据源也没有获取到数据
 			// 则可以设置一个空值
-			cache.Set(ctx, cache.Key(), out, cache.EmptyExpiresIn())
+			if rerr := cache.Set(ctx, cache.Key(), out, cache.EmptyExpiresIn()); rerr != nil {
+				logger.Error("set empty into cache fail", "err", rerr)
+			}
 			return err
 		}
 		// 设置缓存
 		if err := cache.Set(ctx, cache.Key(), result, cache.ExpiresIn()); err != nil {
 			logger.Error("set cache fail", "key", cache.Key(), "err", err)
-			// return status.SetCacheFailError
 		}
 		return m.copy(result, out)
 	}

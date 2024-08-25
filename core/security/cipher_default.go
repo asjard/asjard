@@ -1,5 +1,10 @@
 package security
 
+const (
+	// DefaultCipherName 默认加解密名称
+	DefaultCipherName = "default"
+)
+
 // DefaultCipher 默认加解密组件
 type DefaultCipher struct {
 	name string

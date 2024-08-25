@@ -5,20 +5,15 @@
 > 比[全局配置](cache.md)多`client`redis客户端配置
 
 ```yaml
+## 缓存相关配置
 asjard:
   cache:
     ## redis缓存相关配置
+    ## 如果不配置则继承asjard.cache
     redis:
       ## redis客户端
-      client: default
-      # 是否自动刷新
-      autoRefresh: true
-      # 过期时间
-      expiresIn: 5m
-      # 是否开启某个表的缓存
-      models:
-        modelName:
-          enabled: true
+      ## asjard.stores.redis.clients.{这里的名称}
+      # client: default
 ```
 
 ### 使用

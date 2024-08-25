@@ -27,7 +27,7 @@ type DiscoverConfig struct {
 	AutoDiscove         bool               `json:"autoDiscove"`
 	HealthCheck         bool               `json:"healthCheck"`
 	HealthCheckInterval utils.JSONDuration `json:"healthCheckInterval"`
-	FailureThreshold    int                `json:"FailureThreshold"`
+	FailureThreshold    int                `json:"failureThreshold"`
 }
 
 var defaultConfig = Config{
@@ -38,6 +38,7 @@ var defaultConfig = Config{
 	DiscoverConfig: DiscoverConfig{
 		AutoDiscove:         true,
 		HealthCheckInterval: utils.JSONDuration{Duration: 10 * time.Second},
+		FailureThreshold:    1,
 	},
 }
 

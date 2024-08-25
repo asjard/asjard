@@ -49,7 +49,7 @@ type Options struct {
 	DialKeepAliveTimeout  utils.JSONDuration `json:"dialKeepAliveTimeout"`
 	MaxCallSendMsgSize    int                `json:"maxCallSendMsgSize"`
 	MaxCallRecvMsgSize    int                `json:"maxCallRecvMsgSize"`
-	UserName              string             `json:"userName"`
+	Username              string             `json:"username"`
 	Password              string             `json:"password"`
 	RejectOldCluster      bool               `json:"rejectOldCluster"`
 	PermitWithoutStream   bool               `json:"permitWithoutStream"`
@@ -57,7 +57,7 @@ type Options struct {
 	BackoffWaitBetween    utils.JSONDuration `json:"backoffWaitBetween"`
 	BackoffJitterFraction float64            `json:"backoffJitterFraction"`
 	CAFile                string             `json:"caFile"`
-	CertFile              string             `json:"CertFile"`
+	CertFile              string             `json:"certFile"`
 	KeyFile               string             `json:"keyFile"`
 }
 
@@ -153,7 +153,7 @@ func (m *ClientManager) newClient(name string, cfg *ClientConnConfig) error {
 		DialTimeout:           cfg.Options.DialTimeout.Duration,
 		DialKeepAliveTime:     cfg.Options.DialKeepAliveTime.Duration,
 		DialKeepAliveTimeout:  cfg.Options.DialKeepAliveTimeout.Duration,
-		Username:              cfg.Options.UserName,
+		Username:              cfg.Options.Username,
 		Password:              cfg.Options.Password,
 		RejectOldCluster:      cfg.Options.RejectOldCluster,
 		PermitWithoutStream:   cfg.Options.PermitWithoutStream,

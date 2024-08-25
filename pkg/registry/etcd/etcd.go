@@ -50,15 +50,18 @@ var (
 )
 
 func init() {
+	// 添加到服务注册供应商列表
 	registry.AddRegister(NAME, NewRegister)
+	// 添加到服务发现供应商列表
 	registry.AddDiscover(NAME, NewDiscovery)
 }
 
-// New .
+// NewRegister 服务注册初始化
 func NewRegister() (registry.Register, error) {
 	return New(nil)
 }
 
+// NewDiscovery 服务发现初始化
 func NewDiscovery(options *registry.DiscoveryOptions) (registry.Discovery, error) {
 	discover, err := New(options)
 	if err != nil {
@@ -68,6 +71,7 @@ func NewDiscovery(options *registry.DiscoveryOptions) (registry.Discovery, error
 	return discover, nil
 }
 
+// New etcd服务注册发现初始化
 func New(options *registry.DiscoveryOptions) (*Etcd, error) {
 	var err error
 	newOnce.Do(func() {
@@ -108,11 +112,6 @@ func (e *Etcd) GetAll() ([]*registry.Instance, error) {
 		})
 	}
 	return instances, nil
-}
-
-// HealthCheck 监控检查
-func (e *Etcd) HealthCheck(instance *server.Service) error {
-	return nil
 }
 
 // Name 名称
@@ -175,9 +174,6 @@ func (e *Etcd) Remove(instance *server.Service) {
 	}
 	cancel()
 }
-
-// Heartbeat 向服务注册中心发送心跳
-func (e *Etcd) Heartbeat(instance *server.Service) {}
 
 func (e *Etcd) watch() {
 	logger.Debug("watch instance from etcd")

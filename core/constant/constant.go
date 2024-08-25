@@ -7,14 +7,14 @@ const (
 	// Framework 框架名称
 	Framework = "asjard"
 	// FrameworkVersion 框架版本号
-	FrameworkVersion = "1.0.0"
+	FrameworkVersion = "0.5.2"
 	FrameworkGithub  = "https://github.com/asjard/asjard"
 	// DefaultDelimiter 默认分隔符
 	DefaultDelimiter = ","
 	// ConfigDelimiter 配置分隔符
 	ConfigDelimiter = "."
 	// DefaultCipherName 默认加解密名称
-	DefaultCipherName = "default"
+	// DefaultCipherName = "default"
 	// 全部协议
 	AllProtocol = "*"
 )

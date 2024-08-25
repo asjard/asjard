@@ -46,9 +46,8 @@ type MethodRateLimiterConfig struct {
 
 var (
 	defaultRateLimiteConfig = RateLimiterConfig{
-		Enabled: false,
-		Limit:   -1,
-		Burst:   -1,
+		Limit: -1,
+		Burst: -1,
 	}
 )
 

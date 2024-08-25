@@ -1,49 +1,46 @@
-> 主要是用来在框架初始化后加入一些逻辑来引导业务系统的启动和在系统停止后做一些清理逻辑,
-> 比如框架中的gorm数据库的连接就是通过bootstrap引导连接并断开的
+> Bootstrap is a feature that execute at after framework inited and before server start
 
-## 如何实现
+## Add bootstrap
 
-实现如下方法
+Implement this methods at below
 
 ```go
-// BootstrapHandler 启动引导需实现的方法
+// BootstrapHandler need implement function
 type BootstrapHandler interface {
-	// 启动时执行
+	// execute at bootstrap
 	Bootstrap() error
-	// 停止时执行
+	// execute at shutdown
 	Shutdown()
 }
 ```
 
-并添加到引导队列中
+Add custome bootstrap
 
 ```go
 import "github.com/asjard/asjard/core/bootstrap"
 
+// custome bootstrap implement
 type CustomeBootstrap struct{}
-
-// 系统初始化后会执行如下方法
 func(CustomeBootstrap) Bootstrap() error {return nil}
-// 系统停止后会执行如下方法
 func(CustomeBootstrap) Shutdown() {}
 
 func init() {
-	// 添加到启动引导队列
+	// add custome bootstrap
 	bootstrap.AddBootstrap(&CustomeBootstrap{})
 }
 ```
 
-示例
+Example
 
-您可以参考[https://github.com/asjard/asjard/blob/main/pkg/stores/xgorm/xgorm.go](https://github.com/asjard/asjard/blob/main/pkg/stores/xgorm/xgorm.go)
+reference [https://github.com/asjard/asjard/blob/main/pkg/stores/xgorm/xgorm.go](https://github.com/asjard/asjard/blob/main/pkg/stores/xgorm/xgorm.go)
 
 ```go
-// DBManager 数据连接维护
+// DBManager database manager
 type DBManager struct {
 	dbs sync.Map
 }
 
-// Bootstrap 连接到数据库
+// Bootstrap connect to all databases
 func (m *DBManager) Bootstrap() error {
 	logger.Debug("store gorm start")
 	conf, err := m.loadAndWatchConfig()
@@ -53,7 +50,7 @@ func (m *DBManager) Bootstrap() error {
 	return m.connDBs(conf)
 }
 
-// Shutdown 和数据库断开连接
+// Shutdown disconnect from database
 func (m *DBManager) Shutdown() {
 	m.dbs.Range(func(key, value any) bool {
 		conn, ok := value.(*DBConn)

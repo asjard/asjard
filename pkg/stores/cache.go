@@ -56,8 +56,6 @@ type Cache struct {
 var (
 	// DefaultCacheConfig 默认配置
 	DefaultCacheConfig = CacheConfig{
-		Enabled:        true,
-		AutoRefresh:    true,
 		ExpiresIn:      utils.JSONDuration{Duration: 10 * time.Minute},
 		EmptyExpiresIn: utils.JSONDuration{Duration: 5 * time.Minute},
 	}
