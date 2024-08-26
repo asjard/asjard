@@ -41,6 +41,8 @@ asjard:
 
 ## ratelimiter
 
+支持协议: all
+
 ```yaml
 asjard:
   ## 拦截器相关配置

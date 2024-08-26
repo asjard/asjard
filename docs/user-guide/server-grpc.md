@@ -54,7 +54,7 @@ func (api *HelloAPI) GrpcServiceDesc() *grpc.ServiceDesc {
 func main() {
 	server := asjard.New()
 	//提供grpc服务
-	server.AddHandlerV2(&HelloAPI{}, grpc.Protocol)
+	server.AddHandler(&HelloAPI{}, grpc.Protocol)
 	// 启动服务
 	if err := server.Start(); err != nil {
 		panic(err)

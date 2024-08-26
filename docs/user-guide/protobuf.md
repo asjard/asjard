@@ -6,7 +6,7 @@
 - protobuf中使用添加openapi文档参考[这里](https://github.com/google/gnostic/tree/main/openapiv3), `protoc-gen-rest`命令中已集成
 
 ```proto
-// github.com/asjard/asjard/examples/example/example.proto
+// github.com/asjard/asjard/examples/protobuf/server.proto
 
 syntax = "proto3";
 
