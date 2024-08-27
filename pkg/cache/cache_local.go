@@ -185,7 +185,11 @@ func (c *CacheLocal) delSubscribe() {
 }
 
 func (c *CacheLocal) delChannel() string {
-	return c.Prefix() + ":channels:delete"
+	return c.App().ResourceKey("caches_local_channel",
+		"delete",
+		":",
+		false,
+		false)
 }
 
 func (c *CacheLocal) load() error {

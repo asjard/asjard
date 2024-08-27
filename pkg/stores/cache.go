@@ -86,15 +86,19 @@ func (c *Cache) AutoRefresh() bool {
 	return c.conf.AutoRefresh
 }
 
-// Prefix 缓存前缀
-// {app}:caches:{env}:service:{service}:{region}:{az}:{model_name}
-func (c *Cache) Prefix() string {
-	return c.app.App + ":caches:" + c.app.Environment + ":service:" + c.app.Instance.Name + ":" + c.app.Region + ":" + c.app.AZ + ":" + c.model.ModelName()
-}
-
 // NewKey 缓存key
 func (c *Cache) NewKey(key string) string {
-	return c.Prefix() + ":" + key
+	return c.app.ResourceKey("caches", c.ModelKey(key), ":", false, false)
+}
+
+// App 返回app信息
+func (c *Cache) App() runtime.APP {
+	return c.app
+}
+
+// ModelKey key组合
+func (c *Cache) ModelKey(key string) string {
+	return c.model.ModelName() + ":" + key
 }
 
 // ExpiresIn 缓存过期时间

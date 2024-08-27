@@ -4,6 +4,7 @@ Package runtime 系统运行时一些参数，系统启动时初始化，后续�
 package runtime
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/asjard/asjard/core/config"
@@ -78,4 +79,32 @@ func GetAPP() APP {
 		logger.Debug("get app", "app", app)
 	})
 	return app
+}
+
+// ResourceKey 资源key
+// 比如缓存中的key
+// {app}:{resource}:{env}:service:{service}:{region}:{az}:{key}
+// resource: 资源类型, 比如caches, lock
+// delimiter: 分隔符, 比如':', '/'
+// key: 资源key
+// startWithDelimiter: 是否已分隔符开头
+// endWithDelimiter: 是否以分隔符结尾
+func (app APP) ResourceKey(resource, key, delimiter string, startWithDelimiter, endWithDelimiter bool) string {
+	fullKey := strings.Join([]string{
+		app.App,
+		resource,
+		app.Environment,
+		"service",
+		app.Instance.Name,
+		app.Region,
+		app.AZ,
+		key,
+	}, delimiter)
+	if startWithDelimiter {
+		fullKey = delimiter + fullKey
+	}
+	if endWithDelimiter {
+		fullKey += delimiter
+	}
+	return fullKey
 }
