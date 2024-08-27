@@ -27,40 +27,53 @@ type HttpOption struct {
 
 // Path 请求路径
 func (h HttpOption) GetPath() string {
-	return strings.TrimSuffix(strings.Join([]string{
-		"",
-		strings.Trim(h.Api, pathDelimiter),
-		strings.Trim(h.Version, pathDelimiter),
-		strings.Trim(h.Group, pathDelimiter),
-		strings.Trim(h.Path, pathDelimiter),
-	}, pathDelimiter), pathDelimiter)
+	paths := make([]string, 0, 5)
+	paths = append(paths, "")
+	api := strings.Trim(h.Api, pathDelimiter)
+	if api != "" {
+		paths = append(paths, api)
+	}
+	version := strings.Trim(h.Version, pathDelimiter)
+	if version != "" {
+		paths = append(paths, version)
+	}
+	group := strings.Trim(h.Group, pathDelimiter)
+	if group != "" {
+		paths = append(paths, group)
+	}
+	path := strings.Trim(h.Path, pathDelimiter)
+	paths = append(paths, path)
+	return strings.Join(paths, pathDelimiter)
 }
 
 func parseServiceHttpOption(service *protogen.Service) *HttpOption {
 	option := &HttpOption{}
-	if serviceHttpOption, ok := proto.GetExtension(service.Desc.Options(), httppb.E_ServiceHttp).(*httppb.Http); ok {
-		if serviceHttpOption != nil && serviceHttpOption.Group != "" {
-			option.Group = serviceHttpOption.Group
-			option.Api = serviceHttpOption.Api
-			option.Version = serviceHttpOption.Version
-			option.WriterName = serviceHttpOption.WriterName
-		}
+	if serviceHttpOption, ok := proto.GetExtension(service.Desc.Options(), httppb.E_ServiceHttp).(*httppb.Http); ok && serviceHttpOption != nil {
+		option.Group = serviceHttpOption.Group
+		option.Api = serviceHttpOption.Api
+		option.Version = serviceHttpOption.Version
+		option.WriterName = serviceHttpOption.WriterName
 	}
 	return option
 }
 
 func parseMethodHttpOption(h *httppb.Http, serviceOption *HttpOption) *HttpOption {
-	option := &HttpOption{}
-	if h.Api == "" {
+	option := &HttpOption{
+		Api:        h.Api,
+		Version:    h.Version,
+		Group:      h.Group,
+		WriterName: h.WriterName,
+	}
+	if option.Api == "" {
 		option.Api = serviceOption.Api
 	}
-	if h.Version == "" {
+	if option.Version == "" {
 		option.Version = serviceOption.Version
 	}
-	if h.Group == "" {
+	if option.Group == "" {
 		option.Group = serviceOption.Group
 	}
-	if h.WriterName == "" {
+	if option.WriterName == "" {
 		option.WriterName = serviceOption.WriterName
 	}
 	switch h.GetPattern().(type) {
@@ -108,6 +121,9 @@ func ParseMethodHttpOption(service *protogen.Service, h *httppb.Http) *HttpOptio
 		if methodOption.Version == "" {
 			methodOption.Version = serviceFullNameList[1]
 		}
+	}
+	if methodOption.Group == "" {
+		methodOption.Group = strings.ToLower(service.GoName)
 	}
 	return methodOption
 }
