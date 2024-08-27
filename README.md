@@ -25,7 +25,7 @@ go install github.com/asjard/asjard/cmd/protoc-gen-go-rest2grpc-gw
 ## 快速开始
 
 > 更多示例请参考[asjard-example](https://github.com/asjard/examples)
-> 或者参考[文档](docs/user-guide/overview.md)
+> 或者参考[文档](https://asjard.gitbook.io/docs)
 
 编写[proto](docs/user-guide/protobuf.md)协议文件
 
@@ -293,7 +293,7 @@ func main() {
 
 创建配置
 
-> 详细配置可参考[这里](docs/user-guide/config.md)
+> 详细配置可参考[这里](https://asjard.gitbook.io/docs/pei-zhi/config)
 
 `conf/server.yaml`
 
@@ -325,7 +325,7 @@ go build -o example main.go && ./example
 
 本实例内容参考[这里](https://github.com/asjard/examples/tree/main/server)
 
-更多信息请参考[文档](docs/user-guide/overview.md)
+更多信息请参考[文档](https://asjard.gitbook.io/docs)
 
 ## 特性
 
