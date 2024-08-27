@@ -210,3 +210,8 @@ asjard:
           # token: ""
           # namespace: ""
           # partition: ""
+          #
+    mongo:
+      clients:
+        default:
+          uri: mongodb://127.0.0.1:27017,127.0.0.2:27017/database?authSource=admin
