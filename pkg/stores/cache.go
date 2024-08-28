@@ -2,6 +2,7 @@ package stores
 
 import (
 	"context"
+	"math/rand"
 	"time"
 
 	"github.com/asjard/asjard/core/runtime"
@@ -102,11 +103,13 @@ func (c *Cache) ModelKey(key string) string {
 }
 
 // ExpiresIn 缓存过期时间
+// 添加随机事件
 func (c *Cache) ExpiresIn() time.Duration {
-	return c.conf.ExpiresIn.Duration
+	return c.conf.ExpiresIn.Duration + time.Duration(rand.Int63n(int64(c.conf.ExpiresIn.Duration)))
 }
 
 // EmptyExpiresIn 空值缓存过期时间
+// 添加随机时间
 func (c *Cache) EmptyExpiresIn() time.Duration {
-	return c.conf.EmptyExpiresIn.Duration
+	return c.conf.EmptyExpiresIn.Duration + time.Duration(rand.Int63n(int64(c.conf.EmptyExpiresIn.Duration)))
 }
