@@ -20,39 +20,66 @@ import (
 	_ "github.com/asjard/asjard/pkg/config/env"
 )
 
-// BootstrapHandler 启动引导需实现的方法
-type BootstrapHandler interface {
-	// 启动时执行
-	Bootstrap() error
-	// 停止时执行
-	Shutdown()
+// Initiator 初始化需要实现的方法
+type Initiator interface {
+	// 启动
+	Start() error
+	// 停止
+	Stop()
 }
 
-var bootstrapHandlers []BootstrapHandler
+var (
+	bootstrapHandlers []Initiator
+	bootstrapedMap    = make(map[Initiator]struct{})
 
-var bootstrapedMap = make(map[BootstrapHandler]struct{})
+	initiatorHandlers []Initiator
+	initiatorMap      = make(map[Initiator]struct{})
+)
 
 // AddBootstrap 添加启动方法
-func AddBootstrap(handler BootstrapHandler) {
+// 初始化后，服务启动前执行
+func AddBootstrap(handler Initiator) {
 	if _, ok := bootstrapedMap[handler]; !ok {
 		bootstrapHandlers = append(bootstrapHandlers, handler)
 		bootstrapedMap[handler] = struct{}{}
 	}
 }
 
-// Start 系统启动
-func Start() error {
-	for _, handler := range bootstrapHandlers {
-		if err := handler.Bootstrap(); err != nil {
+// AddInitator 添加初始化方法
+// 加载到env,file环境变量后执行
+func AddInitiator(handler Initiator) {
+	if _, ok := initiatorMap[handler]; !ok {
+		initiatorHandlers = append(initiatorHandlers, handler)
+		initiatorMap[handler] = struct{}{}
+	}
+}
+
+// Init 初始化
+func Init() error {
+	for _, handler := range initiatorHandlers {
+		if err := handler.Start(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// Stop 系统停止
-func Stop() {
+// Bootstrap 系统启动
+func Bootstrap() error {
 	for _, handler := range bootstrapHandlers {
-		handler.Shutdown()
+		if err := handler.Start(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Shutdown 系统停止
+func Shutdown() {
+	for _, handler := range bootstrapHandlers {
+		handler.Stop()
+	}
+	for _, handler := range initiatorHandlers {
+		handler.Stop()
 	}
 }

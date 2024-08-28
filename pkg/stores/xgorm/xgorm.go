@@ -132,8 +132,8 @@ func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 	return db.db.WithContext(ctx), nil
 }
 
-// Bootstrap 连接到数据库
-func (m *DBManager) Bootstrap() error {
+// Start 连接到数据库
+func (m *DBManager) Start() error {
 	logger.Debug("store gorm start")
 	conf, err := m.loadAndWatchConfig()
 	if err != nil {
@@ -142,8 +142,8 @@ func (m *DBManager) Bootstrap() error {
 	return m.connDBs(conf)
 }
 
-// Shutdown 和数据库断开连接
-func (m *DBManager) Shutdown() {
+// Stop 和数据库断开连接
+func (m *DBManager) Stop() {
 	m.dbs.Range(func(key, value any) bool {
 		conn, ok := value.(*DBConn)
 		if ok {

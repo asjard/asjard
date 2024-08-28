@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 	}
 	config.Set("asjard.stores.redis.clients.default.address", "127.0.0.1:6379")
 
-	if err := bootstrap.Start(); err != nil {
+	if err := bootstrap.Bootstrap(); err != nil {
 		panic(err)
 	}
 	m.Run()

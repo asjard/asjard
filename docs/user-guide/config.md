@@ -26,7 +26,7 @@ if val == nil {
 }
 ```
 
-- `GetWithPrefix(prefix string, opts ...Option) map[string]any`: 根据前缀获取所有配置
+- `GetWithPrefix(prefix string, opts ...Option) map[string]any`: 根据前缀获取所有配置,返回的key是props格式的
 
 ```go
 import "github.com/asjard/asjard/core/config"
@@ -34,8 +34,9 @@ import "github.com/asjard/asjard/core/config"
 valMap := config.GetWithPrefix("asjard.service")
 /* Output:
 {
- 	"app": "asjard"
- 	"environment": "dev"
+ 	"app": "asjard",
+ 	"environment": "dev",
+  "instance.name": "example"
 }
 */
 ```
@@ -50,11 +51,28 @@ valStr := config.GetString("key", "default_value")
 
 - `GetStrings(key string, defaultValue []string, opts ...Option) []string`: 获取配置并返回[]string类型, 如果配置不存在则返回默认值
 
-```go
+````go
 import "github.com/asjard/asjard/core/config"
 
+// 可通过字符串或者列表方式配置
+// 例如yaml文件中:
+
+// ```yaml
+// key: a,b,c
+// ```
+// 字符串方式分隔符可通过config.WithDelimiter指定，默认为','
+
+// 或者
+
+// ```yaml
+// key:
+// - a
+// - b
+// - c
+// ```
 valStrs := config.GetStrings("key", []string{})
-```
+
+````
 
 - `GetByte(key string, defaultValue []byte, opts ...Option) []byte`: 获取配置并返回[]byte类型, 如果配置不存在则返回默认值
 

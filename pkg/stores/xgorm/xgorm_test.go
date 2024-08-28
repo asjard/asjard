@@ -21,11 +21,11 @@ func TestMain(m *testing.M) {
 	config.Set("asjard.stores.gorm.dbs.another.dsn", "test_another.db")
 	config.Set("asjard.stores.gorm.dbs.another.driver", "sqlite")
 	time.Sleep(50 * time.Millisecond)
-	if err := dbManager.Bootstrap(); err != nil {
+	if err := dbManager.Start(); err != nil {
 		panic(err)
 	}
 	m.Run()
-	dbManager.Shutdown()
+	dbManager.Stop()
 
 }
 
@@ -82,7 +82,7 @@ func TestConnDBs(t *testing.T) {
 		assert.NotNil(t, db)
 	})
 	t.Run("shutdown", func(t *testing.T) {
-		dbManager.Shutdown()
+		dbManager.Stop()
 		_, err := DB(context.TODO())
 		assert.NotNil(t, err)
 	})

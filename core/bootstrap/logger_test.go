@@ -15,5 +15,5 @@ func TestMain(m *testing.M) {
 }
 
 func TestWatchLogger(t *testing.T) {
-	assert.Nil(t, Start())
+	assert.Nil(t, Bootstrap())
 }

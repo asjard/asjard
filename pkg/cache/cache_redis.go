@@ -178,7 +178,7 @@ func (c *CacheRedis) WithType(tp CacheRedisType) *CacheRedis {
 	}
 }
 
-// Get 从混存获取数据
+// Get 从缓存获取数据
 // 如果设置了本地缓存先从本地缓存获取数据
 // 获取不到再去redis获取数据
 func (c CacheRedis) Get(ctx context.Context, key string, out any) (bool, error) {

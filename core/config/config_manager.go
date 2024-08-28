@@ -498,6 +498,22 @@ func GetWithPrefix(prefixKey string, opts ...Option) map[string]any {
 //	@param defaultValue 默认值
 //	@param opts 获取配置的可选参数
 //	@return string
+// 可通过字符串或者列表方式配置
+// 例如yaml文件中:
+
+// ```yaml
+// key: a,b,c
+// ```
+// 字符串方式分隔符可通过config.WithDelimiter指定，默认为','
+
+// 或者
+
+// ```yaml
+// key:
+// - a
+// - b
+// - c
+// ```
 func GetString(key string, defaultValue string, opts ...Option) string {
 	options := GetOptions(opts...)
 	v := Get(key, options)

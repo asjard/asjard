@@ -11,21 +11,21 @@ type testBootstrap struct {
 	shuteddown bool
 }
 
-func (t *testBootstrap) Bootstrap() error {
+func (t *testBootstrap) Start() error {
 	t.executed = true
 	return nil
 }
 
-func (t *testBootstrap) Shutdown() {
+func (t *testBootstrap) Stop() {
 	t.shuteddown = true
 }
 
 func TestBootstrap(t *testing.T) {
 	b := &testBootstrap{}
 	AddBootstrap(b)
-	assert.Nil(t, Start())
+	assert.Nil(t, Bootstrap())
 	assert.Equal(t, true, b.executed)
-	Stop()
+	Shutdown()
 	assert.Equal(t, true, b.shuteddown)
 
 }

@@ -27,6 +27,7 @@ type CacheLocal struct {
 
 	modelName string
 	// redis客户端
+	// TODO 用interface实现,可以不止用redis广播
 	redis   *redis.Client
 	pubsub  *redis.PubSub
 	cache   *freecache.Cache
