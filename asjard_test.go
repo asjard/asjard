@@ -56,4 +56,23 @@ func TestAddHandler(t *testing.T) {
 		}
 
 	})
+	// t.Run("AddHandlers", func(t *testing.T) {
+	// 	server := New()
+	// 	var errChan = make(chan error)
+	// 	assert.Nil(t, server.AddHandlers("test", &testAPI{}))
+	// 	go func() {
+	// 		if err := server.Start(); err != nil {
+	// 			errChan <- err
+	// 		}
+	// 	}()
+	// 	select {
+	// 	case err := <-errChan:
+	// 		t.Error(err)
+	// 		t.FailNow()
+	// 	case <-time.After(5 * time.Second):
+	// 		syscall.Kill(syscall.Getpid(), syscall.SIGHUP)
+	// 		break
+	// 	}
+
+	// })
 }

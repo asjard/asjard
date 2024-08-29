@@ -1,6 +1,8 @@
 ._*
 log/
 cover.out
+cover.func
+cover.html
 conf_*
 !conf_example
 test_*.db

@@ -64,3 +64,31 @@ func TestLocalIPv6(t *testing.T) {
 func TestLocalIPv4(t *testing.T) {
 	LocalIPv4()
 }
+
+func TestParseAddress(t *testing.T) {
+	datas := []struct {
+		address string
+		host    string
+		port    int
+		isErr   bool
+	}{
+		{address: "123:", isErr: true},
+		{address: "127.0.0.1:123", host: "127.0.0.1", port: 123},
+		{address: ":123", host: "", port: 123},
+		{address: "127.0.0.1:123a", isErr: true},
+	}
+	for _, data := range datas {
+		host, port, err := ParseAddress(data.address)
+		if data.isErr && err == nil {
+			t.Errorf("test %s fail", data.address)
+			t.FailNow()
+		}
+		if host != data.host && port != data.port {
+			t.Errorf("test %s fail, host act: %s, want: %s, port act: %d, want: %d",
+				data.address,
+				host, data.host,
+				port, data.port)
+			t.FailNow()
+		}
+	}
+}

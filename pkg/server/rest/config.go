@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/utils"
 )
@@ -87,7 +86,7 @@ func defaultConfig() Config {
 	return Config{
 		Config: server.GetConfigWithProtocol(Protocol),
 		Doc: DocConfig{
-			ErrPage: config.GetString(constant.ConfigWebsite, ""),
+			ErrPage: config.GetString("asjard.service.website", ""),
 		},
 		Openapi: OpenapiConfig{
 			Page: "https://petstore.swagger.io/?url=http://%s/openapi.yml",
