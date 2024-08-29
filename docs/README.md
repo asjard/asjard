@@ -61,26 +61,13 @@ service Server {
             writer_name : "custome_writer"
         };
     };
-
-    // rest请求
-    rpc Hello(google.protobuf.Empty) returns (HelloReq) {
-        option (asjard.api.http) = {
-            get : "/hello"
-        };
-        option (asjard.api.http) = {
-            get : "/hello"
-            api : "/"
-            version : "/"
-            group : "/"
-        };
-    };
     // sse请求
     rpc Log(google.protobuf.Empty) returns (google.protobuf.Empty) {
         option (asjard.api.http) = {
             get : "/log"
         };
     };
-    // grpc请求
+    // grpc请求,不会生成rest相关代码
     rpc Call(HelloReq) returns (HelloReq) {};
 }
 
@@ -90,17 +77,11 @@ message HelloReq {
         string field_str = 2;
     }
     message Configs {
-        string timeout                                            = 1;
-        string field_in_different_file_under_same_section         = 2;
-        string another_field_in_different_file_under_same_section = 3;
         string key_in_different_sourcer                           = 4;
     }
     message Instance {
         string              id          = 1;
         string              name        = 2;
-        string              system_code = 3;
-        string              version     = 4;
-        map<string, string> metadata    = 5;
     }
     enum Kind {
         K_A = 0;
@@ -112,28 +93,10 @@ message HelloReq {
     string project_id = 2;
     // 用户ID
     int64 user_id = 3;
-    // 字符串列表
-    repeated string str_list = 4;
-    // 数字列表
-    repeated int64 int_list = 5;
     // 对象
     Obj obj = 6;
-    // 对象列表
-    repeated Obj objs = 7;
     // 配置
     Configs configs = 8;
-    // 分页
-    int32 page = 9;
-    // 每页大小
-    int32 size = 10;
-    // 排序
-    string sort = 11;
-    // 布尔类型
-    optional bool ok = 12;
-    // 可选整形参数
-    optional int32 int_optional_value = 13;
-    // 可选字符串参数
-    optional string string_optional_value = 14;
     // 可选枚举参数
     optional Kind kind = 15;
     // 枚举列表
@@ -141,11 +104,6 @@ message HelloReq {
     bytes         bytes_value = 17;
     // openapi 会把这个字段解析为字符串
     uint64                     uint64_value       = 18;
-    google.protobuf.Int64Value google_int64_value = 19;
-    string                     app                = 20;
-    string                     region             = 21;
-    string                     az                 = 22;
-    Instance                   instance           = 23;
 }
 
 ```
@@ -160,6 +118,9 @@ protoc --go-grpc_out=${GOPATH}/src -I${GOPATH}/src -I. ./server.proto
 
 # 生成rest需要的文件, rest依赖grpc生成的文件
 protoc --go-rest_out=${GOPATH}/src -I${GOPATH}/src -I. ./server.proto
+
+# 生成rest转grpc网关代码,依赖rest生成的文件
+protoc --go-rest2grpc-gw_out=${GOPATH}/src -I${GOPATH}/src -I. ./server.proto
 
 ```
 
@@ -182,10 +143,6 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
 
-	// 加载consul配置源
-	_ "github.com/asjard/asjard/pkg/config/consul"
-	// 从consul发现服务,并把服务注册到consul
-	_ "github.com/asjard/asjard/pkg/registry/consul"
 	// 加载etcd配置源
 	_ "github.com/asjard/asjard/pkg/config/etcd"
 	// 从etcd发现服务, 并把当前服务注册到etcd
@@ -204,9 +161,11 @@ type ServerAPI struct {
 	client serverpb.ServerClient
 }
 
+var _ bootstrap.Initiator = &ServerAPI{}
+
 // Bootstrap 服务启动前会自动调用这个方法
 // 当前这个方法内初始化了grpc客户端
-func (api *ServerAPI) Bootstrap() error {
+func (api *ServerAPI) Start() error {
 	conn, err := client.NewClient(grpc.Protocol, config.GetString("asjard.topology.services.examples.name", "server")).Conn()
 	if err != nil {
 		return err
@@ -216,18 +175,11 @@ func (api *ServerAPI) Bootstrap() error {
 }
 
 // Shutdown 服务停止会调用这里
-func (api *ServerAPI) Shutdown() {}
+func (api *ServerAPI) Stop() {}
 
 // Say 接受rest请求然后去请求grpc请求
 func (api *ServerAPI) Say(ctx context.Context, in *serverpb.HelloReq) (*serverpb.HelloReq, error) {
 	return api.client.Call(ctx, in)
-}
-
-// Hello 直接处理逻辑, 请求参数为emptypb.Empty说明没有参数
-func (api *ServerAPI) Hello(ctx context.Context, in *emptypb.Empty) (*serverpb.HelloReq, error) {
-	return &serverpb.HelloReq{
-		RegionId: "hello",
-	}, nil
 }
 
 // Log SSE请求
@@ -310,7 +262,6 @@ asjard:
       ## 同grpc相关配置
       addresses:
         listen: 127.0.0.1:6030
-        advertise: example.com:80
 ```
 
 启动
@@ -319,95 +270,14 @@ asjard:
 ASJARD_CONF_DIR=${PWD}/conf go run main.go
 # 或者编译后执行
 go build -o example main.go && ./example
+
+## 请求rest接口
+curl 127.0.0.1:6030/api/v1/examples/server/region/region-1/project/project-1/user/1234
 ```
 
 本实例内容参考[这里](https://github.com/asjard/examples/tree/main/server)
 
 更多信息请参考[文档](https://asjard.gitbook.io/docs)
-
-## 特性
-
-- [x] 多服务端/客户端协议
-
-  - 服务端
-    - [x] [grpc](https://asjard.gitbook.io/docs/fu-wu-duan/server-grpc)
-    - [x] [http](https://asjard.gitbook.io/docs/fu-wu-duan/server-rest)
-    - [x] [pprof](https://asjard.gitbook.io/docs/fu-wu-duan/server-pprof)
-  - 客户端
-    - [x] [grpc](https://asjard.gitbook.io/docs/ke-hu-duan/client-grpc)
-
-- [x] [多配置源](https://asjard.gitbook.io/docs/pei-zhi/config),异步实时生效
-
-  - [x] [环境变量](https://asjard.gitbook.io/docs/pei-zhi/config-env)
-  - [x] [文件](https://asjard.gitbook.io/docs/pei-zhi/config-file)
-  - [x] [内存](https://asjard.gitbook.io/docs/pei-zhi/config-mem)
-  - [x] [etcd](https://asjard.gitbook.io/docs/pei-zhi/config-etcd)
-  - [x] [consul](https://asjard.gitbook.io/docs/pei-zhi/config-consul)
-
-- [x] [自动服务注册/发现](https://asjard.gitbook.io/docs/fu-wu-zhu-ce-fa-xian/registry)
-
-  - 发现
-    - [x] [本地配置文件服务发现](https://asjard.gitbook.io/docs/fu-wu-zhu-ce-fa-xian/registry-local)
-    - [x] [etcd](https://asjard.gitbook.io/docs/fu-wu-zhu-ce-fa-xian/registry-etcd)
-    - [x] [consul](https://asjard.gitbook.io/docs/fu-wu-zhu-ce-fa-xian/registry-consul)
-  - 注册
-    - [x] [etcd](https://asjard.gitbook.io/docs/fu-wu-zhu-ce-fa-xian/registry-etcd)
-    - [x] [consul](https://asjard.gitbook.io/docs/fu-wu-zhu-ce-fa-xian/registry-consul)
-
-- [x] [统一日志处理](https://asjard.gitbook.io/docs/ri-zhi/logger)
-
-  - [x] mysql慢日志
-  - [x] accesslog
-
-- [x] [统一的错误处理](https://asjard.gitbook.io/docs/cuo-wu/error)
-
-- [x] 拦截器
-
-  - [服务端](https://asjard.gitbook.io/docs/fu-wu-duan/server-interceptor)
-
-    - [x] i18n
-    - [x] accessLog
-    - [x] metrics
-    - [x] trace
-    - [x] 限速
-
-  - [客户端](https://asjard.gitbook.io/docs/ke-hu-duan/client-interceptor)
-    - [x] 熔断降级
-    - [x] 循环调用拦截
-    - [ ] 限速
-    - [x] http转grpc
-
-- [x] [监控](https://asjard.gitbook.io/docs/jian-kong/metrics)
-
-  - [x] go_collector
-  - [x] process_collector
-  - [x] mysql
-  - [x] api_requests_total
-  - [x] api_requests_latency_seconds
-  - [x] api_requests_size_bytes
-  - [x] api_response_size_bytes
-
-- [x] [protobuf自动生成代码](https://asjard.gitbook.io/docs/protobuf/protobuf)
-
-  - [x] rest route
-  - [x] openapi
-  - [x] gateway
-  - [x] rest转grpc
-  - [ ] ts
-
-- [x] [数据库](https://asjard.gitbook.io/docs/cun-chu/stores)
-
-  - [x] mysql
-  - [x] etcd
-  - [x] redis
-  - [ ] mongo
-
-- [x] [多级缓存](https://asjard.gitbook.io/docs/huan-cun/cache)
-
-  - [x] [redis缓存](https://asjard.gitbook.io/docs/huan-cun/cache-redis)
-  - [x] [本地缓存](https://asjard.gitbook.io/docs/huan-cun/cache-local)
-
-- [x] [安全](https://asjard.gitbook.io/docs/an-quan/security)
 
 ## Benchmark
 
