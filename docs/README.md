@@ -316,16 +316,16 @@ asjard:
 按需生成
 
 ```sh
-protoc --go_out=${GOPATH}/src -I${GOPATH}/src -I. ./server.proto
+protoc --go_out=${GOPATH}/src -I${GOPATH}/src -I. readme.proto
 
 # 生成grpc需要的文件
-protoc --go-grpc_out=${GOPATH}/src -I${GOPATH}/src -I. ./server.proto
+protoc --go-grpc_out=${GOPATH}/src -I${GOPATH}/src -I. readme.proto
 
 # 生成rest需要的文件, rest依赖grpc生成的文件
-protoc --go-rest_out=${GOPATH}/src -I${GOPATH}/src -I. ./server.proto
+protoc --go-rest_out=${GOPATH}/src -I${GOPATH}/src -I. readme.proto
 
 # 生成rest转grpc网关代码,依赖rest生成的文件
-protoc --go-rest2grpc-gw_out=${GOPATH}/src -I${GOPATH}/src -I. ./server.proto
+protoc --go-rest2grpc-gw_out=${GOPATH}/src -I${GOPATH}/src -I. readme.proto
 
 ```
 
