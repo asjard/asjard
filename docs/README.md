@@ -337,7 +337,7 @@ ASJARD_CONF_DIR=${PWD}/conf go run main.go
 go build -o example main.go && ./example
 
 ## 请求rest接口
-curl 127.0.0.1:6030/api/v1/examples/server/region/region-1/project/project-1/user/1234
+curl 127.0.0.1:6030/api/v1/examples/region/region-1/project/project-1/user/1234
 ```
 
 输出内容:
