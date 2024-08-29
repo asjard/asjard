@@ -188,9 +188,7 @@ func (c *CacheLocal) delSubscribe() {
 func (c *CacheLocal) delChannel() string {
 	return c.App().ResourceKey("caches_local_channel",
 		"delete",
-		":",
-		false,
-		false)
+		runtime.WithDelimiter(":"))
 }
 
 func (c *CacheLocal) load() error {

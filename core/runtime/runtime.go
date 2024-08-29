@@ -83,28 +83,42 @@ func GetAPP() APP {
 
 // ResourceKey 资源key
 // 比如缓存中的key
-// {app}:{resource}:{env}:service:{service}:{region}:{az}:{key}
+// {app}:{resource}:{env}:{service}:{region}:{az}:{key}
 // resource: 资源类型, 比如caches, lock
-// delimiter: 分隔符, 比如':', '/'
 // key: 资源key
-// startWithDelimiter: 是否已分隔符开头
-// endWithDelimiter: 是否以分隔符结尾
-func (app APP) ResourceKey(resource, key, delimiter string, startWithDelimiter, endWithDelimiter bool) string {
-	fullKey := strings.Join([]string{
-		app.App,
-		resource,
-		app.Environment,
-		"service",
-		app.Instance.Name,
-		app.Region,
-		app.AZ,
-		key,
-	}, delimiter)
-	if startWithDelimiter {
-		fullKey = delimiter + fullKey
+func (app APP) ResourceKey(resource, key string, opts ...Option) string {
+	options := defaultOptions()
+	for _, opt := range opts {
+		opt(options)
 	}
-	if endWithDelimiter {
-		fullKey += delimiter
+	keys := make([]string, 0, 8)
+	if options.startWithDelimiter {
+		keys = append(keys, "")
 	}
-	return fullKey
+	if resource == "" {
+		resource = "resource"
+	}
+	keys = append(keys, app.App, resource)
+	if !options.withoutEnv {
+		keys = append(keys, app.Environment)
+	}
+
+	if !options.withoutService {
+		if options.withServiceId {
+			keys = append(keys, app.Instance.ID)
+		} else {
+			keys = append(keys, app.Instance.Name)
+		}
+	}
+
+	if !options.withoutRegion {
+		keys = append(keys, app.Region, app.AZ)
+	}
+	if key != "" {
+		keys = append(keys, key)
+	}
+	if options.endWithDelimiter {
+		keys = append(keys, "")
+	}
+	return strings.Join(keys, options.delimiter)
 }

@@ -57,8 +57,7 @@ type Cache struct {
 var (
 	// DefaultCacheConfig 默认配置
 	DefaultCacheConfig = CacheConfig{
-		ExpiresIn:      utils.JSONDuration{Duration: 10 * time.Minute},
-		EmptyExpiresIn: utils.JSONDuration{Duration: 5 * time.Minute},
+		ExpiresIn: utils.JSONDuration{Duration: 10 * time.Minute},
 	}
 )
 
@@ -89,7 +88,7 @@ func (c *Cache) AutoRefresh() bool {
 
 // NewKey 缓存key
 func (c *Cache) NewKey(key string) string {
-	return c.app.ResourceKey("caches", c.ModelKey(key), ":", false, false)
+	return c.app.ResourceKey("caches", c.ModelKey(key), runtime.WithDelimiter(":"))
 }
 
 // App 返回app信息
@@ -111,5 +110,9 @@ func (c *Cache) ExpiresIn() time.Duration {
 // EmptyExpiresIn 空值缓存过期时间
 // 添加随机时间
 func (c *Cache) EmptyExpiresIn() time.Duration {
-	return c.conf.EmptyExpiresIn.Duration + time.Duration(rand.Int63n(int64(c.conf.EmptyExpiresIn.Duration)))
+	expiresIn := c.conf.EmptyExpiresIn.Duration
+	if expiresIn == 0 {
+		expiresIn = c.conf.ExpiresIn.Duration / 2
+	}
+	return expiresIn + time.Duration(rand.Int63n(int64(expiresIn)))
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/pkg/stores"
 	"github.com/asjard/asjard/pkg/stores/xredis"
 	"github.com/redis/go-redis/v9"
@@ -330,9 +331,7 @@ func (c CacheRedis) Key() string {
 func (c CacheRedis) Group(group string) string {
 	return c.App().ResourceKey("caches_group",
 		c.ModelKey(group),
-		":",
-		false,
-		false)
+		runtime.WithDelimiter(":"))
 }
 
 // 添加分组
