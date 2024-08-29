@@ -9,6 +9,7 @@ import (
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/pkg/stores"
 	"github.com/asjard/asjard/pkg/stores/xredis"
 	"github.com/redis/go-redis/v9"
@@ -139,6 +140,7 @@ func (c *CacheRedis) WithGroup(group string) *CacheRedis {
 	}
 }
 
+// WithKey 设置缓存key
 func (c *CacheRedis) WithKey(key string) *CacheRedis {
 	return &CacheRedis{
 		Cache:   c.Cache,
@@ -151,6 +153,7 @@ func (c *CacheRedis) WithKey(key string) *CacheRedis {
 	}
 }
 
+// WithField hash, set设置field
 func (c *CacheRedis) WithField(field string) *CacheRedis {
 	return &CacheRedis{
 		Cache:   c.Cache,
@@ -163,6 +166,7 @@ func (c *CacheRedis) WithField(field string) *CacheRedis {
 	}
 }
 
+// WithType 设置缓存类型
 func (c *CacheRedis) WithType(tp CacheRedisType) *CacheRedis {
 	return &CacheRedis{
 		Cache:   c.Cache,
@@ -175,6 +179,9 @@ func (c *CacheRedis) WithType(tp CacheRedisType) *CacheRedis {
 	}
 }
 
+// Get 从缓存获取数据
+// 如果设置了本地缓存先从本地缓存获取数据
+// 获取不到再去redis获取数据
 func (c CacheRedis) Get(ctx context.Context, key string, out any) (bool, error) {
 	if key == "" {
 		return true, nil
@@ -211,6 +218,8 @@ func (c CacheRedis) Get(ctx context.Context, key string, out any) (bool, error) 
 	}
 }
 
+// Del 删除缓存
+// 如果设置了本地缓存先删除本地缓存再删除redis缓存
 func (c CacheRedis) Del(ctx context.Context, keys ...string) error {
 	if len(keys) == 0 {
 		return nil
@@ -247,6 +256,8 @@ func (c CacheRedis) Del(ctx context.Context, keys ...string) error {
 	return c.delGroup(ctx)
 }
 
+// Set 设置缓存
+// 如果设置了本地缓存则同时设置本地缓存
 func (c CacheRedis) Set(ctx context.Context, key string, in any, expiresIn time.Duration) error {
 	if key == "" {
 		return nil
@@ -287,6 +298,8 @@ func (c CacheRedis) Set(ctx context.Context, key string, in any, expiresIn time.
 	return c.addGroup(ctx, key)
 }
 
+// Refresh 更新缓存时间
+// 如果设置了本地缓存则更新本地缓存数据再刷新redis缓存过期时间
 func (c CacheRedis) Refresh(ctx context.Context, key string, in any, expiresIn time.Duration) (err error) {
 	if key == "" {
 		return nil
@@ -314,9 +327,11 @@ func (c CacheRedis) Key() string {
 	return c.key
 }
 
-// 分组
+// Group 缓存分组
 func (c CacheRedis) Group(group string) string {
-	return c.Prefix() + ":groups:" + group
+	return c.App().ResourceKey("caches_group",
+		c.ModelKey(group),
+		runtime.WithDelimiter(":"))
 }
 
 // 添加分组

@@ -19,10 +19,10 @@
 ## 配置
 
 - [概览](user-guide/config.md)
-- [consul](user-guide/config-consul.md)
-- [env](user-guide/config-env.md)
-- [etcd](user-guide/config-etcd.md)
-- [file](user-guide/config-file.md)
+- [Consul](user-guide/config-consul.md)
+- [Env](user-guide/config-env.md)
+- [Etcd](user-guide/config-etcd.md)
+- [File](user-guide/config-file.md)
 
 ## 错误
 
@@ -47,9 +47,9 @@
 ## 服务注册/发现
 
 - [概览](user-guide/registry.md)
-- [consul](user-guide/registry-consul.md)
-- [etcd](user-guide/registry-etcd.md)
-- [local](user-guide/registry-local.md)
+- [Consul](user-guide/registry-consul.md)
+- [Etcd](user-guide/registry-etcd.md)
+- [Local](user-guide/registry-local.md)
 
 ## 安全
 
@@ -60,14 +60,14 @@
 - [概览](user-guide/server.md)
 - [GRPC](user-guide/server-grpc.md)
 - [拦截器](user-guide/server-interceptor.md)
-- [pprof](user-guide/server-pprof.md)
-- [rest](user-guide/server-rest.md)
+- [Pprof](user-guide/server-pprof.md)
+- [Rest](user-guide/server-rest.md)
 
 ## 存储
 
 - [概览](user-guide/stores.md)
-- [etcd](user-guide/stores-etcd.md)
-- [gorm](user-guide/stores-gorm.md)
-- [redis](user-guide/stores-redis.md)
-- [consul](user-guide/stores-consul.md)
-- [model](user-guide/stores-model.md)
+- [Etcd](user-guide/stores-etcd.md)
+- [Gorm](user-guide/stores-gorm.md)
+- [Redis](user-guide/stores-redis.md)
+- [Consul](user-guide/stores-consul.md)
+- [Model](user-guide/stores-model.md)

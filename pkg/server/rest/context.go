@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/status"
 	"github.com/spf13/cast"
 	"github.com/valyala/fasthttp"
@@ -38,7 +37,7 @@ type Context struct {
 var contextPool = sync.Pool{
 	New: func() any {
 		return &Context{
-			errPage: config.GetString(constant.ConfigWebsite, ""),
+			errPage: config.GetString("asjard.service.website", ""),
 		}
 	},
 }

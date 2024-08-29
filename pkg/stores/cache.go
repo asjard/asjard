@@ -2,6 +2,7 @@ package stores
 
 import (
 	"context"
+	"math/rand"
 	"time"
 
 	"github.com/asjard/asjard/core/runtime"
@@ -56,8 +57,7 @@ type Cache struct {
 var (
 	// DefaultCacheConfig 默认配置
 	DefaultCacheConfig = CacheConfig{
-		ExpiresIn:      utils.JSONDuration{Duration: 10 * time.Minute},
-		EmptyExpiresIn: utils.JSONDuration{Duration: 5 * time.Minute},
+		ExpiresIn: utils.JSONDuration{Duration: 10 * time.Minute},
 	}
 )
 
@@ -86,23 +86,33 @@ func (c *Cache) AutoRefresh() bool {
 	return c.conf.AutoRefresh
 }
 
-// Prefix 缓存前缀
-// {app}:caches:{env}:service:{service}:{region}:{az}:{model_name}
-func (c *Cache) Prefix() string {
-	return c.app.App + ":caches:" + c.app.Environment + ":service:" + c.app.Instance.Name + ":" + c.app.Region + ":" + c.app.AZ + ":" + c.model.ModelName()
-}
-
 // NewKey 缓存key
 func (c *Cache) NewKey(key string) string {
-	return c.Prefix() + ":" + key
+	return c.app.ResourceKey("caches", c.ModelKey(key), runtime.WithDelimiter(":"))
+}
+
+// App 返回app信息
+func (c *Cache) App() runtime.APP {
+	return c.app
+}
+
+// ModelKey key组合
+func (c *Cache) ModelKey(key string) string {
+	return c.model.ModelName() + ":" + key
 }
 
 // ExpiresIn 缓存过期时间
+// 添加随机事件
 func (c *Cache) ExpiresIn() time.Duration {
-	return c.conf.ExpiresIn.Duration
+	return c.conf.ExpiresIn.Duration + time.Duration(rand.Int63n(int64(c.conf.ExpiresIn.Duration)))
 }
 
 // EmptyExpiresIn 空值缓存过期时间
+// 添加随机时间
 func (c *Cache) EmptyExpiresIn() time.Duration {
-	return c.conf.EmptyExpiresIn.Duration
+	expiresIn := c.conf.EmptyExpiresIn.Duration
+	if expiresIn == 0 {
+		expiresIn = c.conf.ExpiresIn.Duration / 2
+	}
+	return expiresIn + time.Duration(rand.Int63n(int64(expiresIn)))
 }

@@ -6,16 +6,19 @@
 实现如下方法
 
 ```go
-// BootstrapHandler 启动引导需实现的方法
-type BootstrapHandler interface {
-	// 启动时执行
-	Bootstrap() error
-	// 停止时执行
-	Shutdown()
+// Initiator 初始化需要实现的方法
+type Initiator interface {
+	// 启动
+	Start() error
+	// 停止
+	Stop()
 }
+
 ```
 
-并添加到引导队列中
+### Bootstrap
+
+添加到引导队列中
 
 ```go
 import "github.com/asjard/asjard/core/bootstrap"
@@ -23,9 +26,9 @@ import "github.com/asjard/asjard/core/bootstrap"
 type CustomeBootstrap struct{}
 
 // 系统初始化后会执行如下方法
-func(CustomeBootstrap) Bootstrap() error {return nil}
+func(CustomeBootstrap) Start() error {return nil}
 // 系统停止后会执行如下方法
-func(CustomeBootstrap) Shutdown() {}
+func(CustomeBootstrap) Stop() {}
 
 func init() {
 	// 添加到启动引导队列
@@ -68,3 +71,45 @@ func (m *DBManager) Shutdown() {
 	})
 }
 ```
+
+### Initiator
+
+添加到初始化队列
+
+```go
+
+import "github.com/asjard/asjard/core/bootstrap"
+
+// ClientManager 客户端连接维护
+type ClientManager struct {
+	clients sync.Map
+}
+
+func (m *ClientManager) Start() error {
+	clients, err := m.loadAndWatchConfig()
+	if err != nil {
+		return err
+	}
+	return m.newClients(clients)
+}
+
+func (m *ClientManager) Stop() {
+	m.clients.Range(func(key, value any) bool {
+		conn, ok := value.(*ClientConn)
+		if ok {
+			if err := conn.client.Close(); err != nil {
+				logger.Error("close etcd client fail", "client", conn.name, "err", err)
+			}
+			m.clients.Delete(key)
+		}
+		return true
+	})
+}
+
+func init() {
+	clientManager = &ClientManager{}
+	bootstrap.AddInitiator(clientManager)
+}
+```
+
+您可以参考[etcd连接](https://github.com/asjard/asjard/blob/develop/pkg/stores/xetcd/etcd.go)实现

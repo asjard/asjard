@@ -6,7 +6,7 @@
 - protobuf中使用添加openapi文档参考[这里](https://github.com/google/gnostic/tree/main/openapiv3), `protoc-gen-rest`命令中已集成
 
 ```proto
-// github.com/asjard/asjard/examples/example/example.proto
+// github.com/asjard/asjard/examples/protobuf/server.proto
 
 syntax = "proto3";
 
@@ -41,7 +41,7 @@ service Hello {
       api : ""
       // 如果不为空则使用此处的接口版本
       version : ""
-      // 如果不为空则使用此处的接口分组
+      // 如果不为空则使用此处的接口分组, 都为空则为service名称
       group : ""
       // 当前接口自定义writer
       writer_name: ""

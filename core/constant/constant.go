@@ -7,7 +7,7 @@ const (
 	// Framework 框架名称
 	Framework = "asjard"
 	// FrameworkVersion 框架版本号
-	FrameworkVersion = "0.5.2"
+	FrameworkVersion = "0.6.0"
 	FrameworkGithub  = "https://github.com/asjard/asjard"
 	// DefaultDelimiter 默认分隔符
 	DefaultDelimiter = ","
@@ -82,18 +82,6 @@ const (
 	ConfigInterceptorClientRest2RpcContextPrefix           = "asjard.interceptors.client.rest2RpcContext"
 	ConfigInterceptorServerAccessLogPrefix                 = "asjard.interceptors.server.accessLog"
 
-	ConfigDatabaseMysqlPrefix = "asjard.database.mysql"
-
 	ConfigCipherAESKey = "asjard.cipher.%s.base64Key"
 	ConfigCipherAESIV  = "asjard.cipher.%s.base64Iv"
-
-	ConfigApp           = "asjard.app"
-	ConfigRegion        = "asjard.region"
-	ConfigAvaliablezone = "asjard.avaliablezone"
-	ConfigEnvironment   = "asjard.environment"
-	ConfigWebsite       = "asjard.website"
-	ConfigDesc          = "asjard.desc"
-	ConfigVersion       = "asjard.instance.version"
-	ConfigName          = "asjard.instance.name"
-	ConfigMetadata      = "asjard.instance.metadata"
 )

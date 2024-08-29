@@ -13,7 +13,6 @@ import (
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/config/sources/file"
 	"github.com/asjard/asjard/core/constant"
-	"github.com/asjard/asjard/core/initator"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/metrics"
 	"github.com/asjard/asjard/core/registry"
@@ -81,7 +80,7 @@ func (asd *Asjard) AddHandler(handler any, protocols ...string) error {
 		} else {
 			asd.handlers[protocol] = []any{handler}
 		}
-		if bootstrapHandler, ok := handler.(bootstrap.BootstrapHandler); ok {
+		if bootstrapHandler, ok := handler.(bootstrap.Initiator); ok {
 			bootstrap.AddBootstrap(bootstrapHandler)
 		}
 	}
@@ -154,7 +153,7 @@ func (asd *Asjard) Init() error {
 	}
 
 	// 其他组件初始化之前的组件初始化
-	if err := initator.Start(); err != nil {
+	if err := bootstrap.Init(); err != nil {
 		return err
 	}
 
@@ -191,7 +190,7 @@ func (asd *Asjard) Init() error {
 	}
 
 	// 系统启动
-	if err := bootstrap.Start(); err != nil {
+	if err := bootstrap.Bootstrap(); err != nil {
 		return err
 	}
 	asd.inited = true
@@ -259,8 +258,7 @@ func (asd *Asjard) stop() {
 	}
 	// 配置中心断开连接
 	config.Disconnect()
-	bootstrap.Stop()
-	initator.Stop()
+	bootstrap.Shutdown()
 	logger.Info("system exited")
 }
 

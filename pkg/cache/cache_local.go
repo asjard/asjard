@@ -27,6 +27,7 @@ type CacheLocal struct {
 
 	modelName string
 	// redis客户端
+	// TODO 用interface实现,可以不止用redis广播
 	redis   *redis.Client
 	pubsub  *redis.PubSub
 	cache   *freecache.Cache
@@ -185,7 +186,9 @@ func (c *CacheLocal) delSubscribe() {
 }
 
 func (c *CacheLocal) delChannel() string {
-	return c.Prefix() + ":channels:delete"
+	return c.App().ResourceKey("caches_local_channel",
+		"delete",
+		runtime.WithDelimiter(":"))
 }
 
 func (c *CacheLocal) load() error {

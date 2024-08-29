@@ -117,7 +117,7 @@ func Client(opts ...Option) (*redis.Client, error) {
 	return client.client, nil
 }
 
-func (m *ClientManager) Bootstrap() error {
+func (m *ClientManager) Start() error {
 	clients, err := m.loadAndWatch()
 	if err != nil {
 		return err
@@ -125,7 +125,7 @@ func (m *ClientManager) Bootstrap() error {
 	return m.newClients(clients)
 }
 
-func (m *ClientManager) Shutdown() {
+func (m *ClientManager) Stop() {
 	m.clients.Range(func(key, value any) bool {
 		conn, ok := value.(*ClientConn)
 		if ok {

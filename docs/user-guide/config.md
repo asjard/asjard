@@ -26,7 +26,7 @@ if val == nil {
 }
 ```
 
-- `GetWithPrefix(prefix string, opts ...Option) map[string]any`: 根据前缀获取所有配置
+- `GetWithPrefix(prefix string, opts ...Option) map[string]any`: 根据前缀获取所有配置,返回的key是props格式的
 
 ```go
 import "github.com/asjard/asjard/core/config"
@@ -34,8 +34,9 @@ import "github.com/asjard/asjard/core/config"
 valMap := config.GetWithPrefix("asjard.service")
 /* Output:
 {
- 	"app": "asjard"
- 	"environment": "dev"
+ 	"app": "asjard",
+ 	"environment": "dev",
+  "instance.name": "example"
 }
 */
 ```
@@ -50,11 +51,28 @@ valStr := config.GetString("key", "default_value")
 
 - `GetStrings(key string, defaultValue []string, opts ...Option) []string`: 获取配置并返回[]string类型, 如果配置不存在则返回默认值
 
-```go
+````go
 import "github.com/asjard/asjard/core/config"
 
+// 可通过字符串或者列表方式配置
+// 例如yaml文件中:
+
+// ```yaml
+// key: a,b,c
+// ```
+// 字符串方式分隔符可通过config.WithDelimiter指定，默认为','
+
+// 或者
+
+// ```yaml
+// key:
+// - a
+// - b
+// - c
+// ```
 valStrs := config.GetStrings("key", []string{})
-```
+
+````
 
 - `GetByte(key string, defaultValue []byte, opts ...Option) []byte`: 获取配置并返回[]byte类型, 如果配置不存在则返回默认值
 
@@ -210,15 +228,15 @@ val = config.GetString("key", "default_value", config.WithWatch(func(event *conf
 
 | 支持 | 配置源                           | 优先级 | 描述                           |
 | :--: | :------------------------------- | :----: | ------------------------------ |
-|  x   | [环境变量](config_env.md)        |   0    |
+|  x   | [环境变量](config-env.md)        |   0    |
 |      | cli                              |   1    |
-|  x   | [文件](config_file.md)           |   2    |
-|  x   | [etcd](config_etcd.md)           |   10   | key/value, file模式配置        |
-|  x   | [consul](config_consul.md)       |   11   | ket/value模式配置,file模式配置 |
-|      | [nacos](config_nacos.md)         |   12   | 没有删除事件                   |
-|      | [apollo](config_appolo.md)       |   13   |
-|      | [configmap](config_configmap.md) |   14   |
-|  x   | [本地内存](config_mem.md)        |   99   |
+|  x   | [文件](config-file.md)           |   2    |
+|  x   | [etcd](config-etcd.md)           |   10   | key/value, file模式配置        |
+|  x   | [consul](config-consul.md)       |   11   | ket/value模式配置,file模式配置 |
+|      | [nacos](config-nacos.md)         |   12   | 没有删除事件                   |
+|      | [apollo](config-appolo.md)       |   13   |
+|      | [configmap](config-configmap.md) |   14   |
+|  x   | [本地内存](config-mem.md)        |   99   |
 
 ## 配置源优先级
 

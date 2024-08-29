@@ -15,7 +15,7 @@ func init() {
 	bootstrap.AddBootstrap(&SnowFlake{})
 }
 
-func (SnowFlake) Bootstrap() error {
+func (SnowFlake) Start() error {
 	// TODO 添加实例ID
 	node, err := snowflake.NewNode(int64(runtime.GetAPP().Instance.SystemCode))
 	if err != nil {
@@ -25,4 +25,4 @@ func (SnowFlake) Bootstrap() error {
 	return nil
 }
 
-func (SnowFlake) Shutdown() {}
+func (SnowFlake) Stop() {}

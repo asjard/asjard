@@ -10,7 +10,7 @@ Asjard是一个用[Go](https://go.dev/)语言实现的由[protobuf](https://prot
 ## 安装
 
 ```bash
-go get github.com/asjard/asjard
+go get github.com/asjard/asjard@latest
 ```
 
 protobuf编译命令安装
@@ -25,31 +25,24 @@ go install github.com/asjard/asjard/cmd/protoc-gen-go-rest2grpc-gw
 ## 快速开始
 
 > 更多示例请参考[asjard-example](https://github.com/asjard/examples)
-> 或者参考[文档](https://asjard.gitbook.io/docs)
 
-编写[proto](docs/user-guide/protobuf.md)协议文件
+编写[proto](https://asjard.gitbook.io/docs/protobuf/protobuf)协议文件
+本实例内容参考[这里](https://github.com/asjard/examples/tree/main/server/readme)
 
-> protobuf编写规范参考[这里](docs/user-guide/protobuf.md)
-
-`server.proto`
+{% tabs %}
+{% tab title="readme.proto" %}
 
 ```proto
 syntax = "proto3";
 
-package api.v1.server;
+package api.v1.readme;
 
-option go_package = "github.com/asjard/examples/protobuf/serverpb";
+option go_package = "github.com/asjard/examples/protobuf/api/readmepb";
 
 import "github.com/asjard/protobuf/http.proto";
 import "google/protobuf/empty.proto";
-import "google/protobuf/wrappers.proto";
 
-service Server {
-    // 对于Server这个服务设置全局配置
-    option (asjard.api.serviceHttp) = {
-        group : "examples/server"
-    };
-
+service Examples {
     // 注释，描述这个接口的作用
     rpc Say(HelloReq) returns (HelloReq) {
         option (asjard.api.http) = {
@@ -57,23 +50,6 @@ service Server {
         };
         option (asjard.api.http) = {
             get : "/region/{region_id}/project/{project_id}/user/{user_id}"
-        };
-        option (asjard.api.http) = {
-            delete : "/region/{region_id}/project/{project_id}/user/{user_id}"
-            writer_name : "custome_writer"
-        };
-    };
-
-    // rest请求
-    rpc Hello(google.protobuf.Empty) returns (HelloReq) {
-        option (asjard.api.http) = {
-            get : "/hello"
-        };
-        option (asjard.api.http) = {
-            get : "/hello"
-            api : "/"
-            version : "/"
-            group : "/"
         };
     };
     // sse请求
@@ -100,7 +76,7 @@ message HelloReq {
     message Instance {
         string              id          = 1;
         string              name        = 2;
-        string              system_code = 3;
+        uint32              system_code = 3;
         string              version     = 4;
         map<string, string> metadata    = 5;
     }
@@ -114,10 +90,7 @@ message HelloReq {
     string project_id = 2;
     // 用户ID
     int64 user_id = 3;
-    // 字符串列表
-    repeated string str_list = 4;
-    // 数字列表
-    repeated int64 int_list = 5;
+
     // 对象
     Obj obj = 6;
     // 对象列表
@@ -132,42 +105,16 @@ message HelloReq {
     string sort = 11;
     // 布尔类型
     optional bool ok = 12;
-    // 可选整形参数
-    optional int32 int_optional_value = 13;
-    // 可选字符串参数
-    optional string string_optional_value = 14;
     // 可选枚举参数
-    optional Kind kind = 15;
-    // 枚举列表
-    repeated Kind kinds       = 16;
-    bytes         bytes_value = 17;
+    Kind  kind        = 15;
+    bytes bytes_value = 17;
     // openapi 会把这个字段解析为字符串
-    uint64                     uint64_value       = 18;
-    google.protobuf.Int64Value google_int64_value = 19;
-    string                     app                = 20;
-    string                     region             = 21;
-    string                     az                 = 22;
-    Instance                   instance           = 23;
-}
-
+    uint64   uint64_value = 18;
+    Instance instance     = 23;
 ```
 
-按需生成
-
-```sh
-protoc --go_out=${GOPATH}/src -I${GOPATH}/src -I. ./server.proto
-
-# 生成grpc需要的文件
-protoc --go-grpc_out=${GOPATH}/src -I${GOPATH}/src -I. ./server.proto
-
-# 生成rest需要的文件, rest依赖grpc生成的文件
-protoc --go-rest_out=${GOPATH}/src -I${GOPATH}/src -I. ./server.proto
-
-```
-
-编写服务
-
-`main.go`
+{% endtab %}
+{% tab title="main.go" %}
 
 ```go
 package main
@@ -184,10 +131,6 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
 
-	// 加载consul配置源
-	_ "github.com/asjard/asjard/pkg/config/consul"
-	// 从consul发现服务,并把服务注册到consul
-	_ "github.com/asjard/asjard/pkg/registry/consul"
 	// 加载etcd配置源
 	_ "github.com/asjard/asjard/pkg/config/etcd"
 	// 从etcd发现服务, 并把当前服务注册到etcd
@@ -206,9 +149,11 @@ type ServerAPI struct {
 	client serverpb.ServerClient
 }
 
+var _ bootstrap.Initiator = &ServerAPI{}
+
 // Bootstrap 服务启动前会自动调用这个方法
 // 当前这个方法内初始化了grpc客户端
-func (api *ServerAPI) Bootstrap() error {
+func (api *ServerAPI) Start() error {
 	conn, err := client.NewClient(grpc.Protocol, config.GetString("asjard.topology.services.examples.name", "server")).Conn()
 	if err != nil {
 		return err
@@ -218,18 +163,11 @@ func (api *ServerAPI) Bootstrap() error {
 }
 
 // Shutdown 服务停止会调用这里
-func (api *ServerAPI) Shutdown() {}
+func (api *ServerAPI) Stop() {}
 
 // Say 接受rest请求然后去请求grpc请求
 func (api *ServerAPI) Say(ctx context.Context, in *serverpb.HelloReq) (*serverpb.HelloReq, error) {
 	return api.client.Call(ctx, in)
-}
-
-// Hello 直接处理逻辑, 请求参数为emptypb.Empty说明没有参数
-func (api *ServerAPI) Hello(ctx context.Context, in *emptypb.Empty) (*serverpb.HelloReq, error) {
-	return &serverpb.HelloReq{
-		RegionId: "hello",
-	}, nil
 }
 
 // Log SSE请求
@@ -291,11 +229,69 @@ func main() {
 
 ```
 
+{% endtab %}
+{% endtabs %}
+
 创建配置
 
 > 详细配置可参考[这里](https://asjard.gitbook.io/docs/pei-zhi/config)
 
-`conf/server.yaml`
+{% tabs %}
+{% tab title="conf/readme.yaml" %}
+
+```yaml
+test_key: test_file_value
+timeout: 5m
+```
+
+{% endtab %}
+{% tab title="conf/registry.yaml" %}
+
+```yaml
+asjard:
+  registry:
+    localDiscover:
+      readme:
+        - grpc://127.0.0.1:6031
+```
+
+{% endtab %}
+{% tab title="conf/service.yaml" %}
+
+```yaml
+asjard:
+  service:
+    ## 项目名称
+    ## 一个项目下可能会有多个服务
+    ## 不实时生效，修改后需重新启动服务
+    app: examples
+    ## 当前部署环境，例如: dev, sit, uat,rc,pro等
+    ## 如果注册中心是service_center则这里需要配置为development,testing,production,acceptance
+    environment: "dev"
+    ## 部署区域,例如: east-1, east-2
+    ## 表示不同地域，内网不互通，只能通过公网相互连接的不同区域
+    region: "default"
+    ## 可用区，例如: az-1,az-2
+    ## 表示同一区域内，或者同一个机房内，可以内网互通
+    avaliablezone: "default"
+    ## 站点地址
+    website: "https://github.com/asjard/${asjard.service.app}/${asjard.service.instance.name}"
+    ## 服务描述
+    desc: |
+      ## 这里是服务描述
+    ## 服务实例详情
+    instance:
+      ## 系统码
+      systemCode: 100
+      shareable: true
+      ## 服务名称
+      name: readme
+      ## 服务版本
+      version: 1.0.0
+```
+
+{% endtab %}
+{% tab title="conf/server.yaml" %}
 
 ```yaml
 asjard:
@@ -305,14 +301,32 @@ asjard:
     grpc:
       enabled: true
       addresses:
-        listen: 0.0.0.0:6031
+        listen: 127.0.0.1:6031
     ## rest(HTTP)协议相关配置
     rest:
       enabled: true
       ## 同grpc相关配置
       addresses:
         listen: 127.0.0.1:6030
-        advertise: example.com:80
+```
+
+{% endtab %}
+{% tabs %}
+
+按需生成
+
+```sh
+protoc --go_out=${GOPATH}/src -I${GOPATH}/src -I. ./server.proto
+
+# 生成grpc需要的文件
+protoc --go-grpc_out=${GOPATH}/src -I${GOPATH}/src -I. ./server.proto
+
+# 生成rest需要的文件, rest依赖grpc生成的文件
+protoc --go-rest_out=${GOPATH}/src -I${GOPATH}/src -I. ./server.proto
+
+# 生成rest转grpc网关代码,依赖rest生成的文件
+protoc --go-rest2grpc-gw_out=${GOPATH}/src -I${GOPATH}/src -I. ./server.proto
+
 ```
 
 启动
@@ -321,95 +335,56 @@ asjard:
 ASJARD_CONF_DIR=${PWD}/conf go run main.go
 # 或者编译后执行
 go build -o example main.go && ./example
+
+## 请求rest接口
+curl 127.0.0.1:6030/api/v1/examples/server/region/region-1/project/project-1/user/1234
 ```
 
-本实例内容参考[这里](https://github.com/asjard/examples/tree/main/server)
+输出内容:
+
+```json
+{
+  "code": 0,
+  "err_code": 0,
+  "status": 0,
+  "system": 0,
+  "success": true,
+  "message": "",
+  "prompt": "",
+  "doc": "",
+  "request_id": "",
+  "request_method": "/api.v1.readme.Examples/Say",
+  "data": {
+    "@type": "type.googleapis.com/api.v1.readme.HelloReq",
+    "region_id": "region-1",
+    "project_id": "project-1",
+    "user_id": "1234",
+    "obj": null,
+    "objs": [],
+    "configs": {
+      "timeout": "",
+      "field_in_different_file_under_same_section": "",
+      "another_field_in_different_file_under_same_section": "",
+      "key_in_different_sourcer": "test_file_value"
+    },
+    "page": 0,
+    "size": 20,
+    "sort": "created_at",
+    "kind": "K_A",
+    "bytes_value": "",
+    "uint64_value": "0",
+    "instance": {
+      "id": "50a07851-1e6c-45b6-b87a-e945212e62e4",
+      "name": "readme",
+      "system_code": 100,
+      "version": "1.0.0",
+      "metadata": {}
+    }
+  }
+}
+```
 
 更多信息请参考[文档](https://asjard.gitbook.io/docs)
-
-## 特性
-
-- [x] 多服务端/客户端协议
-
-  - 服务端
-    - [x] [grpc](docs/user-guide/server-grpc.md)
-    - [x] [http](docs/user-guide/server-rest.md)
-    - [x] [pprof](docs/user-guide/server-pprof.md)
-  - 客户端
-    - [x] [grpc](docs/user-guide/client-grpc.md)
-
-- [x] [多配置源](docs/user-guide/config.md),异步实时生效
-
-  - [x] [环境变量](docs/user-guide/config-env.md)
-  - [x] [文件](docs/user-guide/config-file.md)
-  - [x] [内存](docs/user-guide/config-mem.md)
-  - [x] [etcd](docs/user-guide/config-etcd.md)
-  - [x] [consul](docs/user-guide/config-consul.md)
-
-- [x] [自动服务注册/发现](docs/user-guide/registry.md)
-
-  - 发现
-    - [x] 本地配置文件服务发现
-    - [x] etcd
-    - [x] consul
-  - 注册
-    - [x] etcd
-    - [x] consul
-
-- [x] 统一日志处理
-
-  - [x] mysql慢日志
-  - [x] accesslog
-
-- [x] [统一的错误处理](docs/user-guide/error.md)
-
-- [x] 拦截器
-
-  - [服务端](docs/user-guide/server-interceptor.md)
-
-    - [x] i18n
-    - [x] accessLog
-    - [x] metrics
-    - [x] trace
-    - [x] 限速
-
-  - [客户端](docs/user-guide/client-interceptor.md)
-    - [x] 熔断降级
-    - [x] 循环调用拦截
-    - [ ] 限速
-    - [x] http转grpc
-
-- [x] [监控](docs/user-guide/metrics.md)
-
-  - [x] go_collector
-  - [x] process_collector
-  - [x] mysql
-  - [x] api_requests_total
-  - [x] api_requests_latency_seconds
-  - [x] api_requests_size_bytes
-  - [x] api_response_size_bytes
-
-- [x] [protobuf自动生成代码](docs/user-guide/protobuf.md)
-
-  - [x] rest route
-  - [x] openapi
-  - [x] gateway
-  - [x] rest转grpc
-  - [ ] ts
-
-- [x] [数据库](docs/user-guide/database.md)
-
-  - [x] mysql
-  - [x] etcd
-  - [x] redis
-  - [ ] mongo
-
-- [x] [多级缓存](docs/user-guide/cache.md)
-
-  - [x] redis缓存
-  - [x] 本地缓存
-
-- [x] [安全](docs/user-guide/security.md)
 
 ## Benchmark
 

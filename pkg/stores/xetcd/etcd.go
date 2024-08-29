@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/initator"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
@@ -87,7 +87,7 @@ var (
 
 func init() {
 	clientManager = &ClientManager{}
-	initator.AddInitator(clientManager)
+	bootstrap.AddInitiator(clientManager)
 }
 
 // WithClientName 设置客户端名称
