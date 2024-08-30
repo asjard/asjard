@@ -28,6 +28,7 @@ type APP struct {
 	AZ string `json:"avaliablezone"`
 	// 项目站点
 	Website string `json:"website"`
+	Favicon string `json:"favicon"`
 	// 项目描述
 	Desc string `json:"desc"`
 	// 实例详情
@@ -56,6 +57,7 @@ var (
 		Region:      "default",
 		AZ:          "default",
 		Website:     website,
+		Favicon:     "favicon.ico",
 		Instance: Instance{
 			SystemCode: 100,
 			Name:       constant.Framework,
