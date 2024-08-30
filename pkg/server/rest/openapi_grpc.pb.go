@@ -20,18 +20,21 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	OpenAPI_Yaml_FullMethodName = "/asjard.api.OpenAPI/Yaml"
-	OpenAPI_Page_FullMethodName = "/asjard.api.OpenAPI/Page"
+	OpenAPI_Yaml_FullMethodName       = "/asjard.api.OpenAPI/Yaml"
+	OpenAPI_Page_FullMethodName       = "/asjard.api.OpenAPI/Page"
+	OpenAPI_ScalarPage_FullMethodName = "/asjard.api.OpenAPI/ScalarPage"
 )
 
 // OpenAPIClient is the client API for OpenAPI service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type OpenAPIClient interface {
-	// 获取openapi yaml文件
+	// Get openapi file.
 	Yaml(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// 文档页面
+	// Redict to configured openapi page.
 	Page(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Show a scalar openapi page.
+	ScalarPage(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type openAPIClient struct {
@@ -60,14 +63,25 @@ func (c *openAPIClient) Page(ctx context.Context, in *emptypb.Empty, opts ...grp
 	return out, nil
 }
 
+func (c *openAPIClient) ScalarPage(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, OpenAPI_ScalarPage_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OpenAPIServer is the server API for OpenAPI service.
 // All implementations must embed UnimplementedOpenAPIServer
 // for forward compatibility
 type OpenAPIServer interface {
-	// 获取openapi yaml文件
+	// Get openapi file.
 	Yaml(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
-	// 文档页面
+	// Redict to configured openapi page.
 	Page(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
+	// Show a scalar openapi page.
+	ScalarPage(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	mustEmbedUnimplementedOpenAPIServer()
 }
 
@@ -80,6 +94,9 @@ func (UnimplementedOpenAPIServer) Yaml(context.Context, *emptypb.Empty) (*emptyp
 }
 func (UnimplementedOpenAPIServer) Page(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Page not implemented")
+}
+func (UnimplementedOpenAPIServer) ScalarPage(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ScalarPage not implemented")
 }
 func (UnimplementedOpenAPIServer) mustEmbedUnimplementedOpenAPIServer() {}
 
@@ -130,6 +147,24 @@ func _OpenAPI_Page_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OpenAPI_ScalarPage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpenAPIServer).ScalarPage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OpenAPI_ScalarPage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpenAPIServer).ScalarPage(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OpenAPI_ServiceDesc is the grpc.ServiceDesc for OpenAPI service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -144,6 +179,10 @@ var OpenAPI_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Page",
 			Handler:    _OpenAPI_Page_Handler,
+		},
+		{
+			MethodName: "ScalarPage",
+			Handler:    _OpenAPI_ScalarPage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

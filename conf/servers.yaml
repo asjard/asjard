@@ -89,6 +89,15 @@ asjard:
         license:
           # name: "Apache 2.0"
           # url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+        scalar:
+          # theme: alternate
+          # cdn: ""
+          # sidebarVisibility: false
+          # hideModels: false
+          # hideDownloadButton: false
+          # darkMode: false
+          # hideClients: []
+          # authentication: ""
       ## 国际化是否相关配置
       i18n:
         # enabled: false

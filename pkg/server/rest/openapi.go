@@ -9,7 +9,9 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/core/status"
+	scalargo "github.com/bdpiprava/scalar-go"
 	openapi_v3 "github.com/google/gnostic/openapiv3"
+	"github.com/valyala/fasthttp"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -79,6 +81,69 @@ func (api *OpenAPI) Page(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 		return nil, nil
 	}
 	return &emptypb.Empty{}, nil
+}
+
+func (api *OpenAPI) ScalarPage(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
+	rtx, ok := ctx.(*Context)
+	if ok {
+
+		content, err := scalargo.NewV2(api.scalarOptions()...)
+		if err != nil {
+			logger.Error("new scalargo fail", "err", err)
+			return &emptypb.Empty{}, status.InternalServerError()
+		}
+		rtx.Response.Header.Set(fasthttp.HeaderContentType, "text/html")
+		rtx.WriteString(content)
+		return nil, nil
+	}
+	return &emptypb.Empty{}, nil
+}
+func (api *OpenAPI) scalarOptions() []scalargo.Option {
+	var address string
+	if addresses := api.service.GetAdvertiseAddresses(Protocol); len(addresses) > 0 {
+		address = addresses[0]
+	} else if addresses := api.service.GetListenAddresses(Protocol); len(addresses) > 0 {
+		address = addresses[0]
+	}
+	options := []scalargo.Option{
+		scalargo.WithSpecURL("http://" + address + "/openapi.yaml"),
+	}
+	if api.conf.Scalar.Theme != "" {
+		options = append(options, scalargo.WithTheme(scalargo.Theme(api.conf.Scalar.Theme)))
+	}
+	if api.conf.Scalar.CDN != "" {
+		options = append(options, scalargo.WithCDN(api.conf.Scalar.CDN))
+	}
+	if api.conf.Scalar.SidebarVisibility {
+		options = append(options, scalargo.WithSidebarVisibility(api.conf.Scalar.SidebarVisibility))
+	}
+	if api.conf.Scalar.HideModels {
+		options = append(options, scalargo.WithHideModels())
+	}
+	if api.conf.Scalar.HideDownloadButton {
+		options = append(options, scalargo.WithHideDownloadButton())
+	}
+	if api.conf.Scalar.DarkMode {
+		options = append(options, scalargo.WithDarkMode())
+	}
+	if len(api.conf.Scalar.HideClients) != 0 {
+		allClients := false
+		for _, client := range api.conf.Scalar.HideClients {
+			if client == "*" {
+				allClients = true
+				break
+			}
+		}
+		if allClients {
+			options = append(options, scalargo.WithHideAllClients())
+		} else {
+			options = append(options, scalargo.WithHiddenClients(api.conf.Scalar.HideClients...))
+		}
+	}
+	if api.conf.Scalar.Authentication != "" {
+		options = append(options, scalargo.WithAuthentication(api.conf.Scalar.Authentication))
+	}
+	return options
 }
 
 func (api OpenAPI) RestServiceDesc() *ServiceDesc {

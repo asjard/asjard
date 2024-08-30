@@ -27,7 +27,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricsClient interface {
-	// 获取监控指标
+	// Get metrics.
 	Fetch(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -52,7 +52,7 @@ func (c *metricsClient) Fetch(ctx context.Context, in *emptypb.Empty, opts ...gr
 // All implementations must embed UnimplementedMetricsServer
 // for forward compatibility
 type MetricsServer interface {
-	// 获取监控指标
+	// Get metrics.
 	Fetch(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	mustEmbedUnimplementedMetricsServer()
 }

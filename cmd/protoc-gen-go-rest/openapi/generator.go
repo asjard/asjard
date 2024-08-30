@@ -444,6 +444,7 @@ func (g *OpenAPIv3Generator) buildOperationV3(
 	operationID string,
 	tagName string,
 	description string,
+	summary string,
 	defaultHost string,
 	path string,
 	bodyField string,
@@ -606,6 +607,7 @@ func (g *OpenAPIv3Generator) buildOperationV3(
 	op := &v3.Operation{
 		Tags:        []string{tagName},
 		Description: description,
+		Summary:     summary,
 		OperationId: operationID,
 		Parameters:  parameters,
 		Responses:   responses,
@@ -716,10 +718,14 @@ func (g *OpenAPIv3Generator) addPathsToDocumentV3(d *v3.Document, services []*pr
 			if ok {
 				for index, rule := range extHTTPs {
 					httpOption := utils.ParseMethodHttpOption(service, rule)
+					summary := rule.Desc
+					if summary == "" {
+						summary = comment
+					}
 					if httpOption.Method != "" {
 						defaultHost := proto.GetExtension(service.Desc.Options(), annotations.E_DefaultHost).(string)
 						op, path2 := g.buildOperationV3(
-							d, operationID+"_"+strconv.Itoa(index), service.GoName, comment, defaultHost,
+							d, operationID+"_"+strconv.Itoa(index), service.GoName, comment, summary, defaultHost,
 							httpOption.GetPath(), httpOption.Body, inputMessage, outputMessage)
 
 						// Merge any `Operation` annotations with the current

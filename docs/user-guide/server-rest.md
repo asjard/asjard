@@ -26,6 +26,15 @@ asjard:
         license:
           # name: "Apache 2.0"
           # url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+        scalar:
+          # theme: alternate
+          # cdn: ""
+          # sidebarVisibility: false
+          # hideModels: false
+          # hideDownloadButton: false
+          # darkMode: false
+          # hideClients: []
+          # authentication: ""
       ## 国际化是否相关配置
       i18n:
         # enabled: false
@@ -262,6 +271,15 @@ asjard:
         license:
           name: Apache 2.0
           url: http://www.apache.org/licenses/LICENSE-2.0.html
+        scalar:
+          # theme: alternate
+          # cdn: ""
+          # sidebarVisibility: false
+          # hideModels: false
+          # hideDownloadButton: false
+          # darkMode: false
+          # hideClients: []
+          # authentication: ""
 ```
 
 - 访问`localhost:7030/page/openapi`即将会跳转到`asjard.servers.rest.openapi.page`页面
