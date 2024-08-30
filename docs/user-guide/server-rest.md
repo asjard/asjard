@@ -283,6 +283,7 @@ asjard:
 ```
 
 - 访问`localhost:7030/page/openapi`即将会跳转到`asjard.servers.rest.openapi.page`页面
+- 或者访问`localhost:7030/page/scalar/openapi`
 
 - 其中显示信息如下图所示:
 
