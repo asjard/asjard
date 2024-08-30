@@ -14,6 +14,10 @@ syntax = "proto3";
 // 其中{接口类型}和{接口版本}会在rest服务中用来生成路由前缀
 // 可在ajard.api.http中通过api,和version字段修改
 // 例如如下package名称生成的路由前缀为/api/v1
+//
+// {服务名称}会在生成gw代码时用以确定客户端名称, 例如:
+// conn, err := client.NewClient(grpc.Protocol, config.GetString("asjard.topology.services.{hello}.name", "{hello}")).Conn()
+// 如果修改了asjard.service.instance.name 则可以通过asjard.topology.service.hello.name修改
 package api.v1.hello;
 
 option go_package = "github.com/asjard/asjard/examples/example/hellopb";
@@ -21,10 +25,11 @@ option go_package = "github.com/asjard/asjard/examples/example/hellopb";
 import "github.com/asjard/protobuf/http.proto";
 
 // 需要实现的功能
-// 建议一个protobuf文件中只写一个service
+// 一个proto文件中只写一个service
+// 如果在rest中没有配置group字段，则service名称为group字段的值
 service Hello {
   // 可以对整个服务定义路由信息
-  option(asjard.api.http) = {group: "hello", writer_name: "custome_writer"}
+  // option(asjard.api.http) = {api: "api", versin: "v1", group:"hello", writer_name: "custome_writer"}
   // 功能描述,
   // 支持markdown
   // 可渲染在openapi文档的接口描述中
@@ -33,10 +38,11 @@ service Hello {
     // 如果是要对外暴露rest服务则写如下路由信息
     // 可以有多条路由信息
     option (asjard.api.http) = {
-      // key为请求方式, 支持 get, put, post, delete,patch,header
+      // key为请求方式, 支持 get, put, post, delete, patch, header
       // value为请求路径, 相对路径
       // 完整路径为 接口类型 + / + 接口版本 + / + 接口分组 + / + 请求路径
-      get : "/hello"
+      // GET /api/v1/hello
+      get : "/"
       // 如果不为空则使用此处的接口分类
       api : ""
       // 如果不为空则使用此处的接口版本
@@ -47,10 +53,23 @@ service Hello {
       writer_name: ""
     };
     option (asjard.api.http) = {
-      post : "/hello"
+      // POST /api/v1/hello
+      post : "/"
     };
     option (asjard.api.http) = {
-      delete : "/hello/{name}"
+      // DELETE /api/v1/hello/{name}
+      delete : "/{name}"
+    };
+    option (asjard.api.http) = {
+      // PUT /api/v1/hello/{name}
+      put: "/{name}"
+    };
+    option (asjard.api.http) = {
+      // GET /openapi/v2/groupName/hello/{name}
+      get: "/hello/{name}"
+      group: "groupName"
+      api: "openapi"
+      version: "v2"
     };
   };
 }
