@@ -265,7 +265,7 @@ func (c CacheRedis) Set(ctx context.Context, key string, in any, expiresIn time.
 	switch c.tp {
 	case CacheRedisTypeKeyValue:
 		if c.options.localCache != nil && c.options.localCache.Enabled() {
-			if err := c.options.localCache.Set(ctx, key, in, expiresIn); err != nil {
+			if err := c.options.localCache.Set(ctx, key, in, expiresIn/2); err != nil {
 				logger.Error("redis cache set local cache fail", "key", key, "err", err)
 			}
 		}
