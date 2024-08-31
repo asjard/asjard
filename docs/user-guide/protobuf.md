@@ -47,7 +47,7 @@ service Hello {
       api : ""
       // 如果不为空则使用此处的接口版本
       version : ""
-      // 如果不为空则使用此处的接口分组, 都为空则为service名称
+      // 如果不为空则使用此处的接口分组, 都为空则为service复数名称
       group : ""
       // 当前接口自定义writer
       writer_name: ""

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/asjard/asjard/pkg/protobuf/httppb"
+	"github.com/jinzhu/inflection"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 )
@@ -39,7 +40,7 @@ func (h HttpOption) GetPath() string {
 	}
 	group := strings.Trim(h.Group, pathDelimiter)
 	if group != "" {
-		paths = append(paths, group)
+		paths = append(paths, inflection.Plural(group))
 	}
 	path := strings.Trim(h.Path, pathDelimiter)
 	paths = append(paths, path)
