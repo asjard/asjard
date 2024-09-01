@@ -25,6 +25,8 @@ const (
 	DeleteCacheFailCode = 500_22
 	// DatabaseNotFoundCode 数据库不存在错误
 	DatabaseNotFoundCode = 500_23
+	// GetLockFailCode 获取锁失败错误
+	GetLockFailCode = 500_24
 
 	// UnsupportProtocolCode 暂不支持的协议
 	UnsupportProtocolCode = 404_30

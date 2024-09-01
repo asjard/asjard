@@ -36,6 +36,18 @@ type OpenapiConfig struct {
 	Page           string               `json:"page"`
 	TermsOfService string               `json:"termsOfService"`
 	License        OpenapiLicenseConfig `json:"license"`
+	Scalar         ScalarOpenapiConfig  `json:"scalar"`
+}
+
+type ScalarOpenapiConfig struct {
+	Theme              string            `json:"theme"`
+	CDN                string            `json:"cdn"`
+	SidebarVisibility  bool              `json:"sidebarVisibility"`
+	HideModels         bool              `json:"hideModels"`
+	HideDownloadButton bool              `json:"hideDownloadButton"`
+	DarkMode           bool              `json:"darkMode"`
+	HideClients        utils.JSONStrings `json:"hideClients"`
+	Authentication     string            `json:"authentication"`
 }
 
 type OpenapiLicenseConfig struct {
@@ -93,6 +105,9 @@ func defaultConfig() Config {
 			License: OpenapiLicenseConfig{
 				Name: "Apache 2.0",
 				Url:  "http://www.apache.org/licenses/LICENSE-2.0.html",
+			},
+			Scalar: ScalarOpenapiConfig{
+				Theme: "alternate",
 			},
 		},
 		Cors: CorsConfig{

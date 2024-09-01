@@ -30,13 +30,13 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ErrorHandlerClient interface {
-	// 页面未找到
+	// Page not found handler
 	NotFound(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// 请求方式错误
+	// Method not allowed handler
 	MethodNotAllowed(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// 奔溃
+	// Panic handler.
 	Panic(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// 错误
+	// Error handler.
 	Error(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -88,13 +88,13 @@ func (c *errorHandlerClient) Error(ctx context.Context, in *emptypb.Empty, opts 
 // All implementations must embed UnimplementedErrorHandlerServer
 // for forward compatibility
 type ErrorHandlerServer interface {
-	// 页面未找到
+	// Page not found handler
 	NotFound(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
-	// 请求方式错误
+	// Method not allowed handler
 	MethodNotAllowed(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
-	// 奔溃
+	// Panic handler.
 	Panic(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
-	// 错误
+	// Error handler.
 	Error(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	mustEmbedUnimplementedErrorHandlerServer()
 }

@@ -75,11 +75,11 @@ type ConfigManager struct {
 	sm       sync.RWMutex
 	// 配置列表，从不同数据源的配置将key保存在此处
 	// 获取配置也是从此配置中获取
-	globalCfgs *configs
+	globalCfgs Configer
 	// 配置源的配置维护在此处，这样就不需要每个配置源维护自己配置了
 	// 使用此配置是因为当一个配置删除后，需要找到一个高优先级的配置来更新configs字段
 	// 如果不维护在此处，需要新增一个GetByKey方法去配置源获取
-	sourceCfgs *sourcesConfigs
+	sourceCfgs SourcesConfiger
 	// 监听配置变化
 	listener *Listener
 }
@@ -119,10 +119,16 @@ var (
 // 初始化configmanager全局变量
 func init() {
 	configmanager = &ConfigManager{
-		sourcers:   make(map[string]Sourcer),
-		globalCfgs: newConfigs(),
-		sourceCfgs: newSourcesConfigs(),
-		listener:   newListener(),
+		sourcers: make(map[string]Sourcer),
+		globalCfgs: &Configs{
+			cfgs: make(map[string]*Value),
+		},
+		sourceCfgs: &SourcesConfig{
+			sources: make(map[string]SourceConfiger),
+		},
+		// globalCfgs: &ConfigsWithSyncMap{},
+		// sourceCfgs: &SourcesConfigWithSyncMap{},
+		listener: newListener(),
 	}
 }
 
@@ -228,7 +234,7 @@ func (m *ConfigManager) update(event *Event) {
 // 如果小于则删除
 // 优先级排序查找第一个
 func (m *ConfigManager) delete(event *Event) {
-	m.sourceCfgs.del(event.Value.Sourcer.Name(), event.Key, event.Value.Ref, event.Value.Priority)
+	m.sourceCfgs.Del(event.Value.Sourcer.Name(), event.Key, event.Value.Ref, event.Value.Priority)
 	if event.Value.Ref != "" {
 		m.deleteByRef(event)
 		return
@@ -251,7 +257,7 @@ func (m *ConfigManager) deleteByKey(event *Event) {
 func (m *ConfigManager) deleteByRef(event *Event) {
 	logger.Debug("delete by ref",
 		"ref", event.Value.Ref)
-	for key, value := range m.globalCfgs.getAll() {
+	for key, value := range m.globalCfgs.GetAll() {
 		if value.Sourcer.Name() == event.Value.Sourcer.Name() &&
 			value.Ref == event.Value.Ref {
 			m.deleteAndFindNext(key)
@@ -263,7 +269,7 @@ func (m *ConfigManager) deleteByRef(event *Event) {
 // 先找到一个高优先级的，找到更新，没找到删除
 func (m *ConfigManager) deleteAndFindNext(key string) {
 	for i := len(sources) - 1; i >= 0; i-- {
-		value, ok := m.sourceCfgs.get(sources[i].name, key)
+		value, ok := m.sourceCfgs.Get(sources[i].name, key)
 		if !ok {
 			logger.Debug("find key from source not found",
 				"key", key,
@@ -300,7 +306,7 @@ func (m *ConfigManager) delSourcer(name string) {
 }
 
 func (m *ConfigManager) getConfig(key string) (*Value, bool) {
-	return m.globalCfgs.get(key)
+	return m.globalCfgs.Get(key)
 }
 
 // 倒序第一个有值的值
@@ -317,26 +323,26 @@ func (m *ConfigManager) getConfigByChain(keys []string) (value *Value, ok bool) 
 
 // 获取所有的配置
 func (m *ConfigManager) getConfigs() map[string]*Value {
-	return m.globalCfgs.getAll()
+	return m.globalCfgs.GetAll()
 }
 
 // 根据前缀列表获取配置,获取到的配置key是移除前缀的
 func (m *ConfigManager) getConfigsWithPrefixs(prefixs ...string) map[string]*Value {
-	return m.globalCfgs.getAllWithPrefixs(prefixs...)
+	return m.globalCfgs.GetAllWithPrefixs(prefixs...)
 }
 
 func (m *ConfigManager) setConfig(sourceName, key string, value *Value) {
 	// 更新配置源配置
-	if m.sourceCfgs.set(sourceName, key, value) {
+	if m.sourceCfgs.Set(sourceName, key, value) {
 		// 更新全局配置
-		m.globalCfgs.set(key, value)
+		m.globalCfgs.Set(key, value)
 		// 异步返回事件
 		go m.listener.notify(&Event{Type: EventTypeUpdate, Key: key, Value: value})
 	}
 }
 
 func (m *ConfigManager) delConfig(key string) {
-	m.globalCfgs.del(key)
+	m.globalCfgs.Del(key)
 	// 异步返回事件
 	go m.listener.notify(&Event{Type: EventTypeDelete, Key: key})
 }

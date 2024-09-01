@@ -33,7 +33,7 @@ type AddressConfig struct {
 
 var DefaultConfig = Config{
 	BuiltInInterceptors:    utils.JSONStrings{"ratelimiter", "metrics", "accessLog", "restReadEntity", "restResponseHeader", "i18n", "trace"},
-	BuiltInDefaultHandlers: utils.JSONStrings{"health", "metrics"},
+	BuiltInDefaultHandlers: utils.JSONStrings{"default", "health", "metrics"},
 }
 
 // GetConfigWithProtocol 根据协议获取配置

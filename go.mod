@@ -5,6 +5,7 @@ go 1.21
 require (
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alicebob/miniredis/v2 v2.33.0
+	github.com/bdpiprava/scalar-go v0.7.0
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/coocood/freecache v1.2.4
 	github.com/fasthttp/router v1.5.2
@@ -13,6 +14,7 @@ require (
 	github.com/google/gnostic v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/consul/api v1.29.2
+	github.com/jinzhu/inflection v1.0.0
 	github.com/magiconair/properties v1.8.7
 	github.com/pelletier/go-toml/v2 v2.2.2
 	github.com/prometheus/client_golang v1.20.0
@@ -88,7 +90,6 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.6.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
-	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/kr/pretty v0.3.1 // indirect

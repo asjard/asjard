@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type HealthClient interface {
-	// healthCheck
+	// HealthCheck.
 	Check(ctx context.Context, in *HealthCheckRequest, opts ...grpc.CallOption) (*HealthCheckResponse, error)
 }
 
@@ -51,7 +51,7 @@ func (c *healthClient) Check(ctx context.Context, in *HealthCheckRequest, opts .
 // All implementations must embed UnimplementedHealthServer
 // for forward compatibility
 type HealthServer interface {
-	// healthCheck
+	// HealthCheck.
 	Check(context.Context, *HealthCheckRequest) (*HealthCheckResponse, error)
 	mustEmbedUnimplementedHealthServer()
 }
