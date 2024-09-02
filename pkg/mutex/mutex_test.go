@@ -1,4 +1,4 @@
-package stores
+package mutex
 
 import (
 	"context"
@@ -36,12 +36,12 @@ func TestLock(t *testing.T) {
 		}
 		wg := sync.WaitGroup{}
 		key := "test_do_with_lock"
-		locker := &testLock{}
+		m := Mutex{Locker: &testLock{}}
 		for i := 0; i < 10; i++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				if err := DoWithLock(context.Background(), key, locker, do, WithMaxRetries(-1)); err != nil {
+				if err := m.TryLock(context.Background(), key, do, WithMaxRetries(-1)); err != nil {
 					t.Error(err)
 				}
 			}()

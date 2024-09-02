@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/pkg/stores"
+	"github.com/asjard/asjard/pkg/mutex"
 )
 
 // Lock 数据库锁
@@ -20,7 +20,9 @@ type Lock struct {
 	options []Option `gorm:"-"`
 }
 
-func NewLock(opts ...Option) (stores.Locker, error) {
+var _ mutex.Locker = &Lock{}
+
+func NewLock(opts ...Option) (mutex.Locker, error) {
 	lock := &Lock{
 		options: opts,
 	}

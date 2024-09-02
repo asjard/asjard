@@ -119,7 +119,7 @@ func (asd *Asjard) Start() error {
 		asd.printBanner()
 	}
 	// 优雅退出
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 1)
 	defer close(quit)
 	signal.Notify(quit, syscall.SIGKILL, syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP, syscall.SIGABRT)
 	select {
