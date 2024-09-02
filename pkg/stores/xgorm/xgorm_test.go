@@ -20,6 +20,9 @@ func TestMain(m *testing.M) {
 
 	config.Set("asjard.stores.gorm.dbs.another.dsn", "test_another.db")
 	config.Set("asjard.stores.gorm.dbs.another.driver", "sqlite")
+
+	config.Set("asjard.stores.gorm.dbs.lock.dsn", "root:my-secret-pw@tcp(mariadb:3306)/example-database?charset=utf8&parseTime=True&loc=Local&timeout=5s&readTimeout=5s")
+	config.Set("asjard.stores.gorm.dbs.lock.driver", "mysql")
 	time.Sleep(50 * time.Millisecond)
 	if err := dbManager.Start(); err != nil {
 		panic(err)
@@ -32,7 +35,7 @@ func TestMain(m *testing.M) {
 func TestLoadAndWatchConfig(t *testing.T) {
 	conf, err := dbManager.loadAndWatchConfig()
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(conf))
+	assert.Equal(t, 3, len(conf))
 }
 
 type testTable struct {

@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Locker 分布式锁需要实现的方法
+// Locker 互斥锁需要实现的方法
 type Locker interface {
 	// Lock 加锁
 	Lock(ctx context.Context, key, threadId string, expiresIn time.Duration) bool
@@ -20,6 +20,14 @@ type Locker interface {
 	Unlock(ctx context.Context, key, threadId string) bool
 	// 续期
 	KeepAlive(ctx context.Context, key, threadId string, expiresIn time.Duration) bool
+}
+
+// RWLocker 读写锁需要实现的方法
+type RWLocker interface {
+	Lock()
+	Unlock()
+	RLock()
+	RUnlock()
 }
 
 // LockOptions 锁参数
