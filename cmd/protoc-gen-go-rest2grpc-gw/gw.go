@@ -91,7 +91,7 @@ func (g *GwGenerator) genFileContent() {
 		if len(serviceFullName) < 4 {
 			panic("invalid package name, must be {group}.{version}.{service}")
 		}
-		g.gen.P("func (api *", service.GoName, "API)Bootstrap() error {")
+		g.gen.P("func (api *", service.GoName, "API)Start() error {")
 		g.gen.P("conn, err := ", clientPackage.Ident("NewClient"), "(", grpcPackage.Ident("Protocol"),
 			",",
 			configPackage.Ident("GetString"), "(", `"asjard.topology.services.`, serviceFullName[2], `.name",`, `"`, serviceFullName[2], `")`,
@@ -103,7 +103,7 @@ func (g *GwGenerator) genFileContent() {
 		g.gen.P("return nil")
 		g.gen.P("}")
 
-		g.gen.P("func (api *", service.GoName, "API)Shutdown() {")
+		g.gen.P("func (api *", service.GoName, "API)Stop() {")
 		g.gen.P("}")
 
 		g.genService(service)
