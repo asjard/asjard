@@ -10,7 +10,7 @@ import (
 )
 
 func TestLock(t *testing.T) {
-	testDB := "default"
+	testDB := "lock"
 	time.Sleep(50 * time.Millisecond)
 	lock, err := NewLock(WithConnName(testDB))
 	if err != nil {

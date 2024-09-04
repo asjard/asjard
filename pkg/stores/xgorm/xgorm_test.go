@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 	config.Set("asjard.stores.gorm.dbs.another.dsn", "test_another.db")
 	config.Set("asjard.stores.gorm.dbs.another.driver", "sqlite")
 
-	config.Set("asjard.stores.gorm.dbs.lock.dsn", "root:my-secret-pw@tcp(mariadb:3306)/example-database?charset=utf8&parseTime=True&loc=Local&timeout=5s&readTimeout=5s")
+	config.Set("asjard.stores.gorm.dbs.lock.dsn", "root:my-secret-pw@tcp(127.0.0.1:3306)/example-database?charset=utf8&parseTime=True&loc=Local&timeout=5s&readTimeout=5s")
 	config.Set("asjard.stores.gorm.dbs.lock.driver", "mysql")
 	time.Sleep(50 * time.Millisecond)
 	if err := dbManager.Start(); err != nil {
