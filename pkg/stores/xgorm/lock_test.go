@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
+//gocyclo:ignore
 func TestLock(t *testing.T) {
 	testDB := "lock"
 	time.Sleep(50 * time.Millisecond)

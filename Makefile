@@ -46,6 +46,9 @@ github_workflows_dependices: docker-compose.yaml ## github workflows 依赖环�
 
 github_workflows_test: github_workflows_dependices test ## github workflow 运行测试用例
 
-test: ## 运行测试用例
+test: gocyclo ## 运行测试用例
 	go test -race -cover -coverprofile=cover.out $$(go list ./...|grep -v cmd|grep -v 'protobuf/')
 	# go tool cover -html=cover.out
+
+gocyclo: ## 圈复杂度检测
+	gocyclo -over 15 -ignore third_party/ .

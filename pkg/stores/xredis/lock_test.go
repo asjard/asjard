@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
+//gocyclo:ignore
 func TestLock(t *testing.T) {
 	lock, err := NewLock()
 	if err != nil {
