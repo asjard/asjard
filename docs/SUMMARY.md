@@ -28,10 +28,6 @@
 
 - [概览](user-guide/error.md)
 
-## 初始化
-
-- [概览](user-guide/initator.md)
-
 ## 日志
 
 - [概览](user-guide/logger.md)
