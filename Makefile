@@ -1,24 +1,8 @@
-all: help
-
-##env 是否根据protobuf文件生成*.pb.go文件
-GEN_PROTO_GO ?= true
-##env 是否根据protobuf文件生成*_grpc.pb.go文件
-GEN_PROTO_GO_GRPC ?= true
-##env 是否根据protobuf文件生成*_rest.pb.go文件
-GEN_PROTO_GO_REST ?= true
-##env 是否根据protobuf文件生成*_rest_gw.pb.go文件
-GEN_PROTO_GO_REST_GW ?= true
-##env 是否根据protobuf文件生成*_ts.pb.go文件
-GEN_PROTO_TS ?= false
+export BIFROST_DIR ?= ./third_party/bifrost
 
 .PHONY: test
 
-help: ## 使用帮助
-	@echo "Commands:"
-	@echo "$$(grep -hE '^\S+:.*##' $(MAKEFILE_LIST) | sed -e 's/:.*##\s*/:/' -e 's/^\(.\+\):\(.*\)/  \\033[35m\1\\033[m:\2/' | column -c2 -t -s :)"
-	@echo
-	@echo "Envs:"
-	@echo "$$(grep -A1 -hE '^##env' Makefile |sed 's/##env//' |sed 'N;s/\n/ =/'|awk -F '=' '{print $$2"|"$$1"default:"$$3}'|sed -e 's/ .*|/|/' -e 's/^\(.\+\)|\(.*\)/  \\033[32m\1\\033[m|\2/'  |column -c2 -t -s '|')"
+-include $(BIFROST_DIR)/Makefile_base
 
 update: .gitmodules ## 更新本地代码
 	git submodule sync
@@ -44,7 +28,7 @@ build_gen_ts: ## 生成protoc-gen-ts命令
 github_workflows_dependices: docker-compose.yaml ## github workflows 依赖环境
 	docker compose -p asjard up -d
 
-github_workflows_test: github_workflows_dependices test ## github workflow 运行测试用例
+github_workflows_test: update github_workflows_dependices test ## github workflow 运行测试用例
 
 test: gocyclo govet ## 运行测试用例
 	go test -race -cover -coverprofile=cover.out $$(go list ./...|grep -v cmd|grep -v 'protobuf/')
