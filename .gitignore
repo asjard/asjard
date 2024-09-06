@@ -6,3 +6,4 @@ cover.html
 conf_*
 !conf_example
 test_*.db
+Makefile_gen*

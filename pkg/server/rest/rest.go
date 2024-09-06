@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime/debug"
 	"strings"
 	"time"
 
@@ -32,9 +31,6 @@ const (
 type Handler interface {
 	RestServiceDesc() *ServiceDesc
 }
-
-// Writer 结果输出
-type Writer func(ctx *Context, data any, err error)
 
 type MiddlewareFunc func(next fasthttp.RequestHandler) fasthttp.RequestHandler
 
@@ -130,16 +126,6 @@ func (s *RestServer) AddHandler(handler any) error {
 func (s *RestServer) Start(startErr chan error) error {
 	s.router.NotFound = s.newHandler(_ErrorHandler_NotFound_RestHandler, s.errorHandler, DefaultWriterName)
 	s.router.MethodNotAllowed = s.newHandler(_ErrorHandler_MethodNotAllowed_RestHandler, s.errorHandler, DefaultWriterName)
-	s.router.PanicHandler = func(ctx *fasthttp.RequestCtx, err any) {
-		logger.Error("request panic",
-			"method", string(ctx.Method()),
-			"path", string(ctx.Path()),
-			"header", ctx.Request.Header.String(),
-			"err", err,
-			"stack", string(debug.Stack()))
-		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
-		cc.WriteData(_ErrorHandler_Panic_RestHandler(cc, s.errorHandler, s.interceptor))
-	}
 	s.server.ErrorHandler = func(ctx *fasthttp.RequestCtx, err error) {
 		logger.Error("request error",
 			"method", string(ctx.Method()),

@@ -40,6 +40,10 @@
 
 - [概览](user-guide/metrics.md)
 
+## 分布式锁
+
+- [概览](user-guide/mutex.md)
+
 ## Protobuf
 
 - [概览](user-guide/protobuf.md)

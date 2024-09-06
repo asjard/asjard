@@ -11,6 +11,9 @@ import (
 
 //gocyclo:ignore
 func mapForm(ptr any, form map[string][]string) error {
+	if len(form) == 0 {
+		return nil
+	}
 	typ := reflect.TypeOf(ptr).Elem()
 	val := reflect.ValueOf(ptr).Elem()
 	for i := 0; i < typ.NumField(); i++ {

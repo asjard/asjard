@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/pkg/stores"
+	"github.com/asjard/asjard/pkg/mutex"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -15,7 +15,7 @@ type Lock struct {
 }
 
 var (
-	_ stores.Locker = &Lock{}
+	_ mutex.Locker = &Lock{}
 	// 解锁lua脚本
 	unlockScript = redis.NewScript(`
 if redis.call("GET", KEYS[1]) == ARGV[1] then
@@ -33,7 +33,7 @@ end`)
 )
 
 // NewLock 初始化redis分布式锁
-func NewLock(opts ...Option) (stores.Locker, error) {
+func NewLock(opts ...Option) (mutex.Locker, error) {
 	client, err := Client(opts...)
 	if err != nil {
 		return nil, err

@@ -119,7 +119,7 @@ func (asd *Asjard) Start() error {
 		asd.printBanner()
 	}
 	// 优雅退出
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 1)
 	defer close(quit)
 	signal.Notify(quit, syscall.SIGKILL, syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP, syscall.SIGABRT)
 	select {
@@ -234,7 +234,8 @@ func (asd *Asjard) startServers() error {
 			return fmt.Errorf("start server '%s' fail[%s]", sv.Protocol(), err.Error())
 		}
 		asd.startedServers = append(asd.startedServers,
-			sv.Protocol()+":"+strings.Join([]string{listenAddresses.Listen, listenAddresses.Advertise}, ","))
+			sv.Protocol()+":"+strings.TrimSuffix(strings.Join([]string{listenAddresses.Listen,
+				listenAddresses.Advertise}, ","), ","))
 		logger.Debug("server started",
 			"protocol", sv.Protocol())
 	}

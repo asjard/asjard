@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDuration(t *testing.T) {
@@ -105,6 +107,22 @@ func TestStrings(t *testing.T) {
 				t.Error(err)
 				t.FailNow()
 			}
+		}
+	})
+	t.Run("Merge", func(t *testing.T) {
+		cases := []struct {
+			s      JSONStrings
+			cs     JSONStrings
+			expect JSONStrings
+		}{
+			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"c"}, expect: JSONStrings{"a", "b", "c"}},
+			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-a", "c"}, expect: JSONStrings{"b", "c"}},
+			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-b", "a", "c"}, expect: JSONStrings{"a", "c"}},
+			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-b", "-a", "c"}, expect: JSONStrings{"c"}},
+		}
+		for _, caze := range cases {
+			output := caze.s.Merge(caze.cs)
+			assert.Equal(t, caze.expect, output)
 		}
 	})
 }

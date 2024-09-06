@@ -1,4 +1,4 @@
-package xredis
+package xgorm
 
 import (
 	"context"
@@ -11,18 +11,26 @@ import (
 
 //gocyclo:ignore
 func TestLock(t *testing.T) {
-	lock, err := NewLock()
+	testDB := "lock"
+	time.Sleep(50 * time.Millisecond)
+	lock, err := NewLock(WithConnName(testDB))
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
 	}
-	client, err := Client()
+
+	db, err := DB(context.Background(), WithConnName(testDB))
 	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	if err := db.AutoMigrate(&Lock{}); err != nil {
 		t.Error(err)
 		t.FailNow()
 	}
 	t.Run("normal", func(t *testing.T) {
 		key := "test_lock_nomal"
+		now := time.Now()
 		threadId := uuid.NewString()
 		expiresIn := 5 * time.Second
 		// Lock
@@ -30,8 +38,13 @@ func TestLock(t *testing.T) {
 			t.Error("nomal lock fail")
 			t.FailNow()
 		}
-		if v := client.Get(context.Background(), key).Val(); v != threadId {
-			t.Errorf("normal lock value not equal, act: '%s', want: '%s'", v, threadId)
+		var record Lock
+		if err := db.Where("lock_key=?", key).First(&record).Error; err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+		if record.Owner != threadId {
+			t.Errorf("normal lock value not equal, act: '%s', want: '%s'", record.Owner, threadId)
 			t.FailNow()
 		}
 		// keepAlive
@@ -40,7 +53,12 @@ func TestLock(t *testing.T) {
 			t.Error("lock keepalive fail")
 			t.FailNow()
 		}
-		if v := client.TTL(context.Background(), key).Val(); v < expiresIn-time.Second {
+		if err := db.Where("lock_key=?", key).Where("owner=?", threadId).First(&record).Error; err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+
+		if record.ExpiresAt.Before(now.Add(expiresIn)) {
 			t.Error("lock keepalive fail, ttl not refresh")
 			t.FailNow()
 		}
@@ -49,8 +67,8 @@ func TestLock(t *testing.T) {
 			t.Error("unlock fail")
 			t.FailNow()
 		}
-		if v := client.Exists(context.Background(), key).Val(); v != 0 {
-			t.Error("unlock fail, key exist", v)
+		if err := db.Where("lock_key=?", key).Where("owner=?", threadId).First(&Lock{}).Error; err == nil {
+			t.Error("unlock fail, key exist")
 			t.FailNow()
 		}
 	})
@@ -77,7 +95,7 @@ func TestLock(t *testing.T) {
 		}
 	})
 	t.Run("concurrency", func(t *testing.T) {
-		key := "test_lock_thread"
+		key := "test_lock_concurrency"
 		expiresIn := 5 * time.Second
 		var count int64 = 0
 		wg := sync.WaitGroup{}
