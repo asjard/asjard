@@ -32,9 +32,6 @@ type Handler interface {
 	RestServiceDesc() *ServiceDesc
 }
 
-// Writer 结果输出
-type Writer func(ctx *Context, data any, err error)
-
 type MiddlewareFunc func(next fasthttp.RequestHandler) fasthttp.RequestHandler
 
 // RestServer .

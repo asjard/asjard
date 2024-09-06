@@ -18,7 +18,7 @@ type Config struct {
 	// 是否是所有指标
 	allCollectors     bool
 	Collectors        utils.JSONStrings `json:"collectors"`
-	BuiltInCollectors utils.JSONStrings `json:"BuiltInCollectors"`
+	BuiltInCollectors utils.JSONStrings `json:"-"`
 	PushGateway       PushGatewayConfig `json:"pushGateway"`
 }
 
@@ -50,23 +50,6 @@ func GetConfig() Config {
 }
 
 func (c Config) complete() Config {
-	collectors := c.BuiltInCollectors
-	for _, collector := range c.Collectors {
-		if collector == AllCollectors {
-			c.allCollectors = true
-			break
-		}
-		exist := false
-		for _, ct := range c.BuiltInCollectors {
-			if ct == collector {
-				exist = true
-				break
-			}
-		}
-		if !exist {
-			collectors = append(collectors, collector)
-		}
-	}
-	c.Collectors = collectors
+	c.Collectors = c.BuiltInCollectors.Merge(c.Collectors)
 	return c
 }

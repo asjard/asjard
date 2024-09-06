@@ -24,6 +24,9 @@ const (
 	DefaultWriterName = "default"
 )
 
+// Writer 结果输出
+type Writer func(ctx *Context, data any, err error)
+
 var (
 	writers = map[string]Writer{
 		DefaultWriterName: DefaultWriter,

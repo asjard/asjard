@@ -121,9 +121,9 @@ func (c *Context) Close() {
 	contextPool.Put(c)
 }
 
-// ReadBodyParams 读取请求体
-func (c *Context) ReadBodyParams() []byte {
-	if string(c.Request.Header.ContentType()) == "application/json" {
+// JSONBodyParams 读取请求体
+func (c *Context) JSONBodyParams() []byte {
+	if string(c.Request.Header.ContentType()) == MIME_JSON {
 		return c.Request.Body()
 	}
 	return []byte{}
@@ -133,10 +133,11 @@ func (c *Context) readBodyParamsToEntity(entity proto.Message) error {
 	if entity == nil {
 		return nil
 	}
-	if len(c.ReadBodyParams()) == 0 {
+	jsonBody := c.JSONBodyParams()
+	if len(jsonBody) == 0 {
 		return nil
 	}
-	if err := protojson.Unmarshal(c.ReadBodyParams(), entity); err != nil {
+	if err := protojson.Unmarshal(jsonBody, entity); err != nil {
 		return status.Errorf(codes.InvalidArgument, "read body params fail: %s", err.Error())
 	}
 	return nil

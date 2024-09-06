@@ -40,3 +40,9 @@ gocyclo: ## 圈复杂度检测
 
 govet: ## 静态检查
 	go vet -all ./...
+
+zed_clean: ## zed编辑器清理
+	for file in $$(find . -name '._*'); \
+	do \
+	   rm -rf $$file; \
+	done

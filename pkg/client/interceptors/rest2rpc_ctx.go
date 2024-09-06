@@ -26,7 +26,7 @@ type Rest2RpcContext struct {
 type rest2RpcContextConfig struct {
 	allowAllHeaders     bool
 	AllowHeaders        utils.JSONStrings `json:"allowHeaders"`
-	BuiltInAllowHeaders utils.JSONStrings `json:"builtInAllowHeaders"`
+	BuiltInAllowHeaders utils.JSONStrings `json:"-"`
 }
 
 var defaultRest2RpcContextConfig = rest2RpcContextConfig{
@@ -41,24 +41,7 @@ var defaultRest2RpcContextConfig = rest2RpcContextConfig{
 }
 
 func (r rest2RpcContextConfig) complete() rest2RpcContextConfig {
-	allowHeaders := r.BuiltInAllowHeaders
-	for _, allowHeader := range r.AllowHeaders {
-		if allowHeader == constant.AllProtocol {
-			r.allowAllHeaders = true
-			return r
-		}
-		exist := false
-		for _, ah := range allowHeaders {
-			if allowHeader == ah {
-				exist = true
-				break
-			}
-		}
-		if !exist {
-			allowHeaders = append(allowHeaders, allowHeader)
-		}
-	}
-	r.AllowHeaders = allowHeaders
+	r.AllowHeaders = r.BuiltInAllowHeaders.Merge(r.AllowHeaders)
 	return r
 }
 

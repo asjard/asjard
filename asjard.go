@@ -234,7 +234,8 @@ func (asd *Asjard) startServers() error {
 			return fmt.Errorf("start server '%s' fail[%s]", sv.Protocol(), err.Error())
 		}
 		asd.startedServers = append(asd.startedServers,
-			sv.Protocol()+":"+strings.Join([]string{listenAddresses.Listen, listenAddresses.Advertise}, ","))
+			sv.Protocol()+":"+strings.TrimSuffix(strings.Join([]string{listenAddresses.Listen,
+				listenAddresses.Advertise}, ","), ","))
 		logger.Debug("server started",
 			"protocol", sv.Protocol())
 	}

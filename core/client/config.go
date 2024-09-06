@@ -15,7 +15,7 @@ type Config struct {
 	// 客户端拦截器
 	Interceptors utils.JSONStrings `json:"interceptors"`
 	// 内建客户端拦截器
-	BuiltInInterceptors utils.JSONStrings `json:"builtInInterceptors"`
+	BuiltInInterceptors utils.JSONStrings `json:"-"`
 	// 客户端证书
 	CertFile string `json:"ccertFile"`
 }
@@ -42,19 +42,6 @@ func serviceConfig(protocol, serviceName string) Config {
 }
 
 func (c Config) complete() Config {
-	interceptors := c.BuiltInInterceptors
-	for _, interceptor := range c.Interceptors {
-		exist := false
-		for _, inc := range interceptors {
-			if inc == interceptor {
-				exist = true
-				break
-			}
-		}
-		if !exist {
-			interceptors = append(interceptors, interceptor)
-		}
-	}
-	c.Interceptors = interceptors
+	c.Interceptors = c.BuiltInInterceptors.Merge(c.Interceptors)
 	return c
 }
