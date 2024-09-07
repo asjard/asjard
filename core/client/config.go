@@ -15,7 +15,7 @@ type Config struct {
 	// 客户端拦截器
 	Interceptors utils.JSONStrings `json:"interceptors"`
 	// 内建客户端拦截器
-	BuiltInInterceptors utils.JSONStrings `json:"-"`
+	BuiltInInterceptors utils.JSONStrings `json:"builtInInterceptors"`
 	// 客户端证书
 	CertFile string `json:"ccertFile"`
 }

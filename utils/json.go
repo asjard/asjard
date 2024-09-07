@@ -115,18 +115,7 @@ func (s JSONStrings) Merge(cs JSONStrings) JSONStrings {
 			}
 		}
 		if len(values) != 0 {
-			for _, v := range values {
-				exist := false
-				for _, v1 := range ns {
-					if v1 == v {
-						exist = true
-						break
-					}
-				}
-				if !exist {
-					ns = append(ns, v)
-				}
-			}
+			ns = append(ns, values...)
 		}
 	}
 	for _, v := range cs {
@@ -135,16 +124,19 @@ func (s JSONStrings) Merge(cs JSONStrings) JSONStrings {
 			strings.HasPrefix(v, ReplaceFlag) {
 			continue
 		}
-		exist := false
-		for _, v1 := range ns {
-			if v1 == v {
-				exist = true
-				break
-			}
-		}
-		if !exist {
-			ns = append(ns, v)
-		}
+		ns = append(ns, v)
 	}
-	return ns
+	return ns.unique()
+}
+
+func (s JSONStrings) unique() JSONStrings {
+	var result JSONStrings
+	resultMap := make(map[string]struct{}, len(s))
+	for _, v := range s {
+		if _, ok := resultMap[v]; !ok {
+			result = append(result, v)
+		}
+		resultMap[v] = struct{}{}
+	}
+	return result
 }
