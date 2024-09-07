@@ -119,6 +119,11 @@ func TestStrings(t *testing.T) {
 			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-a", "c"}, expect: JSONStrings{"b", "c"}},
 			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-b", "a", "c"}, expect: JSONStrings{"a", "c"}},
 			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-b", "-a", "c"}, expect: JSONStrings{"c"}},
+			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-b", "+a:c"}, expect: JSONStrings{"a", "c"}},
+			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"+b", "=a:c"}, expect: JSONStrings{"c", "b"}},
+			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-b", "=a:c"}, expect: JSONStrings{"c"}},
+			{s: JSONStrings{"a", "b", "c"}, cs: JSONStrings{"=a:c", "-b"}, expect: JSONStrings{"c"}},
+			{s: JSONStrings{"a", "b", "c"}, cs: JSONStrings{"=a:c", "-b", "+c:d"}, expect: JSONStrings{"c", "d"}},
 		}
 		for _, caze := range cases {
 			output := caze.s.Merge(caze.cs)
