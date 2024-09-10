@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/asjard/asjard/core/constant"
@@ -24,6 +25,7 @@ import (
 
 var (
 	configParamCompile = regexp.MustCompile("\\${(.*?)}")
+	loadedFlag         atomic.Bool
 )
 
 // Sourcer 配置源需要实现的方法
@@ -137,7 +139,13 @@ func init() {
 //	@param priority 优先级
 //	@return error
 func Load(priority int) error {
+	defer loadedFlag.CompareAndSwap(false, true)
 	return configmanager.load(priority)
+}
+
+// IsLoaded 配置是否已经加载
+func IsLoaded() bool {
+	return loadedFlag.Load()
 }
 
 // AddSource 添加配置源

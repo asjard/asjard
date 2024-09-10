@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/asjard/asjard/core/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,6 +63,13 @@ func (TestTable) Del() error {
 
 func (TestTable) Search() ([]*TestTable, error) {
 	return []*TestTable{}, nil
+}
+
+func TestMain(m *testing.M) {
+	if err := config.Load(-1); err != nil {
+		panic(err)
+	}
+	m.Run()
 }
 
 func TestGetData(t *testing.T) {

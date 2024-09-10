@@ -69,7 +69,11 @@ var (
 )
 
 // GetAPP 获取项目详情
+// 需要配置加载完后才能加载
 func GetAPP() APP {
+	if !config.IsLoaded() {
+		panic("config not loaded")
+	}
 	appOnce.Do(func() {
 		if err := config.GetWithUnmarshal(constant.ConfigServicePrefix, &app); err != nil {
 			logger.Error("get instance conf fail", "err", err)
