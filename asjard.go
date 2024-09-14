@@ -177,13 +177,6 @@ func (asd *Asjard) Init() error {
 		return err
 	}
 
-	// 服务初始化
-	servers, err := server.Init()
-	if err != nil {
-		return err
-	}
-	asd.servers = servers
-
 	// 注册中心初始化
 	if err := registry.Init(); err != nil {
 		return err
@@ -193,6 +186,13 @@ func (asd *Asjard) Init() error {
 	if err := bootstrap.Bootstrap(); err != nil {
 		return err
 	}
+
+	// 服务初始化
+	servers, err := server.Init()
+	if err != nil {
+		return err
+	}
+	asd.servers = servers
 	asd.inited = true
 	return nil
 }

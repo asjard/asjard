@@ -93,7 +93,9 @@ func init() {
 // WithClientName 设置客户端名称
 func WithClientName(clientName string) func(*ClientOptions) {
 	return func(opt *ClientOptions) {
-		opt.clientName = clientName
+		if clientName != "" {
+			opt.clientName = clientName
+		}
 	}
 }
 

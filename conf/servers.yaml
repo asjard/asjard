@@ -318,3 +318,15 @@ asjard:
       #   ## and calls the handler sooner when given body is
       #   ## larger than the current limit.
       #   streamRequestBody: !!bool false
+    asynq:
+      enabled: false
+      redis: default
+      options:
+        concurrency: 0
+        strictPriority: false
+        shutdownTimeout: 0s
+        healthCheckInterval: 0s
+        delayTaskCheckInterval: 0s
+        groupGracePeriod: 0s
+        groupMaxDelay: 0s
+        groupMaxSize: 0

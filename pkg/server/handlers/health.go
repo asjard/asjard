@@ -20,7 +20,7 @@ type Health struct {
 }
 
 func init() {
-	handlers.AddServerDefaultHandler("health", &Health{})
+	handlers.AddServerDefaultHandler("health", &Health{}, grpc.Protocol, rest.Protocol)
 }
 
 // Check 健康检查

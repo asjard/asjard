@@ -10,6 +10,7 @@ import (
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/pkg/client/grpc"
 	"github.com/asjard/asjard/pkg/protobuf/healthpb"
+	"github.com/asjard/asjard/pkg/protobuf/requestpb"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/asjard/asjard/utils"
 )
@@ -36,7 +37,11 @@ type accessLogConfig struct {
 }
 
 var defaultAccessLogConfig = accessLogConfig{
-	SkipMethods: utils.JSONStrings{grpc.Protocol, healthpb.Health_Check_FullMethodName},
+	SkipMethods: utils.JSONStrings{
+		grpc.Protocol,
+		healthpb.Health_Check_FullMethodName,
+		requestpb.DefaultHandlers_Favicon_FullMethodName,
+	},
 }
 
 func init() {
