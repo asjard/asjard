@@ -163,7 +163,7 @@ func (c *Context) readQueryParamsToEntity(entity any) error {
 		return nil
 	}
 	if err := mapForm(entity, c.ReadQueryParams()); err != nil {
-		return status.Errorf(http.StatusBadRequest, "read query params fail: %s", err.Error())
+		return status.Errorf(codes.InvalidArgument, "read query params fail: %s", err.Error())
 	}
 	return nil
 }
@@ -188,7 +188,7 @@ func (c *Context) readHeaderParamsToEntity(entity any) error {
 		return nil
 	}
 	if err := mapForm(entity, c.ReadHeaderParams()); err != nil {
-		return status.Errorf(http.StatusBadRequest, "read header params fail: %s", err.Error())
+		return status.Errorf(codes.InvalidArgument, "read header params fail: %s", err.Error())
 	}
 	return nil
 }
