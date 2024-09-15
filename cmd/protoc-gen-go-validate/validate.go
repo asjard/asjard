@@ -2,8 +2,12 @@ package main
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
+	"github.com/asjard/asjard/pkg/protobuf/validatepb"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -12,6 +16,11 @@ const (
 	fileDescriptorProtoPackageFieldNumber = 2
 	// FileDescriptorProto.syntax field number
 	fileDescriptorProtoSyntaxFieldNumber = 12
+)
+
+const (
+	validatorPackage  = protogen.GoImportPath("github.com/go-playground/validator")
+	validatepbPackage = protogen.GoImportPath("github.com/asjard/asjard/pkg/protobuf/validatepb")
 )
 
 type ValidateGenerator struct {
@@ -61,7 +70,69 @@ func (g *ValidateGenerator) genFileContent() {
 }
 
 func (g *ValidateGenerator) genMessage(message *protogen.Message) {
-	g.gen.P("func (m *", message.GoIdent.GoName, ")IsValid() error{")
+	g.gen.P("func (m *", message.GoIdent.GoName, ")IsValid(opts ...", validatepbPackage.Ident("ValidaterOption"), ") error{")
+	g.gen.P("options := ", validatepbPackage.Ident("ValidaterOptions"), "{}")
+	g.gen.P("for _, opt := range opts {")
+	g.gen.P("opt(options)")
+	g.gen.P("}")
+	inited := false
+	for _, field := range message.Fields {
+		switch field.Desc.Kind() {
+		case protoreflect.MessageKind, protoreflect.EnumKind:
+			if field.Desc.IsList() {
+				g.gen.P("for _, fm := range m.", field.GoName, "{")
+				g.gen.P("if err := fm.IsValid(opts...); err != nil {")
+				g.gen.P("return err")
+				g.gen.P("}")
+				g.gen.P("}")
+
+			} else {
+				g.gen.P("if err := m.", field.GoName, ".IsValid(opts...); err != nil {")
+				g.gen.P("return err")
+				g.gen.P("}")
+			}
+		default:
+			if validateRule, ok := proto.GetExtension(field.Desc.Options(), validatepb.E_Validate).(*validatepb.Validate); ok && validateRule != nil {
+				rules := strings.Split(validateRule.Rules, ";")
+				if len(rules) != 0 {
+					if !inited {
+						g.gen.P("v := ", validatorPackage.Ident("New"))
+						inited = true
+					}
+					methodRules := make(map[string][]string)
+					var globalRules []string
+					for _, rule := range rules {
+						methodAndRule := strings.Split(rule, ":")
+						if len(methodAndRule) == 2 {
+							methodRules[methodAndRule[0]] = append(methodRules[methodAndRule[0]], methodAndRule[1])
+						} else {
+							globalRules = append(globalRules, rule)
+						}
+					}
+					if len(globalRules) != 0 {
+						g.gen.P("if err := v.Var(m.", field.GoName, ",", strconv.Quote(strings.Join(globalRules, ",")), "); err != nil {")
+						g.gen.P("return err")
+						g.gen.P("}")
+					}
+					for method, rules := range methodRules {
+						g.gen.P("if options.FullMethod != \"\" && options.FullMethod == ", strconv.Quote(method), "{")
+						g.gen.P("if err := v.Var(m.", field.GoName, ",", strconv.Quote(strings.Join(rules, ",")), "); err != nil {")
+						g.gen.P("return err")
+						g.gen.P("}")
+						g.gen.P("}")
+					}
+				}
+			}
+		}
+		// g.gen.P("//name=", field.GoName)
+		// g.gen.P("//kind=", field.Desc.Kind())
+		// g.gen.P("//goIdent=", field.GoIdent)
+		// g.gen.P("//parent=", field.Parent)
+		// g.gen.P("//oneof=", field.Oneof)
+		// g.gen.P("//extendee=", field.Extendee)
+		// g.gen.P("//message=", field.Message)
+		// g.gen.P("//===========================")
+	}
 	g.gen.P("return nil")
 	g.gen.P("}")
 }
