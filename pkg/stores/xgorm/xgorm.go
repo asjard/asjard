@@ -91,7 +91,9 @@ type Option func(*DBOptions)
 // WithConnName .
 func WithConnName(connName string) func(*DBOptions) {
 	return func(opts *DBOptions) {
-		opts.connName = connName
+		if connName != "" {
+			opts.connName = connName
+		}
 	}
 }
 

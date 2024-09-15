@@ -19,7 +19,7 @@ type DefaultHandlersAPI struct {
 }
 
 func init() {
-	handlers.AddServerDefaultHandler("default", &DefaultHandlersAPI{})
+	handlers.AddServerDefaultHandler("default", &DefaultHandlersAPI{}, rest.Protocol)
 }
 
 func (api *DefaultHandlersAPI) Favicon(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {

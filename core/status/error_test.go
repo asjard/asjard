@@ -3,8 +3,16 @@ package status
 import (
 	"testing"
 
+	"github.com/asjard/asjard/core/config"
 	"google.golang.org/grpc/codes"
 )
+
+func TestMain(m *testing.M) {
+	if err := config.Load(-1); err != nil {
+		panic(err)
+	}
+	m.Run()
+}
 
 func TestNewCode(t *testing.T) {
 	datas := []struct {

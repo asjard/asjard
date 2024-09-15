@@ -22,6 +22,9 @@ build_gen_go_rest: ## 生成protoc-gen-go-rest命令
 build_gen_go_validate: ## 生成protoc-gen-go-validate命令
 	go build -o $(GOPATH)/bin/protoc-gen-go-validate -ldflags '-w -s' ./cmd/protoc-gen-go-validate/*.go
 
+build_gen_go_asynq: ## 生成protoc-gen-go-rest命令
+	go build -o $(GOPATH)/bin/protoc-gen-go-asynq -ldflags '-w -s' ./cmd/protoc-gen-go-asynq/*.go
+
 build_gen_go_rest2grpc_gw: ## 生成protoc-gen-go-rest2grpc-gw命令
 	go build -o $(GOPATH)/bin/protoc-gen-go-rest2grpc-gw -ldflags '-w -s' ./cmd/protoc-gen-go-rest2grpc-gw/*.go
 
