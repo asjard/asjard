@@ -69,11 +69,32 @@ func (g *ValidateGenerator) genFileContent() {
 	}
 }
 
+func (g *ValidateGenerator) genMessageMessages(messages []*protogen.Message) {
+	for _, message := range messages {
+		if !message.Desc.IsMapEntry() {
+			g.genMessage(message)
+		}
+	}
+}
+
+func (g *ValidateGenerator) genMessageEnums(enums []*protogen.Enum) {
+	for _, enum := range enums {
+		g.gen.P("func (m ", enum.GoIdent.GoName, ")IsValid(opts ...", validatepbPackage.Ident("ValidaterOption"), ") error {")
+		g.gen.P("if _, ok := ", enum.GoIdent.GoName, "_name[m]; ok; !ok {")
+		g.gen.P("return ")
+		g.gen.P("}")
+		g.gen.P("return nil")
+		g.gen.P("}")
+	}
+}
+
 func (g *ValidateGenerator) genMessage(message *protogen.Message) {
+	g.genMessageMessages(message.Messages)
+	g.genMessageEnums(message.Enums)
 	g.gen.P("func (m *", message.GoIdent.GoName, ")IsValid(opts ...", validatepbPackage.Ident("ValidaterOption"), ") error{")
-	g.gen.P("options := ", validatepbPackage.Ident("ValidaterOptions"), "{}")
+	g.gen.P("options := ", validatepbPackage.Ident("ValidaterOptions{}"))
 	g.gen.P("for _, opt := range opts {")
-	g.gen.P("opt(options)")
+	g.gen.P("opt(&options)")
 	g.gen.P("}")
 	inited := false
 	for _, field := range message.Fields {
@@ -86,7 +107,7 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 				g.gen.P("}")
 				g.gen.P("}")
 
-			} else {
+			} else if !field.Desc.IsMap() {
 				g.gen.P("if err := m.", field.GoName, ".IsValid(opts...); err != nil {")
 				g.gen.P("return err")
 				g.gen.P("}")
@@ -96,7 +117,7 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 				rules := strings.Split(validateRule.Rules, ";")
 				if len(rules) != 0 {
 					if !inited {
-						g.gen.P("v := ", validatorPackage.Ident("New"))
+						g.gen.P("v := ", validatorPackage.Ident("New()"))
 						inited = true
 					}
 					methodRules := make(map[string][]string)

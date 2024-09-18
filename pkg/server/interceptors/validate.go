@@ -25,7 +25,7 @@ func (r *Validate) Name() string {
 
 // NewValidateInterceptor 初始化序列化参数拦截器
 func NewValidateInterceptor() (server.ServerInterceptor, error) {
-	return &ReadEntity{}, nil
+	return &Validate{}, nil
 }
 
 // Interceptor .
