@@ -25,7 +25,7 @@ type xgormLogger struct {
 }
 
 type loggerConfig struct {
-	*logger.Config
+	logger.Config
 	IgnoreRecordNotFoundError bool                 `json:"ignoreRecordNotFoundError"`
 	SlowThreshold             ajutils.JSONDuration `json:"slowThreshold"`
 }
@@ -106,7 +106,7 @@ func (l *xgormLogger) load() error {
 	if err := config.GetWithUnmarshal("asjard.logger.gorm", &conf); err != nil {
 		return err
 	}
-	l.slogger = slog.New(logger.NewSlogHandler(conf.Config))
+	l.slogger = slog.New(logger.NewSlogHandler(&conf.Config))
 	l.ignoreRecordNotFoundError = conf.IgnoreRecordNotFoundError
 	l.slowThreshold = conf.SlowThreshold.Duration
 	return nil

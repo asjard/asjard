@@ -27,7 +27,7 @@ func (l Logger) update() {
 	conf := logger.DefaultConfig
 	config.GetWithUnmarshal("asjard.logger", &conf)
 	logger.SetLoggerHandler(func() slog.Handler {
-		return logger.NewSlogHandler(conf)
+		return logger.NewSlogHandler(&conf)
 	})
 }
 

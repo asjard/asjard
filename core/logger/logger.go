@@ -31,7 +31,7 @@ type Config struct {
 }
 
 // DefaultConfig 日志默认配置
-var DefaultConfig = &Config{
+var DefaultConfig = Config{
 	FileName:   "/dev/stdout",
 	MaxSize:    100,
 	MaxAge:     0,
@@ -43,7 +43,7 @@ var DefaultConfig = &Config{
 
 // L 日志组件
 var L = &Logger{
-	slogger: slog.New(NewSlogHandler(DefaultConfig)),
+	slogger: slog.New(NewSlogHandler(&DefaultConfig)),
 }
 
 // NewLoggerHandler 初始化logger handler的方法
