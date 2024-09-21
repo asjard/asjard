@@ -44,6 +44,9 @@ func New(options *server.ServerOptions) (server.Server, error) {
 
 // MustNew 根据配置初始化
 func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) {
+	if !conf.Enabled {
+		return &AsynqServer{}, nil
+	}
 	redisConn, err := NewRedisConn(conf.Redis)
 	if err != nil {
 		return nil, err
