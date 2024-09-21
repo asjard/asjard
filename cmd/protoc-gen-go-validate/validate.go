@@ -19,8 +19,9 @@ const (
 )
 
 const (
-	validatorPackage  = protogen.GoImportPath("github.com/go-playground/validator")
-	validatepbPackage = protogen.GoImportPath("github.com/asjard/asjard/pkg/protobuf/validatepb")
+	validatorPackage = protogen.GoImportPath("github.com/go-playground/validator")
+	statusPackage    = protogen.GoImportPath("github.com/asjard/asjard/core/status")
+	codesPackage     = protogen.GoImportPath("google.golang.org/grpc/codes")
 )
 
 type ValidateGenerator struct {
@@ -77,41 +78,29 @@ func (g *ValidateGenerator) genMessageMessages(messages []*protogen.Message) {
 	}
 }
 
-func (g *ValidateGenerator) genMessageEnums(enums []*protogen.Enum) {
-	for _, enum := range enums {
-		g.gen.P("func (m ", enum.GoIdent.GoName, ")IsValid(opts ...", validatepbPackage.Ident("ValidaterOption"), ") error {")
-		g.gen.P("if _, ok := ", enum.GoIdent.GoName, "_name[m]; ok; !ok {")
-		g.gen.P("return ")
-		g.gen.P("}")
-		g.gen.P("return nil")
-		g.gen.P("}")
-	}
-}
-
 func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 	g.genMessageMessages(message.Messages)
-	g.genMessageEnums(message.Enums)
-	g.gen.P("func (m *", message.GoIdent.GoName, ")IsValid(opts ...", validatepbPackage.Ident("ValidaterOption"), ") error{")
-	g.gen.P("options := ", validatepbPackage.Ident("ValidaterOptions{}"))
-	g.gen.P("for _, opt := range opts {")
-	g.gen.P("opt(&options)")
-	g.gen.P("}")
+	g.gen.P("func (m *", message.GoIdent.GoName, ")IsValid(fullMethod string ) error{")
 	inited := false
 	for _, field := range message.Fields {
 		switch field.Desc.Kind() {
-		case protoreflect.MessageKind, protoreflect.EnumKind:
+		case protoreflect.MessageKind:
 			if field.Desc.IsList() {
 				g.gen.P("for _, fm := range m.", field.GoName, "{")
-				g.gen.P("if err := fm.IsValid(opts...); err != nil {")
+				g.gen.P("if err := fm.IsValid(fullMethod); err != nil {")
 				g.gen.P("return err")
 				g.gen.P("}")
 				g.gen.P("}")
 
 			} else if !field.Desc.IsMap() {
-				g.gen.P("if err := m.", field.GoName, ".IsValid(opts...); err != nil {")
+				g.gen.P("if err := m.", field.GoName, ".IsValid(fullMethod); err != nil {")
 				g.gen.P("return err")
 				g.gen.P("}")
 			}
+		case protoreflect.EnumKind:
+			// g.gen.P("if _, ok := ", field.GoIdent.GoName, "_name[m.", field.GoIdent, ".String()]; ok; !ok {")
+			// g.gen.P("return nil")
+			// g.gen.P("}")
 		default:
 			if validateRule, ok := proto.GetExtension(field.Desc.Options(), validatepb.E_Validate).(*validatepb.Validate); ok && validateRule != nil {
 				rules := strings.Split(validateRule.Rules, ";")
@@ -131,15 +120,11 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 						}
 					}
 					if len(globalRules) != 0 {
-						g.gen.P("if err := v.Var(m.", field.GoName, ",", strconv.Quote(strings.Join(globalRules, ",")), "); err != nil {")
-						g.gen.P("return err")
-						g.gen.P("}")
+						g.genFieldValid(field, strings.Join(globalRules, ","), validateRule)
 					}
 					for method, rules := range methodRules {
-						g.gen.P("if options.FullMethod != \"\" && options.FullMethod == ", strconv.Quote(method), "{")
-						g.gen.P("if err := v.Var(m.", field.GoName, ",", strconv.Quote(strings.Join(rules, ",")), "); err != nil {")
-						g.gen.P("return err")
-						g.gen.P("}")
+						g.gen.P("if fullMethod != \"\" && fullMethod == ", strconv.Quote(method), "{")
+						g.genFieldValid(field, strings.Join(rules, ","), validateRule)
 						g.gen.P("}")
 					}
 				}
@@ -155,6 +140,18 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 		// g.gen.P("//===========================")
 	}
 	g.gen.P("return nil")
+	g.gen.P("}")
+	g.gen.P("")
+}
+
+func (g *ValidateGenerator) genFieldValid(field *protogen.Field, rule string, validate *validatepb.Validate) {
+	g.gen.P("if err := v.Var(m.", field.GoName, ",", strconv.Quote(rule), "); err != nil {")
+	errMsg := fmt.Sprintf("validation fail field '%s' on '%s'", field.GoName, rule)
+	if validate.ErrCode != 0 {
+		g.gen.P("return ", statusPackage.Ident("Error"), "(", validate.ErrCode, ",", strconv.Quote(errMsg), ")")
+	} else {
+		g.gen.P("return ", statusPackage.Ident("Error"), "(", codesPackage.Ident("InvalidArgument"), ",", strconv.Quote(errMsg), ")")
+	}
 	g.gen.P("}")
 }
 

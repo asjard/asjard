@@ -33,7 +33,7 @@ func (r *Validate) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
 		// 参数校验
 		if v, ok := req.(validatepb.Validater); ok {
-			if err := v.IsValid(validatepb.WithFullMethod(info.FullMethod)); err != nil {
+			if err := v.IsValid(info.FullMethod); err != nil {
 				return nil, err
 			}
 		}
