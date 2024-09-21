@@ -105,18 +105,18 @@ func (dl Logger) log(level slog.Level, msg string, args ...any) {
 	dl.slogger.Log(context.Background(), level, msg, args...)
 }
 
-func Info(format string, kv ...any) {
-	L.Info(format, kv...)
+func Info(msg string, kv ...any) {
+	L.Info(msg, kv...)
 }
 
-func Debug(format string, kv ...any) {
-	L.Debug(format, kv...)
+func Debug(msg string, kv ...any) {
+	L.Debug(msg, kv...)
 }
 
-func Warn(format string, kv ...any) {
-	L.Warn(format, kv...)
+func Warn(msg string, kv ...any) {
+	L.Warn(msg, kv...)
 }
 
-func Error(format string, kv ...any) {
-	L.Error(format, kv...)
+func Error(msg string, kv ...any) {
+	L.Error(msg, kv...)
 }
