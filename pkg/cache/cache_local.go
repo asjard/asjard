@@ -171,15 +171,22 @@ func (c *CacheLocal) delSubscribe() {
 	}
 	logger.Debug("local cache del subscribe")
 	c.pubsub = c.redis.Subscribe(context.Background(), c.delChannel())
-	for msg := range c.pubsub.Channel() {
-		logger.Debug("local cache del subscribe recive", "msg", msg.Payload)
-		var delMsg cacheLocalDelPublishMessage
-		if err := json.Unmarshal(utils.String2Byte(msg.Payload), &delMsg); err != nil {
-			logger.Error("local cache pubsub unmarshal fail", "payload", msg.Payload, "err", err)
-		}
-		if delMsg.InstanceId != c.instanceId {
-			if err := c.del(delMsg.Keys...); err != nil {
-				logger.Error("local cache del keys fail", "keys", delMsg.Keys, "err", err)
+	for {
+		select {
+		case <-runtime.Exit:
+			logger.Debug("local cache del subscribe exit")
+			c.pubsub.Close()
+			return
+		case msg := <-c.pubsub.Channel():
+			logger.Debug("local cache del subscribe recive", "msg", msg.Payload)
+			var delMsg cacheLocalDelPublishMessage
+			if err := json.Unmarshal(utils.String2Byte(msg.Payload), &delMsg); err != nil {
+				logger.Error("local cache pubsub unmarshal fail", "payload", msg.Payload, "err", err)
+			}
+			if delMsg.InstanceId != c.instanceId {
+				if err := c.del(delMsg.Keys...); err != nil {
+					logger.Error("local cache del keys fail", "keys", delMsg.Keys, "err", err)
+				}
 			}
 		}
 	}

@@ -140,7 +140,6 @@ func (al *AccessLog) load() error {
 	}
 	al.m.Lock()
 	al.cfg = &conf
-	logger.Info("--------", "conf", conf.Config)
 	al.logger = slog.New(logger.NewSlogHandler(&conf.Config))
 	al.m.Unlock()
 	return nil

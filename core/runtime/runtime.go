@@ -65,6 +65,8 @@ var (
 			MetaData:   make(map[string]string),
 		},
 	}
+	// 框架退出信号
+	Exit    = make(chan struct{})
 	appOnce sync.Once
 )
 

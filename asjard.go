@@ -53,8 +53,6 @@ type Asjard struct {
 	startErr chan error
 	// 已启动的服务
 	startedServers []string
-	// 退出信号
-	exit chan struct{}
 	// 是否已初始化了
 	inited bool
 }
@@ -64,7 +62,6 @@ func New() *Asjard {
 	return &Asjard{
 		handlers: make(map[string][]any),
 		startErr: make(chan error),
-		exit:     make(chan struct{}),
 	}
 }
 
@@ -130,7 +127,7 @@ func (asd *Asjard) Start() error {
 		logger.Error("start error:",
 			"error", err)
 	}
-	close(asd.exit)
+	close(runtime.Exit)
 	// 系统停止
 	asd.stop()
 	return nil
@@ -139,7 +136,7 @@ func (asd *Asjard) Start() error {
 // Exit 退出信号
 // 如果系统退出则会触发此信号, 可以在stream请求或其他地方监听此信号，用以平滑退出服务
 func (asd *Asjard) Exit() <-chan struct{} {
-	return asd.exit
+	return runtime.Exit
 }
 
 // Init 系统初始化
