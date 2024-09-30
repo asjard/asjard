@@ -80,6 +80,7 @@ func (g *ValidateGenerator) genMessageMessages(messages []*protogen.Message) {
 
 func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 	g.genMessageMessages(message.Messages)
+	g.genComment(message.Comments)
 	g.gen.P("func (m *", message.GoIdent.GoName, ")IsValid(fullMethod string ) error{")
 	inited := false
 	for _, field := range message.Fields {
@@ -163,6 +164,13 @@ func (g *ValidateGenerator) genLeadingComments(loc protoreflect.SourceLocation) 
 	if s := loc.LeadingComments; s != "" {
 		g.gen.P(protogen.Comments(s))
 		g.gen.P()
+	}
+}
+
+func (g *ValidateGenerator) genComment(comments protogen.CommentSet) {
+	if comments.Leading != "" {
+		g.gen.P("// IsValid Params validate")
+		g.gen.P(strings.TrimSpace(comments.Leading.String()))
 	}
 }
 
