@@ -146,7 +146,7 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 
 func (g *ValidateGenerator) genFieldValid(field *protogen.Field, rule string, validate *validatepb.Validate) {
 	g.gen.P("if err := v.Var(m.", field.GoName, ",", strconv.Quote(rule), "); err != nil {")
-	errMsg := fmt.Sprintf("validation fail field '%s' on '%s'", field.GoName, rule)
+	errMsg := fmt.Sprintf("validation fail field '%s' on '%s'", field.Desc.JSONName(), rule)
 	if validate.ErrCode != 0 {
 		g.gen.P("return ", statusPackage.Ident("Error"), "(", validate.ErrCode, ",", strconv.Quote(errMsg), ")")
 	} else {
