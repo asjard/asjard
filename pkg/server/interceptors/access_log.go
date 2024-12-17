@@ -14,6 +14,7 @@ import (
 	"github.com/asjard/asjard/pkg/protobuf/requestpb"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/asjard/asjard/utils"
+	"github.com/google/uuid"
 )
 
 const (
@@ -78,11 +79,15 @@ func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 		}
 		now := time.Now()
 		var fields []any
+		requestId := uuid.New().String()
+		fields = append(fields, []any{"trace", requestId})
 		fields = append(fields, []any{"protocol", info.Protocol}...)
 		fields = append(fields, []any{"full_method", info.FullMethod}...)
 		switch info.Protocol {
 		case rest.Protocol:
 			if rc, ok := ctx.(*rest.Context); ok {
+				rc.Response.Header.Set(rest.HeaderResponseRequestID, requestId)
+				rc.Request.Header.Set(rest.HeaderResponseRequestID, requestId)
 				fields = append(fields, []any{"header", rc.ReadHeaderParams()}...)
 				fields = append(fields, []any{"method", string(rc.Method())}...)
 				fields = append(fields, []any{"path", string(rc.Path())}...)

@@ -29,7 +29,7 @@ import "github.com/asjard/protobuf/http.proto";
 // 如果在rest中没有配置group字段，则service名称为group字段的值
 service Hello {
   // 可以对整个服务定义路由信息
-  // option(asjard.api.http) = {api: "api", versin: "v1", group:"hello", writer_name: "custome_writer"}
+  // option(asjard.api.serviceHttp) = {api: "api", versin: "v1", group:"hello", writer_name: "custome_writer"}
   // 功能描述,
   // 支持markdown
   // 可渲染在openapi文档的接口描述中
