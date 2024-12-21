@@ -80,7 +80,7 @@ func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 		now := time.Now()
 		var fields []any
 		requestId := uuid.New().String()
-		fields = append(fields, []any{"trace", requestId})
+		fields = append(fields, []any{"trace", requestId}...)
 		fields = append(fields, []any{"protocol", info.Protocol}...)
 		fields = append(fields, []any{"full_method", info.FullMethod}...)
 		switch info.Protocol {

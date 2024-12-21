@@ -38,6 +38,7 @@ func (ResponseHeader) Interceptor() server.UnaryServerInterceptor {
 		if ok {
 			if info != nil {
 				rtx.Response.Header.Add(rest.HeaderResponseRequestMethod, info.FullMethod)
+				rtx.Response.Header.Add(rest.HeaderResponseRequestID, string(rtx.Request.Header.Peek(rest.HeaderResponseRequestID)))
 			}
 		} else {
 			logger.Error("readEntity ctx must be *rest.Context", "current", fmt.Sprintf("%T", ctx))

@@ -94,7 +94,7 @@ func (asd *Asjard) AddHandlers(protocol string, handlers ...any) error {
 	return nil
 }
 
-// Start 系统启动, 现根据配置初始化各个组件
+// Start 系统启动, 先根据配置初始化各个组件
 func (asd *Asjard) Start() error {
 	if err := asd.Init(); err != nil {
 		return err
