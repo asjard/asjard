@@ -71,13 +71,7 @@ func (api *OpenAPI) Yaml(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 func (api *OpenAPI) Page(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
 	rtx, ok := ctx.(*Context)
 	if ok {
-		var address string
-		if addresses := api.service.GetAdvertiseAddresses(Protocol); len(addresses) > 0 {
-			address = addresses[0]
-		} else if addresses := api.service.GetListenAddresses(Protocol); len(addresses) > 0 {
-			address = addresses[0]
-		}
-		rtx.Redirect(fmt.Sprintf(api.conf.Page, address), http.StatusMovedPermanently)
+		rtx.Redirect(fmt.Sprintf(api.conf.Page, api.listenAddress()), http.StatusMovedPermanently)
 		return nil, nil
 	}
 	return &emptypb.Empty{}, nil
@@ -86,7 +80,6 @@ func (api *OpenAPI) Page(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 func (api *OpenAPI) ScalarPage(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
 	rtx, ok := ctx.(*Context)
 	if ok {
-
 		content, err := scalargo.NewV2(api.scalarOptions()...)
 		if err != nil {
 			logger.Error("new scalargo fail", "err", err)
@@ -98,15 +91,10 @@ func (api *OpenAPI) ScalarPage(ctx context.Context, in *emptypb.Empty) (*emptypb
 	}
 	return &emptypb.Empty{}, nil
 }
+
 func (api *OpenAPI) scalarOptions() []scalargo.Option {
-	var address string
-	if addresses := api.service.GetAdvertiseAddresses(Protocol); len(addresses) > 0 {
-		address = addresses[0]
-	} else if addresses := api.service.GetListenAddresses(Protocol); len(addresses) > 0 {
-		address = addresses[0]
-	}
 	options := []scalargo.Option{
-		scalargo.WithSpecURL("http://" + address + "/openapi.yaml"),
+		scalargo.WithSpecURL(api.listenAddress() + "/openapi.yaml"),
 	}
 	if api.conf.Scalar.Theme != "" {
 		options = append(options, scalargo.WithTheme(scalargo.Theme(api.conf.Scalar.Theme)))
@@ -144,6 +132,19 @@ func (api *OpenAPI) scalarOptions() []scalargo.Option {
 		options = append(options, scalargo.WithAuthentication(api.conf.Scalar.Authentication))
 	}
 	return options
+}
+
+func (api *OpenAPI) listenAddress() string {
+	if api.conf.Endpoint != "" {
+		return api.conf.Endpoint
+	}
+	if addresses := api.service.GetAdvertiseAddresses(Protocol); len(addresses) > 0 {
+		return addresses[0]
+	}
+	if addresses := api.service.GetListenAddresses(Protocol); len(addresses) > 0 {
+		return addresses[0]
+	}
+	return ""
 }
 
 func (api OpenAPI) RestServiceDesc() *ServiceDesc {

@@ -21,6 +21,8 @@ type Server interface {
 	ListenAddresses() AddressConfig
 	// 是否已启用
 	Enabled() bool
+	// 服务标签
+	// Tag() string
 }
 
 // NewServerFunc .

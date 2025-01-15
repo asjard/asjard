@@ -51,6 +51,21 @@ func init() {
 	server.AddServer(Protocol, New)
 }
 
+// New 初始化服务
+func New(options *server.ServerOptions) (server.Server, error) {
+	conf := defaultConfig()
+	if err := config.GetWithUnmarshal(constant.ConfigServerRestPrefix, &conf); err != nil {
+		return nil, err
+	}
+	if conf.CertFile != "" {
+		conf.CertFile = filepath.Join(utils.GetCertDir(), conf.CertFile)
+	}
+	if conf.KeyFile != "" {
+		conf.KeyFile = filepath.Join(utils.GetCertDir(), conf.KeyFile)
+	}
+	return MustNew(conf, options)
+}
+
 // MustNew 配置文件初始化
 func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) {
 	r := router.New()
@@ -96,21 +111,6 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 			Logger:                             &Logger{},
 		},
 	}, nil
-}
-
-// New 初始化服务
-func New(options *server.ServerOptions) (server.Server, error) {
-	conf := defaultConfig()
-	if err := config.GetWithUnmarshal(constant.ConfigServerRestPrefix, &conf); err != nil {
-		return nil, err
-	}
-	if conf.CertFile != "" {
-		conf.CertFile = filepath.Join(utils.GetCertDir(), conf.CertFile)
-	}
-	if conf.KeyFile != "" {
-		conf.KeyFile = filepath.Join(utils.GetCertDir(), conf.KeyFile)
-	}
-	return MustNew(conf, options)
 }
 
 // AddHandler .

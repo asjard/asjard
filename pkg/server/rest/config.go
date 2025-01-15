@@ -37,6 +37,9 @@ type OpenapiConfig struct {
 	TermsOfService string               `json:"termsOfService"`
 	License        OpenapiLicenseConfig `json:"license"`
 	Scalar         ScalarOpenapiConfig  `json:"scalar"`
+	// openapi访问域名
+	// 如果为空则使用listenAddress
+	Endpoint string `json:"domain"`
 }
 
 type ScalarOpenapiConfig struct {
