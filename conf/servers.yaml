@@ -84,6 +84,10 @@ asjard:
       openapi:
         ## 是否开启openapi
         # enabled: false
+        ## 文档域名,为空则依次为
+        ## asjard.servers.rest.addresses.advertise
+        ## asjard.servers.rest.addresses.listen
+        # endpoint: https://example.com
         # page: https://petstore.swagger.io/?url=http://%s/openapi.yml
         # termsOfService: ""
         license:
