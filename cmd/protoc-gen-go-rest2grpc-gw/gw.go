@@ -94,7 +94,7 @@ func (g *GwGenerator) genFileContent() {
 		g.gen.P("func (api *", service.GoName, "API)Start() error {")
 		g.gen.P("conn, err := ", clientPackage.Ident("NewClient"), "(", grpcPackage.Ident("Protocol"),
 			",",
-			configPackage.Ident("GetString"), "(", `"asjard.topology.services.`, serviceFullName[2], `.name",`, `"`, serviceFullName[2], `")`,
+			configPackage.Ident("GetString"), "(", `"asjard.topology.services.`, serviceFullName[2], `.name",`, `"svc-`, serviceFullName[2], `")`,
 			").Conn()")
 		g.gen.P("if err != nil {")
 		g.gen.P("return err")
