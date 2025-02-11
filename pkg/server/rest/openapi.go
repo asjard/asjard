@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
@@ -138,13 +139,17 @@ func (api *OpenAPI) listenAddress() string {
 	if api.conf.Endpoint != "" {
 		return api.conf.Endpoint
 	}
+	address := ""
 	if addresses := api.service.GetAdvertiseAddresses(Protocol); len(addresses) > 0 {
-		return addresses[0]
+		address = addresses[0]
 	}
 	if addresses := api.service.GetListenAddresses(Protocol); len(addresses) > 0 {
-		return addresses[0]
+		address = addresses[0]
 	}
-	return ""
+	if address != "" && !strings.HasPrefix(address, "http") {
+		address = "http://" + address
+	}
+	return address
 }
 
 func (api OpenAPI) RestServiceDesc() *ServiceDesc {
