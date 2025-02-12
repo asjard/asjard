@@ -230,9 +230,12 @@ func (asd *Asjard) startServers() error {
 		if err := sv.Start(asd.startErr); err != nil {
 			return fmt.Errorf("start server '%s' fail[%s]", sv.Protocol(), err.Error())
 		}
+		protocolPrefix := sv.Protocol() + "://"
 		asd.startedServers = append(asd.startedServers,
-			sv.Protocol()+":"+strings.TrimSuffix(strings.Join([]string{listenAddresses.Listen,
-				listenAddresses.Advertise}, ","), ","))
+			strings.TrimSuffix(strings.Join([]string{
+				protocolPrefix + listenAddresses.Listen,
+				protocolPrefix + listenAddresses.Advertise,
+			}, ","), ","+protocolPrefix))
 		logger.Debug("server started",
 			"protocol", sv.Protocol())
 	}

@@ -25,6 +25,11 @@ const (
 	CurrentSpanKey TraceContextKeyType = iota
 )
 
+var (
+	APP         string
+	ServiceName string
+)
+
 const (
 	// ConfigServerRestPrefix rest服务配置前缀
 	ConfigServerRestPrefix = "asjard.servers.rest"
@@ -80,6 +85,8 @@ const (
 	ConfigInterceptorClientCircuitBreakerWithServicePrefix = "asjard.interceptors.client.circuitBreaker.services.%s"
 	ConfigInterceptorClientCircuitBreakerWithMethodPrefix  = "asjard.interceptors.client.circuitBreaker.methods.%s"
 	ConfigInterceptorClientRest2RpcContextPrefix           = "asjard.interceptors.client.rest2RpcContext"
+	ConfigInterceptorClientSlowLogPrefix                   = "asjard.interceptors.client.slowLog"
+	ConfigInterceptorClientErrLogPrefix                    = "asjard.interceptors.client.errLog"
 	ConfigInterceptorServerAccessLogPrefix                 = "asjard.interceptors.server.accessLog"
 
 	ConfigCipherAESKey = "asjard.cipher.%s.base64Key"

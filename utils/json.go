@@ -73,6 +73,14 @@ func (s *JSONStrings) UnmarshalJSON(b []byte) error {
 	}
 	return errors.New("invliad strings")
 }
+func (s JSONStrings) Contains(subStr string) bool {
+	for _, item := range s {
+		if item == subStr {
+			return true
+		}
+	}
+	return false
+}
 
 const (
 	// 删除标志

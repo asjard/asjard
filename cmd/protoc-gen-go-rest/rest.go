@@ -188,11 +188,13 @@ func (g *RestGenerator) genServiceDesc(service *protogen.Service, serverType str
 	g.gen.P("}")
 	g.gen.P()
 
-	g.gen.P("const (")
-	for _, fullPath := range fullPaths {
-		g.gen.P(fullPath[0], "=", strconv.Quote(fullPath[1]))
+	if len(fullPaths) != 0 {
+		g.gen.P("const (")
+		for _, fullPath := range fullPaths {
+			g.gen.P(fullPath[0], "=", strconv.Quote(fullPath[1]))
+		}
+		g.gen.P(")")
 	}
-	g.gen.P(")")
 	g.gen.P()
 }
 

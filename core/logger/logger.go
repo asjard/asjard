@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/asjard/asjard/core/constant"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -75,20 +76,20 @@ func NewSlogHandler(cfg *Config) slog.Handler {
 	}
 }
 
-func (dl Logger) Info(msg string, v ...any) {
-	dl.log(slog.LevelInfo, msg, v...)
+func (dl Logger) Info(msg string, kvs ...any) {
+	dl.log(slog.LevelInfo, msg, kvs...)
 }
 
-func (dl Logger) Debug(msg string, v ...any) {
-	dl.log(slog.LevelDebug, msg, v...)
+func (dl Logger) Debug(msg string, kvs ...any) {
+	dl.log(slog.LevelDebug, msg, kvs...)
 }
 
-func (dl Logger) Warn(msg string, v ...any) {
-	dl.log(slog.LevelWarn, msg, v...)
+func (dl Logger) Warn(msg string, kvs ...any) {
+	dl.log(slog.LevelWarn, msg, kvs...)
 }
 
-func (dl Logger) Error(msg string, v ...any) {
-	dl.log(slog.LevelError, msg, v...)
+func (dl Logger) Error(msg string, kvs ...any) {
+	dl.log(slog.LevelError, msg, kvs...)
 }
 
 func (dl Logger) log(level slog.Level, msg string, args ...any) {
@@ -101,22 +102,29 @@ func (dl Logger) log(level slog.Level, msg string, args ...any) {
 			f = filepath.Join(fl[len(fl)-3:]...)
 		}
 	}
-	args = append(args, []any{"source", f + ":" + strconv.Itoa(l)}...)
-	dl.slogger.Log(context.Background(), level, msg, args...)
+	dl.slogger.Log(context.Background(),
+		level,
+		msg,
+		append(args,
+			[]any{
+				"app", constant.APP,
+				"service", constant.ServiceName,
+				"source", f + ":" + strconv.Itoa(l),
+			}...)...)
 }
 
-func Info(msg string, kv ...any) {
-	L.Info(msg, kv...)
+func Info(msg string, kvs ...any) {
+	L.Info(msg, kvs...)
 }
 
-func Debug(msg string, kv ...any) {
-	L.Debug(msg, kv...)
+func Debug(msg string, kvs ...any) {
+	L.Debug(msg, kvs...)
 }
 
-func Warn(msg string, kv ...any) {
-	L.Warn(msg, kv...)
+func Warn(msg string, kvs ...any) {
+	L.Warn(msg, kvs...)
 }
 
-func Error(msg string, kv ...any) {
-	L.Error(msg, kv...)
+func Error(msg string, kvs ...any) {
+	L.Error(msg, kvs...)
 }
