@@ -122,15 +122,15 @@ var (
 func init() {
 	configmanager = &ConfigManager{
 		sourcers: make(map[string]Sourcer),
-		globalCfgs: &Configs{
-			cfgs: make(map[string]*Value),
-		},
-		sourceCfgs: &SourcesConfig{
-			sources: make(map[string]SourceConfiger),
-		},
-		// globalCfgs: &ConfigsWithSyncMap{},
-		// sourceCfgs: &SourcesConfigWithSyncMap{},
-		listener: newListener(),
+		// globalCfgs: &Configs{
+		// 	cfgs: make(map[string]*Value),
+		// },
+		// sourceCfgs: &SourcesConfig{
+		// 	sources: make(map[string]SourceConfiger),
+		// },
+		globalCfgs: &ConfigsWithSyncMap{},
+		sourceCfgs: &SourcesConfigWithSyncMap{},
+		listener:   newListener(),
 	}
 }
 

@@ -37,27 +37,17 @@ var (
 		Config:                    logger.DefaultConfig,
 		IgnoreRecordNotFoundError: true,
 	}
-
-	glogger *xgormLogger
 )
 
-// InitLogger 日志初始化
-func InitLogger() error {
-	lg := &xgormLogger{}
-	if err := lg.loadAndWatch(); err != nil {
-		return err
+// NewLogger 日志初始化
+func NewLogger(name string) (gormLogger.Interface, error) {
+	nlogger := &xgormLogger{
+		name: name,
 	}
-	glogger = lg
-	return nil
-}
-
-func NewLogger(name string) gormLogger.Interface {
-	return &xgormLogger{
-		ignoreRecordNotFoundError: glogger.ignoreRecordNotFoundError,
-		slowThreshold:             glogger.slowThreshold,
-		name:                      name,
-		slogger:                   glogger.slogger,
+	if err := nlogger.loadAndWatch(); err != nil {
+		return nil, err
 	}
+	return nlogger, nil
 }
 
 func (l *xgormLogger) LogMode(level gormLogger.LogLevel) gormLogger.Interface {
@@ -97,12 +87,15 @@ func (l *xgormLogger) loadAndWatch() error {
 	if err := l.load(); err != nil {
 		return err
 	}
-	config.AddPrefixListener("asjard.logger.gorm", l.watch)
+	config.AddPrefixListener("asjard.logger", l.watch)
 	return nil
 }
 
 func (l *xgormLogger) load() error {
 	conf := defaultConfig
+	if err := config.GetWithUnmarshal("asjard.logger", &conf.Config); err != nil {
+		return err
+	}
 	if err := config.GetWithUnmarshal("asjard.logger.gorm", &conf); err != nil {
 		return err
 	}

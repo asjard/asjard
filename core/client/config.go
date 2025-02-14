@@ -23,7 +23,7 @@ type Config struct {
 // DefaultConfig 默认配置
 var DefaultConfig = Config{
 	Loadbalance:         "localityRoundRobin",
-	BuiltInInterceptors: utils.JSONStrings{"rest2RpcContext", "circuitBreaker", "cycleChainInterceptor"},
+	BuiltInInterceptors: utils.JSONStrings{"errLog", "slowLog", "rest2RpcContext", "circuitBreaker", "cycleChainInterceptor"},
 }
 
 // GetConfigWithProtocol 获取协议配置

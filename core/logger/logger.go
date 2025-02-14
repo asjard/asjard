@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/asjard/asjard/core/constant"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -101,8 +102,15 @@ func (dl Logger) log(level slog.Level, msg string, args ...any) {
 			f = filepath.Join(fl[len(fl)-3:]...)
 		}
 	}
-	args = append(args, []any{"source", f + ":" + strconv.Itoa(l)}...)
-	dl.slogger.Log(context.Background(), level, msg, args...)
+	dl.slogger.Log(context.Background(),
+		level,
+		msg,
+		append(args,
+			[]any{
+				"app", constant.APP,
+				"service", constant.ServiceName,
+				"source", f + ":" + strconv.Itoa(l),
+			}...)...)
 }
 
 func Info(msg string, kvs ...any) {

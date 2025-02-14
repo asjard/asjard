@@ -78,6 +78,7 @@ func (g *ValidateGenerator) genMessageMessages(messages []*protogen.Message) {
 	}
 }
 
+//gocyclo:ignore
 func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 	g.genMessageMessages(message.Messages)
 	g.genComment(message.Comments)
@@ -93,15 +94,17 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 				g.gen.P("}")
 				g.gen.P("}")
 
-			} else if !field.Desc.IsMap() {
+			} else if !field.Desc.IsMap() && field.Oneof == nil {
 				g.gen.P("if err := m.", field.GoName, ".IsValid(fullMethod); err != nil {")
 				g.gen.P("return err")
 				g.gen.P("}")
 			}
 		case protoreflect.EnumKind:
-			// g.gen.P("if _, ok := ", field.GoIdent.GoName, "_name[m.", field.GoIdent, ".String()]; ok; !ok {")
-			// g.gen.P("return nil")
-			// g.gen.P("}")
+			if !field.Desc.IsList() {
+				g.gen.P("if _, ok := ", field.Enum.GoIdent.GoName, "_name[int32(m.", field.GoName, ")]; !ok {")
+				g.gen.P("return nil")
+				g.gen.P("}")
+			}
 		default:
 			if validateRule, ok := proto.GetExtension(field.Desc.Options(), validatepb.E_Validate).(*validatepb.Validate); ok && validateRule != nil {
 				rules := strings.Split(validateRule.Rules, ";")

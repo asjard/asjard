@@ -58,6 +58,7 @@ type Options struct {
 	Debug                     bool               `json:"debug"`
 	SkipInitializeWithVersion bool               `json:"skipInitializeWithVersion"`
 	SkipDefaultTransaction    bool               `json:"skipDefaultTransaction"`
+	TranslateError            bool               `json:"translateError"`
 	// 是否开启链路追踪
 	Traceable bool `json:"traceable"`
 	// 是否开启监控
@@ -104,6 +105,7 @@ var (
 		MaxOpenConns:    100,
 		ConnMaxIdleTime: utils.JSONDuration{Duration: 10 * time.Second},
 		ConnMaxLifeTime: utils.JSONDuration{Duration: time.Hour},
+		TranslateError:  true,
 	}
 )
 
@@ -171,9 +173,14 @@ func (m *DBManager) connDBs(dbsConf map[string]*DBConnConfig) error {
 }
 
 func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) error {
+	dbLogger, err := NewLogger(dbName)
+	if err != nil {
+		return err
+	}
 	db, err := gorm.Open(m.dialector(cfg), &gorm.Config{
 		SkipDefaultTransaction: cfg.Options.SkipDefaultTransaction,
-		Logger:                 NewLogger(dbName),
+		TranslateError:         cfg.Options.TranslateError,
+		Logger:                 dbLogger,
 	})
 	if err != nil {
 		return fmt.Errorf("connect to %s fail[%s]", dbName, err.Error())
@@ -234,9 +241,6 @@ func (m *DBManager) dialector(cfg *DBConnConfig) gorm.Dialector {
 }
 
 func (m *DBManager) loadAndWatchConfig() (map[string]*DBConnConfig, error) {
-	if err := InitLogger(); err != nil {
-		return nil, err
-	}
 	conf, err := m.loadConfig()
 	if err != nil {
 		return conf, err

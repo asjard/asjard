@@ -84,6 +84,8 @@ func GetAPP() APP {
 			app.Instance.SystemCode = 100
 		}
 		app.Instance.ID = uuid.NewString()
+		constant.APP = app.App
+		constant.ServiceName = app.Instance.Name
 		logger.Debug("get app", "app", app)
 	})
 	return app
