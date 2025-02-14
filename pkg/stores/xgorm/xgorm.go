@@ -105,7 +105,6 @@ var (
 		MaxOpenConns:    100,
 		ConnMaxIdleTime: utils.JSONDuration{Duration: 10 * time.Second},
 		ConnMaxLifeTime: utils.JSONDuration{Duration: time.Hour},
-		TranslateError:  true,
 	}
 )
 
