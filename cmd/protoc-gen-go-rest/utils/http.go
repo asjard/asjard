@@ -21,6 +21,7 @@ type HttpOption struct {
 	Body   string
 
 	Api        string
+	Service    string
 	Version    string
 	Group      string
 	WriterName string
@@ -121,6 +122,9 @@ func ParseMethodHttpOption(service *protogen.Service, h *httppb.Http) *HttpOptio
 		}
 		if methodOption.Version == "" {
 			methodOption.Version = serviceFullNameList[1]
+		}
+		if len(serviceFullNameList) >= 3 {
+			methodOption.Service = serviceFullNameList[2]
 		}
 	}
 	if methodOption.Group == "" {

@@ -725,7 +725,9 @@ func (g *OpenAPIv3Generator) addPathsToDocumentV3(d *v3.Document, services []*pr
 					if httpOption.Method != "" {
 						defaultHost := proto.GetExtension(service.Desc.Options(), annotations.E_DefaultHost).(string)
 						op, path2 := g.buildOperationV3(
-							d, operationID+"_"+strconv.Itoa(index), service.GoName, comment, summary, defaultHost,
+							d, operationID+"_"+strconv.Itoa(index),
+							httpOption.Service+"/"+httpOption.Api+"/"+httpOption.Version+"/"+service.GoName,
+							comment, summary, defaultHost,
 							httpOption.GetPath(), httpOption.Body, inputMessage, outputMessage)
 
 						// Merge any `Operation` annotations with the current
