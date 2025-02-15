@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/asjard/asjard/core/constant"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -43,8 +44,14 @@ var DefaultConfig = Config{
 }
 
 // L 日志组件
-var L = &Logger{
-	slogger: slog.New(NewSlogHandler(&DefaultConfig)),
+var (
+	L atomic.Pointer[Logger]
+)
+
+func init() {
+	L.Store(&Logger{
+		slogger: slog.New(NewSlogHandler(&DefaultConfig)),
+	})
 }
 
 // NewLoggerHandler 初始化logger handler的方法
@@ -52,9 +59,9 @@ type NewLoggerHandler func() slog.Handler
 
 // SetLoggerHandler 设置logger handler
 func SetLoggerHandler(newFunc NewLoggerHandler) {
-	L = &Logger{
+	L.Store(&Logger{
 		slogger: slog.New(newFunc()),
-	}
+	})
 }
 
 // NewSlogHandler slog初始化
@@ -114,17 +121,17 @@ func (dl Logger) log(level slog.Level, msg string, args ...any) {
 }
 
 func Info(msg string, kvs ...any) {
-	L.Info(msg, kvs...)
+	L.Load().Info(msg, kvs...)
 }
 
 func Debug(msg string, kvs ...any) {
-	L.Debug(msg, kvs...)
+	L.Load().Debug(msg, kvs...)
 }
 
 func Warn(msg string, kvs ...any) {
-	L.Warn(msg, kvs...)
+	L.Load().Warn(msg, kvs...)
 }
 
 func Error(msg string, kvs ...any) {
-	L.Error(msg, kvs...)
+	L.Load().Error(msg, kvs...)
 }
