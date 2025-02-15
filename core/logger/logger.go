@@ -107,8 +107,8 @@ func (dl Logger) log(level slog.Level, msg string, args ...any) {
 		msg,
 		append(args,
 			[]any{
-				"app", constant.APP,
-				"service", constant.ServiceName,
+				"app", constant.APP.Load(),
+				"service", constant.ServiceName.Load(),
 				"source", f + ":" + strconv.Itoa(l),
 			}...)...)
 }

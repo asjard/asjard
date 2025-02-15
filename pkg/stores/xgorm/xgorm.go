@@ -105,7 +105,6 @@ var (
 		MaxOpenConns:    100,
 		ConnMaxIdleTime: utils.JSONDuration{Duration: 10 * time.Second},
 		ConnMaxLifeTime: utils.JSONDuration{Duration: time.Hour},
-		TranslateError:  true,
 	}
 )
 
@@ -260,9 +259,11 @@ func (m *DBManager) loadConfig() (map[string]*DBConnConfig, error) {
 	}
 	for dbName, dbConfig := range dbs {
 		dbConfig.Options.Options = options
-		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.database.gorm.dbs.%s.options", dbName),
+		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.stores.gorm.dbs.%s.options", dbName),
 			&dbConfig.Options.Options); err != nil {
-			return dbs, err
+			logger.Error("load gorm db options fail",
+				"database", dbName,
+				"err", err)
 		}
 	}
 	return dbs, nil

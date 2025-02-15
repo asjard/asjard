@@ -36,7 +36,7 @@ github_workflows_dependices: docker-compose.yaml ## github workflows 依赖环�
 
 github_workflows_test: update github_workflows_dependices test ## github workflow 运行测试用例
 
-test: gocyclo govet ## 运行测试用例
+test: clean gocyclo govet ## 运行测试用例
 	go test -race -cover -coverprofile=cover.out $$(go list ./...|grep -v cmd|grep -v 'protobuf/')
 	# go tool cover -html=cover.out
 
@@ -47,8 +47,5 @@ gocyclo: ## 圈复杂度检测
 govet: ## 静态检查
 	go vet -all ./...
 
-zed_clean: ## zed编辑器清理
-	for file in $$(find . -name '._*'); \
-	do \
-	   rm -rf $$file; \
-	done
+clean: ## 清理
+	find . -name '._*' -delete

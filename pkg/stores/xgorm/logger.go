@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/asjard/asjard/core/config"
@@ -16,12 +17,11 @@ import (
 
 type xgormLogger struct {
 	logLevel gormLogger.LogLevel
+	name     string
 
 	ignoreRecordNotFoundError bool
 	slowThreshold             time.Duration
-	name                      string
-
-	slogger *slog.Logger
+	slogger                   *slog.Logger
 }
 
 type loggerConfig struct {
@@ -37,16 +37,22 @@ var (
 		Config:                    logger.DefaultConfig,
 		IgnoreRecordNotFoundError: true,
 	}
+	dbLoggers sync.Map
 )
 
 // NewLogger 日志初始化
 func NewLogger(name string) (gormLogger.Interface, error) {
+	value, ok := dbLoggers.Load(name)
+	if ok {
+		return value.(*xgormLogger), nil
+	}
 	nlogger := &xgormLogger{
 		name: name,
 	}
 	if err := nlogger.loadAndWatch(); err != nil {
 		return nil, err
 	}
+	dbLoggers.Store(name, nlogger)
 	return nlogger, nil
 }
 

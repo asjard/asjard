@@ -3,6 +3,10 @@ Package constant 框架定义的一些常量信息
 */
 package constant
 
+import (
+	"sync/atomic"
+)
+
 const (
 	// Framework 框架名称
 	Framework = "asjard"
@@ -26,8 +30,8 @@ const (
 )
 
 var (
-	APP         string
-	ServiceName string
+	APP         atomic.Value
+	ServiceName atomic.Value
 )
 
 const (
