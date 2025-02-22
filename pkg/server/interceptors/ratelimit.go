@@ -73,7 +73,10 @@ func (rl *RateLimiter) Interceptor() server.UnaryServerInterceptor {
 			return handler(ctx, req)
 		}
 		limiter := rl.getLimiter(info.Protocol, info.FullMethod)
-		logger.Debug("start ratelimiter interceptor", "protocol", info.Protocol, "limit", limiter.Limit(), "burst", limiter.Burst())
+		logger.L().WithContext(ctx).Debug("start ratelimiter interceptor",
+			"protocol", info.Protocol,
+			"limit", limiter.Limit(),
+			"burst", limiter.Burst())
 		if limiter.Allow() {
 			return handler(ctx, req)
 		}

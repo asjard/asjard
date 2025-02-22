@@ -64,7 +64,7 @@ func main() {
 		Title:           flags.String("title", "", "name of the API"),
 		Description:     flags.String("description", "", "description of the API"),
 		Naming:          flags.String("naming", "proto", `naming convention. Use "proto" for passing names directly from the proto files`),
-		FQSchemaNaming:  flags.Bool("fq_schema_naming", false, `schema naming convention. If "true", generates fully-qualified schema names by prefixing them with the proto message package name`),
+		FQSchemaNaming:  flags.Bool("fq_schema_naming", true, `schema naming convention. If "true", generates fully-qualified schema names by prefixing them with the proto message package name`),
 		EnumType:        flags.String("enum_type", "string", `type for enum serialization. Use "string" for string-based serialization`),
 		CircularDepth:   flags.Int("depth", 2, "depth of recursion for circular messages"),
 		DefaultResponse: flags.Bool("default_response", true, `add default response. If "true", automatically adds a default response to operations which use the google.rpc.Status message. Useful if you use envoy or grpc-gateway to transcode as they use this type for their default error responses.`),

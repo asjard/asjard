@@ -21,7 +21,9 @@ type xgormLogger struct {
 
 	ignoreRecordNotFoundError bool
 	slowThreshold             time.Duration
-	slogger                   *slog.Logger
+	// slogger                   *slog.Logger
+	slogger *logger.Logger
+	m       sync.RWMutex
 }
 
 type loggerConfig struct {
@@ -57,6 +59,8 @@ func NewLogger(name string) (gormLogger.Interface, error) {
 }
 
 func (l *xgormLogger) LogMode(level gormLogger.LogLevel) gormLogger.Interface {
+	l.m.RLock()
+	defer l.m.RUnlock()
 	return &xgormLogger{
 		logLevel:                  level,
 		ignoreRecordNotFoundError: l.ignoreRecordNotFoundError,
@@ -67,16 +71,24 @@ func (l *xgormLogger) LogMode(level gormLogger.LogLevel) gormLogger.Interface {
 }
 
 func (l *xgormLogger) Info(ctx context.Context, format string, v ...any) {
+	l.m.RLock()
+	defer l.m.RUnlock()
 	l.slogger.Info(fmt.Sprintf(format, v...), "db", l.name)
 }
 
 func (l *xgormLogger) Warn(ctx context.Context, format string, v ...any) {
+	l.m.RLock()
+	defer l.m.RUnlock()
 	l.slogger.Warn(fmt.Sprintf(format, v...), "db", l.name)
 }
 func (l *xgormLogger) Error(ctx context.Context, format string, v ...any) {
+	l.m.RLock()
+	defer l.m.RUnlock()
 	l.slogger.Error(fmt.Sprintf(format, v...), "db", l.name)
 }
 func (l *xgormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
+	l.m.RLock()
+	defer l.m.RUnlock()
 	elapsed := time.Since(begin)
 	sql, rows := fc()
 	switch {
@@ -105,7 +117,10 @@ func (l *xgormLogger) load() error {
 	if err := config.GetWithUnmarshal("asjard.logger.gorm", &conf); err != nil {
 		return err
 	}
-	l.slogger = slog.New(logger.NewSlogHandler(&conf.Config))
+	l.m.Lock()
+	defer l.m.Unlock()
+	// l.slogger = slog.New(logger.NewSlogHandler(&conf.Config))
+	l.slogger = logger.DefaultLogger(slog.New(logger.NewSlogHandler(&conf.Config)))
 	l.ignoreRecordNotFoundError = conf.IgnoreRecordNotFoundError
 	l.slowThreshold = conf.SlowThreshold.Duration
 	return nil

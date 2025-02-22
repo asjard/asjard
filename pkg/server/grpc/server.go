@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"path/filepath"
 
@@ -93,7 +94,7 @@ func New(options *server.ServerOptions) (server.Server, error) {
 func (s *GrpcServer) AddHandler(handler any) error {
 	h, ok := handler.(Handler)
 	if !ok {
-		return errors.New("invalid handler, must implement *grpc.ServiceDesc")
+		return fmt.Errorf("invalid handler %T, must implement *grpc.ServiceDesc", handler)
 	}
 	s.server.RegisterService(h.GrpcServiceDesc(), handler)
 	return nil

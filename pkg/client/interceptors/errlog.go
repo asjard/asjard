@@ -27,7 +27,7 @@ type ErrLogInterceptorConfig struct {
 
 var (
 	defaultErrLogInterceptorConfig = ErrLogInterceptorConfig{
-		Enabled:   true,
+		Enabled:   false,
 		methodMap: map[string]bool{},
 	}
 )
@@ -55,8 +55,8 @@ func (e *ErrLogInterceptor) Name() string {
 func (e *ErrLogInterceptor) Interceptor() client.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
 		err := invoker(ctx, method, req, reply, cc)
-		if err != nil && !e.isSkip(method) {
-			logger.Error("response error",
+		if err != nil && !e.skip(method) {
+			logger.L().WithContext(ctx).Error("response error",
 				"protocol", cc.Protocol(),
 				"to", cc.ServiceName(),
 				"method", method,
@@ -67,9 +67,12 @@ func (e *ErrLogInterceptor) Interceptor() client.UnaryClientInterceptor {
 	}
 }
 
-func (e *ErrLogInterceptor) isSkip(method string) bool {
+func (e *ErrLogInterceptor) skip(method string) bool {
 	e.cfgMutex.RLock()
 	defer e.cfgMutex.RUnlock()
+	if !e.cfg.Enabled {
+		return true
+	}
 	return e.cfg.methodMap[method]
 }
 

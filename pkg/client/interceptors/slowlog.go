@@ -60,7 +60,7 @@ func (s *SlowLogInterceptor) Interceptor() client.UnaryClientInterceptor {
 		defer func() {
 			duration := time.Since(start)
 			if s.isSlow(duration, method) {
-				logger.Warn("slowcall",
+				logger.L().WithContext(ctx).Warn("slowcall",
 					"protocol", cc.Protocol(),
 					"to", cc.ServiceName(),
 					"method", method,
