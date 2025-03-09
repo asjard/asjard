@@ -85,6 +85,9 @@ func GetAPP() APP {
 		}
 		app.Instance.ID = uuid.NewString()
 		constant.APP.Store(app.App)
+		constant.Region.Store(app.Region)
+		constant.AZ.Store(app.AZ)
+		constant.Env.Store(app.Environment)
 		constant.ServiceName.Store(app.Instance.Name)
 		logger.Debug("get app", "app", app)
 	})

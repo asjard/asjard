@@ -31,6 +31,9 @@ build_gen_go_rest2grpc_gw: ## 生成protoc-gen-go-rest2grpc-gw命令
 build_gen_ts: ## 生成protoc-gen-ts命令
 	go build -o $(GOPATH)/bin/protoc-gen-ts -ldflags '-w -s' ./cmd/protoc-gen-ts/*.go
 
+build_gen_umits: ## 生成protoc-gen-umits命令
+	go build -o $(GOPATH)/bin/protoc-gen-umits -ldflags '-w -s' ./cmd/protoc-gen-umits/*.go
+
 github_workflows_dependices: docker-compose.yaml ## github workflows 依赖环境
 	docker compose -p asjard up -d
 

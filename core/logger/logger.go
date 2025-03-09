@@ -136,6 +136,9 @@ func (l Logger) log(level slog.Level, msg string, args ...any) {
 		append(args,
 			[]any{
 				"app", constant.APP.Load(),
+				"region", constant.Region.Load(),
+				"az", constant.AZ.Load(),
+				"env", constant.Env.Load(),
 				"service", constant.ServiceName.Load(),
 				"trace", traceCtx.TraceID().String(),
 				"span", traceCtx.SpanID().String(),

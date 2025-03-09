@@ -23,6 +23,8 @@ asjard:
     instance:
       ## 系统码
       # systemCode: 100
+      ## 可被共享
+      # shareable: false
       ## 服务名称
       # name: ${asjard.app}
       ## 服务版本

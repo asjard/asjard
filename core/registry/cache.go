@@ -111,7 +111,10 @@ func (c *cache) update(instances []*Instance) {
 	c.sm.Lock()
 	defer c.sm.Unlock()
 	for _, instance := range instances {
-		logger.Debug("update instance", "instance", instance.Service.Instance.ID, "source", instance.DiscoverName)
+		logger.Debug("update instance",
+			"instance_id", instance.Service.Instance.ID,
+			"instance_name", instance.Service.Instance.Name,
+			"registry", instance.DiscoverName)
 		c.services[instance.Service.Instance.ID] = instance
 		c.notify(EventTypeUpdate, instance)
 	}
@@ -120,7 +123,8 @@ func (c *cache) update(instances []*Instance) {
 // 从本地缓存中删除服务实例
 func (c *cache) delete(instance *Instance) {
 	logger.Debug("delete instance",
-		"instance", instance.Service.Instance.ID, "source", instance.DiscoverName)
+		"instance", instance.Service.Instance.ID,
+		"registry", instance.DiscoverName)
 	c.sm.Lock()
 	if svc, ok := c.services[instance.Service.Instance.ID]; ok {
 		delete(c.services, instance.Service.Instance.ID)

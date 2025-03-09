@@ -101,8 +101,8 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 			}
 		case protoreflect.EnumKind:
 			if !field.Desc.IsList() {
-				g.gen.P("if _, ok := ", field.Enum.GoIdent.GoName, "_name[int32(m.", field.GoName, ")]; !ok {")
-				g.gen.P("return nil")
+				g.gen.P("if _, ok := ", field.Enum.GoIdent, "_name[int32(m.", field.GoName, ")]; !ok {")
+				g.gen.P("return ", statusPackage.Ident("Error"), "(", codesPackage.Ident("InvalidArgument"), `,"`, "invalid ", field.Desc.JSONName(), `")`)
 				g.gen.P("}")
 			}
 		default:
@@ -134,14 +134,6 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 				}
 			}
 		}
-		// g.gen.P("//name=", field.GoName)
-		// g.gen.P("//kind=", field.Desc.Kind())
-		// g.gen.P("//goIdent=", field.GoIdent)
-		// g.gen.P("//parent=", field.Parent)
-		// g.gen.P("//oneof=", field.Oneof)
-		// g.gen.P("//extendee=", field.Extendee)
-		// g.gen.P("//message=", field.Message)
-		// g.gen.P("//===========================")
 	}
 	g.gen.P("return nil")
 	g.gen.P("}")
@@ -150,7 +142,7 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 
 func (g *ValidateGenerator) genFieldValid(field *protogen.Field, rule string, validate *validatepb.Validate) {
 	g.gen.P("if err := v.Var(m.", field.GoName, ",", strconv.Quote(rule), "); err != nil {")
-	errMsg := fmt.Sprintf("validation fail field '%s' on '%s'", field.Desc.JSONName(), rule)
+	errMsg := fmt.Sprintf("validation field '%s' on '%s' fail", field.Desc.JSONName(), rule)
 	if validate.ErrCode != 0 {
 		g.gen.P("return ", statusPackage.Ident("Error"), "(", validate.ErrCode, ",", strconv.Quote(errMsg), ")")
 	} else {

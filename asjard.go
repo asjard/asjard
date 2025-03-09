@@ -103,6 +103,7 @@ func (asd *Asjard) Start() error {
 	if err := asd.startServers(); err != nil {
 		return err
 	}
+
 	// 注册服务
 	if err := registry.Registe(); err != nil {
 		return err

@@ -31,6 +31,9 @@ const (
 
 var (
 	APP         atomic.Value
+	Region      atomic.Value
+	AZ          atomic.Value
+	Env         atomic.Value
 	ServiceName atomic.Value
 )
 

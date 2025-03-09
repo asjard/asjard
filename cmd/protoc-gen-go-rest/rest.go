@@ -235,8 +235,10 @@ func (g *RestGenerator) genLeadingComments(loc protoreflect.SourceLocation) {
 
 func (g *RestGenerator) genComment(comments protogen.CommentSet) {
 	if comments.Leading != "" {
-		g.gen.P("//")
 		g.gen.P(strings.TrimSpace(comments.Leading.String()))
+	}
+	if comments.Trailing != "" {
+		g.gen.P(strings.TrimSpace(comments.Trailing.String()))
 	}
 }
 
