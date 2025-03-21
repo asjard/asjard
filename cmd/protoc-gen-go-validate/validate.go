@@ -107,30 +107,32 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 			}
 		default:
 			if validateRule, ok := proto.GetExtension(field.Desc.Options(), validatepb.E_Validate).(*validatepb.Validate); ok && validateRule != nil {
-				rules := strings.Split(validateRule.Rules, ";")
-				if len(rules) != 0 {
-					if !inited {
-						g.gen.P("v := ", validatorPackage.Ident("New()"))
-						inited = true
-					}
-					methodRules := make(map[string][]string)
-					var globalRules []string
-					for _, rule := range rules {
-						methodAndRule := strings.Split(rule, ":")
-						if len(methodAndRule) == 2 {
-							methodRules[methodAndRule[0]] = append(methodRules[methodAndRule[0]], methodAndRule[1])
-						} else {
-							globalRules = append(globalRules, rule)
+				methodRules := make(map[string][]string)
+				var globalRules []string
+				for _, rule := range validateRule.Rules {
+					rules := strings.Split(rule, ";")
+					if len(rules) != 0 {
+						for _, rule := range rules {
+							methodAndRule := strings.Split(rule, ":")
+							if len(methodAndRule) == 2 {
+								methodRules[methodAndRule[0]] = append(methodRules[methodAndRule[0]], methodAndRule[1])
+							} else {
+								globalRules = append(globalRules, rule)
+							}
 						}
 					}
-					if len(globalRules) != 0 {
-						g.genFieldValid(field, strings.Join(globalRules, ","), validateRule)
-					}
-					for method, rules := range methodRules {
-						g.gen.P("if fullMethod != \"\" && fullMethod == ", strconv.Quote(method), "{")
-						g.genFieldValid(field, strings.Join(rules, ","), validateRule)
-						g.gen.P("}")
-					}
+				}
+				if !inited && (len(globalRules) != 0 || len(methodRules) != 0) {
+					g.gen.P("v := ", validatorPackage.Ident("New()"))
+					inited = true
+				}
+				if len(globalRules) != 0 {
+					g.genFieldValid(field, strings.Join(globalRules, ","), validateRule)
+				}
+				for method, rules := range methodRules {
+					g.gen.P("if fullMethod != \"\" && fullMethod == ", strconv.Quote(method), "{")
+					g.genFieldValid(field, strings.Join(rules, ","), validateRule)
+					g.gen.P("}")
 				}
 			}
 		}
