@@ -98,9 +98,9 @@ func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 		fields = append(fields, []any{"success", err == nil}...)
 		fields = append(fields, []any{"err", err}...)
 		if err != nil {
-			al.logger.L().WithContext(ctx).Error("access log", fields...)
+			al.logger.L(ctx).Error("access log", fields...)
 		} else {
-			al.logger.L().WithContext(ctx).Info("access log", fields...)
+			al.logger.L(ctx).Info("access log", fields...)
 		}
 		return resp, err
 	}

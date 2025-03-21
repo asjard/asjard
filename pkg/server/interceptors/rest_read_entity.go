@@ -41,7 +41,7 @@ func (r *ReadEntity) Interceptor() server.UnaryServerInterceptor {
 				return nil, err
 			}
 		} else {
-			logger.L().WithContext(ctx).Error("readEntity ctx must be *rest.Context",
+			logger.L(ctx).Error("readEntity ctx must be *rest.Context",
 				"current", fmt.Sprintf("%T", ctx))
 		}
 		return handler(ctx, req)

@@ -94,13 +94,13 @@ func (m *I18n) Interceptor() server.UnaryServerInterceptor {
 			return resp, err
 		}
 		if !m.enabled {
-			logger.L().WithContext(ctx).Debug("i18n interceptor not enabled")
+			logger.L(ctx).Debug("i18n interceptor not enabled")
 			return resp, err
 		}
-		logger.L().WithContext(ctx).Debug("i18n interceptor is enabled")
+		logger.L(ctx).Debug("i18n interceptor is enabled")
 		rtx, ok := ctx.(*rest.Context)
 		if !ok {
-			logger.L().WithContext(ctx).Debug("i18n interceptor only support rest protocol")
+			logger.L(ctx).Debug("i18n interceptor only support rest protocol")
 			return resp, err
 		}
 		lang := string(rtx.Request.Header.Peek(HeaderLang))
@@ -110,7 +110,7 @@ func (m *I18n) Interceptor() server.UnaryServerInterceptor {
 		stts := status.FromError(err)
 		conf, ok := m.getConf(lang, stts.ErrCode)
 		if !ok {
-			logger.L().WithContext(ctx).Debug("i18n get lang config not found", "lang", lang, "code", stts.ErrCode)
+			logger.L(ctx).Debug("i18n get lang config not found", "lang", lang, "code", stts.ErrCode)
 			return resp, err
 		}
 		detail, _ := anypb.New(&statuspb.Status{

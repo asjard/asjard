@@ -38,7 +38,7 @@ func (*Panic) Interceptor() server.UnaryServerInterceptor {
 					"protocol", info.Protocol,
 					"stack", string(debug.Stack()),
 				}
-				logger.L().WithContext(ctx).Error("request panic", args...)
+				logger.L(ctx).Error("request panic", args...)
 				err = status.InternalServerError()
 			}
 		}()

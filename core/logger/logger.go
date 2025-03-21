@@ -57,8 +57,8 @@ func init() {
 	defaultLogger.Store(DefaultLogger(slog.New(NewSlogHandler(&DefaultConfig))))
 }
 
-func L() *Logger {
-	return defaultLogger.Load().clone()
+func L(ctx context.Context) *Logger {
+	return defaultLogger.Load().clone().withContext(ctx)
 }
 
 func DefaultLogger(slogger *slog.Logger) *Logger {
@@ -109,7 +109,7 @@ func (l Logger) Error(msg string, kvs ...any) {
 	l.log(slog.LevelError, msg, kvs...)
 }
 
-func (l *Logger) WithContext(ctx context.Context) *Logger {
+func (l *Logger) withContext(ctx context.Context) *Logger {
 	l.ctx = ctx
 	return l
 }
@@ -146,8 +146,8 @@ func (l Logger) log(level slog.Level, msg string, args ...any) {
 			}...)...)
 }
 
-func (l *Logger) L() *Logger {
-	return l.clone()
+func (l *Logger) L(ctx context.Context) *Logger {
+	return l.clone().withContext(ctx)
 }
 
 func (l *Logger) clone() *Logger {

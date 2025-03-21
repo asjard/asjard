@@ -44,7 +44,7 @@ func (Metrics) Name() string {
 
 func (m Metrics) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
-		logger.L().WithContext(ctx).Debug("start metrics interceptor")
+		logger.L(ctx).Debug("start metrics interceptor")
 		now := time.Now()
 		resp, err = handler(ctx, req)
 		st := status.FromError(err)
