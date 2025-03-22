@@ -55,6 +55,13 @@ func (r *ReqWithPage) IsValid(defaultSize int32, supportSortFields []string) err
 	return nil
 }
 
+func (r *ReqWithId) IsValid(fullMethod string) error {
+	if r.Id == 0 {
+		return status.Error(codes.InvalidArgument, "id is must")
+	}
+	return nil
+}
+
 // db.Scopes(in.GormScope())
 func (r *ReqWithPage) GormScope() func(*gorm.DB) *gorm.DB {
 	return ReqWithPageGormScope(r.Page, r.Size, r.Sort)

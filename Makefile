@@ -34,6 +34,9 @@ build_gen_ts: ## 生成protoc-gen-ts命令
 build_gen_umits: ## 生成protoc-gen-umits命令
 	go build -o $(GOPATH)/bin/protoc-gen-umits -ldflags '-w -s' ./cmd/protoc-gen-umits/*.go
 
+gen_proto: clean ## 生成协议文件
+	bash third_party/github.com/asjard/protobuf/build.sh
+
 github_workflows_dependices: docker-compose.yaml ## github workflows 依赖环境
 	docker compose -p asjard up -d
 
