@@ -66,8 +66,14 @@ func DefaultWriter(c *Context, data any, err error) {
 	if c.URI().QueryArgs().Has(QueryParamNeedStatusCode) {
 		statusCode = st.Status
 	}
-	st.RequestId = string(c.Response.Header.Peek(HeaderResponseRequestID))
-	st.RequestMethod = string(c.Response.Header.Peek(HeaderResponseRequestMethod))
+	if requestId := c.Value(HeaderResponseRequestID); requestId != nil {
+		st.RequestId = requestId.(string)
+	}
+	if requestMethod := c.Value(HeaderResponseRequestMethod); requestMethod != nil {
+		st.RequestMethod = requestMethod.(string)
+	}
+	c.Response.Header.Set(HeaderResponseRequestID, st.RequestId)
+	c.Response.Header.Set(HeaderResponseRequestMethod, st.RequestMethod)
 	if err == nil {
 		if d, err := anypb.New(data.(proto.Message)); err == nil {
 			st.Data = d
