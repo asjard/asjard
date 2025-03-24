@@ -21,7 +21,8 @@ type CacheLocal struct {
 	*stores.Cache
 
 	// 缓存Key
-	key string
+	key     string
+	keyFunc func() string
 	// 本实例ID
 	instanceId string
 
@@ -66,6 +67,19 @@ func (c *CacheLocal) WithKey(key string) *CacheLocal {
 	return &CacheLocal{
 		Cache:      c.Cache,
 		key:        c.NewKey(key),
+		keyFunc:    c.keyFunc,
+		redis:      c.redis,
+		pubsub:     c.pubsub,
+		cache:      c.cache,
+		instanceId: c.instanceId,
+	}
+}
+
+func (c *CacheLocal) WithKeyFunc(keyFunc func() string) *CacheLocal {
+	return &CacheLocal{
+		Cache:      c.Cache,
+		key:        c.key,
+		keyFunc:    keyFunc,
 		redis:      c.redis,
 		pubsub:     c.pubsub,
 		cache:      c.cache,
@@ -124,6 +138,9 @@ func (c *CacheLocal) Refresh(ctx context.Context, key string, in any, expiresIn 
 
 // 返回缓存Key名称
 func (c *CacheLocal) Key() string {
+	if c.keyFunc != nil {
+		return c.NewKey(c.keyFunc())
+	}
 	return c.key
 }
 

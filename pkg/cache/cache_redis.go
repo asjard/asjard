@@ -46,6 +46,8 @@ type CacheRedis struct {
 
 	// 缓存key
 	key string
+	// 延迟缓存key,优先使用，如果为nil则使用key
+	keyFunc func() string
 	// hash中的field， set中的member
 	field string
 	// 缓存类型
@@ -132,6 +134,7 @@ func (c *CacheRedis) WithGroup(group string) *CacheRedis {
 	return &CacheRedis{
 		Cache:   c.Cache,
 		key:     c.key,
+		keyFunc: c.keyFunc,
 		field:   c.field,
 		tp:      c.tp,
 		groups:  append(c.groups, c.Group(group)),
@@ -145,6 +148,21 @@ func (c *CacheRedis) WithKey(key string) *CacheRedis {
 	return &CacheRedis{
 		Cache:   c.Cache,
 		key:     c.NewKey(key),
+		keyFunc: c.keyFunc,
+		field:   c.field,
+		tp:      c.tp,
+		groups:  c.groups,
+		client:  c.client,
+		options: c.options,
+	}
+}
+
+// WithKeyFunc 延迟设置缓存key，在部分场景下缓存key有可能需要创建/更新完数据库后才能拿得到完整key
+func (c *CacheRedis) WithKeyFunc(keyFunc func() string) *CacheRedis {
+	return &CacheRedis{
+		Cache:   c.Cache,
+		key:     c.key,
+		keyFunc: keyFunc,
 		field:   c.field,
 		tp:      c.tp,
 		groups:  c.groups,
@@ -158,6 +176,7 @@ func (c *CacheRedis) WithField(field string) *CacheRedis {
 	return &CacheRedis{
 		Cache:   c.Cache,
 		key:     c.key,
+		keyFunc: c.keyFunc,
 		field:   field,
 		tp:      c.tp,
 		groups:  c.groups,
@@ -171,6 +190,7 @@ func (c *CacheRedis) WithType(tp CacheRedisType) *CacheRedis {
 	return &CacheRedis{
 		Cache:   c.Cache,
 		key:     c.key,
+		keyFunc: c.keyFunc,
 		field:   c.field,
 		tp:      tp,
 		groups:  c.groups,
@@ -324,6 +344,9 @@ func (c CacheRedis) Refresh(ctx context.Context, key string, in any, expiresIn t
 }
 
 func (c CacheRedis) Key() string {
+	if c.keyFunc != nil {
+		return c.NewKey(c.keyFunc())
+	}
 	return c.key
 }
 

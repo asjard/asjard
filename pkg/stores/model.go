@@ -111,7 +111,7 @@ func (m *Model) SetAndGetData(ctx context.Context, out any, cache Cacher, set fu
 }
 
 func (m *Model) delCache(ctx context.Context, cache Cacher) error {
-	if cache == nil {
+	if cache == nil || !cache.Enabled() {
 		return nil
 	}
 	// 删除缓存数据
