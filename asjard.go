@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 
 	"github.com/asjard/asjard/core/bootstrap"
@@ -54,7 +55,7 @@ type Asjard struct {
 	// 已启动的服务
 	startedServers []string
 	// 是否已初始化了
-	inited bool
+	inited atomic.Bool
 }
 
 // New 框架初始化
@@ -142,9 +143,10 @@ func (asd *Asjard) Exit() <-chan struct{} {
 
 // Init 系统初始化
 func (asd *Asjard) Init() error {
-	if asd.inited {
+	if asd.inited.Load() {
 		return nil
 	}
+	defer asd.inited.Store(true)
 	// 文件配置源加载
 	if err := config.Load(file.Priority); err != nil {
 		return err
@@ -191,7 +193,6 @@ func (asd *Asjard) Init() error {
 		return err
 	}
 	asd.servers = servers
-	asd.inited = true
 	return nil
 }
 

@@ -404,11 +404,13 @@ func (c *CacheRedis) load() error {
 	}
 	logger.Debug("load redis cache", "conf", conf)
 	c.Cache.WithConf(&conf.CacheConfig)
-	client, err := xredis.Client(xredis.WithClientName(conf.Client))
-	if err != nil {
-		return err
+	if conf.CacheConfig.Enabled {
+		client, err := xredis.Client(xredis.WithClientName(conf.Client))
+		if err != nil {
+			return err
+		}
+		c.client = client
 	}
-	c.client = client
 	return nil
 }
 
