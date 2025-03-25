@@ -129,21 +129,29 @@ func (l Logger) log(level slog.Level, msg string, args ...any) {
 			f = filepath.Join(fl[len(fl)-3:]...)
 		}
 	}
+	args = append(args, []any{
+		"app", constant.APP.Load(),
+		"region", constant.Region.Load(),
+		"az", constant.AZ.Load(),
+		"env", constant.Env.Load(),
+		"service", constant.ServiceName.Load(),
+		"source", f + ":" + strconv.Itoa(ln),
+	}...)
 	traceCtx := trace.SpanContextFromContext(l.ctx)
+	if traceCtx.TraceID().IsValid() {
+		args = append(args, []any{
+			"trace", traceCtx.TraceID().String(),
+		}...)
+	}
+	if traceCtx.SpanID().IsValid() {
+		args = append(args, []any{
+			"trace", traceCtx.SpanID().String(),
+		}...)
+	}
 	l.slogger.Log(l.ctx,
 		level,
 		msg,
-		append(args,
-			[]any{
-				"app", constant.APP.Load(),
-				"region", constant.Region.Load(),
-				"az", constant.AZ.Load(),
-				"env", constant.Env.Load(),
-				"service", constant.ServiceName.Load(),
-				"trace", traceCtx.TraceID().String(),
-				"span", traceCtx.SpanID().String(),
-				"source", f + ":" + strconv.Itoa(ln),
-			}...)...)
+		args...)
 }
 
 func (l *Logger) L(ctx context.Context) *Logger {

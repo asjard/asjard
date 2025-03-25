@@ -57,12 +57,24 @@ type Options struct {
 	ConnMaxLifeTime           utils.JSONDuration `json:"connMaxLifeTime"`
 	Debug                     bool               `json:"debug"`
 	SkipInitializeWithVersion bool               `json:"skipInitializeWithVersion"`
-	SkipDefaultTransaction    bool               `json:"skipDefaultTransaction"`
-	TranslateError            bool               `json:"translateError"`
 	// 是否开启链路追踪
 	Traceable bool `json:"traceable"`
 	// 是否开启监控
 	Metricsable bool `json:"metricsable"`
+
+	SkipDefaultTransaction                   bool `json:"skipDefaultTransaction"`
+	FullSaveAssociations                     bool `json:"fullSaveAssociations"`
+	DryRun                                   bool `json:"dryRun"`
+	DisableAutomaticPing                     bool `json:"disableAutomaticPing"`
+	PrepareStmt                              bool `json:"prepareStmt"`
+	DisableForeignKeyConstraintWhenMigrating bool `json:"disableForeignKeyConstraintWhenMigrating"`
+	IgnoreRelationshipsWhenMigrating         bool `json:"ignoreRelationshipsWhenMigrating"`
+	DisableNestedTransaction                 bool `json:"disableNestedTransaction"`
+	AllowGlobalUpdate                        bool `json:"allowGlobalUpdate"`
+	QueryFields                              bool `json:"queryFields"`
+	CreateBatchSize                          int  `json:"createBatchSize"`
+	TranslateError                           bool `json:"translateError"`
+	PropagateUnscoped                        bool `json:"propagateUnscoped"`
 }
 
 // DBConnConfig 数据库连接配置
@@ -177,9 +189,20 @@ func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) error {
 		return err
 	}
 	db, err := gorm.Open(m.dialector(cfg), &gorm.Config{
-		SkipDefaultTransaction: cfg.Options.SkipDefaultTransaction,
-		TranslateError:         cfg.Options.TranslateError,
-		Logger:                 dbLogger,
+		SkipDefaultTransaction:                   cfg.Options.SkipDefaultTransaction,
+		FullSaveAssociations:                     cfg.Options.FullSaveAssociations,
+		DryRun:                                   cfg.Options.DryRun,
+		DisableAutomaticPing:                     cfg.Options.DisableAutomaticPing,
+		PrepareStmt:                              cfg.Options.PrepareStmt,
+		DisableForeignKeyConstraintWhenMigrating: cfg.Options.DisableForeignKeyConstraintWhenMigrating,
+		IgnoreRelationshipsWhenMigrating:         cfg.Options.IgnoreRelationshipsWhenMigrating,
+		DisableNestedTransaction:                 cfg.Options.DisableNestedTransaction,
+		AllowGlobalUpdate:                        cfg.Options.AllowGlobalUpdate,
+		QueryFields:                              cfg.Options.QueryFields,
+		CreateBatchSize:                          cfg.Options.CreateBatchSize,
+		TranslateError:                           cfg.Options.TranslateError,
+		PropagateUnscoped:                        cfg.Options.PropagateUnscoped,
+		Logger:                                   dbLogger,
 	})
 	if err != nil {
 		return fmt.Errorf("connect to %s fail[%s]", dbName, err.Error())
