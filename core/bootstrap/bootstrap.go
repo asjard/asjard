@@ -45,12 +45,26 @@ func AddBootstrap(handler Initiator) {
 	}
 }
 
+// AddBootstraps 批量添加启动方法
+func AddBootstraps(handlers ...Initiator) {
+	for _, handler := range handlers {
+		AddBootstrap(handler)
+	}
+}
+
 // AddInitator 添加初始化方法
 // 加载到env,file环境变量后执行
 func AddInitiator(handler Initiator) {
 	if _, ok := initiatorMap[handler]; !ok {
 		initiatorHandlers = append(initiatorHandlers, handler)
 		initiatorMap[handler] = struct{}{}
+	}
+}
+
+// AddInitiators 批量添加初始化方法
+func AddInitiators(handlers ...Initiator) {
+	for _, handler := range handlers {
+		AddInitiator(handler)
 	}
 }
 

@@ -149,7 +149,7 @@ func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 
 // Start 连接到数据库
 func (m *DBManager) Start() error {
-	logger.Debug("store gorm start")
+	logger.Debug("gorm start")
 	conf, err := m.loadAndWatchConfig()
 	if err != nil {
 		return err
