@@ -19,9 +19,10 @@ const (
 )
 
 const (
-	validatorPackage = protogen.GoImportPath("github.com/go-playground/validator")
-	statusPackage    = protogen.GoImportPath("github.com/asjard/asjard/core/status")
-	codesPackage     = protogen.GoImportPath("google.golang.org/grpc/codes")
+	validatorPackage        = protogen.GoImportPath("github.com/go-playground/validator")
+	defaultValidatorPackage = protogen.GoImportPath("github.com/asjard/asjard/pkg/protobuf/validatepb")
+	statusPackage           = protogen.GoImportPath("github.com/asjard/asjard/core/status")
+	codesPackage            = protogen.GoImportPath("google.golang.org/grpc/codes")
 )
 
 type ValidateGenerator struct {
@@ -123,7 +124,7 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 					}
 				}
 				if !inited && (len(globalRules) != 0 || len(methodRules) != 0) {
-					g.gen.P("v := ", validatorPackage.Ident("New()"))
+					g.gen.P("v := ", defaultValidatorPackage.Ident("DefaultValidator"))
 					inited = true
 				}
 				if len(globalRules) != 0 {
