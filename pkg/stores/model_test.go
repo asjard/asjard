@@ -96,7 +96,7 @@ func TestSetData(t *testing.T) {
 		return nil
 	}
 	t.Run("CacheNil", func(t *testing.T) {
-		assert.Nil(t, model.SetData(context.Background(), nil, setFunc))
+		assert.Nil(t, model.SetData(context.Background(), setFunc, nil))
 	})
 }
 
