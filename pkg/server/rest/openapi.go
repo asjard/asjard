@@ -11,6 +11,7 @@ import (
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/core/status"
 	scalargo "github.com/bdpiprava/scalar-go"
+	"github.com/ghodss/yaml"
 	openapi_v3 "github.com/google/gnostic/openapiv3"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -64,6 +65,48 @@ func (api *OpenAPI) Yaml(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 			return nil, status.InternalServerError()
 		}
 		rtx.RequestCtx.Write(b)
+		return nil, nil
+	}
+	return &emptypb.Empty{}, nil
+}
+func (api *OpenAPI) Json(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
+	api.document.Info = &openapi_v3.Info{
+		Title:       api.service.App,
+		Description: api.service.Desc,
+		Contact: &openapi_v3.Contact{
+			Name: api.service.App,
+			Url:  api.service.Website,
+		},
+		TermsOfService: api.conf.TermsOfService,
+		Version:        api.service.Instance.Version,
+		License: &openapi_v3.License{
+			Name: api.conf.License.Name,
+			Url:  api.conf.License.Url,
+		},
+	}
+	props := make([]*openapi_v3.NamedSchemaOrReference, 0, len(api.document.Components.Schemas.AdditionalProperties))
+	propMap := make(map[string]struct{})
+	for _, prop := range api.document.Components.Schemas.AdditionalProperties {
+		if _, ok := propMap[prop.Name]; !ok {
+			props = append(props, prop)
+		}
+		propMap[prop.Name] = struct{}{}
+	}
+	api.document.Components.Schemas.AdditionalProperties = props
+	rtx, ok := ctx.(*Context)
+	if ok {
+		b, err := api.document.YAMLValue(fmt.Sprintf("Generated with %s(%s) \n %s",
+			constant.Framework, constant.FrameworkVersion, constant.FrameworkGithub))
+		if err != nil {
+			logger.Error("openapi yaml value fail", "err", err)
+			return nil, status.InternalServerError()
+		}
+		jb, err := yaml.YAMLToJSON(b)
+		if err != nil {
+			logger.Error("convert openapi yaml to json fail", "err", err)
+			return nil, status.InternalServerError()
+		}
+		rtx.RequestCtx.Write(jb)
 		return nil, nil
 	}
 	return &emptypb.Empty{}, nil
