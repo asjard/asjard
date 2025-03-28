@@ -398,7 +398,6 @@ func (m *ConfigManager) getValueByPrefix(prefix string, opts *Options) map[strin
 	if valuePrefix != "" {
 		prefix = valuePrefix
 	}
-	fmt.Println("=============")
 	return m.getValueWithPrefix(prefix, opts)
 
 }
