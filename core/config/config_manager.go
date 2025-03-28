@@ -381,15 +381,47 @@ func (m *ConfigManager) removeListener(key string) {
 
 // 根据前缀获取配置
 func (m *ConfigManager) getValueByPrefix(prefix string, opts *Options) map[string]any {
+	// 如果前缀的值是个变量
+	valuePrefix := ""
+	if ok, value := m.valueIsParam(GetString(prefix, "")); ok {
+		valuePrefix = value
+	}
 	if opts != nil && opts.watch != nil {
 		opts.watch.pattern = prefix + ".*"
 		m.listener.watch(prefix, opts.watch)
+		if valuePrefix != "" {
+			pwatch := opts.watch.clone()
+			pwatch.pattern = valuePrefix + ".*"
+			m.listener.watch(prefix, pwatch)
+		}
 	}
+	if valuePrefix != "" {
+		prefix = valuePrefix
+	}
+	fmt.Println("=============")
+	return m.getValueWithPrefix(prefix, opts)
+
+}
+
+// 根据前缀获取值
+func (m *ConfigManager) getValueWithPrefix(prefix string, opts *Options) map[string]any {
 	out := make(map[string]any)
 	for key, value := range m.getConfigsWithPrefixs(append([]string{prefix}, opts.keys...)...) {
-		out[key] = m.getValueWithOptions(value.Value, opts)
+		if ok, pv := m.valueIsParam(cast.ToString(value.Value)); ok {
+			out[key] = m.getValueWithPrefix(pv, opts)
+		} else {
+			out[key] = m.getValueWithOptions(value.Value, opts)
+		}
 	}
 	return out
+}
+
+// 值是否是参数
+func (m *ConfigManager) valueIsParam(value string) (bool, string) {
+	if strings.HasPrefix(value, "${") && strings.HasSuffix(value, "}") {
+		return true, strings.TrimSuffix(strings.TrimPrefix(value, "${"), "}")
+	}
+	return false, value
 }
 
 // 解密数据

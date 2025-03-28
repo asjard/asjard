@@ -52,6 +52,14 @@ type watchOptions struct {
 	f        ListenFunc
 }
 
+func (w *watchOptions) clone() *watchOptions {
+	return &watchOptions{
+		pattern:  w.pattern,
+		callback: w.callback,
+		f:        w.f,
+	}
+}
+
 // Option .
 type Option func(*Options)
 
