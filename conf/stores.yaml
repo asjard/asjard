@@ -102,6 +102,7 @@ asjard:
           # db: 0
           options:
             ## 继承asjard.stores.redis.options
+        # cache: ${asjard.stores.clients.default}
       options:
         ## ClientName will execute the `CLIENT SETNAME ClientName` command for each conn.
         # clientName: ""

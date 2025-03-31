@@ -3,6 +3,10 @@ Package constant 框架定义的一些常量信息
 */
 package constant
 
+import (
+	"sync/atomic"
+)
+
 const (
 	// Framework 框架名称
 	Framework = "asjard"
@@ -23,6 +27,14 @@ type TraceContextKeyType int
 
 const (
 	CurrentSpanKey TraceContextKeyType = iota
+)
+
+var (
+	APP         atomic.Value
+	Region      atomic.Value
+	AZ          atomic.Value
+	Env         atomic.Value
+	ServiceName atomic.Value
 )
 
 const (
@@ -80,6 +92,8 @@ const (
 	ConfigInterceptorClientCircuitBreakerWithServicePrefix = "asjard.interceptors.client.circuitBreaker.services.%s"
 	ConfigInterceptorClientCircuitBreakerWithMethodPrefix  = "asjard.interceptors.client.circuitBreaker.methods.%s"
 	ConfigInterceptorClientRest2RpcContextPrefix           = "asjard.interceptors.client.rest2RpcContext"
+	ConfigInterceptorClientSlowLogPrefix                   = "asjard.interceptors.client.slowLog"
+	ConfigInterceptorClientErrLogPrefix                    = "asjard.interceptors.client.errLog"
 	ConfigInterceptorServerAccessLogPrefix                 = "asjard.interceptors.server.accessLog"
 
 	ConfigCipherAESKey = "asjard.cipher.%s.base64Key"

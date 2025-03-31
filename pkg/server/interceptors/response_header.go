@@ -35,10 +35,8 @@ func NewResponseHeaderInterceptor() (server.ServerInterceptor, error) {
 func (ResponseHeader) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
 		rtx, ok := ctx.(*rest.Context)
-		if ok {
-			if info != nil {
-				rtx.Response.Header.Add(rest.HeaderResponseRequestMethod, info.FullMethod)
-			}
+		if ok && info != nil {
+			rtx.SetUserValue(rest.HeaderResponseRequestMethod, info.FullMethod)
 		} else {
 			logger.Error("readEntity ctx must be *rest.Context", "current", fmt.Sprintf("%T", ctx))
 		}

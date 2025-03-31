@@ -160,10 +160,10 @@ func WithMetadata(metadata map[string]string) func(opts *Options) {
 }
 
 // WithWatch 更新服务变化
-func WithWatch(name string, callback func(*Event)) func(opts *Options) {
+func WithWatch(watchName string, callback func(*Event)) func(opts *Options) {
 	return func(opts *Options) {
 		opts.watch = callback
-		opts.watchName = name
+		opts.watchName = watchName
 	}
 }
 

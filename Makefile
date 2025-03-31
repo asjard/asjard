@@ -19,18 +19,30 @@ build_cipher_aes: ## 生成asjard_cipher_aes命令
 build_gen_go_rest: ## 生成protoc-gen-go-rest命令
 	go build -o $(GOPATH)/bin/protoc-gen-go-rest -ldflags '-w -s' ./cmd/protoc-gen-go-rest/*.go
 
+build_gen_go_validate: ## 生成protoc-gen-go-validate命令
+	go build -o $(GOPATH)/bin/protoc-gen-go-validate -ldflags '-w -s' ./cmd/protoc-gen-go-validate/*.go
+
+build_gen_go_asynq: ## 生成protoc-gen-go-rest命令
+	go build -o $(GOPATH)/bin/protoc-gen-go-asynq -ldflags '-w -s' ./cmd/protoc-gen-go-asynq/*.go
+
 build_gen_go_rest2grpc_gw: ## 生成protoc-gen-go-rest2grpc-gw命令
 	go build -o $(GOPATH)/bin/protoc-gen-go-rest2grpc-gw -ldflags '-w -s' ./cmd/protoc-gen-go-rest2grpc-gw/*.go
 
 build_gen_ts: ## 生成protoc-gen-ts命令
 	go build -o $(GOPATH)/bin/protoc-gen-ts -ldflags '-w -s' ./cmd/protoc-gen-ts/*.go
 
+build_gen_umits: ## 生成protoc-gen-umits命令
+	go build -o $(GOPATH)/bin/protoc-gen-umits -ldflags '-w -s' ./cmd/protoc-gen-umits/*.go
+
+gen_proto: clean ## 生成协议文件
+	bash third_party/github.com/asjard/protobuf/build.sh
+
 github_workflows_dependices: docker-compose.yaml ## github workflows 依赖环境
 	docker compose -p asjard up -d
 
 github_workflows_test: update github_workflows_dependices test ## github workflow 运行测试用例
 
-test: gocyclo govet ## 运行测试用例
+test: clean gocyclo govet ## 运行测试用例
 	go test -race -cover -coverprofile=cover.out $$(go list ./...|grep -v cmd|grep -v 'protobuf/')
 	# go tool cover -html=cover.out
 
@@ -41,8 +53,5 @@ gocyclo: ## 圈复杂度检测
 govet: ## 静态检查
 	go vet -all ./...
 
-zed_clean: ## zed编辑器清理
-	for file in $$(find . -name '._*'); \
-	do \
-	   rm -rf $$file; \
-	done
+clean: ## 清理
+	find . -name '._*' -delete

@@ -44,22 +44,27 @@ type Options struct {
 // ListenFunc 监听方法，如果返回true则调用回调函数
 type ListenFunc func(*Event) bool
 
-// ListenCallback 监听回调
-type ListenCallback func(*Event)
-
 type watchOptions struct {
 	// 正则匹配
 	pattern string
 	// 回调方法，当配置发生变化后通过此回调方法回调
-	callback ListenCallback
+	callback CallbackFunc
 	f        ListenFunc
+}
+
+func (w *watchOptions) clone() *watchOptions {
+	return &watchOptions{
+		pattern:  w.pattern,
+		callback: w.callback,
+		f:        w.f,
+	}
 }
 
 // Option .
 type Option func(*Options)
 
 // WithWatch 监听配置
-func WithWatch(callback ListenCallback) func(opts *Options) {
+func WithWatch(callback CallbackFunc) func(opts *Options) {
 	return func(opts *Options) {
 		opts.watch = &watchOptions{
 			callback: callback,
@@ -68,7 +73,7 @@ func WithWatch(callback ListenCallback) func(opts *Options) {
 }
 
 // WithMatchWatch 匹配监听
-func WithMatchWatch(pattern string, callback ListenCallback) func(opts *Options) {
+func WithMatchWatch(pattern string, callback CallbackFunc) func(opts *Options) {
 	return func(opts *Options) {
 		if pattern == "" {
 			return
@@ -81,7 +86,7 @@ func WithMatchWatch(pattern string, callback ListenCallback) func(opts *Options)
 }
 
 // WithPrefixWatch 前缀监听
-func WithPrefixWatch(prefix string, callback ListenCallback) Option {
+func WithPrefixWatch(prefix string, callback CallbackFunc) Option {
 	return func(opts *Options) {
 		opts.watch = &watchOptions{
 			pattern:  prefix + ".*",

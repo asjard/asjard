@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/asjard/asjard/core/constant"
@@ -24,6 +25,7 @@ import (
 
 var (
 	configParamCompile = regexp.MustCompile("\\${(.*?)}")
+	loadedFlag         atomic.Bool
 )
 
 // Sourcer 配置源需要实现的方法
@@ -120,15 +122,15 @@ var (
 func init() {
 	configmanager = &ConfigManager{
 		sourcers: make(map[string]Sourcer),
-		globalCfgs: &Configs{
-			cfgs: make(map[string]*Value),
-		},
-		sourceCfgs: &SourcesConfig{
-			sources: make(map[string]SourceConfiger),
-		},
-		// globalCfgs: &ConfigsWithSyncMap{},
-		// sourceCfgs: &SourcesConfigWithSyncMap{},
-		listener: newListener(),
+		// globalCfgs: &Configs{
+		// 	cfgs: make(map[string]*Value),
+		// },
+		// sourceCfgs: &SourcesConfig{
+		// 	sources: make(map[string]SourceConfiger),
+		// },
+		globalCfgs: &ConfigsWithSyncMap{},
+		sourceCfgs: &SourcesConfigWithSyncMap{},
+		listener:   newListener(),
 	}
 }
 
@@ -137,7 +139,13 @@ func init() {
 //	@param priority 优先级
 //	@return error
 func Load(priority int) error {
+	defer loadedFlag.CompareAndSwap(false, true)
 	return configmanager.load(priority)
+}
+
+// IsLoaded 配置是否已经加载
+func IsLoaded() bool {
+	return loadedFlag.Load()
 }
 
 // AddSource 添加配置源
@@ -373,15 +381,48 @@ func (m *ConfigManager) removeListener(key string) {
 
 // 根据前缀获取配置
 func (m *ConfigManager) getValueByPrefix(prefix string, opts *Options) map[string]any {
+	// 如果前缀的值是个变量
+	valuePrefix := ""
+	if ok, value := m.valueIsParam(GetString(prefix, "")); ok {
+		valuePrefix = value
+	}
 	if opts != nil && opts.watch != nil {
 		opts.watch.pattern = prefix + ".*"
 		m.listener.watch(prefix, opts.watch)
+		if valuePrefix != "" {
+			pwatch := opts.watch.clone()
+			pwatch.pattern = valuePrefix + ".*"
+			m.listener.watch(prefix, pwatch)
+		}
 	}
+	if valuePrefix != "" {
+		prefix = valuePrefix
+	}
+	return m.getValueWithPrefix(prefix, opts)
+
+}
+
+// 根据前缀获取值
+func (m *ConfigManager) getValueWithPrefix(prefix string, opts *Options) map[string]any {
 	out := make(map[string]any)
 	for key, value := range m.getConfigsWithPrefixs(append([]string{prefix}, opts.keys...)...) {
-		out[key] = m.getValueWithOptions(value.Value, opts)
+		if ok, pv := m.valueIsParam(cast.ToString(value.Value)); ok && m.getValue(pv, opts) == nil {
+			for k, v := range m.getValueWithPrefix(pv, opts) {
+				out[key+"."+k] = v
+			}
+		} else {
+			out[key] = m.getValueWithOptions(value.Value, opts)
+		}
 	}
 	return out
+}
+
+// 值是否是参数
+func (m *ConfigManager) valueIsParam(value string) (bool, string) {
+	if strings.HasPrefix(value, "${") && strings.HasSuffix(value, "}") {
+		return true, strings.TrimSuffix(strings.TrimPrefix(value, "${"), "}")
+	}
+	return false, value
 }
 
 // 解密数据

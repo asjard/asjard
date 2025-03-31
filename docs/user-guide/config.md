@@ -226,17 +226,17 @@ val = config.GetString("key", "default_value", config.WithWatch(func(event *conf
 
 > 框架内置`环境变量`,`文件`,`内存`配置源, 无需导入
 
-| 支持 | 配置源                           | 优先级 | 描述                           |
-| :--: | :------------------------------- | :----: | ------------------------------ |
-|  x   | [环境变量](config-env.md)        |   0    |
-|      | cli                              |   1    |
-|  x   | [文件](config-file.md)           |   2    |
-|  x   | [etcd](config-etcd.md)           |   10   | key/value, file模式配置        |
-|  x   | [consul](config-consul.md)       |   11   | ket/value模式配置,file模式配置 |
-|      | [nacos](config-nacos.md)         |   12   | 没有删除事件                   |
-|      | [apollo](config-appolo.md)       |   13   |
-|      | [configmap](config-configmap.md) |   14   |
-|  x   | [本地内存](config-mem.md)        |   99   |
+| 支持 | 配置源                     | 优先级 | 描述                           |
+| :--: | :------------------------- | :----: | ------------------------------ |
+|  x   | [环境变量](config-env.md)  |   0    |
+|      | cli                        |   1    |
+|  x   | [文件](config-file.md)     |   2    |
+|  x   | [etcd](config-etcd.md)     |   10   | key/value, file模式配置        |
+|  x   | [consul](config-consul.md) |   11   | ket/value模式配置,file模式配置 |
+|      | nacos                      |   12   | 没有删除事件                   |
+|      | apollo                     |   13   |
+|      | configmap                  |   14   |
+|  x   | [本地内存](config-mem.md)  |   99   |
 
 ## 配置源优先级
 

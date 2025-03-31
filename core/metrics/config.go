@@ -18,7 +18,7 @@ type Config struct {
 	// 是否是所有指标
 	allCollectors     bool
 	Collectors        utils.JSONStrings `json:"collectors"`
-	BuiltInCollectors utils.JSONStrings `json:"-"`
+	BuiltInCollectors utils.JSONStrings `json:"builtInCollectors"`
 	PushGateway       PushGatewayConfig `json:"pushGateway"`
 }
 

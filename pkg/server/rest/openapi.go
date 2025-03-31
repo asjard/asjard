@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/core/status"
 	scalargo "github.com/bdpiprava/scalar-go"
+	"github.com/ghodss/yaml"
 	openapi_v3 "github.com/google/gnostic/openapiv3"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -67,17 +69,53 @@ func (api *OpenAPI) Yaml(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 	}
 	return &emptypb.Empty{}, nil
 }
+func (api *OpenAPI) Json(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
+	api.document.Info = &openapi_v3.Info{
+		Title:       api.service.App,
+		Description: api.service.Desc,
+		Contact: &openapi_v3.Contact{
+			Name: api.service.App,
+			Url:  api.service.Website,
+		},
+		TermsOfService: api.conf.TermsOfService,
+		Version:        api.service.Instance.Version,
+		License: &openapi_v3.License{
+			Name: api.conf.License.Name,
+			Url:  api.conf.License.Url,
+		},
+	}
+	props := make([]*openapi_v3.NamedSchemaOrReference, 0, len(api.document.Components.Schemas.AdditionalProperties))
+	propMap := make(map[string]struct{})
+	for _, prop := range api.document.Components.Schemas.AdditionalProperties {
+		if _, ok := propMap[prop.Name]; !ok {
+			props = append(props, prop)
+		}
+		propMap[prop.Name] = struct{}{}
+	}
+	api.document.Components.Schemas.AdditionalProperties = props
+	rtx, ok := ctx.(*Context)
+	if ok {
+		b, err := api.document.YAMLValue(fmt.Sprintf("Generated with %s(%s) \n %s",
+			constant.Framework, constant.FrameworkVersion, constant.FrameworkGithub))
+		if err != nil {
+			logger.Error("openapi yaml value fail", "err", err)
+			return nil, status.InternalServerError()
+		}
+		jb, err := yaml.YAMLToJSON(b)
+		if err != nil {
+			logger.Error("convert openapi yaml to json fail", "err", err)
+			return nil, status.InternalServerError()
+		}
+		rtx.RequestCtx.Write(jb)
+		return nil, nil
+	}
+	return &emptypb.Empty{}, nil
+}
 
 func (api *OpenAPI) Page(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
 	rtx, ok := ctx.(*Context)
 	if ok {
-		var address string
-		if addresses := api.service.GetAdvertiseAddresses(Protocol); len(addresses) > 0 {
-			address = addresses[0]
-		} else if addresses := api.service.GetListenAddresses(Protocol); len(addresses) > 0 {
-			address = addresses[0]
-		}
-		rtx.Redirect(fmt.Sprintf(api.conf.Page, address), http.StatusMovedPermanently)
+		rtx.Redirect(fmt.Sprintf(api.conf.Page, api.listenAddress()), http.StatusMovedPermanently)
 		return nil, nil
 	}
 	return &emptypb.Empty{}, nil
@@ -86,7 +124,6 @@ func (api *OpenAPI) Page(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 func (api *OpenAPI) ScalarPage(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
 	rtx, ok := ctx.(*Context)
 	if ok {
-
 		content, err := scalargo.NewV2(api.scalarOptions()...)
 		if err != nil {
 			logger.Error("new scalargo fail", "err", err)
@@ -98,15 +135,10 @@ func (api *OpenAPI) ScalarPage(ctx context.Context, in *emptypb.Empty) (*emptypb
 	}
 	return &emptypb.Empty{}, nil
 }
+
 func (api *OpenAPI) scalarOptions() []scalargo.Option {
-	var address string
-	if addresses := api.service.GetAdvertiseAddresses(Protocol); len(addresses) > 0 {
-		address = addresses[0]
-	} else if addresses := api.service.GetListenAddresses(Protocol); len(addresses) > 0 {
-		address = addresses[0]
-	}
 	options := []scalargo.Option{
-		scalargo.WithSpecURL("http://" + address + "/openapi.yaml"),
+		scalargo.WithSpecURL(api.listenAddress() + "/openapi.yaml"),
 	}
 	if api.conf.Scalar.Theme != "" {
 		options = append(options, scalargo.WithTheme(scalargo.Theme(api.conf.Scalar.Theme)))
@@ -144,6 +176,23 @@ func (api *OpenAPI) scalarOptions() []scalargo.Option {
 		options = append(options, scalargo.WithAuthentication(api.conf.Scalar.Authentication))
 	}
 	return options
+}
+
+func (api *OpenAPI) listenAddress() string {
+	if api.conf.Endpoint != "" {
+		return api.conf.Endpoint
+	}
+	address := ""
+	if addresses := api.service.GetAdvertiseAddresses(Protocol); len(addresses) > 0 {
+		address = addresses[0]
+	}
+	if addresses := api.service.GetListenAddresses(Protocol); len(addresses) > 0 {
+		address = addresses[0]
+	}
+	if address != "" && !strings.HasPrefix(address, "http") {
+		address = "http://" + address
+	}
+	return address
 }
 
 func (api OpenAPI) RestServiceDesc() *ServiceDesc {

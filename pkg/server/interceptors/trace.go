@@ -55,13 +55,13 @@ func (t *Trace) Interceptor() server.UnaryServerInterceptor {
 		}
 		carrier := mtrace.NewTraceCarrier(ctx)
 		tx, span := t.tracer.Start(t.propagator.Extract(ctx, carrier),
-			info.Protocol+":"+info.FullMethod,
+			info.Protocol+"://"+info.FullMethod,
 			trace.WithSpanKind(trace.SpanKindServer),
 			trace.WithAttributes(semconv.ServiceName(t.app.Instance.Name)))
 		defer span.End()
 		t.propagator.Inject(tx, carrier)
 		if rtx, ok := ctx.(*rest.Context); ok {
-			rtx.Response.Header.Add(rest.HeaderResponseRequestID, span.SpanContext().TraceID().String())
+			rtx.SetUserValue(rest.HeaderResponseRequestID, span.SpanContext().TraceID().String())
 			return handler(rtx, req)
 		}
 		return handler(trace.ContextWithRemoteSpanContext(tx, trace.SpanContextFromContext(tx)), req)

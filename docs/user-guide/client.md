@@ -12,7 +12,7 @@ asjard:
     ## 同servers.interceptors配置
     # interceptors: ""
     ## 框架内建客户端拦截器
-    # builtInInterceptors: rest2RpcContext,cycleChainInterceptor,circuitBreaker
+    # builtInInterceptors: errLog,slowLog,rest2RpcContext,cycleChainInterceptor,circuitBreaker
     ## 或者可以按照yaml列表配置
     # builtInInterceptors:
     #   - rest2RpcContext

@@ -55,3 +55,29 @@ asjard:
         #   - x-forward-for
         #   - traceparent
 ```
+
+### 慢日志
+
+```yaml
+asjard:
+  interceptors:
+    client:
+      slowLog:
+        ## 慢阈值
+        # slowThreshold: 0
+        ## 需要忽略的方法
+        # skipMethods:
+```
+
+### 错误日志
+
+```yaml
+asjard:
+  interceptors:
+    client:
+      errLog:
+        ## 是否开启错误日志
+        # enabled: true
+        ## 需要忽略的方法
+        # skipMethods: ""
+```

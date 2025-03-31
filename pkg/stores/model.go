@@ -75,14 +75,16 @@ func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (
 // 先更新数据源，然后删除缓存
 // set: 更新数据源数据, 如果删除缓存过程中出现失败则会通过管道通知
 // caches: 缓存
-func (m *Model) SetData(ctx context.Context, cache Cacher, set func() error) error {
+func (m *Model) SetData(ctx context.Context, set func() error, caches ...Cacher) error {
 	// 更新数据源数据
 	if err := set(); err != nil {
 		return err
 	}
-	// 删除缓存
-	if err := m.delCache(ctx, cache); err != nil {
-		return err
+	for _, cache := range caches {
+		// 删除缓存
+		if err := m.delCache(ctx, cache); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -111,7 +113,7 @@ func (m *Model) SetAndGetData(ctx context.Context, out any, cache Cacher, set fu
 }
 
 func (m *Model) delCache(ctx context.Context, cache Cacher) error {
-	if cache == nil {
+	if cache == nil || !cache.Enabled() {
 		return nil
 	}
 	// 删除缓存数据

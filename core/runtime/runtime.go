@@ -65,11 +65,17 @@ var (
 			MetaData:   make(map[string]string),
 		},
 	}
+	// 框架退出信号
+	Exit    = make(chan struct{})
 	appOnce sync.Once
 )
 
 // GetAPP 获取项目详情
+// 需要配置加载完后才能加载
 func GetAPP() APP {
+	if !config.IsLoaded() {
+		panic("config not loaded")
+	}
 	appOnce.Do(func() {
 		if err := config.GetWithUnmarshal(constant.ConfigServicePrefix, &app); err != nil {
 			logger.Error("get instance conf fail", "err", err)
@@ -78,6 +84,11 @@ func GetAPP() APP {
 			app.Instance.SystemCode = 100
 		}
 		app.Instance.ID = uuid.NewString()
+		constant.APP.Store(app.App)
+		constant.Region.Store(app.Region)
+		constant.AZ.Store(app.AZ)
+		constant.Env.Store(app.Environment)
+		constant.ServiceName.Store(app.Instance.Name)
 		logger.Debug("get app", "app", app)
 	})
 	return app

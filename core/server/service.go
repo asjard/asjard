@@ -69,7 +69,9 @@ func (s *Service) AddEndpoint(protocol string, address AddressConfig) error {
 
 // GetListenAddresses 获取监听地址
 func (s *Service) GetListenAddresses(protocol string) []string {
+	s.em.RLock()
 	endpoint, ok := s.Endpoints[protocol]
+	s.em.RUnlock()
 	if !ok {
 		return []string{}
 	}
@@ -78,7 +80,9 @@ func (s *Service) GetListenAddresses(protocol string) []string {
 
 // GetAdvertiseAddresses 获取广播地址
 func (s *Service) GetAdvertiseAddresses(protocol string) []string {
+	s.em.RLock()
 	endpoint, ok := s.Endpoints[protocol]
+	s.em.RUnlock()
 	if !ok {
 		return []string{}
 	}

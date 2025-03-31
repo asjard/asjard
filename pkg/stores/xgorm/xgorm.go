@@ -57,11 +57,24 @@ type Options struct {
 	ConnMaxLifeTime           utils.JSONDuration `json:"connMaxLifeTime"`
 	Debug                     bool               `json:"debug"`
 	SkipInitializeWithVersion bool               `json:"skipInitializeWithVersion"`
-	SkipDefaultTransaction    bool               `json:"skipDefaultTransaction"`
 	// 是否开启链路追踪
 	Traceable bool `json:"traceable"`
 	// 是否开启监控
 	Metricsable bool `json:"metricsable"`
+
+	SkipDefaultTransaction                   bool `json:"skipDefaultTransaction"`
+	FullSaveAssociations                     bool `json:"fullSaveAssociations"`
+	DryRun                                   bool `json:"dryRun"`
+	DisableAutomaticPing                     bool `json:"disableAutomaticPing"`
+	PrepareStmt                              bool `json:"prepareStmt"`
+	DisableForeignKeyConstraintWhenMigrating bool `json:"disableForeignKeyConstraintWhenMigrating"`
+	IgnoreRelationshipsWhenMigrating         bool `json:"ignoreRelationshipsWhenMigrating"`
+	DisableNestedTransaction                 bool `json:"disableNestedTransaction"`
+	AllowGlobalUpdate                        bool `json:"allowGlobalUpdate"`
+	QueryFields                              bool `json:"queryFields"`
+	CreateBatchSize                          int  `json:"createBatchSize"`
+	TranslateError                           bool `json:"translateError"`
+	PropagateUnscoped                        bool `json:"propagateUnscoped"`
 }
 
 // DBConnConfig 数据库连接配置
@@ -91,7 +104,9 @@ type Option func(*DBOptions)
 // WithConnName .
 func WithConnName(connName string) func(*DBOptions) {
 	return func(opts *DBOptions) {
-		opts.connName = connName
+		if connName != "" {
+			opts.connName = connName
+		}
 	}
 }
 
@@ -134,7 +149,7 @@ func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 
 // Start 连接到数据库
 func (m *DBManager) Start() error {
-	logger.Debug("store gorm start")
+	logger.Debug("gorm start")
 	conf, err := m.loadAndWatchConfig()
 	if err != nil {
 		return err
@@ -169,9 +184,25 @@ func (m *DBManager) connDBs(dbsConf map[string]*DBConnConfig) error {
 }
 
 func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) error {
+	dbLogger, err := NewLogger(dbName)
+	if err != nil {
+		return err
+	}
 	db, err := gorm.Open(m.dialector(cfg), &gorm.Config{
-		SkipDefaultTransaction: cfg.Options.SkipDefaultTransaction,
-		Logger:                 NewLogger(dbName),
+		SkipDefaultTransaction:                   cfg.Options.SkipDefaultTransaction,
+		FullSaveAssociations:                     cfg.Options.FullSaveAssociations,
+		DryRun:                                   cfg.Options.DryRun,
+		DisableAutomaticPing:                     cfg.Options.DisableAutomaticPing,
+		PrepareStmt:                              cfg.Options.PrepareStmt,
+		DisableForeignKeyConstraintWhenMigrating: cfg.Options.DisableForeignKeyConstraintWhenMigrating,
+		IgnoreRelationshipsWhenMigrating:         cfg.Options.IgnoreRelationshipsWhenMigrating,
+		DisableNestedTransaction:                 cfg.Options.DisableNestedTransaction,
+		AllowGlobalUpdate:                        cfg.Options.AllowGlobalUpdate,
+		QueryFields:                              cfg.Options.QueryFields,
+		CreateBatchSize:                          cfg.Options.CreateBatchSize,
+		TranslateError:                           cfg.Options.TranslateError,
+		PropagateUnscoped:                        cfg.Options.PropagateUnscoped,
+		Logger:                                   dbLogger,
 	})
 	if err != nil {
 		return fmt.Errorf("connect to %s fail[%s]", dbName, err.Error())
@@ -232,9 +263,6 @@ func (m *DBManager) dialector(cfg *DBConnConfig) gorm.Dialector {
 }
 
 func (m *DBManager) loadAndWatchConfig() (map[string]*DBConnConfig, error) {
-	if err := InitLogger(); err != nil {
-		return nil, err
-	}
 	conf, err := m.loadConfig()
 	if err != nil {
 		return conf, err
@@ -254,9 +282,11 @@ func (m *DBManager) loadConfig() (map[string]*DBConnConfig, error) {
 	}
 	for dbName, dbConfig := range dbs {
 		dbConfig.Options.Options = options
-		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.database.gorm.dbs.%s.options", dbName),
+		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.stores.gorm.dbs.%s.options", dbName),
 			&dbConfig.Options.Options); err != nil {
-			return dbs, err
+			logger.Error("load gorm db options fail",
+				"database", dbName,
+				"err", err)
 		}
 	}
 	return dbs, nil

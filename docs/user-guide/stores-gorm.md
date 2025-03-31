@@ -32,6 +32,7 @@ asjard:
         # skipDefaultTransaction: false
         # traceable: false
         # metricsable: false
+        # translateError: false
 ```
 
 ## 使用

@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	OpenAPI_Yaml_FullMethodName       = "/asjard.api.OpenAPI/Yaml"
+	OpenAPI_Json_FullMethodName       = "/asjard.api.OpenAPI/Json"
 	OpenAPI_Page_FullMethodName       = "/asjard.api.OpenAPI/Page"
 	OpenAPI_ScalarPage_FullMethodName = "/asjard.api.OpenAPI/ScalarPage"
 )
@@ -29,8 +30,10 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type OpenAPIClient interface {
-	// Get openapi file.
+	// Get openapi yaml file.
 	Yaml(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Get openapi json file.
+	Json(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Redict to configured openapi page.
 	Page(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Show a scalar openapi page.
@@ -48,6 +51,15 @@ func NewOpenAPIClient(cc grpc.ClientConnInterface) OpenAPIClient {
 func (c *openAPIClient) Yaml(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, OpenAPI_Yaml_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *openAPIClient) Json(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, OpenAPI_Json_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -76,8 +88,10 @@ func (c *openAPIClient) ScalarPage(ctx context.Context, in *emptypb.Empty, opts 
 // All implementations must embed UnimplementedOpenAPIServer
 // for forward compatibility
 type OpenAPIServer interface {
-	// Get openapi file.
+	// Get openapi yaml file.
 	Yaml(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
+	// Get openapi json file.
+	Json(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	// Redict to configured openapi page.
 	Page(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	// Show a scalar openapi page.
@@ -91,6 +105,9 @@ type UnimplementedOpenAPIServer struct {
 
 func (UnimplementedOpenAPIServer) Yaml(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Yaml not implemented")
+}
+func (UnimplementedOpenAPIServer) Json(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Json not implemented")
 }
 func (UnimplementedOpenAPIServer) Page(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Page not implemented")
@@ -125,6 +142,24 @@ func _OpenAPI_Yaml_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OpenAPIServer).Yaml(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OpenAPI_Json_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpenAPIServer).Json(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OpenAPI_Json_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpenAPIServer).Json(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -175,6 +210,10 @@ var OpenAPI_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Yaml",
 			Handler:    _OpenAPI_Yaml_Handler,
+		},
+		{
+			MethodName: "Json",
+			Handler:    _OpenAPI_Json_Handler,
 		},
 		{
 			MethodName: "Page",

@@ -10,13 +10,18 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
+	"github.com/asjard/asjard/core/constant"
+	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // Logger 默认日志
 type Logger struct {
-	slogger *slog.Logger
+	ctx        context.Context
+	callerSkip int
+	slogger    *slog.Logger
 }
 
 // Config 日志配置
@@ -30,8 +35,11 @@ type Config struct {
 	Format     string `json:"format"`
 }
 
+// NewLoggerHandler 初始化logger handler的方法
+type NewLoggerHandler func() slog.Handler
+
 // DefaultConfig 日志默认配置
-var DefaultConfig = &Config{
+var DefaultConfig = Config{
 	FileName:   "/dev/stdout",
 	MaxSize:    100,
 	MaxAge:     0,
@@ -41,19 +49,29 @@ var DefaultConfig = &Config{
 	Format:     Json.String(),
 }
 
-// L 日志组件
-var L = &Logger{
-	slogger: slog.New(NewSlogHandler(DefaultConfig)),
+var (
+	defaultLogger atomic.Pointer[Logger]
+)
+
+func init() {
+	defaultLogger.Store(DefaultLogger(slog.New(NewSlogHandler(&DefaultConfig))))
 }
 
-// NewLoggerHandler 初始化logger handler的方法
-type NewLoggerHandler func() slog.Handler
+func L(ctx context.Context) *Logger {
+	return defaultLogger.Load().clone().withContext(ctx)
+}
+
+func DefaultLogger(slogger *slog.Logger) *Logger {
+	return &Logger{
+		ctx:        context.TODO(),
+		callerSkip: 3,
+		slogger:    slogger,
+	}
+}
 
 // SetLoggerHandler 设置logger handler
 func SetLoggerHandler(newFunc NewLoggerHandler) {
-	L = &Logger{
-		slogger: slog.New(newFunc()),
-	}
+	defaultLogger.Store(DefaultLogger(slog.New(newFunc())))
 }
 
 // NewSlogHandler slog初始化
@@ -75,48 +93,88 @@ func NewSlogHandler(cfg *Config) slog.Handler {
 	}
 }
 
-func (dl Logger) Info(msg string, v ...any) {
-	dl.log(slog.LevelInfo, msg, v...)
+func (l Logger) Info(msg string, kvs ...any) {
+	l.log(slog.LevelInfo, msg, kvs...)
 }
 
-func (dl Logger) Debug(msg string, v ...any) {
-	dl.log(slog.LevelDebug, msg, v...)
+func (l Logger) Debug(msg string, kvs ...any) {
+	l.log(slog.LevelDebug, msg, kvs...)
 }
 
-func (dl Logger) Warn(msg string, v ...any) {
-	dl.log(slog.LevelWarn, msg, v...)
+func (l Logger) Warn(msg string, kvs ...any) {
+	l.log(slog.LevelWarn, msg, kvs...)
 }
 
-func (dl Logger) Error(msg string, v ...any) {
-	dl.log(slog.LevelError, msg, v...)
+func (l Logger) Error(msg string, kvs ...any) {
+	l.log(slog.LevelError, msg, kvs...)
 }
 
-func (dl Logger) log(level slog.Level, msg string, args ...any) {
-	_, f, l, ok := runtime.Caller(3)
+func (l *Logger) withContext(ctx context.Context) *Logger {
+	l.ctx = ctx
+	return l
+}
+
+func (l *Logger) WithCallerSkip(skip int) *Logger {
+	l.callerSkip = skip
+	return l
+}
+
+func (l Logger) log(level slog.Level, msg string, args ...any) {
+	_, f, ln, ok := runtime.Caller(l.callerSkip)
 	if !ok {
 		f = "???"
-		l = 0
+		ln = 0
 	} else {
 		if fl := strings.Split(f, string(filepath.Separator)); len(fl) >= 3 {
 			f = filepath.Join(fl[len(fl)-3:]...)
 		}
 	}
-	args = append(args, []any{"source", f + ":" + strconv.Itoa(l)}...)
-	dl.slogger.Log(context.Background(), level, msg, args...)
+	args = append(args, []any{
+		"app", constant.APP.Load(),
+		"region", constant.Region.Load(),
+		"az", constant.AZ.Load(),
+		"env", constant.Env.Load(),
+		"service", constant.ServiceName.Load(),
+		"source", f + ":" + strconv.Itoa(ln),
+	}...)
+	traceCtx := trace.SpanContextFromContext(l.ctx)
+	if traceCtx.TraceID().IsValid() {
+		args = append(args, []any{
+			"trace", traceCtx.TraceID().String(),
+		}...)
+	}
+	if traceCtx.SpanID().IsValid() {
+		args = append(args, []any{
+			"trace", traceCtx.SpanID().String(),
+		}...)
+	}
+	l.slogger.Log(l.ctx,
+		level,
+		msg,
+		args...)
 }
 
-func Info(format string, kv ...any) {
-	L.Info(format, kv...)
+func (l *Logger) L(ctx context.Context) *Logger {
+	return l.clone().withContext(ctx)
 }
 
-func Debug(format string, kv ...any) {
-	L.Debug(format, kv...)
+func (l *Logger) clone() *Logger {
+	c := *l
+	return &c
 }
 
-func Warn(format string, kv ...any) {
-	L.Warn(format, kv...)
+func Info(msg string, kvs ...any) {
+	defaultLogger.Load().Info(msg, kvs...)
 }
 
-func Error(format string, kv ...any) {
-	L.Error(format, kv...)
+func Debug(msg string, kvs ...any) {
+	defaultLogger.Load().Debug(msg, kvs...)
+}
+
+func Warn(msg string, kvs ...any) {
+	defaultLogger.Load().Warn(msg, kvs...)
+}
+
+func Error(msg string, kvs ...any) {
+	defaultLogger.Load().Error(msg, kvs...)
 }

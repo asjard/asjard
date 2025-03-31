@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/asjard/asjard/core/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -64,6 +65,13 @@ func (TestTable) Search() ([]*TestTable, error) {
 	return []*TestTable{}, nil
 }
 
+func TestMain(m *testing.M) {
+	if err := config.Load(-1); err != nil {
+		panic(err)
+	}
+	m.Run()
+}
+
 func TestGetData(t *testing.T) {
 	model := &TestModel{}
 
@@ -88,7 +96,7 @@ func TestSetData(t *testing.T) {
 		return nil
 	}
 	t.Run("CacheNil", func(t *testing.T) {
-		assert.Nil(t, model.SetData(context.Background(), nil, setFunc))
+		assert.Nil(t, model.SetData(context.Background(), setFunc, nil))
 	})
 }
 

@@ -79,7 +79,7 @@ func TestConnDBs(t *testing.T) {
 		config.Set("asjard.stores.gorm.dbs.newdb.dsn", "test_new.db")
 		config.Set("asjard.stores.gorm.dbs.newdb.driver", "sqlite")
 		// 设置配置是异步过程，等待数据库连接刷新
-		time.Sleep(5000 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		db, err := DB(context.Background(), WithConnName("newdb"))
 		assert.Nil(t, err)
 		assert.NotNil(t, db)

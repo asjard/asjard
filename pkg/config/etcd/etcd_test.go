@@ -3,13 +3,19 @@ package etcd
 import (
 	"testing"
 
-	"github.com/asjard/asjard/core/runtime"
+	"github.com/asjard/asjard/core/config"
 )
+
+func TestMain(m *testing.M) {
+	if err := config.Load(2); err != nil {
+		panic(err)
+	}
+	m.Run()
+}
 
 func TestPrefix(t *testing.T) {
 	source := &Etcd{
 		conf: &defaultConfig,
-		app:  runtime.GetAPP(),
 	}
 	t.Log(source.prefix())
 	t.Log(source.prefixs())

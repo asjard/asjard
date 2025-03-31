@@ -6,6 +6,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/asjard/asjard/core/config"
 )
 
 type testLock struct {
@@ -25,6 +27,13 @@ func (l *testLock) Unlock(ctx context.Context, key, threadId string) bool {
 // 续期
 func (l *testLock) KeepAlive(ctx context.Context, key, threadId string, expiresIn time.Duration) bool {
 	return true
+}
+
+func TestMain(m *testing.M) {
+	if err := config.Load(-1); err != nil {
+		panic(err)
+	}
+	m.Run()
 }
 
 func TestLock(t *testing.T) {

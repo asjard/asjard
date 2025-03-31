@@ -3,8 +3,16 @@ package status
 import (
 	"testing"
 
+	"github.com/asjard/asjard/core/config"
 	"google.golang.org/grpc/codes"
 )
+
+func TestMain(m *testing.M) {
+	if err := config.Load(-1); err != nil {
+		panic(err)
+	}
+	m.Run()
+}
 
 func TestNewCode(t *testing.T) {
 	datas := []struct {
@@ -28,11 +36,11 @@ func TestNewCode(t *testing.T) {
 
 func TestParseCode(t *testing.T) {
 	datas := []struct {
-		input                         codes.Code
-		systemCode, httpCode, errCode uint32
+		input                               codes.Code
+		code, systemCode, httpCode, errCode uint32
 	}{
 		{input: 1, httpCode: 499, errCode: 1},
-		{input: 1004045, systemCode: 100, httpCode: 404, errCode: 10005},
+		{input: 1004045, systemCode: 100, httpCode: 404, errCode: 5},
 	}
 
 	for _, data := range datas {

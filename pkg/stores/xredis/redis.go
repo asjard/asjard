@@ -95,7 +95,9 @@ func init() {
 
 func WithClientName(clientName string) func(*ClientOptions) {
 	return func(opt *ClientOptions) {
-		opt.clientName = clientName
+		if clientName != "" {
+			opt.clientName = clientName
+		}
 	}
 }
 
@@ -129,6 +131,7 @@ func (m *ClientManager) Stop() {
 	m.clients.Range(func(key, value any) bool {
 		conn, ok := value.(*ClientConn)
 		if ok {
+			logger.Debug("redis close", "client", conn.name)
 			if err := conn.client.Close(); err != nil {
 				logger.Error("close redis client fail", "err", err)
 			}

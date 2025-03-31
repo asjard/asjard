@@ -15,7 +15,7 @@ type Config struct {
 	// 客户端拦截器
 	Interceptors utils.JSONStrings `json:"interceptors"`
 	// 内建客户端拦截器
-	BuiltInInterceptors utils.JSONStrings `json:"-"`
+	BuiltInInterceptors utils.JSONStrings `json:"builtInInterceptors"`
 	// 客户端证书
 	CertFile string `json:"ccertFile"`
 }
@@ -23,7 +23,7 @@ type Config struct {
 // DefaultConfig 默认配置
 var DefaultConfig = Config{
 	Loadbalance:         "localityRoundRobin",
-	BuiltInInterceptors: utils.JSONStrings{"rest2RpcContext", "circuitBreaker", "cycleChainInterceptor"},
+	BuiltInInterceptors: utils.JSONStrings{"validate", "errLog", "slowLog", "rest2RpcContext", "circuitBreaker", "cycleChainInterceptor"},
 }
 
 // GetConfigWithProtocol 获取协议配置

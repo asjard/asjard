@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 
 	"github.com/asjard/asjard/core/bootstrap"
@@ -53,10 +54,8 @@ type Asjard struct {
 	startErr chan error
 	// 已启动的服务
 	startedServers []string
-	// 退出信号
-	exit chan struct{}
 	// 是否已初始化了
-	inited bool
+	inited atomic.Bool
 }
 
 // New 框架初始化
@@ -64,7 +63,6 @@ func New() *Asjard {
 	return &Asjard{
 		handlers: make(map[string][]any),
 		startErr: make(chan error),
-		exit:     make(chan struct{}),
 	}
 }
 
@@ -97,7 +95,7 @@ func (asd *Asjard) AddHandlers(protocol string, handlers ...any) error {
 	return nil
 }
 
-// Start 系统启动, 现根据配置初始化各个组件
+// Start 系统启动, 先根据配置初始化各个组件
 func (asd *Asjard) Start() error {
 	if err := asd.Init(); err != nil {
 		return err
@@ -106,6 +104,7 @@ func (asd *Asjard) Start() error {
 	if err := asd.startServers(); err != nil {
 		return err
 	}
+
 	// 注册服务
 	if err := registry.Registe(); err != nil {
 		return err
@@ -130,7 +129,7 @@ func (asd *Asjard) Start() error {
 		logger.Error("start error:",
 			"error", err)
 	}
-	close(asd.exit)
+	close(runtime.Exit)
 	// 系统停止
 	asd.stop()
 	return nil
@@ -139,14 +138,15 @@ func (asd *Asjard) Start() error {
 // Exit 退出信号
 // 如果系统退出则会触发此信号, 可以在stream请求或其他地方监听此信号，用以平滑退出服务
 func (asd *Asjard) Exit() <-chan struct{} {
-	return asd.exit
+	return runtime.Exit
 }
 
 // Init 系统初始化
 func (asd *Asjard) Init() error {
-	if asd.inited {
+	if asd.inited.Load() {
 		return nil
 	}
+	defer asd.inited.Store(true)
 	// 文件配置源加载
 	if err := config.Load(file.Priority); err != nil {
 		return err
@@ -177,13 +177,6 @@ func (asd *Asjard) Init() error {
 		return err
 	}
 
-	// 服务初始化
-	servers, err := server.Init()
-	if err != nil {
-		return err
-	}
-	asd.servers = servers
-
 	// 注册中心初始化
 	if err := registry.Init(); err != nil {
 		return err
@@ -193,7 +186,13 @@ func (asd *Asjard) Init() error {
 	if err := bootstrap.Bootstrap(); err != nil {
 		return err
 	}
-	asd.inited = true
+
+	// 服务初始化
+	servers, err := server.Init()
+	if err != nil {
+		return err
+	}
+	asd.servers = servers
 	return nil
 }
 
@@ -233,9 +232,12 @@ func (asd *Asjard) startServers() error {
 		if err := sv.Start(asd.startErr); err != nil {
 			return fmt.Errorf("start server '%s' fail[%s]", sv.Protocol(), err.Error())
 		}
+		protocolPrefix := sv.Protocol() + "://"
 		asd.startedServers = append(asd.startedServers,
-			sv.Protocol()+":"+strings.TrimSuffix(strings.Join([]string{listenAddresses.Listen,
-				listenAddresses.Advertise}, ","), ","))
+			strings.TrimSuffix(strings.Join([]string{
+				protocolPrefix + listenAddresses.Listen,
+				protocolPrefix + listenAddresses.Advertise,
+			}, ","), ","+protocolPrefix))
 		logger.Debug("server started",
 			"protocol", sv.Protocol())
 	}

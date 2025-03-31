@@ -26,7 +26,7 @@ type Rest2RpcContext struct {
 type rest2RpcContextConfig struct {
 	allowAllHeaders     bool
 	AllowHeaders        utils.JSONStrings `json:"allowHeaders"`
-	BuiltInAllowHeaders utils.JSONStrings `json:"-"`
+	BuiltInAllowHeaders utils.JSONStrings `json:"builtInAllowHeaders"`
 }
 
 var defaultRest2RpcContextConfig = rest2RpcContextConfig{

@@ -21,7 +21,8 @@ type CacheLocal struct {
 	*stores.Cache
 
 	// 缓存Key
-	key string
+	key     string
+	keyFunc func() string
 	// 本实例ID
 	instanceId string
 
@@ -66,6 +67,19 @@ func (c *CacheLocal) WithKey(key string) *CacheLocal {
 	return &CacheLocal{
 		Cache:      c.Cache,
 		key:        c.NewKey(key),
+		keyFunc:    c.keyFunc,
+		redis:      c.redis,
+		pubsub:     c.pubsub,
+		cache:      c.cache,
+		instanceId: c.instanceId,
+	}
+}
+
+func (c *CacheLocal) WithKeyFunc(keyFunc func() string) *CacheLocal {
+	return &CacheLocal{
+		Cache:      c.Cache,
+		key:        c.key,
+		keyFunc:    keyFunc,
 		redis:      c.redis,
 		pubsub:     c.pubsub,
 		cache:      c.cache,
@@ -124,6 +138,9 @@ func (c *CacheLocal) Refresh(ctx context.Context, key string, in any, expiresIn 
 
 // 返回缓存Key名称
 func (c *CacheLocal) Key() string {
+	if c.keyFunc != nil {
+		return c.NewKey(c.keyFunc())
+	}
 	return c.key
 }
 
@@ -171,15 +188,22 @@ func (c *CacheLocal) delSubscribe() {
 	}
 	logger.Debug("local cache del subscribe")
 	c.pubsub = c.redis.Subscribe(context.Background(), c.delChannel())
-	for msg := range c.pubsub.Channel() {
-		logger.Debug("local cache del subscribe recive", "msg", msg.Payload)
-		var delMsg cacheLocalDelPublishMessage
-		if err := json.Unmarshal(utils.String2Byte(msg.Payload), &delMsg); err != nil {
-			logger.Error("local cache pubsub unmarshal fail", "payload", msg.Payload, "err", err)
-		}
-		if delMsg.InstanceId != c.instanceId {
-			if err := c.del(delMsg.Keys...); err != nil {
-				logger.Error("local cache del keys fail", "keys", delMsg.Keys, "err", err)
+	for {
+		select {
+		case <-runtime.Exit:
+			logger.Debug("local cache del subscribe exit")
+			c.pubsub.Close()
+			return
+		case msg := <-c.pubsub.Channel():
+			logger.Debug("local cache del subscribe recive", "msg", msg.Payload)
+			var delMsg cacheLocalDelPublishMessage
+			if err := json.Unmarshal(utils.String2Byte(msg.Payload), &delMsg); err != nil {
+				logger.Error("local cache pubsub unmarshal fail", "payload", msg.Payload, "err", err)
+			}
+			if delMsg.InstanceId != c.instanceId {
+				if err := c.del(delMsg.Keys...); err != nil {
+					logger.Error("local cache del keys fail", "keys", delMsg.Keys, "err", err)
+				}
 			}
 		}
 	}

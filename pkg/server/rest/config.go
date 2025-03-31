@@ -29,14 +29,17 @@ type DocConfig struct {
 
 type OpenapiConfig struct {
 	Enabled bool `json:"enabled"`
-	// https://petstore.swagger.io/?url=http://%s/openapi.yml
+	// https://petstore.swagger.io/?url=%s/openapi.yml
 	// https://petstore.swagger.io/?url=http://127.0.0.1:7030/openapi.yml
-	// https://authress-engineering.github.io/openapi-explorer/?url=http://%s/openapi.yml
+	// https://authress-engineering.github.io/openapi-explorer/?url=%s/openapi.yml
 	// https://authress-engineering.github.io/openapi-explorer/?url=http://127.0.0.1:7030/openapi.yml
 	Page           string               `json:"page"`
 	TermsOfService string               `json:"termsOfService"`
 	License        OpenapiLicenseConfig `json:"license"`
 	Scalar         ScalarOpenapiConfig  `json:"scalar"`
+	// openapi访问域名
+	// 如果为空则使用listenAddress
+	Endpoint string `json:"domain"`
 }
 
 type ScalarOpenapiConfig struct {
@@ -101,7 +104,7 @@ func defaultConfig() Config {
 			ErrPage: config.GetString("asjard.service.website", ""),
 		},
 		Openapi: OpenapiConfig{
-			Page: "https://petstore.swagger.io/?url=http://%s/openapi.yml",
+			Page: "https://petstore.swagger.io/?url=%s/openapi.yml",
 			License: OpenapiLicenseConfig{
 				Name: "Apache 2.0",
 				Url:  "http://www.apache.org/licenses/LICENSE-2.0.html",

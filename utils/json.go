@@ -73,46 +73,78 @@ func (s *JSONStrings) UnmarshalJSON(b []byte) error {
 	}
 	return errors.New("invliad strings")
 }
+func (s JSONStrings) Contains(subStr string) bool {
+	for _, item := range s {
+		if item == subStr {
+			return true
+		}
+	}
+	return false
+}
+
+const (
+	// 删除标志
+	DelFlag = "-"
+	// 追加标志
+	AppendFlag = "+"
+	// 替换标志
+	ReplaceFlag = "="
+	// 分隔符
+	SplitFlag = ":"
+)
 
 // Merge 两个列表合并
 // 系统中有很多内建的配置,如果需要修改则需要修改整个列表
 // 通过此方法可以将内建配置和用户配置进行合并
-// 将cs合并到s中并返回新的ns
-// cs支持前缀`-`表示删除某个元素,否则
-// 如果s中不存在则追加
+// -a => 删除a
+// +a:b => a后面追加b
+// =a:b => a替换为b
 // 保持顺序不变
 // a = ["a", "b", "c"]
-// b = ["-a", "b", "d", "e"]
+// b = ["-a", "+b:b1", "=d:dd", "e"]
 // 合并后
-// c = ["b", "c", "d", "e"]
+// c = ["b","b1", "c", "dd", "e"]
 func (s JSONStrings) Merge(cs JSONStrings) JSONStrings {
 	var ns JSONStrings
 	for _, v := range s {
-		del := false
+		values := JSONStrings{v}
 		for _, v1 := range cs {
-			if v1 == "-"+v {
-				del = true
-				break
+			if v1 == DelFlag+v {
+				values = JSONStrings{}
+				continue
+			}
+			if strings.HasPrefix(v1, AppendFlag+v+SplitFlag) {
+				values = JSONStrings{v, strings.TrimPrefix(v1, AppendFlag+v+SplitFlag)}
+				continue
+			}
+			if strings.HasPrefix(v1, ReplaceFlag+v+SplitFlag) {
+				values = JSONStrings{strings.TrimPrefix(v1, ReplaceFlag+v+SplitFlag)}
+				continue
 			}
 		}
-		if !del {
-			ns = append(ns, v)
+		if len(values) != 0 {
+			ns = append(ns, values...)
 		}
 	}
 	for _, v := range cs {
-		if strings.HasPrefix(v, "-") {
+		if strings.HasPrefix(v, DelFlag) ||
+			strings.HasPrefix(v, AppendFlag) ||
+			strings.HasPrefix(v, ReplaceFlag) {
 			continue
 		}
-		exist := false
-		for _, v1 := range ns {
-			if v1 == v {
-				exist = true
-				break
-			}
-		}
-		if !exist {
-			ns = append(ns, v)
-		}
+		ns = append(ns, v)
 	}
-	return ns
+	return ns.unique()
+}
+
+func (s JSONStrings) unique() JSONStrings {
+	var result JSONStrings
+	resultMap := make(map[string]struct{}, len(s))
+	for _, v := range s {
+		if _, ok := resultMap[v]; !ok {
+			result = append(result, v)
+		}
+		resultMap[v] = struct{}{}
+	}
+	return result
 }

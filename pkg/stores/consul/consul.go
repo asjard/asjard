@@ -64,7 +64,9 @@ func init() {
 
 func WithClientName(clientName string) Option {
 	return func(opt *ClientOptions) {
-		opt.clientName = clientName
+		if clientName != "" {
+			opt.clientName = clientName
+		}
 	}
 }
 

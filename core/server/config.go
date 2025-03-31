@@ -14,11 +14,11 @@ type Config struct {
 	Interceptors utils.JSONStrings `json:"interceptors"`
 	// 内建拦截器
 	// 配置的拦截器和内建拦截器合并
-	BuiltInInterceptors utils.JSONStrings `json:"-"`
+	BuiltInInterceptors utils.JSONStrings `json:"builtInInterceptors"`
 	// 默认处理器
 	DefaultHandlers utils.JSONStrings `json:"defaultHandlers"`
 	// 内建默认处理器
-	BuiltInDefaultHandlers utils.JSONStrings `json:"-"`
+	BuiltInDefaultHandlers utils.JSONStrings `json:"builtInDefaultHandlers"`
 	// 监听地址配置
 	Addresses AddressConfig `json:"addresses"`
 	// 证书文件配置,相对于ASJARD_CONF_DIR/certs的相对路径
@@ -36,7 +36,7 @@ type AddressConfig struct {
 
 // DefaultConfig 默认配置
 var DefaultConfig = Config{
-	BuiltInInterceptors:    utils.JSONStrings{"ratelimiter", "metrics", "panic", "accessLog", "restReadEntity", "restResponseHeader", "i18n", "trace"},
+	BuiltInInterceptors:    utils.JSONStrings{"trace", "ratelimiter", "metrics", "panic", "accessLog", "asynqReadEntity", "restReadEntity", "i18n", "restResponseHeader"},
 	BuiltInDefaultHandlers: utils.JSONStrings{"default", "health", "metrics"},
 }
 

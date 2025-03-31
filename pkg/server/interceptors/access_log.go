@@ -2,6 +2,7 @@ package interceptors
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/pkg/client/grpc"
 	"github.com/asjard/asjard/pkg/protobuf/healthpb"
+	"github.com/asjard/asjard/pkg/protobuf/requestpb"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/asjard/asjard/utils"
 )
@@ -21,12 +23,14 @@ const (
 
 // AccessLog access日志拦截器
 type AccessLog struct {
-	cfg *accessLogConfig
-	m   sync.RWMutex
+	cfg    *accessLogConfig
+	m      sync.RWMutex
+	logger *logger.Logger
 }
 
 type accessLogConfig struct {
 	Enabled bool `json:"enabled"`
+	logger.Config
 	// 配置格式: [protocol://]{fullMethod}
 	// 例如grpc协议的某个方法: grpc://api.v1.hello.Hello.Call
 	// 或者协议无关的某个方法: api.v1.hello.Hello.Call
@@ -36,7 +40,12 @@ type accessLogConfig struct {
 }
 
 var defaultAccessLogConfig = accessLogConfig{
-	SkipMethods: utils.JSONStrings{grpc.Protocol, healthpb.Health_Check_FullMethodName},
+	Config: logger.DefaultConfig,
+	SkipMethods: utils.JSONStrings{
+		grpc.Protocol,
+		healthpb.Health_Check_FullMethodName,
+		requestpb.DefaultHandlers_Favicon_FullMethodName,
+	},
 }
 
 func init() {
@@ -69,11 +78,15 @@ func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 		}
 		now := time.Now()
 		var fields []any
+		// requestId := uuid.New().String()
+		// fields = append(fields, []any{"trace", requestId}...)
 		fields = append(fields, []any{"protocol", info.Protocol}...)
 		fields = append(fields, []any{"full_method", info.FullMethod}...)
 		switch info.Protocol {
 		case rest.Protocol:
 			if rc, ok := ctx.(*rest.Context); ok {
+				// rc.Response.Header.Set(rest.HeaderResponseRequestID, requestId)
+				// rc.Request.Header.Set(rest.HeaderResponseRequestID, requestId)
 				fields = append(fields, []any{"header", rc.ReadHeaderParams()}...)
 				fields = append(fields, []any{"method", string(rc.Method())}...)
 				fields = append(fields, []any{"path", string(rc.Path())}...)
@@ -85,9 +98,9 @@ func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 		fields = append(fields, []any{"success", err == nil}...)
 		fields = append(fields, []any{"err", err}...)
 		if err != nil {
-			logger.Error("access log", fields...)
+			al.logger.L(ctx).Error("access log", fields...)
 		} else {
-			logger.Info("access log", fields...)
+			al.logger.L(ctx).Info("access log", fields...)
 		}
 		return resp, err
 	}
@@ -122,7 +135,7 @@ func (al *AccessLog) loadAndWatch() error {
 func (al *AccessLog) load() error {
 	conf := defaultAccessLogConfig
 	if err := config.GetWithUnmarshal("asjard.logger.accessLog",
-		&conf); err != nil {
+		&conf, config.WithChain([]string{"asjard.logger"})); err != nil {
 		return err
 	}
 	conf.skipMethodsMap = make(map[string]struct{}, len(conf.SkipMethods))
@@ -131,6 +144,7 @@ func (al *AccessLog) load() error {
 	}
 	al.m.Lock()
 	al.cfg = &conf
+	al.logger = logger.DefaultLogger(slog.New(logger.NewSlogHandler(&conf.Config)))
 	al.m.Unlock()
 	return nil
 }
