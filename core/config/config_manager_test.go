@@ -153,9 +153,90 @@ func TestAddDuplicateSource(t *testing.T) {
 	})
 }
 
+//gocyclo:ignore
 func TestGetWithUnmarshal(t *testing.T) {
 	t.Run("JsonUnmarshalWithParam", func(t *testing.T) {
-
+		content := `test_param_prefix:
+  clients:
+    default:
+      address: 127.0.0.1:6379
+      db: 1
+      username: user
+      password: !!str 123
+      options:
+        clientName: testClientName
+    cache: ${test_param_prefix.clients.default}
+    statistic:
+      address: ${test_param_prefix.clients.default.address}
+      options: ${test_param_prefix.clients.default.options}`
+		propsMap, err := ConvertToProperties(".yml", []byte(content))
+		if err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+		for key, value := range propsMap {
+			if err := Set(key, value); err != nil {
+				t.Error(err)
+				t.FailNow()
+			}
+		}
+		type testParamsPrefixOptions struct {
+			ClientName string `json:"clientName"`
+		}
+		type testParamsPrefixConfig struct {
+			Address  string                  `json:"address"`
+			DB       int                     `json:"db"`
+			Username string                  `json:"username"`
+			Password string                  `json:"password"`
+			Options  testParamsPrefixOptions `json:"options"`
+		}
+		out := make(map[string]*testParamsPrefixConfig)
+		if err := GetWithUnmarshal("test_param_prefix.clients", &out); err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+		// default 不为空
+		defaultConf, ok := out["default"]
+		if !ok {
+			t.Error("default config not found")
+			t.FailNow()
+		}
+		if defaultConf.Address == "" ||
+			defaultConf.DB == 0 ||
+			defaultConf.Username == "" ||
+			defaultConf.Password == "" ||
+			defaultConf.Options.ClientName == "" {
+			t.Errorf("default config is empty, default: %+v", defaultConf)
+			t.FailNow()
+		}
+		// cache不为空，且值和default相等
+		cacheConf, ok := out["cache"]
+		if !ok {
+			t.Error("cache config not found")
+			t.FailNow()
+		}
+		if cacheConf.Address != defaultConf.Address ||
+			cacheConf.DB != defaultConf.DB ||
+			cacheConf.Username != defaultConf.Username ||
+			cacheConf.Password != defaultConf.Password ||
+			cacheConf.Options.ClientName != defaultConf.Options.ClientName {
+			t.Errorf("cache config not equal with default config, cache: %+v, default: %+v", cacheConf, defaultConf)
+			t.FailNow()
+		}
+		// statistic不为空，且只有address和options.ClientName和default相等
+		statisticConf, ok := out["statistic"]
+		if !ok {
+			t.Error("statistic config not found")
+			t.FailNow()
+		}
+		if statisticConf.Address != defaultConf.Address ||
+			statisticConf.Options.ClientName != defaultConf.Options.ClientName ||
+			statisticConf.DB != 0 ||
+			statisticConf.Username != "" ||
+			statisticConf.Password != "" {
+			t.Errorf("unexpect statistic config, statistic: %+v, default: %+v", statisticConf, defaultConf)
+			t.FailNow()
+		}
 	})
 	t.Run("JsonUnmarshal", func(t *testing.T) {
 		datas := []struct {

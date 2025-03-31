@@ -406,8 +406,10 @@ func (m *ConfigManager) getValueByPrefix(prefix string, opts *Options) map[strin
 func (m *ConfigManager) getValueWithPrefix(prefix string, opts *Options) map[string]any {
 	out := make(map[string]any)
 	for key, value := range m.getConfigsWithPrefixs(append([]string{prefix}, opts.keys...)...) {
-		if ok, pv := m.valueIsParam(cast.ToString(value.Value)); ok {
-			out[key] = m.getValueWithPrefix(pv, opts)
+		if ok, pv := m.valueIsParam(cast.ToString(value.Value)); ok && m.getValue(pv, opts) == nil {
+			for k, v := range m.getValueWithPrefix(pv, opts) {
+				out[key+"."+k] = v
+			}
 		} else {
 			out[key] = m.getValueWithOptions(value.Value, opts)
 		}
