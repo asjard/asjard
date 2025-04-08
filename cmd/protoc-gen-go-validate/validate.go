@@ -103,6 +103,15 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 				g.gen.P("}")
 				g.gen.P("}")
 			} else if field.Oneof != nil {
+				g.gen.P("if m.Get", field.Oneof.GoName, "()==nil{")
+				oneofFields := make([]string, 0, len(field.Oneof.Fields))
+				for _, fd := range field.Oneof.Fields {
+					oneofFields = append(oneofFields, fd.Desc.JSONName())
+				}
+				// field a|b|c must be exist one
+				errmsg := fmt.Sprintf("field %s must be exist one", strings.Join(oneofFields, "|"))
+				g.gen.P("return ", statusPackage.Ident("Errorf"), "(", codesPackage.Ident("InvalidArgument"), `,`, strconv.Quote(errmsg), ")")
+				g.gen.P("}")
 				g.gen.P("if vl, ok := m.Get", field.Oneof.GoName, "().(*", message.GoIdent.GoName, "_", field.GoName, "); ok {")
 				g.gen.P("if err := vl.", field.GoName, ".IsValid(", defaultValidatorPackage.Ident("ValidateFieldName"), "(parentFieldName, \"", field.Desc.JSONName(), "\")", ",fullMethod); err != nil {")
 				g.gen.P("return err")
