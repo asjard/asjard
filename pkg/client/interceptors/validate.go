@@ -32,7 +32,7 @@ func NewValidateInterceptor() (client.ClientInterceptor, error) {
 func (r *Validate) Interceptor() client.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
 		if v, ok := req.(validatepb.Validater); ok {
-			if err := v.IsValid(method); err != nil {
+			if err := v.IsValid("", method); err != nil {
 				return err
 			}
 		}
