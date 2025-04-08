@@ -96,8 +96,11 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 				g.gen.P("}")
 
 			} else if !field.Desc.IsMap() && field.Oneof == nil {
+				inited = g.genMessageValid(field, inited)
+				g.gen.P("if m.", field.GoName, "!= nil {")
 				g.gen.P("if err := m.", field.GoName, ".IsValid(fullMethod); err != nil {")
 				g.gen.P("return err")
+				g.gen.P("}")
 				g.gen.P("}")
 			}
 		case protoreflect.EnumKind:
@@ -107,40 +110,45 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 				g.gen.P("}")
 			}
 		default:
-			if validateRule, ok := proto.GetExtension(field.Desc.Options(), validatepb.E_Validate).(*validatepb.Validate); ok && validateRule != nil {
-				methodRules := make(map[string][]string)
-				var globalRules []string
-				for _, rule := range validateRule.Rules {
-					rules := strings.Split(rule, ";")
-					if len(rules) != 0 {
-						for _, rule := range rules {
-							methodAndRule := strings.Split(rule, ":")
-							if len(methodAndRule) == 2 {
-								methodRules[methodAndRule[0]] = append(methodRules[methodAndRule[0]], methodAndRule[1])
-							} else {
-								globalRules = append(globalRules, rule)
-							}
-						}
-					}
-				}
-				if !inited && (len(globalRules) != 0 || len(methodRules) != 0) {
-					g.gen.P("v := ", defaultValidatorPackage.Ident("DefaultValidator"))
-					inited = true
-				}
-				if len(globalRules) != 0 {
-					g.genFieldValid(field, strings.Join(globalRules, ","), validateRule)
-				}
-				for method, rules := range methodRules {
-					g.gen.P("if fullMethod != \"\" && fullMethod == ", strconv.Quote(method), "{")
-					g.genFieldValid(field, strings.Join(rules, ","), validateRule)
-					g.gen.P("}")
-				}
-			}
+			inited = g.genMessageValid(field, inited)
 		}
 	}
 	g.gen.P("return nil")
 	g.gen.P("}")
 	g.gen.P("")
+}
+
+func (g ValidateGenerator) genMessageValid(field *protogen.Field, inited bool) bool {
+	if validateRule, ok := proto.GetExtension(field.Desc.Options(), validatepb.E_Validate).(*validatepb.Validate); ok && validateRule != nil {
+		methodRules := make(map[string][]string)
+		var globalRules []string
+		for _, rule := range validateRule.Rules {
+			rules := strings.Split(rule, ";")
+			if len(rules) != 0 {
+				for _, rule := range rules {
+					methodAndRule := strings.Split(rule, ":")
+					if len(methodAndRule) == 2 {
+						methodRules[methodAndRule[0]] = append(methodRules[methodAndRule[0]], methodAndRule[1])
+					} else {
+						globalRules = append(globalRules, rule)
+					}
+				}
+			}
+		}
+		if !inited && (len(globalRules) != 0 || len(methodRules) != 0) {
+			g.gen.P("v := ", defaultValidatorPackage.Ident("DefaultValidator"))
+			inited = true
+		}
+		if len(globalRules) != 0 {
+			g.genFieldValid(field, strings.Join(globalRules, ","), validateRule)
+		}
+		for method, rules := range methodRules {
+			g.gen.P("if fullMethod != \"\" && fullMethod == ", strconv.Quote(method), "{")
+			g.genFieldValid(field, strings.Join(rules, ","), validateRule)
+			g.gen.P("}")
+		}
+	}
+	return inited
 }
 
 func (g *ValidateGenerator) genFieldValid(field *protogen.Field, rule string, validate *validatepb.Validate) {
