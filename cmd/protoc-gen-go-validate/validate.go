@@ -102,7 +102,15 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 				g.gen.P("return err")
 				g.gen.P("}")
 				g.gen.P("}")
+			} else if field.Oneof != nil {
+				g.gen.P("if vl, ok := m.Get", field.Oneof.GoName, "().(*", message.GoIdent.GoName, "_", field.GoName, "); ok {")
+				g.gen.P("if err := vl.", field.GoName, ".IsValid(", defaultValidatorPackage.Ident("ValidateFieldName"), "(parentFieldName, \"", field.Desc.JSONName(), "\")", ",fullMethod); err != nil {")
+				g.gen.P("return err")
+				g.gen.P("}")
+				g.gen.P("}")
 			}
+		case protoreflect.GroupKind:
+			g.gen.P("//--group kind--", field.GoName)
 		case protoreflect.EnumKind:
 			if !field.Desc.IsList() {
 				g.gen.P("if _, ok := ", field.Enum.GoIdent, "_name[int32(m.", field.GoName, ")]; !ok {")
