@@ -8,6 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"syscall"
+	"time"
 
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/client"
@@ -259,6 +260,7 @@ func (asd *Asjard) stop() {
 			logger.Info("server stopped", "protocol", server.Protocol())
 		}
 	}
+	time.Sleep(time.Second)
 	// 配置中心断开连接
 	config.Disconnect()
 	bootstrap.Shutdown()

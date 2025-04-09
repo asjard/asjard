@@ -90,10 +90,10 @@ func Bootstrap() error {
 
 // Shutdown 系统停止
 func Shutdown() {
-	for _, handler := range bootstrapHandlers {
-		handler.Stop()
+	for idx := len(bootstrapHandlers) - 1; idx >= 0; idx-- {
+		bootstrapHandlers[idx].Stop()
 	}
-	for _, handler := range initiatorHandlers {
-		handler.Stop()
+	for idx := len(initiatorHandlers) - 1; idx >= 0; idx-- {
+		initiatorHandlers[idx].Stop()
 	}
 }

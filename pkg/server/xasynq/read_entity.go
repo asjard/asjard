@@ -17,7 +17,7 @@ const (
 
 func init() {
 	// 请求参数自动解析
-	server.AddInterceptor(AsynqReadEntityInterceptorName, NewAsynqReadEntityInterceptor, Protocol)
+	// server.AddInterceptor(AsynqReadEntityInterceptorName, NewAsynqReadEntityInterceptor, Protocol)
 }
 
 // AsynqReadEntity 解析参数到请求参数中

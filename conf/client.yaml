@@ -52,3 +52,5 @@ asjard:
         # interceptors: ""
         ## 同clients.grpc.options相关配置
         # options: {}
+    asynq:
+      redis: default
