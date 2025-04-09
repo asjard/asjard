@@ -62,6 +62,7 @@
 - [拦截器](user-guide/server-interceptor.md)
 - [Pprof](user-guide/server-pprof.md)
 - [Rest](user-guide/server-rest.md)
+- [Asynq](user-guide/server-asynq.md)
 
 ## 存储
 
