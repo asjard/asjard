@@ -162,7 +162,7 @@ func (g *asynqGenerator) genServiceMethodClient(service *protogen.Service, clien
 	g.genComment(method.Comments)
 	g.gen.P("func(c *", clientType, ")", method.GoName, "(ctx ", contextPackage.Ident("Context"), ",in *", method.Input.GoIdent, ",",
 		"opts ...", hibikenAsynqPackage.Ident("Option"), ")(*", hibikenAsynqPackage.Ident("TaskInfo"), ",error){")
-	g.gen.P("payload, err := ", jsonPackage.Ident("Marshal"), "(in)")
+	g.gen.P("payload, err := ", protoPackage.Ident("Marshal"), "(in)")
 	g.gen.P("if err != nil {")
 	g.gen.P("return nil, err")
 	g.gen.P("}")
@@ -175,7 +175,7 @@ func (g *asynqGenerator) genServiceMethod(service *protogen.Service, serverType 
 	g.genComment(method.Comments)
 	g.gen.P("func ", hname, "(ctx *", asynqPackage.Ident("Context"), ", srv any, interceptor ", serverPackage.Ident("UnaryServerInterceptor"), ") (any, error) {")
 	g.gen.P("in := new(", method.Input.GoIdent, ")")
-	g.gen.P("if err := ", jsonPackage.Ident("Unmarshal"), "(ctx.Payload(), in); err != nil {")
+	g.gen.P("if err := ", protoPackage.Ident("Unmarshal"), "(ctx.Payload(), in); err != nil {")
 	g.gen.P("return nil, err")
 	g.gen.P("}")
 	g.gen.P("if interceptor == nil {")
