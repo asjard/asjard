@@ -34,7 +34,7 @@ const (
 	jsonPackage         = protogen.GoImportPath("encoding/json")
 	hibikenAsynqPackage = protogen.GoImportPath("github.com/hibiken/asynq")
 	serverPackage       = protogen.GoImportPath("github.com/asjard/asjard/core/server")
-	protoPackage        = protogen.GoImportPath("github.com/golang/protobuf/proto")
+	protoPackage        = protogen.GoImportPath("google.golang.org/protobuf/proto")
 	// FileDescriptorProto.package field number
 	fileDescriptorProtoPackageFieldNumber = 2
 	// FileDescriptorProto.syntax field number
