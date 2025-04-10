@@ -26,6 +26,9 @@ const (
 
 type ClientManager struct {
 	clients sync.Map
+
+	cm      sync.RWMutex
+	configs map[string]*ClientConnConfig
 }
 
 type ClientConn struct {
@@ -89,7 +92,7 @@ var (
 )
 
 func init() {
-	clientManager = &ClientManager{}
+	clientManager = &ClientManager{configs: make(map[string]*ClientConnConfig)}
 	bootstrap.AddBootstrap(clientManager)
 }
 
@@ -119,6 +122,21 @@ func Client(opts ...Option) (*redis.Client, error) {
 	return client.client, nil
 }
 
+func NewClient(opts ...Option) (*redis.Client, error) {
+	options := defaultClientOptions()
+	for _, opt := range opts {
+		opt(options)
+	}
+	clientManager.cm.RLock()
+	connConfig, ok := clientManager.configs[options.clientName]
+	clientManager.cm.RUnlock()
+	if !ok {
+		logger.Error("redis not found", "name", options.clientName)
+		return nil, status.DatabaseNotFoundError()
+	}
+	return clientManager.newClient(options.clientName, connConfig)
+}
+
 func (m *ClientManager) Start() error {
 	clients, err := m.loadAndWatch()
 	if err != nil {
@@ -144,16 +162,21 @@ func (m *ClientManager) Stop() {
 func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	logger.Debug("new clients", "clients", clients)
 	for name, conf := range clients {
-		if err := m.newClient(name, conf); err != nil {
+		client, err := m.newClient(name, conf)
+		if err != nil {
 			logger.Debug("connect to redis fail", "name", name, "conf", conf, "err", err)
 			return err
 		}
+		m.clients.Store(name, &ClientConn{
+			name:   name,
+			client: client,
+		})
 		logger.Debug("connect to redis success", "name", name, "conf", conf)
 	}
 	return nil
 }
 
-func (m *ClientManager) newClient(name string, conf *ClientConnConfig) error {
+func (m *ClientManager) newClient(name string, conf *ClientConnConfig) (*redis.Client, error) {
 	clientOptions := &redis.Options{
 		Addr:                  conf.Address,
 		ClientName:            conf.Options.ClientName,
@@ -182,23 +205,23 @@ func (m *ClientManager) newClient(name string, conf *ClientConnConfig) error {
 	if conf.Options.CAFile != "" && conf.Options.CertFile != "" && conf.Options.KeyFile != "" {
 		conf.Options.CAFile = filepath.Join(utils.GetCertDir(), conf.Options.CAFile)
 		if !utils.IsPathExists(conf.Options.CAFile) {
-			return fmt.Errorf("cafile %s not found", conf.Options.CAFile)
+			return nil, fmt.Errorf("cafile %s not found", conf.Options.CAFile)
 		}
 		conf.Options.CertFile = filepath.Join(utils.GetCertDir(), conf.Options.CertFile)
 		if !utils.IsPathExists(conf.Options.CertFile) {
-			return fmt.Errorf("certfile %s not found", conf.Options.CertFile)
+			return nil, fmt.Errorf("certfile %s not found", conf.Options.CertFile)
 		}
 		conf.Options.KeyFile = filepath.Join(utils.GetCertDir(), conf.Options.KeyFile)
 		if !utils.IsPathExists(conf.Options.KeyFile) {
-			return fmt.Errorf("keyfile %s not found", conf.Options.KeyFile)
+			return nil, fmt.Errorf("keyfile %s not found", conf.Options.KeyFile)
 		}
 		caData, err := os.ReadFile(conf.Options.CAFile)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		cert, err := tls.LoadX509KeyPair(conf.Options.CertFile, conf.Options.KeyFile)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		pool := x509.NewCertPool()
 		pool.AppendCertsFromPEM(caData)
@@ -212,19 +235,16 @@ func (m *ClientManager) newClient(name string, conf *ClientConnConfig) error {
 		ctx, cancel := context.WithTimeout(context.Background(), conf.Options.DialTimeout.Duration)
 		defer cancel()
 		if status := client.Ping(ctx); status.Err() != nil {
-			return status.Err()
+			return nil, status.Err()
 		}
 	}
 	if conf.Options.Traceable {
 		if err := redisotel.InstrumentTracing(client, redisotel.WithDBSystem(name)); err != nil {
-			return err
+			return nil, err
 		}
 	}
-	m.clients.Store(name, &ClientConn{
-		name:   name,
-		client: client,
-	})
-	return nil
+
+	return client, nil
 }
 
 func (m *ClientManager) loadAndWatch() (map[string]*ClientConnConfig, error) {
@@ -251,6 +271,9 @@ func (m *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 			return clients, err
 		}
 	}
+	m.cm.Lock()
+	m.configs = clients
+	m.cm.Unlock()
 	return clients, nil
 }
 

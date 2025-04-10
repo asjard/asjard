@@ -508,7 +508,7 @@ func (m *ConfigManager) disconnect() {
 	m.sm.RLock()
 	defer m.sm.RUnlock()
 	for name, sourcer := range m.sourcers {
-		logger.Info("stop config source",
+		logger.Debug("stop config source",
 			"source", name)
 		sourcer.Disconnect()
 	}

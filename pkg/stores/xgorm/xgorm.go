@@ -34,6 +34,9 @@ const (
 // DBManager 数据连接维护
 type DBManager struct {
 	dbs sync.Map
+
+	cm      sync.RWMutex
+	configs map[string]*DBConnConfig
 }
 
 // DBConn 数据库连接
@@ -121,7 +124,7 @@ var (
 )
 
 func init() {
-	dbManager = &DBManager{}
+	dbManager = &DBManager{configs: make(map[string]*DBConnConfig)}
 	bootstrap.AddBootstrap(dbManager)
 }
 
@@ -145,6 +148,29 @@ func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 		return db.db.Debug().WithContext(ctx), nil
 	}
 	return db.db.WithContext(ctx), nil
+}
+
+// NewDB 重新连接数据库
+func NewDB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
+	options := defaultOptions()
+	for _, opt := range opts {
+		opt(options)
+	}
+	dbManager.cm.RLock()
+	connConf, ok := dbManager.configs[options.connName]
+	dbManager.cm.RUnlock()
+	if !ok {
+		logger.Error("db not found", "db", options.connName)
+		return nil, status.DatabaseNotFoundError()
+	}
+	db, err := dbManager.connDB(options.connName, connConf)
+	if err != nil {
+		return nil, err
+	}
+	if connConf.Options.Debug {
+		return db.Debug().WithContext(ctx), nil
+	}
+	return db.WithContext(ctx), nil
 }
 
 // Start 连接到数据库
@@ -174,19 +200,25 @@ func (m *DBManager) Stop() {
 
 func (m *DBManager) connDBs(dbsConf map[string]*DBConnConfig) error {
 	for dbName, cfg := range dbsConf {
-		if err := m.connDB(dbName, cfg); err != nil {
+		db, err := m.connDB(dbName, cfg)
+		if err != nil {
 			logger.Error("connect to database fail", "database", dbName, "config", cfg, "err", err)
 			return err
 		}
+		m.dbs.Store(dbName, &DBConn{
+			name:  dbName,
+			db:    db,
+			debug: cfg.Options.Debug,
+		})
 		logger.Debug("connect to database success", "database", dbName, "config", cfg)
 	}
 	return nil
 }
 
-func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) error {
+func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) (*gorm.DB, error) {
 	dbLogger, err := NewLogger(dbName)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	db, err := gorm.Open(m.dialector(cfg), &gorm.Config{
 		SkipDefaultTransaction:                   cfg.Options.SkipDefaultTransaction,
@@ -205,29 +237,23 @@ func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) error {
 		Logger:                                   dbLogger,
 	})
 	if err != nil {
-		return fmt.Errorf("connect to %s fail[%s]", dbName, err.Error())
+		return nil, fmt.Errorf("connect to %s fail[%s]", dbName, err.Error())
 	}
 	if cfg.Options.Traceable {
 		db.Use(tracing.NewPlugin(tracing.WithDBName(dbName), tracing.WithoutMetrics()))
 	}
 	sqlDB, err := db.DB()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	sqlDB.SetMaxIdleConns(cfg.Options.MaxIdleConns)
 	sqlDB.SetMaxOpenConns(cfg.Options.MaxOpenConns)
 	sqlDB.SetConnMaxIdleTime(cfg.Options.ConnMaxIdleTime.Duration)
 	sqlDB.SetConnMaxLifetime(cfg.Options.ConnMaxLifeTime.Duration)
-	conn := &DBConn{
-		name:  dbName,
-		db:    db,
-		debug: cfg.Options.Debug,
-	}
-	m.dbs.Store(dbName, conn)
 	if cfg.Options.Metricsable {
 		metrics.RegisterCollector("db_"+dbName+"_collector", collectors.NewDBStatsCollector(sqlDB, dbName))
 	}
-	return nil
+	return db, nil
 }
 
 func (m *DBManager) dialector(cfg *DBConnConfig) gorm.Dialector {
@@ -289,6 +315,9 @@ func (m *DBManager) loadConfig() (map[string]*DBConnConfig, error) {
 				"err", err)
 		}
 	}
+	m.cm.Lock()
+	m.configs = dbs
+	m.cm.Unlock()
 	return dbs, nil
 }
 

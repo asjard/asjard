@@ -27,6 +27,9 @@ const (
 // ClientManager 客户端连接维护
 type ClientManager struct {
 	clients sync.Map
+
+	cm      sync.RWMutex
+	configs map[string]*ClientConnConfig
 }
 
 // ClientConn 客户端连接
@@ -86,7 +89,7 @@ var (
 )
 
 func init() {
-	clientManager = &ClientManager{}
+	clientManager = &ClientManager{configs: make(map[string]*ClientConnConfig)}
 	bootstrap.AddInitiator(clientManager)
 }
 
@@ -117,6 +120,21 @@ func Client(opts ...Option) (*clientv3.Client, error) {
 	return client.client, nil
 }
 
+func NewClient(opts ...Option) (*clientv3.Client, error) {
+	options := defaultClientOptions()
+	for _, opt := range opts {
+		opt(options)
+	}
+	clientManager.cm.RLock()
+	connConf, ok := clientManager.configs[options.clientName]
+	clientManager.cm.RUnlock()
+	if !ok {
+		logger.Error("etcd not found", "name", options.clientName)
+		return nil, status.DatabaseNotFoundError()
+	}
+	return clientManager.newClient(options.clientName, connConf)
+}
+
 func (m *ClientManager) Start() error {
 	clients, err := m.loadAndWatchConfig()
 	if err != nil {
@@ -141,15 +159,20 @@ func (m *ClientManager) Stop() {
 func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	for name, cfg := range clients {
 		logger.Debug("connect to etcd", "name", name, "cfg", cfg)
-		if err := m.newClient(name, cfg); err != nil {
+		client, err := m.newClient(name, cfg)
+		if err != nil {
 			return err
 		}
+		m.clients.Store(name, &ClientConn{
+			name:   name,
+			client: client,
+		})
 		logger.Debug("connect to etcd success", "name", name)
 	}
 	return nil
 }
 
-func (m *ClientManager) newClient(name string, cfg *ClientConnConfig) error {
+func (m *ClientManager) newClient(name string, cfg *ClientConnConfig) (*clientv3.Client, error) {
 	clientConfig := clientv3.Config{Endpoints: cfg.Endpoints,
 		AutoSyncInterval:      cfg.Options.AutoSyncInterval.Duration,
 		DialTimeout:           cfg.Options.DialTimeout.Duration,
@@ -166,23 +189,23 @@ func (m *ClientManager) newClient(name string, cfg *ClientConnConfig) error {
 	if cfg.Options.CAFile != "" && cfg.Options.CertFile != "" && cfg.Options.KeyFile != "" {
 		cfg.Options.CAFile = filepath.Join(utils.GetCertDir(), cfg.Options.CAFile)
 		if !utils.IsPathExists(cfg.Options.CAFile) {
-			return fmt.Errorf("cafile %s not found", cfg.Options.CAFile)
+			return nil, fmt.Errorf("cafile %s not found", cfg.Options.CAFile)
 		}
 		cfg.Options.CertFile = filepath.Join(utils.GetCertDir(), cfg.Options.CertFile)
 		if !utils.IsPathExists(cfg.Options.CertFile) {
-			return fmt.Errorf("certFile %s not found", cfg.Options.CertFile)
+			return nil, fmt.Errorf("certFile %s not found", cfg.Options.CertFile)
 		}
 		cfg.Options.KeyFile = filepath.Join(utils.GetCertDir(), cfg.Options.KeyFile)
 		if !utils.IsPathExists(cfg.Options.KeyFile) {
-			return fmt.Errorf("keyFile %s not found", cfg.Options.KeyFile)
+			return nil, fmt.Errorf("keyFile %s not found", cfg.Options.KeyFile)
 		}
 		cert, err := tls.LoadX509KeyPair(cfg.Options.CertFile, cfg.Options.KeyFile)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		caData, err := os.ReadFile(cfg.Options.CAFile)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		pool := x509.NewCertPool()
 		pool.AppendCertsFromPEM(caData)
@@ -193,21 +216,18 @@ func (m *ClientManager) newClient(name string, cfg *ClientConnConfig) error {
 	}
 	client, err := clientv3.New(clientConfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	for _, endpoint := range cfg.Endpoints {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Options.DialTimeout.Duration)
 		_, err = client.Status(ctx, endpoint)
 		cancel()
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	m.clients.Store(name, &ClientConn{
-		name:   name,
-		client: client,
-	})
-	return nil
+
+	return client, nil
 }
 
 func (m *ClientManager) loadAndWatchConfig() (map[string]*ClientConnConfig, error) {
@@ -234,6 +254,9 @@ func (m *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 			return clients, err
 		}
 	}
+	m.cm.Lock()
+	m.configs = clients
+	m.cm.Unlock()
 	return clients, nil
 }
 
