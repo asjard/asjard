@@ -96,6 +96,9 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 	for _, field := range message.Fields {
 		switch field.Desc.Kind() {
 		case protoreflect.MessageKind:
+			if strings.HasPrefix(string(field.Desc.Message().FullName()), "google") {
+				continue
+			}
 			if field.Desc.IsList() {
 				g.gen.P("for _, fm := range m.", field.GoName, "{")
 				g.gen.P("if err := fm.IsValid(", defaultValidatorPackage.Ident("ValidateFieldName"), "(parentFieldName, \"", field.Desc.JSONName(), "\")", ", fullMethod); err != nil {")
@@ -116,22 +119,6 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 				} else {
 					oneofFieldMap[field.Oneof.GoName] = map[string]string{field.GoName: field.Desc.JSONName()}
 				}
-
-				// g.gen.P("// ---is oneof--", field.Oneof.GoName, ",", message.GoIdent.GoName, ",", field.GoName)
-				// g.gen.P("if m.Get", field.Oneof.GoName, "()==nil{")
-				// oneofFields := make([]string, 0, len(field.Oneof.Fields))
-				// for _, fd := range field.Oneof.Fields {
-				// 	oneofFields = append(oneofFields, fd.Desc.JSONName())
-				// }
-				// // field a|b|c must be exist one
-				// errmsg := fmt.Sprintf("field %s must be exist one", strings.Join(oneofFields, "|"))
-				// g.gen.P("return ", statusPackage.Ident("Errorf"), "(", codesPackage.Ident("InvalidArgument"), `,`, strconv.Quote(errmsg), ")")
-				// g.gen.P("}")
-				// g.gen.P("if vl, ok := m.Get", field.Oneof.GoName, "().(*", message.GoIdent.GoName, "_", field.GoName, "); ok {")
-				// g.gen.P("if err := vl.", field.GoName, ".IsValid(", defaultValidatorPackage.Ident("ValidateFieldName"), "(parentFieldName, \"", field.Desc.JSONName(), "\")", ",fullMethod); err != nil {")
-				// g.gen.P("return err")
-				// g.gen.P("}")
-				// g.gen.P("}")
 			}
 		case protoreflect.GroupKind:
 			g.gen.P("//--group kind--", field.GoName)
