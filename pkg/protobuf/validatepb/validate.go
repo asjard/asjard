@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/asjard/asjard/core/status"
-	"github.com/go-playground/validator"
+	"github.com/go-playground/validator/v10"
 	"google.golang.org/grpc/codes"
 )
 
