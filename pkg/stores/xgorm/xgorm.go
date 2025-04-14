@@ -13,7 +13,6 @@ import (
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
 	"github.com/prometheus/client_golang/prometheus/collectors"
-	"gorm.io/driver/clickhouse"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -275,12 +274,12 @@ func (m *DBManager) dialector(cfg *DBConnConfig) gorm.Dialector {
 			DriverName: cfg.Options.CustomeDriverName,
 			DSN:        cfg.Dsn,
 		})
-	case clickhouseDefaultDriverName:
-		return clickhouse.New(clickhouse.Config{
-			DriverName:                cfg.Options.CustomeDriverName,
-			DSN:                       cfg.Dsn,
-			SkipInitializeWithVersion: cfg.Options.SkipInitializeWithVersion,
-		})
+	// case clickhouseDefaultDriverName:
+	// 	return clickhouse.New(clickhouse.Config{
+	// 		DriverName:                cfg.Options.CustomeDriverName,
+	// 		DSN:                       cfg.Dsn,
+	// 		SkipInitializeWithVersion: cfg.Options.SkipInitializeWithVersion,
+	// 	})
 	default:
 		return mysql.New(mysql.Config{
 			DriverName:                cfg.Options.CustomeDriverName,
