@@ -24,8 +24,8 @@ func TestGetAPP(t *testing.T) {
 func TestResourceKey(t *testing.T) {
 	app := GetAPP()
 	datas := []struct {
-		resource, delimiter, key, fullKey                                                              string
-		startWithDelimiter, endWithDelimiter, withoutRegion, withoutEnv, withoutService, withServiceId bool
+		resource, delimiter, key, fullKey                                                                              string
+		startWithDelimiter, endWithDelimiter, withoutRegion, withoutEnv, withoutService, withServiceId, withoutVersion bool
 	}{
 		{
 			resource:  "test_resource_colon",
@@ -36,6 +36,7 @@ func TestResourceKey(t *testing.T) {
 				"test_resource_colon",
 				app.Environment,
 				app.Instance.Name,
+				app.Instance.Version,
 				app.Region,
 				app.AZ,
 				"test_key",
@@ -50,6 +51,7 @@ func TestResourceKey(t *testing.T) {
 				"test_resource_slash",
 				app.Environment,
 				app.Instance.Name,
+				app.Instance.Version,
 				app.Region,
 				app.AZ,
 				"test_key",
@@ -66,6 +68,7 @@ func TestResourceKey(t *testing.T) {
 				"test_resource_startWithDelimiter",
 				app.Environment,
 				app.Instance.Name,
+				app.Instance.Version,
 				app.Region,
 				app.AZ,
 				"test_key",
@@ -81,6 +84,7 @@ func TestResourceKey(t *testing.T) {
 				"test_resource_endWithDelimiter",
 				app.Environment,
 				app.Instance.Name,
+				app.Instance.Version,
 				app.Region,
 				app.AZ,
 				"test_key",
@@ -97,6 +101,7 @@ func TestResourceKey(t *testing.T) {
 				"test_resource_withoutRegion",
 				app.Environment,
 				app.Instance.Name,
+				app.Instance.Version,
 				"test_key",
 			}, "/"),
 		},
@@ -109,6 +114,7 @@ func TestResourceKey(t *testing.T) {
 				app.App,
 				"test_resource_withoutEnv",
 				app.Instance.Name,
+				app.Instance.Version,
 				app.Region,
 				app.AZ,
 				"test_key",
@@ -123,6 +129,7 @@ func TestResourceKey(t *testing.T) {
 				app.App,
 				"test_resource_withoutService",
 				app.Environment,
+				app.Instance.Version,
 				app.Region,
 				app.AZ,
 				"test_key",
@@ -138,6 +145,22 @@ func TestResourceKey(t *testing.T) {
 				"test_resource_withServiceId",
 				app.Environment,
 				app.Instance.ID,
+				app.Instance.Version,
+				app.Region,
+				app.AZ,
+				"test_key",
+			}, "/"),
+		},
+		{
+			resource:       "test_resource_withoutVersion",
+			delimiter:      "/",
+			key:            "test_key",
+			withoutVersion: true,
+			fullKey: strings.Join([]string{
+				app.App,
+				"test_resource_withoutVersion",
+				app.Environment,
+				app.Instance.Name,
 				app.Region,
 				app.AZ,
 				"test_key",
@@ -152,7 +175,8 @@ func TestResourceKey(t *testing.T) {
 			WithoutRegion(data.withoutRegion),
 			WithoutEnv(data.withoutEnv),
 			WithoutService(data.withoutService),
-			WithServiceId(data.withServiceId))
+			WithServiceId(data.withServiceId),
+			WithoutVersion(data.withoutVersion))
 		t.Log(fullKey)
 		if data.fullKey != fullKey {
 			t.Errorf("%s: not equal, want: %s, act: %s", data.resource, data.fullKey, fullKey)

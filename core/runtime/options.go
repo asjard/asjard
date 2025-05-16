@@ -13,6 +13,8 @@ type Options struct {
 	withoutEnv bool
 	// 不包含service信息
 	withoutService bool
+	// 不包含版本信息
+	withoutVersion bool
 	// 包含serviceID
 	withServiceId bool
 }
@@ -58,6 +60,13 @@ func WithoutEnv(value bool) Option {
 func WithoutService(value bool) Option {
 	return func(options *Options) {
 		options.withoutService = value
+	}
+}
+
+// WithoutVersion 不包含版本信息
+func WithoutVersion(value bool) Option {
+	return func(options *Options) {
+		options.withoutVersion = value
 	}
 }
 
