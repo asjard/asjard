@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/asjard/asjard/core/status"
-	"github.com/go-playground/validator"
+	"github.com/go-playground/validator/v10"
 	"google.golang.org/grpc/codes"
 )
 
@@ -20,7 +20,7 @@ const (
 // Validater 参数校验需要实现的方法
 type Validater interface {
 	// 是否为有效的参数
-	IsValid(fullMethod string) error
+	IsValid(parentFieldName, fullMethod string) error
 }
 
 var DefaultValidator = validator.New()
@@ -53,4 +53,11 @@ func isSortValid(sort string, supportSortFields []string) error {
 		}
 	}
 	return nil
+}
+
+func ValidateFieldName(parentFieldName, fieldName string) string {
+	if parentFieldName == "" {
+		return fieldName
+	}
+	return parentFieldName + "." + fieldName
 }

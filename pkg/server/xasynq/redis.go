@@ -15,7 +15,7 @@ func (r RedisConn) MakeRedisClient() interface{} {
 
 // NewRedisConn 通过redis名称获取redis conn
 func NewRedisConn(clientName string) (*RedisConn, error) {
-	client, err := xredis.Client(xredis.WithClientName(clientName))
+	client, err := xredis.NewClient(xredis.WithClientName(clientName))
 	if err != nil {
 		return nil, err
 	}

@@ -357,6 +357,10 @@ func (c CacheRedis) Group(group string) string {
 		runtime.WithDelimiter(":"))
 }
 
+func (c CacheRedis) Close() {
+	c.client.Close()
+}
+
 // 添加分组
 func (c CacheRedis) addGroup(ctx context.Context, key string) error {
 	// 添加分组
@@ -427,7 +431,7 @@ func (c *CacheRedis) load() error {
 	}
 	logger.Debug("load redis cache", "conf", conf)
 	c.Cache.WithConf(&conf.CacheConfig)
-	client, err := xredis.Client(xredis.WithClientName(conf.Client))
+	client, err := xredis.NewClient(xredis.WithClientName(conf.Client))
 	if err != nil {
 		return err
 	}

@@ -96,7 +96,7 @@ func GetAPP() APP {
 
 // ResourceKey 资源key
 // 比如缓存中的key
-// {app}:{resource}:{env}:{service}:{region}:{az}:{key}
+// {app}:{resource}:{env}:{service}:{version}:{region}:{az}:{key}
 // resource: 资源类型, 比如caches, lock
 // key: 资源key
 func (app APP) ResourceKey(resource, key string, opts ...Option) string {
@@ -122,6 +122,9 @@ func (app APP) ResourceKey(resource, key string, opts ...Option) string {
 		} else {
 			keys = append(keys, app.Instance.Name)
 		}
+	}
+	if !options.withoutVersion {
+		keys = append(keys, app.Instance.Version)
 	}
 
 	if !options.withoutRegion {

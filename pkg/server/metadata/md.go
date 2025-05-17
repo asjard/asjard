@@ -1,16 +1,23 @@
-package grpc
+package metadata
 
 import (
 	"context"
 
+	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/spf13/cast"
 	"google.golang.org/grpc/metadata"
 )
 
 type Val string
 
-// MetadataGet 获取元数据
-func MetadataGet(ctx context.Context, key string) Val {
+func Get(ctx context.Context, key string) Val {
+	rtx, ok := ctx.(*rest.Context)
+	if ok {
+		if vals := rtx.GetHeaderParam(key); len(vals) > 0 {
+			return Val(vals[0])
+		}
+		return ""
+	}
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {
 		if vals := md.Get(key); len(vals) > 0 {

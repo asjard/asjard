@@ -28,9 +28,15 @@ import (
 )
 
 const (
-	contextPackage = protogen.GoImportPath("context")
-	asynqPackage   = protogen.GoImportPath("github.com/asjard/asjard/pkg/server/xasynq")
-	serverPackage  = protogen.GoImportPath("github.com/asjard/asjard/core/server")
+	contextPackage      = protogen.GoImportPath("context")
+	configPakcage       = protogen.GoImportPath("github.com/asjard/asjard/core/config")
+	asynqPackage        = protogen.GoImportPath("github.com/asjard/asjard/pkg/server/xasynq")
+	jsonPackage         = protogen.GoImportPath("encoding/json")
+	hibikenAsynqPackage = protogen.GoImportPath("github.com/hibiken/asynq")
+	serverPackage       = protogen.GoImportPath("github.com/asjard/asjard/core/server")
+	protoPackage        = protogen.GoImportPath("google.golang.org/protobuf/proto")
+	syncPackage         = protogen.GoImportPath("sync")
+	bootstrapPackage    = protogen.GoImportPath("github.com/asjard/asjard/core/bootstrap")
 	// FileDescriptorProto.package field number
 	fileDescriptorProtoPackageFieldNumber = 2
 	// FileDescriptorProto.syntax field number
@@ -88,6 +94,11 @@ func (g *asynqGenerator) genFileContent() {
 func (g *asynqGenerator) genService(service *protogen.Service) {
 	handlerNames := make([]string, 0, len(service.Methods))
 	serverType := service.GoName + "Server"
+	clientType := service.GoName + "AsynqClient"
+	g.genServiceClient(service, clientType)
+	for _, method := range service.Methods {
+		g.genServiceMethodClient(service, clientType, method)
+	}
 	for _, method := range service.Methods {
 		hname := g.genServiceMethod(service, serverType, method)
 		handlerNames = append(handlerNames, hname)
@@ -131,11 +142,59 @@ func (g *asynqGenerator) genServiceDesc(service *protogen.Service, serverType st
 	g.gen.P()
 }
 
+func (g *asynqGenerator) genServiceClient(service *protogen.Service, clientType string) {
+	g.gen.P("type ", clientType, " struct {")
+	g.gen.P("*", hibikenAsynqPackage.Ident("Client"))
+	g.gen.P("}")
+	g.gen.P("")
+
+	lowClientType := strings.ToLower(clientType[:1]) + clientType[1:]
+	lowClientTypeOnce := lowClientType + "Once"
+	g.gen.P("var (")
+	g.gen.P(lowClientType, " *", clientType)
+	g.gen.P(lowClientTypeOnce, " ", syncPackage.Ident("Once"))
+	g.gen.P(")")
+
+	g.gen.P("func New", clientType, "()*", clientType, "{")
+	g.gen.P(lowClientTypeOnce, ".Do(func() {")
+	g.gen.P(lowClientType, "=&", clientType, "{}")
+	g.gen.P(bootstrapPackage.Ident("AddBootstrap"), "(", lowClientType, ")")
+	g.gen.P("})")
+	g.gen.P("return ", lowClientType)
+	g.gen.P("}")
+
+	g.gen.P("func(c *", clientType, ") Start() error {")
+	g.gen.P("conn, err := ", asynqPackage.Ident("NewRedisConn"), "(", configPakcage.Ident("GetString"), `("asjard.topology.services.transaction.asynq.redis", "default"))`)
+	g.gen.P("if err != nil {")
+	g.gen.P("return err")
+	g.gen.P("}")
+	g.gen.P("c.Client=", hibikenAsynqPackage.Ident("NewClient"), "(conn)")
+	g.gen.P("return nil")
+	g.gen.P("}")
+
+	g.gen.P("func(c *", clientType, ") Stop() {}")
+}
+
+func (g *asynqGenerator) genServiceMethodClient(service *protogen.Service, clientType string, method *protogen.Method) {
+	g.genComment(method.Comments)
+	g.gen.P("func(c *", clientType, ")", method.GoName, "(ctx ", contextPackage.Ident("Context"), ",in *", method.Input.GoIdent, ",",
+		"opts ...", hibikenAsynqPackage.Ident("Option"), ")(*", hibikenAsynqPackage.Ident("TaskInfo"), ",error){")
+	g.gen.P("payload, err := ", protoPackage.Ident("Marshal"), "(in)")
+	g.gen.P("if err != nil {")
+	g.gen.P("return nil, err")
+	g.gen.P("}")
+	g.gen.P("return c.EnqueueContext(ctx, ", hibikenAsynqPackage.Ident("NewTask"), "(", asynqPackage.Ident("Pattern"), "(",
+		fmt.Sprintf("%s_%s_FullMethodName,", service.GoName, method.GoName), "), payload, opts...),opts...)")
+	g.gen.P("}")
+}
 func (g *asynqGenerator) genServiceMethod(service *protogen.Service, serverType string, method *protogen.Method) string {
 	hname := fmt.Sprintf("_%s_%s_AsynqHandler", service.GoName, method.GoName)
 	g.genComment(method.Comments)
 	g.gen.P("func ", hname, "(ctx *", asynqPackage.Ident("Context"), ", srv any, interceptor ", serverPackage.Ident("UnaryServerInterceptor"), ") (any, error) {")
 	g.gen.P("in := new(", method.Input.GoIdent, ")")
+	g.gen.P("if err := ", protoPackage.Ident("Unmarshal"), "(ctx.Payload(), in); err != nil {")
+	g.gen.P("return nil, err")
+	g.gen.P("}")
 	g.gen.P("if interceptor == nil {")
 	g.gen.P("return srv.(", serverType, ").", method.GoName, "(ctx, in)")
 	g.gen.P("}")

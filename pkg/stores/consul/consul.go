@@ -18,6 +18,9 @@ const (
 
 type ClientManager struct {
 	clients sync.Map
+
+	cm      sync.RWMutex
+	configs map[string]*ClientConnConfig
 }
 
 type ClientConn struct {
@@ -58,7 +61,7 @@ var (
 )
 
 func init() {
-	clientManager = &ClientManager{}
+	clientManager = &ClientManager{configs: make(map[string]*ClientConnConfig)}
 	bootstrap.AddInitiator(clientManager)
 }
 
@@ -88,6 +91,21 @@ func Client(opts ...Option) (*api.Client, error) {
 	return client.client, nil
 }
 
+func NewClient(opts ...Option) (*api.Client, error) {
+	options := defaultClientOptions()
+	for _, opt := range opts {
+		opt(options)
+	}
+	clientManager.cm.RLock()
+	connConf, ok := clientManager.configs[options.clientName]
+	clientManager.cm.RUnlock()
+	if !ok {
+		logger.Error("consul not found", "name", options.clientName)
+		return nil, status.DatabaseNotFoundError()
+	}
+	return clientManager.newClient(options.clientName, connConf)
+}
+
 func (m *ClientManager) Start() error {
 	clients, err := m.loadAndWatch()
 	if err != nil {
@@ -101,14 +119,19 @@ func (m *ClientManager) Stop() {}
 func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	for name, conf := range clients {
 		logger.Debug("connect to consul", "name", name, "conf", conf)
-		if err := m.newClient(name, conf); err != nil {
+		client, err := m.newClient(name, conf)
+		if err != nil {
 			return err
 		}
+		m.clients.Store(name, &ClientConn{
+			name:   name,
+			client: client,
+		})
 	}
 	return nil
 }
 
-func (m *ClientManager) newClient(name string, conf *ClientConnConfig) error {
+func (m *ClientManager) newClient(name string, conf *ClientConnConfig) (*api.Client, error) {
 	apiConf := &api.Config{
 		Address:    conf.Address,
 		Scheme:     conf.Scheme,
@@ -121,16 +144,13 @@ func (m *ClientManager) newClient(name string, conf *ClientConnConfig) error {
 	}
 	client, err := api.NewClient(apiConf)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if _, err := client.Status().Leader(); err != nil {
-		return err
+		return nil, err
 	}
-	m.clients.Store(name, &ClientConn{
-		name:   name,
-		client: client,
-	})
-	return nil
+
+	return client, nil
 }
 
 func (m *ClientManager) loadAndWatch() (map[string]*ClientConnConfig, error) {
@@ -157,6 +177,9 @@ func (m *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 			return nil, err
 		}
 	}
+	m.cm.Lock()
+	m.configs = clients
+	m.cm.Unlock()
 	return clients, nil
 }
 

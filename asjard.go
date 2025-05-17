@@ -8,6 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"syscall"
+	"time"
 
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/client"
@@ -97,6 +98,7 @@ func (asd *Asjard) AddHandlers(protocol string, handlers ...any) error {
 
 // Start 系统启动, 先根据配置初始化各个组件
 func (asd *Asjard) Start() error {
+	logger.Info("System Starting...")
 	if err := asd.Init(); err != nil {
 		return err
 	}
@@ -246,7 +248,7 @@ func (asd *Asjard) startServers() error {
 
 // stop 系统停止
 func (asd *Asjard) stop() {
-	logger.Info("start remove instance from registry")
+	logger.Debug("start remove instance from registry")
 	// 从注册中心删除服务
 	if err := registry.Unregiste(); err != nil {
 		logger.Error("unregiste from registry fail",
@@ -254,11 +256,12 @@ func (asd *Asjard) stop() {
 	}
 	for _, server := range asd.servers {
 		if server.Enabled() {
-			logger.Info("start stop server", "protocol", server.Protocol())
+			logger.Debug("start stop server", "protocol", server.Protocol())
 			server.Stop()
-			logger.Info("server stopped", "protocol", server.Protocol())
+			logger.Debug("server stopped", "protocol", server.Protocol())
 		}
 	}
+	time.Sleep(time.Second)
 	// 配置中心断开连接
 	config.Disconnect()
 	bootstrap.Shutdown()

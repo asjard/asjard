@@ -12,7 +12,7 @@ func (l *asynqLogger) Debug(args ...any) {
 	logger.Debug(fmt.Sprint(args...))
 }
 func (l *asynqLogger) Info(args ...any) {
-	logger.Info(fmt.Sprint(args...))
+	logger.Debug(fmt.Sprint(args...))
 }
 func (l *asynqLogger) Warn(args ...any) {
 	logger.Warn(fmt.Sprint(args...))
