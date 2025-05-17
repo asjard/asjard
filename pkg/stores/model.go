@@ -1,3 +1,6 @@
+/*
+存储实现,存储规范定义
+*/
 package stores
 
 import (

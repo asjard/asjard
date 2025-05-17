@@ -1,3 +1,6 @@
+/*
+Package mutex 分布式锁
+*/
 package mutex
 
 import (

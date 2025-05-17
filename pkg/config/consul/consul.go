@@ -1,3 +1,6 @@
+/*
+Package consul consul配置中心对接,对core/config/Source的实现
+*/
 package consul
 
 import (

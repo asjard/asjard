@@ -1,3 +1,6 @@
+/*
+Package grpc 内建grpc客户端, 对core/client/ClientInterface的实现
+*/
 package grpc
 
 import (

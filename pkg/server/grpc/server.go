@@ -1,3 +1,6 @@
+/*
+Package grpc grpc服务端实现
+*/
 package grpc
 
 import (

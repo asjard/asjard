@@ -1,3 +1,6 @@
+/*
+Package mem 内存配置中心实现,对core/config/Source的实现
+*/
 package mem
 
 import (

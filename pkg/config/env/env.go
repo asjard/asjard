@@ -1,4 +1,6 @@
-// Package env 环境变量配置源
+/*
+Package env 环境变量参数解析,对core/config/Source的实现
+*/
 package env
 
 import (

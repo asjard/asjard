@@ -1,3 +1,6 @@
+/*
+Package rest 内建http客户端实现,暂未实现
+*/
 package rest
 
 import (
