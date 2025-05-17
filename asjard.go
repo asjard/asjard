@@ -38,7 +38,6 @@ const (
                                        ID:       %s
                                        Name:     %s
                                        Version:  %s
-                                       Website:  %s
                                        Servers:  %s
                                        ConfDir:  %s
  `
@@ -279,7 +278,7 @@ func (asd *Asjard) printBanner() {
 		app.Instance.ID,
 		app.Instance.Name,
 		app.Instance.Version,
-		app.Website,
+		// app.Website,
 		strings.Join(asd.startedServers, ";"),
 		utils.GetConfDir())
 }
