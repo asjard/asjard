@@ -1,3 +1,6 @@
+/*
+Package etcd etcd服务发现注册实现
+*/
 package etcd
 
 import (
