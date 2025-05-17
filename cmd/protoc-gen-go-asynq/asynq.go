@@ -35,6 +35,8 @@ const (
 	hibikenAsynqPackage = protogen.GoImportPath("github.com/hibiken/asynq")
 	serverPackage       = protogen.GoImportPath("github.com/asjard/asjard/core/server")
 	protoPackage        = protogen.GoImportPath("google.golang.org/protobuf/proto")
+	syncPackage         = protogen.GoImportPath("sync")
+	bootstrapPackage    = protogen.GoImportPath("github.com/asjard/asjard/core/bootstrap")
 	// FileDescriptorProto.package field number
 	fileDescriptorProtoPackageFieldNumber = 2
 	// FileDescriptorProto.syntax field number
@@ -145,6 +147,21 @@ func (g *asynqGenerator) genServiceClient(service *protogen.Service, clientType 
 	g.gen.P("*", hibikenAsynqPackage.Ident("Client"))
 	g.gen.P("}")
 	g.gen.P("")
+
+	lowClientType := strings.ToLower(clientType[:1]) + clientType[1:]
+	lowClientTypeOnce := lowClientType + "Once"
+	g.gen.P("var (")
+	g.gen.P(lowClientType, " *", clientType)
+	g.gen.P(lowClientTypeOnce, " ", syncPackage.Ident("Once"))
+	g.gen.P(")")
+
+	g.gen.P("func New", clientType, "()*", clientType, "{")
+	g.gen.P(lowClientTypeOnce, ".Do(func() {")
+	g.gen.P(lowClientType, "=&", clientType, "{}")
+	g.gen.P(bootstrapPackage.Ident("AddBootstrap"), "(", lowClientType, ")")
+	g.gen.P("})")
+	g.gen.P("return ", lowClientType)
+	g.gen.P("}")
 
 	g.gen.P("func(c *", clientType, ") Start() error {")
 	g.gen.P("conn, err := ", asynqPackage.Ident("NewRedisConn"), "(", configPakcage.Ident("GetString"), `("asjard.topology.services.transaction.asynq.redis", "default"))`)
