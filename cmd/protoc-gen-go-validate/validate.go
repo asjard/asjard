@@ -101,7 +101,7 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 			}
 			if field.Desc.IsList() {
 				g.gen.P("for _, fm := range m.", field.GoName, "{")
-				g.gen.P("if err := fm.IsValid(", defaultValidatorPackage.Ident("ValidateFieldName"), "(parentFieldName, \"", field.Desc.JSONName(), "\")", ", fullMethod); err != nil {")
+				g.gen.P("if err := fm.IsValid(", defaultValidatorPackage.Ident("ValidateFieldName"), "(parentFieldName, \"", field.Desc.TextName(), "\")", ", fullMethod); err != nil {")
 				g.gen.P("return err")
 				g.gen.P("}")
 				g.gen.P("}")
@@ -109,15 +109,15 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 			} else if !field.Desc.IsMap() && field.Oneof == nil {
 				inited = g.genMessageValid(field, inited)
 				g.gen.P("if m.", field.GoName, "!= nil {")
-				g.gen.P("if err := m.", field.GoName, ".IsValid(", defaultValidatorPackage.Ident("ValidateFieldName"), "(parentFieldName, \"", field.Desc.JSONName(), "\")", ",fullMethod); err != nil {")
+				g.gen.P("if err := m.", field.GoName, ".IsValid(", defaultValidatorPackage.Ident("ValidateFieldName"), "(parentFieldName, \"", field.Desc.TextName(), "\")", ",fullMethod); err != nil {")
 				g.gen.P("return err")
 				g.gen.P("}")
 				g.gen.P("}")
 			} else if field.Oneof != nil {
 				if _, ok := oneofFieldMap[field.Oneof.GoName]; ok {
-					oneofFieldMap[field.Oneof.GoName][field.GoName] = field.Desc.JSONName()
+					oneofFieldMap[field.Oneof.GoName][field.GoName] = field.Desc.TextName()
 				} else {
-					oneofFieldMap[field.Oneof.GoName] = map[string]string{field.GoName: field.Desc.JSONName()}
+					oneofFieldMap[field.Oneof.GoName] = map[string]string{field.GoName: field.Desc.TextName()}
 				}
 			}
 		case protoreflect.GroupKind:
@@ -125,7 +125,7 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 		case protoreflect.EnumKind:
 			if !field.Desc.IsList() {
 				g.gen.P("if _, ok := ", field.Enum.GoIdent, "_name[int32(m.", field.GoName, ")]; !ok {")
-				g.gen.P("return ", statusPackage.Ident("Errorf"), "(", codesPackage.Ident("InvalidArgument"), `,"`, "invalid %s", `",`, defaultValidatorPackage.Ident("ValidateFieldName"), "(parentFieldName, \"", field.Desc.JSONName(), "\")", `)`)
+				g.gen.P("return ", statusPackage.Ident("Errorf"), "(", codesPackage.Ident("InvalidArgument"), `,"`, "invalid %s", `",`, defaultValidatorPackage.Ident("ValidateFieldName"), "(parentFieldName, \"", field.Desc.TextName(), "\")", `)`)
 				g.gen.P("}")
 			}
 		default:
@@ -194,9 +194,9 @@ func (g *ValidateGenerator) genFieldValid(field *protogen.Field, rule string, va
 	g.gen.P("if err := v.Var(m.", field.GoName, ",", strconv.Quote(rule), "); err != nil {")
 	errMsg := fmt.Sprintf("validation field '%%s' on '%s' fail", rule)
 	if validate.ErrCode != 0 {
-		g.gen.P("return ", statusPackage.Ident("Errorf"), "(", validate.ErrCode, ",", strconv.Quote(errMsg), ",", defaultValidatorPackage.Ident("ValidateFieldName"), "(parentFieldName, \"", field.Desc.JSONName(), "\")", ")")
+		g.gen.P("return ", statusPackage.Ident("Errorf"), "(", validate.ErrCode, ",", strconv.Quote(errMsg), ",", defaultValidatorPackage.Ident("ValidateFieldName"), "(parentFieldName, \"", field.Desc.TextName(), "\")", ")")
 	} else {
-		g.gen.P("return ", statusPackage.Ident("Errorf"), "(", codesPackage.Ident("InvalidArgument"), ",", strconv.Quote(errMsg), ",", defaultValidatorPackage.Ident("ValidateFieldName"), "(parentFieldName, \"", field.Desc.JSONName(), "\")", ")")
+		g.gen.P("return ", statusPackage.Ident("Errorf"), "(", codesPackage.Ident("InvalidArgument"), ",", strconv.Quote(errMsg), ",", defaultValidatorPackage.Ident("ValidateFieldName"), "(parentFieldName, \"", field.Desc.TextName(), "\")", ")")
 	}
 	g.gen.P("}")
 }
