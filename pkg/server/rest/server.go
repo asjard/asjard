@@ -206,13 +206,13 @@ func (s *RestServer) addRouter(handler Handler) error {
 		}
 		proto.Merge(s.openapi, document)
 	}
+	ht := reflect.TypeOf(desc.HandlerType).Elem()
+	st := reflect.TypeOf(handler)
+	if !st.Implements(ht) {
+		return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
+	}
 	for _, method := range desc.Methods {
 		if method.Method != "" && method.Path != "" && method.Handler != nil {
-			ht := reflect.TypeOf(desc.HandlerType).Elem()
-			st := reflect.TypeOf(handler)
-			if !st.Implements(ht) {
-				return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
-			}
 			s.addRouterHandler(method.Method, method, handler, method.WriterName)
 		}
 	}

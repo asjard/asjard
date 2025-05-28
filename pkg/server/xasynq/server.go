@@ -114,13 +114,13 @@ func (s *AsynqServer) addHandler(handler Handler) error {
 	if desc == nil {
 		return nil
 	}
+	ht := reflect.TypeOf(desc.HandlerType).Elem()
+	st := reflect.TypeOf(handler)
+	if !st.Implements(ht) {
+		return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
+	}
 	for _, method := range desc.Methods {
 		if method.Pattern != "" && method.Handler != nil {
-			ht := reflect.TypeOf(desc.HandlerType).Elem()
-			st := reflect.TypeOf(handler)
-			if !st.Implements(ht) {
-				return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
-			}
 			s.addRouterHandler(method.Pattern, handler, method.Handler)
 		}
 	}
