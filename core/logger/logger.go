@@ -145,7 +145,7 @@ func (l Logger) log(level slog.Level, msg string, args ...any) {
 	}
 	if traceCtx.SpanID().IsValid() {
 		args = append(args, []any{
-			"trace", traceCtx.SpanID().String(),
+			"span", traceCtx.SpanID().String(),
 		}...)
 	}
 	l.slogger.Log(l.ctx,

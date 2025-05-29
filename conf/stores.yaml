@@ -91,6 +91,15 @@ asjard:
         # certFile: ""
         # keyFile: ""
 
+    rabbitmq:
+      clients:
+        default:
+          url: ""
+          vhost: ""
+        options:
+          channelMax: 0
+          frameSize: 0
+          heartBeat: 1s
     ## redis相关配置
     redis:
       clients:

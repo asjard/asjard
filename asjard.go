@@ -253,6 +253,7 @@ func (asd *Asjard) stop() {
 		logger.Error("unregiste from registry fail",
 			"error", err.Error())
 	}
+	// 停止服务
 	for _, server := range asd.servers {
 		if server.Enabled() {
 			logger.Debug("start stop server", "protocol", server.Protocol())

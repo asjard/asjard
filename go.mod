@@ -27,6 +27,7 @@ require (
 	github.com/redis/go-redis/extra/redisotel/v9 v9.0.5
 	github.com/redis/go-redis/v9 v9.7.3
 	github.com/spf13/cast v1.7.1
+	github.com/streadway/amqp v1.1.0
 	github.com/stretchr/testify v1.10.0
 	github.com/valyala/fasthttp v1.60.0
 	go.etcd.io/etcd/api/v3 v3.5.15
