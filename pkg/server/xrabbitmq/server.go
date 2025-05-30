@@ -85,7 +85,13 @@ func (s *RabbitmqServer) Start(startErr chan error) error {
 }
 
 func (s *RabbitmqServer) Stop() {
-	s.ch.Close()
+	if s.ch != nil {
+		select {
+		case <-s.closed:
+		default:
+			s.ch.Close()
+		}
+	}
 	for {
 		if s.tasks.Load() <= 0 {
 			return

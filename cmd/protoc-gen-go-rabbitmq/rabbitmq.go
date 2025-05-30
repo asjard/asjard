@@ -249,6 +249,36 @@ func (g *rabbitmqGenerator) genServiceClient(service *protogen.Service, clientTy
 	g.gen.P("return err")
 	g.gen.P("}")
 	g.gen.P("c.ClientConn=conn")
+
+	g.gen.P("ch, err := conn.Channel()")
+	g.gen.P("if err != nil {")
+	g.gen.P("return err")
+	g.gen.P("}")
+
+	g.gen.P("defer ch.Close()")
+
+	g.gen.P("for _, method := range ", service.GoName+"RabbitmqServiceDesc.Methods{")
+
+	g.gen.P("if method.Queue == \"\" {")
+	g.gen.P("continue")
+	g.gen.P("}")
+
+	g.gen.P("if _, err := ch.QueueDeclare(method.Queue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, method.Table); err != nil {")
+	g.gen.P("return err")
+	g.gen.P("}")
+
+	g.gen.P("if method.Exchange != \"\" {")
+	g.gen.P("if err := ch.ExchangeDeclare(method.Exchange,method.Kind, method.Durable, method.AutoDelete, method.Internal, method.NoWait, method.Table); err != nil {")
+	g.gen.P("return err")
+	g.gen.P("}")
+
+	g.gen.P("if err := ch.QueueBind(method.Queue, method.Route, method.Exchange, method.NoWait, method.Table); err != nil {")
+	g.gen.P("return err")
+	g.gen.P("}")
+
+	g.gen.P("}")
+	g.gen.P("}")
+
 	g.gen.P("return nil")
 	g.gen.P("}")
 
