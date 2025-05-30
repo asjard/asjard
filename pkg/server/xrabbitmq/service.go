@@ -12,6 +12,9 @@ type ServiceDesc struct {
 
 type MethodDesc struct {
 	Queue      string
+	Exchange   string
+	Kind       string
+	Route      string
 	Consumer   string
 	AutoAck    bool
 	Durable    bool
@@ -19,6 +22,7 @@ type MethodDesc struct {
 	Exclusive  bool
 	NoLocal    bool
 	NoWait     bool
+	Internal   bool
 	Table      map[string]any
 	Handler    HandlerFunc
 }

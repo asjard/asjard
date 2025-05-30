@@ -176,6 +176,17 @@ func (s *RabbitmqServer) start() error {
 			if _, err := ch.QueueDeclare(method.Queue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, method.Table); err != nil {
 				return err
 			}
+			if method.Exchange != "" {
+				if err := ch.ExchangeDeclare(method.Exchange,
+					method.Kind, method.Durable, method.AutoDelete, method.Internal, method.NoWait, method.Table); err != nil {
+					return err
+				}
+				if err := ch.QueueBind(method.Queue, method.Route, method.Exchange, method.NoWait, method.Table); err != nil {
+					return err
+				}
+			}
+			// ch.ExchangeDeclare(name string, kind string, durable bool, autoDelete bool, internal bool, noWait bool, args amqp.Table)
+			// ch.QueueBind(name string, key string, exchange string, noWait bool, args amqp.Table)
 			msgs, err := ch.Consume(method.Queue, method.Consumer, method.AutoAck, method.Exclusive, method.NoLocal, method.NoWait, method.Table)
 			if err != nil {
 				return err

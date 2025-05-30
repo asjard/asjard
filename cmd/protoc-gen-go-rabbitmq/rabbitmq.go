@@ -23,7 +23,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/asjard/asjard/cmd/protoc-gen-go-rabbitmq/utils"
+	"github.com/asjard/asjard/pkg/protobuf/mqpb"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -133,10 +136,60 @@ func (g *rabbitmqGenerator) genServiceDesc(service *protogen.Service, serverType
 				methodDesc = append(methodDesc, ","...)
 			}
 		}
-		g.gen.P("{")
-		g.gen.P("Queue: ", fmt.Sprintf("%s_%s_FullMethodName", service.GoName, method.GoName), ",")
-		g.gen.P("Handler: ", handlerNames[i], ",")
-		g.gen.P("},")
+		mqOptions, ok := proto.GetExtension(method.Desc.Options(), mqpb.E_Mq).([]*mqpb.MQ)
+		if ok {
+			for _, mqOption := range mqOptions {
+				g.gen.P("{")
+				g.gen.P("Queue: ", fmt.Sprintf("%s_%s_FullMethodName", service.GoName, method.GoName), ",")
+				g.gen.P("Handler: ", handlerNames[i], ",")
+				option := utils.ParseMethodMqOption(service, mqOption)
+				if option.Exchange != "" {
+					g.gen.P("Exchange:", "\"", option.Exchange, "\",")
+				}
+				if option.Kind != "" {
+					g.gen.P("Kind:", "\"", option.Kind, "\",")
+				}
+				if option.Route != "" {
+					g.gen.P("Route:", "\"", option.Route, "\",")
+				}
+				if option.Consumer != "" {
+					g.gen.P("Consumer:", "\"", option.Consumer, "\",")
+				}
+				if len(option.Table) != 0 {
+					g.gen.P("Table:", "map[string]any{")
+					for k, v := range option.Table {
+						g.gen.P("\"", k, "\":", v, ",")
+					}
+					g.gen.P("},")
+
+				}
+
+				if option.AutoAck != nil {
+					g.gen.P("AutoAck:", *option.AutoAck, ",")
+				}
+				if option.Durable != nil {
+					g.gen.P("Durable:", *option.Durable, ",")
+				}
+				if option.AutoDelete != nil {
+					g.gen.P("AutoDelete:", *option.AutoDelete, ",")
+				}
+				if option.Exclusive != nil {
+					g.gen.P("Exclusive:", *option.Exclusive, ",")
+				}
+				if option.NoLocal != nil {
+					g.gen.P("NoLocal:", *option.NoLocal, ",")
+				}
+				if option.NoWait != nil {
+					g.gen.P("NoWait:", *option.NoWait, ",")
+				}
+				if option.Internal != nil {
+					g.gen.P("NoWait:", *option.Internal, ",")
+				}
+
+				g.gen.P("},")
+			}
+		}
+
 	}
 	g.gen.P("},")
 	g.gen.P("}")
@@ -210,7 +263,9 @@ func (g *rabbitmqGenerator) genServiceMethodClient(service *protogen.Service, cl
 	g.genComment(method.Comments)
 	g.gen.P("func(c *", clientType, ")", method.GoName, "(ctx ", contextPackage.Ident("Context"), ",in *", method.Input.GoIdent, ",",
 		"opts ...", rabbitmqPackage.Ident("PublishOption"), ")", "error{")
-	g.gen.P("options := &", rabbitmqPackage.Ident("PublishOptions"), "{}")
+	g.gen.P("options := &", rabbitmqPackage.Ident("PublishOptions"), "{")
+	g.gen.P("Key: ", fmt.Sprintf("%s_%s_FullMethodName", service.GoName, method.GoName), ",")
+	g.gen.P("}")
 	g.gen.P("for _, opt := range opts {")
 	g.gen.P("opt(options)")
 	g.gen.P("}")
@@ -224,8 +279,7 @@ func (g *rabbitmqGenerator) genServiceMethodClient(service *protogen.Service, cl
 	g.gen.P("}")
 	g.gen.P("defer ch.Close()")
 	// c.Publish(exchange string, key string, mandatory bool, immediate bool, msg amqp.Publishing)
-	g.gen.P("return ch.Publish(", `"",`, fmt.Sprintf("%s_%s_FullMethodName,", service.GoName, method.GoName),
-		"options.Mandatory,", "options.Immediate,", amqpPackage.Ident("Publishing"), "{")
+	g.gen.P("return ch.Publish(", `options.Exchange,`, "options.Key,", "options.Mandatory,", "options.Immediate,", amqpPackage.Ident("Publishing"), "{")
 	g.gen.P("ContentType:\"application/protobuf\",")
 	g.gen.P("Body:payload,")
 	g.gen.P("})")
