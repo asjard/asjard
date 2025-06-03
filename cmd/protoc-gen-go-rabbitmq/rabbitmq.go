@@ -110,6 +110,7 @@ func (g *rabbitmqGenerator) genService(service *protogen.Service) {
 	g.genServiceDesc(service, serverType, handlerNames)
 }
 
+//gocyclo:ignore
 func (g *rabbitmqGenerator) genServiceDesc(service *protogen.Service, serverType string, handlerNames []string) {
 	serviceDescVar := service.GoName + "RabbitmqServiceDesc"
 	// Service descriptor.
