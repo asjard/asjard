@@ -23,6 +23,7 @@ const (
 	defaultValidatorPackage = protogen.GoImportPath("github.com/asjard/asjard/pkg/protobuf/validatepb")
 	statusPackage           = protogen.GoImportPath("github.com/asjard/asjard/core/status")
 	codesPackage            = protogen.GoImportPath("google.golang.org/grpc/codes")
+	regrexpPackage          = protogen.GoImportPath("regexp")
 )
 
 type ValidateGenerator struct {
@@ -181,9 +182,17 @@ func (g ValidateGenerator) genMessageValid(field *protogen.Field, inited bool) b
 		if len(globalRules) != 0 {
 			g.genFieldValid(field, strings.Join(globalRules, ","), validateRule)
 		}
-		for method, rules := range methodRules {
-			g.gen.P("if fullMethod != \"\" && fullMethod == ", strconv.Quote(method), "{")
-			g.genFieldValid(field, strings.Join(rules, ","), validateRule)
+		if len(methodRules) != 0 {
+			g.gen.P("if fullMethod != \"\" {")
+		}
+		for methods, rules := range methodRules {
+			for _, method := range strings.Split(methods, ",") {
+				g.gen.P("if matched, _ := ", regrexpPackage.Ident("MatchString"), "(", strconv.Quote(method), ", fullMethod);matched {")
+				g.genFieldValid(field, strings.Join(rules, ","), validateRule)
+				g.gen.P("}")
+			}
+		}
+		if len(methodRules) != 0 {
 			g.gen.P("}")
 		}
 	}

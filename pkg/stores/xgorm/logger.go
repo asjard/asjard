@@ -120,7 +120,7 @@ func (l *xgormLogger) load() error {
 	l.m.Lock()
 	defer l.m.Unlock()
 	// l.slogger = slog.New(logger.NewSlogHandler(&conf.Config))
-	l.slogger = logger.DefaultLogger(slog.New(logger.NewSlogHandler(&conf.Config)))
+	l.slogger = logger.DefaultLogger(slog.New(logger.NewSlogHandler(&conf.Config))).WithCallerSkip(5)
 	l.ignoreRecordNotFoundError = conf.IgnoreRecordNotFoundError
 	l.slowThreshold = conf.SlowThreshold.Duration
 	return nil
