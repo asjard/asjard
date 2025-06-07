@@ -43,7 +43,7 @@ import (
 
 const (
 	version = "1.0.0"
-	name    = "protoc-gen-ts"
+	name    = "protoc-gen-ts-enum"
 )
 
 var requireUnimplemented *bool

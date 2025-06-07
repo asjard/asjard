@@ -42,8 +42,8 @@ import (
 )
 
 const (
-	version = "1.3.0"
-	name    = "protoc-gen-umits"
+	version = "1.0.0"
+	name    = "protoc-gen-ts-umi"
 )
 
 var requireUnimplemented *bool

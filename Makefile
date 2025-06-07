@@ -34,8 +34,11 @@ build_gen_go_rest2grpc_gw: ## 生成protoc-gen-go-rest2grpc-gw命令
 build_gen_ts: ## 生成protoc-gen-ts命令
 	go build -o $(GOPATH)/bin/protoc-gen-ts -ldflags '-w -s' ./cmd/protoc-gen-ts/*.go
 
-build_gen_umits: ## 生成protoc-gen-umits命令
-	go build -o $(GOPATH)/bin/protoc-gen-umits -ldflags '-w -s' ./cmd/protoc-gen-umits/*.go
+build_gen_ts_enum: ## 生成protoc-gen-ts-enum命令
+	go build -o $(GOPATH)/bin/protoc-gen-ts-enum -ldflags '-w -s' ./cmd/protoc-gen-ts-enum/*.go
+
+build_gen_ts_umi: ## 生成protoc-gen-ts-umi命令
+	go build -o $(GOPATH)/bin/protoc-gen-ts-umi -ldflags '-w -s' ./cmd/protoc-gen-ts-umi/*.go
 
 gen_proto: clean ## 生成协议文件
 	bash third_party/github.com/asjard/protobuf/build.sh
