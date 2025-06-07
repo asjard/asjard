@@ -36,7 +36,7 @@ type AddressConfig struct {
 
 // DefaultConfig 默认配置
 var DefaultConfig = Config{
-	BuiltInInterceptors:    utils.JSONStrings{"trace", "ratelimiter", "metrics", "panic", "accessLog", "asynqReadEntity", "restReadEntity", "i18n", "restResponseHeader"},
+	BuiltInInterceptors:    utils.JSONStrings{"trace", "ratelimiter", "metrics", "panic", "accessLog", "restReadEntity", "i18n", "restResponseHeader"},
 	BuiltInDefaultHandlers: utils.JSONStrings{"default", "health", "metrics"},
 }
 

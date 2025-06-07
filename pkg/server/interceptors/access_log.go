@@ -144,7 +144,7 @@ func (al *AccessLog) load() error {
 	}
 	al.m.Lock()
 	al.cfg = &conf
-	al.logger = logger.DefaultLogger(slog.New(logger.NewSlogHandler(&conf.Config)))
+	al.logger = logger.DefaultLogger(slog.New(logger.NewSlogHandler(&conf.Config))).WithCallerSkip(2)
 	al.m.Unlock()
 	return nil
 }
