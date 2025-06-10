@@ -82,7 +82,7 @@ func (g *TsGenerator) genFileContent() {
 	enumLen := len(g.file.Enums)
 	if enumLen != 0 {
 		for _, em := range g.file.Enums {
-			g.genEnum(em, true)
+			g.genEnum(em)
 		}
 	}
 	// if msgLen != 0 || enumLen != 0 {
@@ -158,18 +158,33 @@ func (g *TsGenerator) genMessage(message *protogen.Message) {
 	g.gen.P()
 }
 
-func (g *TsGenerator) genEnum(em *protogen.Enum, export bool) {
+func (g *TsGenerator) genEnum(em *protogen.Enum) {
 	g.genComment(em.Comments)
-	if export {
-		g.gen.P("export  enum ", em.GoIdent, " {")
-	} else {
-		g.gen.P("  enum ", em.GoIdent, " {")
-	}
+	g.gen.P("export  enum ", em.GoIdent, " {")
 	for _, value := range em.Values {
 		g.genComment(value.Comments)
 		g.gen.P("    ", value.Desc.Name(), " = '", value.Desc.Name(), "',")
 	}
 	g.gen.P("  }")
+	g.gen.P("")
+
+	g.genComment(em.Comments)
+	g.gen.P("export const ValueEnum", em.GoIdent, "={")
+	for idx, value := range em.Values {
+		if idx == 0 {
+			continue
+		}
+		g.genComment(value.Comments)
+		g.gen.P(value.Desc.Name(), ":{")
+		name := strings.Split(string(value.Desc.Name()), "_")
+		if len(name) > 1 {
+			g.gen.P("text:'", strings.Join(name[1:], "_"), "',")
+		} else {
+			g.gen.P("text:'", name, "',")
+		}
+		g.gen.P("},")
+	}
+	g.gen.P("}")
 }
 
 func (g *TsGenerator) tsKindString(field *protogen.Field) string {
