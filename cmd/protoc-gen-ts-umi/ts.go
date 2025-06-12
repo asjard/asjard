@@ -144,7 +144,7 @@ func (g *TsGenerator) genServiceMethod(service *protogen.Service, method *protog
 		g.gen.P("method: '", option.Method, "',")
 		switch option.Method {
 		case http.MethodPut, http.MethodPost, http.MethodPatch:
-			g.gen.P("body: body,")
+			g.gen.P("data: body,")
 		default:
 			g.gen.P("params: {...params},")
 		}
