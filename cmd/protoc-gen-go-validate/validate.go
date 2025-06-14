@@ -26,16 +26,22 @@ const (
 	regrexpPackage          = protogen.GoImportPath("regexp")
 )
 
+type Configuration struct {
+	ValidateEnum *bool
+}
+
 type ValidateGenerator struct {
 	plugin *protogen.Plugin
 	file   *protogen.File
 	gen    *protogen.GeneratedFile
+	conf   Configuration
 }
 
-func NewValidateGeneratr(plugin *protogen.Plugin, file *protogen.File) *ValidateGenerator {
+func NewValidateGeneratr(plugin *protogen.Plugin, conf Configuration, file *protogen.File) *ValidateGenerator {
 	return &ValidateGenerator{
 		plugin: plugin,
 		file:   file,
+		conf:   conf,
 	}
 }
 
@@ -124,7 +130,7 @@ func (g *ValidateGenerator) genMessage(message *protogen.Message) {
 		case protoreflect.GroupKind:
 			g.gen.P("//--group kind--", field.GoName)
 		case protoreflect.EnumKind:
-			if !field.Desc.IsList() {
+			if *g.conf.ValidateEnum && !field.Desc.IsList() {
 				g.gen.P("if _, ok := ", field.Enum.GoIdent, "_name[int32(m.", field.GoName, ")]; !ok {")
 				g.gen.P("return ", statusPackage.Ident("Errorf"), "(", codesPackage.Ident("InvalidArgument"), `,"`, "invalid %s", `",`, defaultValidatorPackage.Ident("ValidateFieldName"), "(parentFieldName, \"", field.Desc.TextName(), "\")", `)`)
 				g.gen.P("}")
