@@ -181,10 +181,25 @@ func (g *TsGenerator) tsKindString(field *protogen.Field) string {
 		return string(field.Enum.Desc.FullName())
 	case protoreflect.MessageKind:
 		if field.Message.Desc.IsMapEntry() {
-			return "{}"
+			g.gen.P("// is mapEntry", field.Desc.MapKey().Name(), ":", g.tsMapKeyKind(field.Desc.MapKey().Kind()))
+			return fmt.Sprintf("{[%s: %s]: %s}", field.Desc.MapKey().Name(), g.tsMapKeyKind(field.Desc.MapKey().Kind()),
+				field.Desc.MapValue().Message().FullName())
 		} else {
 			return string(field.Message.Desc.FullName())
 		}
+	}
+	return ""
+}
+
+func (g *TsGenerator) tsMapKeyKind(kind protoreflect.Kind) string {
+	switch kind {
+	case protoreflect.BoolKind:
+		return "boolean"
+	case protoreflect.StringKind, protoreflect.Int64Kind, protoreflect.DoubleKind:
+		return "string"
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Uint32Kind,
+		protoreflect.Fixed32Kind, protoreflect.Sfixed32Kind, protoreflect.FloatKind:
+		return "number"
 	}
 	return ""
 }
