@@ -85,12 +85,14 @@ func _OpenAPI_ScalarPage_RestHandler(ctx *Context, srv any, interceptor server.U
 // and not to be introspected or modified (even as a copy)
 // API about openapi
 var OpenAPIRestServiceDesc = ServiceDesc{
+	Name:        "API about openapi",
 	ServiceName: "asjard.api.OpenAPI",
 	HandlerType: (*OpenAPIServer)(nil),
 	OpenAPI:     file_openapi_proto_openapi,
 	Methods: []MethodDesc{
 		{
 			MethodName: "Yaml",
+			Name:       "Get openapi yaml file.",
 			Desc:       "Get openapi yaml file..",
 			Method:     "GET",
 			Path:       OpenAPI_Yaml_RestPath,
@@ -98,6 +100,7 @@ var OpenAPIRestServiceDesc = ServiceDesc{
 		},
 		{
 			MethodName: "Yaml",
+			Name:       "Get openapi yaml file.",
 			Desc:       "Get openapi yaml file..",
 			Method:     "GET",
 			Path:       OpenAPI_Yaml_RestPath_1,
@@ -105,6 +108,7 @@ var OpenAPIRestServiceDesc = ServiceDesc{
 		},
 		{
 			MethodName: "Json",
+			Name:       "Get openapi json file.",
 			Desc:       "Get openapi json file..",
 			Method:     "GET",
 			Path:       OpenAPI_Json_RestPath,
@@ -112,6 +116,7 @@ var OpenAPIRestServiceDesc = ServiceDesc{
 		},
 		{
 			MethodName: "Page",
+			Name:       "Redict to configured openapi page.",
 			Desc:       "Redict to configured openapi page..",
 			Method:     "GET",
 			Path:       OpenAPI_Page_RestPath,
@@ -119,6 +124,7 @@ var OpenAPIRestServiceDesc = ServiceDesc{
 		},
 		{
 			MethodName: "ScalarPage",
+			Name:       "Show a scalar openapi page.",
 			Desc:       "Show a scalar openapi page..",
 			Method:     "GET",
 			Path:       OpenAPI_ScalarPage_RestPath,

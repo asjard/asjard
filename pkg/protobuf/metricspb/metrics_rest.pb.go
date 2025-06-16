@@ -33,14 +33,16 @@ func _Metrics_Fetch_RestHandler(ctx *rest.Context, srv any, interceptor server.U
 // MetricsRestServiceDesc is the rest.ServiceDesc for Metrics service.
 // It's only intended for direct use with rest.AddHandler,
 // and not to be introspected or modified (even as a copy)
-// 监控指标相关接口
+// 监控指标
 var MetricsRestServiceDesc = rest.ServiceDesc{
+	Name:        "监控指标",
 	ServiceName: "asjard.api.Metrics",
 	HandlerType: (*MetricsServer)(nil),
 	OpenAPI:     file_metrics_proto_openapi,
 	Methods: []rest.MethodDesc{
 		{
 			MethodName: "Fetch",
+			Name:       "Get metrics.",
 			Desc:       "Get metrics..",
 			Method:     "GET",
 			Path:       Metrics_Fetch_RestPath,

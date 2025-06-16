@@ -33,13 +33,16 @@ func _DefaultHandlers_Favicon_RestHandler(ctx *rest.Context, srv any, intercepto
 // DefaultHandlersRestServiceDesc is the rest.ServiceDesc for DefaultHandlers service.
 // It's only intended for direct use with rest.AddHandler,
 // and not to be introspected or modified (even as a copy)
+// 默认接口
 var DefaultHandlersRestServiceDesc = rest.ServiceDesc{
+	Name:        "默认接口",
 	ServiceName: "asjard.api.DefaultHandlers",
 	HandlerType: (*DefaultHandlersServer)(nil),
 	OpenAPI:     file_request_proto_openapi,
 	Methods: []rest.MethodDesc{
 		{
 			MethodName: "Favicon",
+			Name:       "Return favicon.ico",
 			Desc:       "Return favicon.ico.",
 			Method:     "GET",
 			Path:       DefaultHandlers_Favicon_RestPath,

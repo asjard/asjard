@@ -17,10 +17,11 @@ const (
 // Config 服务配置
 type Config struct {
 	server.Config
-	Doc     DocConfig     `json:"doc"`
-	Openapi OpenapiConfig `json:"openapi"`
-	Cors    CorsConfig    `json:"cors"`
-	Options OptionsConfig `json:"options"`
+	EnableDefaultHandler bool          `json:"enableDefaultHandler"`
+	Doc                  DocConfig     `json:"doc"`
+	Openapi              OpenapiConfig `json:"openapi"`
+	Cors                 CorsConfig    `json:"cors"`
+	Options              OptionsConfig `json:"options"`
 }
 
 type DocConfig struct {

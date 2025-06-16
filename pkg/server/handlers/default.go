@@ -7,7 +7,6 @@ import (
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server/handlers"
 	"github.com/asjard/asjard/pkg/protobuf/requestpb"
-	"github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/asjard/asjard/utils"
 	"github.com/valyala/fasthttp"
@@ -37,8 +36,4 @@ func (api *DefaultHandlersAPI) Favicon(ctx context.Context, in *emptypb.Empty) (
 
 func (api *DefaultHandlersAPI) RestServiceDesc() *rest.ServiceDesc {
 	return &requestpb.DefaultHandlersRestServiceDesc
-}
-
-func (api *DefaultHandlersAPI) GrpcServiceDesc() *grpc.ServiceDesc {
-	return &requestpb.DefaultHandlers_ServiceDesc
 }
