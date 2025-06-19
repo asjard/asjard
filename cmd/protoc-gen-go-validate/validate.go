@@ -174,9 +174,9 @@ func (g ValidateGenerator) genMessageValid(field *protogen.Field, inited bool) b
 				for _, rule := range rules {
 					methodAndRule := strings.Split(rule, ":")
 					if len(methodAndRule) == 2 {
-						methodRules[methodAndRule[0]] = append(methodRules[methodAndRule[0]], methodAndRule[1])
+						methodRules[methodAndRule[0]] = append(methodRules[methodAndRule[0]], strings.Split(methodAndRule[1], ",")...)
 					} else {
-						globalRules = append(globalRules, rule)
+						globalRules = append(globalRules, strings.Split(rule, ",")...)
 					}
 				}
 			}
@@ -190,15 +190,13 @@ func (g ValidateGenerator) genMessageValid(field *protogen.Field, inited bool) b
 		}
 		if len(methodRules) != 0 {
 			g.gen.P("if fullMethod != \"\" {")
-		}
-		for methods, rules := range methodRules {
-			for _, method := range strings.Split(methods, ",") {
-				g.gen.P("if matched, _ := ", regrexpPackage.Ident("MatchString"), "(", strconv.Quote(method), ", fullMethod);matched {")
-				g.genFieldValid(field, strings.Join(rules, ","), validateRule)
-				g.gen.P("}")
+			for methods, rules := range methodRules {
+				for _, method := range strings.Split(methods, ",") {
+					g.gen.P("if matched, _ := ", regrexpPackage.Ident("MatchString"), "(", strconv.Quote(method), ", fullMethod);matched {")
+					g.genFieldValid(field, strings.Join(rules, ","), validateRule)
+					g.gen.P("}")
+				}
 			}
-		}
-		if len(methodRules) != 0 {
 			g.gen.P("}")
 		}
 	}

@@ -175,7 +175,9 @@ func (r *OpenAPIv3Reflector) schemaOrReferenceForMessage(message protoreflect.Me
 		ref := r.schemaReferenceForMessage(message)
 		return &v3.SchemaOrReference{
 			Oneof: &v3.SchemaOrReference_Reference{
-				Reference: &v3.Reference{XRef: ref}}}
+				Reference: &v3.Reference{XRef: ref},
+			},
+		}
 	}
 }
 
@@ -235,6 +237,67 @@ func (r *OpenAPIv3Reflector) schemaOrReferenceForField(field protoreflect.FieldD
 
 	if field.IsList() {
 		kindSchema = wk.NewListSchema(kindSchema)
+	}
+
+	return kindSchema
+}
+
+func (r *OpenAPIv3Reflector) schemaForField(field protoreflect.FieldDescriptor, validateRules []string) *v3.SchemaOrReference {
+	var kindSchema *v3.SchemaOrReference
+
+	kind := field.Kind()
+
+	switch kind {
+
+	case protoreflect.MessageKind:
+		if field.IsMap() {
+			// This means the field is a map, for example:
+			//   map<string, value_type> map_field = 1;
+			//
+			// The map ends up getting converted into something like this:
+			//   message MapFieldEntry {
+			//     string key = 1;
+			//     value_type value = 2;
+			//   }
+			//
+			//   repeated MapFieldEntry map_field = N;
+			//
+			// So we need to find the `value` field in the `MapFieldEntry` message and
+			// then return a MapFieldEntry schema using the schema for the `value` field
+			return wk.NewGoogleProtobufMapFieldEntrySchema(r.schemaOrReferenceForField(field.MapValue()))
+		} else {
+			kindSchema = r.schemaOrReferenceForMessage(field.Message())
+		}
+
+	case protoreflect.StringKind:
+		kindSchema = wk.NewStringSchemaWithValidRules(validateRules)
+
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Uint32Kind,
+		protoreflect.Sfixed32Kind, protoreflect.Fixed32Kind:
+		kindSchema = wk.NewIntegerSchemaWithValidRules(kind.String(), validateRules)
+
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind,
+		protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind:
+		kindSchema = wk.NewIntegerStringSchemaWithValidRules(validateRules)
+
+	case protoreflect.EnumKind:
+		kindSchema = wk.NewEnumSchema(*&r.conf.EnumType, field)
+
+	case protoreflect.BoolKind:
+		kindSchema = wk.NewBooleanSchemaWithValidRules(validateRules)
+
+	case protoreflect.FloatKind, protoreflect.DoubleKind:
+		kindSchema = wk.NewNumberSchemaWithValidRules(kind.String(), validateRules)
+
+	case protoreflect.BytesKind:
+		kindSchema = wk.NewBytesSchemaWithValidRules(validateRules)
+
+	default:
+		log.Printf("(TODO) Unsupported field type: %+v", r.fullMessageTypeName(field.Message()))
+	}
+
+	if field.IsList() {
+		kindSchema = wk.NewListSchemaWithValidRules(kindSchema, validateRules)
 	}
 
 	return kindSchema
