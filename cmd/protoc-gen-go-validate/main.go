@@ -42,7 +42,7 @@ import (
 )
 
 const (
-	version = "1.0.0"
+	version = "1.0.1"
 	name    = "protoc-gen-go-validate"
 )
 
@@ -58,19 +58,14 @@ func main() {
 		return
 	}
 
-	// conf := openapi.Configuration{
-	// 	Version:         flags.String("version", "0.0.1", "version number text, e.g. 1.2.3"),
-	// 	Title:           flags.String("title", "", "name of the API"),
-	// 	Description:     flags.String("description", "", "description of the API"),
-	// 	Naming:          flags.String("naming", "proto", `naming convention. Use "proto" for passing names directly from the proto files`),
-	// 	FQSchemaNaming:  flags.Bool("fq_schema_naming", false, `schema naming convention. If "true", generates fully-qualified schema names by prefixing them with the proto message package name`),
-	// 	EnumType:        flags.String("enum_type", "string", `type for enum serialization. Use "string" for string-based serialization`),
-	// 	CircularDepth:   flags.Int("depth", 2, "depth of recursion for circular messages"),
-	// 	DefaultResponse: flags.Bool("default_response", true, `add default response. If "true", automatically adds a default response to operations which use the google.rpc.Status message. Useful if you use envoy or grpc-gateway to transcode as they use this type for their default error responses.`),
-	// 	OutputMode:      flags.String("output_mode", "merged", `output generation mode. By default, a single openapi.yaml is generated at the out folder. Use "source_relative' to generate a separate '[inputfile].openapi.yaml' next to each '[inputfile].proto'.`),
-	// }
+	conf := Configuration{
+		ValidateEnum: flags.Bool("validate_enum", true, `will generate validate enum code. If "true"`),
+		// EnumType:        flags.String("enum_type", "string", `type for enum serialization. Use "string" for string-based serialization`),
+		// CircularDepth:   flags.Int("depth", 2, "depth of recursion for circular messages"),
+		// DefaultResponse: flags.Bool("default_response", true, `add default response. If "true", automatically adds a default response to operations which use the google.rpc.Status message. Useful if you use envoy or grpc-gateway to transcode as they use this type for their default error responses.`),
+		// OutputMode:      flags.String("output_mode", "merged", `output generation mode. By default, a single openapi.yaml is generated at the out folder. Use "source_relative' to generate a separate '[inputfile].openapi.yaml' next to each '[inputfile].proto'.`),
+	}
 
-	var flags flag.FlagSet
 	requireUnimplemented = flags.Bool("require_unimplemented_servers", true, "set to false to match legacy behavior")
 	useGenericStreams = flags.Bool("use_generic_streams_experimental", false, "set to true to use generic types for streaming client and server objects; this flag is EXPERIMENTAL and may be changed or removed in a future release")
 
@@ -82,7 +77,7 @@ func main() {
 			if !f.Generate {
 				continue
 			}
-			NewValidateGeneratr(gen, f).Run()
+			NewValidateGeneratr(gen, conf, f).Run()
 		}
 		return nil
 	})

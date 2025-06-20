@@ -43,6 +43,7 @@ type RestServer struct {
 	conf         Config
 	middlewares  []MiddlewareFunc
 	errorHandler *ErrorHandlerAPI
+	handlers     []Handler
 }
 
 var _ server.Server = &RestServer{}
@@ -119,6 +120,7 @@ func (s *RestServer) AddHandler(handler any) error {
 	if !ok {
 		return fmt.Errorf("invlaid handler %T, must implement *rest.Handler", handler)
 	}
+	s.handlers = append(s.handlers, h)
 	return s.addRouter(h)
 }
 
@@ -138,6 +140,9 @@ func (s *RestServer) Start(startErr chan error) error {
 	if s.conf.Openapi.Enabled {
 		// 添加openapi接口
 		s.AddHandler(NewOpenAPI(s.conf.Openapi, s.openapi))
+	}
+	if s.conf.EnableDefaultHandler {
+		s.AddHandler(NewRestDefaultHandlerAPI(s.handlers))
 	}
 	s.server.Handler = s.router.Handler
 	if s.conf.Addresses.Listen == "" {
@@ -206,13 +211,13 @@ func (s *RestServer) addRouter(handler Handler) error {
 		}
 		proto.Merge(s.openapi, document)
 	}
+	ht := reflect.TypeOf(desc.HandlerType).Elem()
+	st := reflect.TypeOf(handler)
+	if !st.Implements(ht) {
+		return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
+	}
 	for _, method := range desc.Methods {
 		if method.Method != "" && method.Path != "" && method.Handler != nil {
-			ht := reflect.TypeOf(desc.HandlerType).Elem()
-			st := reflect.TypeOf(handler)
-			if !st.Implements(ht) {
-				return fmt.Errorf("found the handler of type %v that does not satisfy %v", st, ht)
-			}
 			s.addRouterHandler(method.Method, method, handler, method.WriterName)
 		}
 	}

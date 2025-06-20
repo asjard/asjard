@@ -23,6 +23,7 @@ package api.v1.hello;
 option go_package = "github.com/asjard/asjard/examples/example/hellopb";
 
 import "github.com/asjard/protobuf/http.proto";
+import "github.com/asjard/protobuf/mq.proto";
 
 // 需要实现的功能
 // 一个proto文件中只写一个service
@@ -71,6 +72,8 @@ service Hello {
       api: "openapi"
       version: "v2"
     };
+    // 提供MQ服务
+    option(asjard.api.mq) = {};
   };
 }
 

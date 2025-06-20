@@ -38,7 +38,6 @@ const (
                                        ID:       %s
                                        Name:     %s
                                        Version:  %s
-                                       Website:  %s
                                        Servers:  %s
                                        ConfDir:  %s
  `
@@ -254,6 +253,7 @@ func (asd *Asjard) stop() {
 		logger.Error("unregiste from registry fail",
 			"error", err.Error())
 	}
+	// 停止服务
 	for _, server := range asd.servers {
 		if server.Enabled() {
 			logger.Debug("start stop server", "protocol", server.Protocol())
@@ -279,7 +279,7 @@ func (asd *Asjard) printBanner() {
 		app.Instance.ID,
 		app.Instance.Name,
 		app.Instance.Version,
-		app.Website,
+		// app.Website,
 		strings.Join(asd.startedServers, ";"),
 		utils.GetConfDir())
 }

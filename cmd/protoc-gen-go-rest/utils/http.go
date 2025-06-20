@@ -103,6 +103,8 @@ func parseMethodHttpOption(h *httppb.Http, serviceOption *HttpOption) *HttpOptio
 	case *httppb.Http_Options:
 		option.Method = http.MethodOptions
 		option.Path = h.GetOptions()
+	default:
+		option.Method = http.MethodGet
 	}
 	return option
 }

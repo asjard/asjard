@@ -109,15 +109,22 @@ func (ccb *CircuitBreaker) Interceptor() client.UnaryClientInterceptor {
 	}
 }
 
-func (ccb *CircuitBreaker) do(ctx context.Context, commandConfigName, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
+func (ccb *CircuitBreaker) do(ctx context.Context, commandConfigName, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) (invokeErr error) {
 	if err := hystrix.DoC(ctx, commandConfigName, func(ctx context.Context) error {
-		err1 := invoker(ctx, method, req, reply, cc)
-		return err1
+		if invokeErr = invoker(ctx, method, req, reply, cc); invokeErr != nil {
+			// 只熔断5xx的错误
+			es := status.FromError(invokeErr)
+			if es.Status%100 != 5 {
+				return nil
+			}
+			return invokeErr
+		}
+		return nil
 	}, nil); err != nil {
 		if _, ok := err.(hystrix.CircuitError); ok {
 			return status.Error(codes.ResourceExhausted, err.Error())
 		}
 		return err
 	}
-	return nil
+	return invokeErr
 }

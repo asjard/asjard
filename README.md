@@ -59,6 +59,7 @@ go install github.com/asjard/asjard/cmd/protoc-gen-go-rest2grpc-gw
 | [cast](https://github.com/spf13/cast)                               | 配置类型转换       |
 | [lumberjack](gopkg.in/natefinch/lumberjack.v2)                      | 日志防爆           |
 | [asynq](github.com/hibiken/asynq)                                   | 消息队列           |
+| [rabbitmq](github.com/streadway/amqp)                               | 消息队列           |
 
 ## License
 

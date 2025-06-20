@@ -141,6 +141,14 @@ func (g *RestGenerator) genServiceDesc(service *protogen.Service, serverType str
 	g.gen.P("// and not to be introspected or modified (even as a copy)")
 	g.genComment(service.Comments)
 	g.gen.P("var ", serviceDescVar, " = ", restPackage.Ident("ServiceDesc"), " {")
+	serviceName := g.getCommentTitle(service.Comments)
+	if serviceName == "" {
+		fullNames := strings.Split(string(service.Desc.FullName()), ".")
+		if len(fullNames) > 0 {
+			serviceName = fullNames[len(fullNames)-1]
+		}
+	}
+	g.gen.P("Name: ", strconv.Quote(serviceName), ",")
 	g.gen.P("ServiceName: ", strconv.Quote(string(service.Desc.FullName())), ",")
 	g.gen.P("HandlerType: (*", serverType, ")(nil),")
 	if genopenapi {
@@ -151,23 +159,17 @@ func (g *RestGenerator) genServiceDesc(service *protogen.Service, serverType str
 		if method.Desc.IsStreamingClient() || method.Desc.IsStreamingServer() {
 			continue
 		}
-		var methodDesc []byte
-		commentLines := strings.Split(strings.TrimSuffix(method.Comments.Leading.String(), "\n"), "\n")
-		commentLinesLen := len(commentLines)
-		for index, line := range commentLines {
-			methodDesc = append(methodDesc, strings.TrimPrefix(line, "// ")...)
-			if index == commentLinesLen-1 {
-				methodDesc = append(methodDesc, "."...)
-			} else {
-				methodDesc = append(methodDesc, ","...)
-			}
-		}
 		httpOptions, ok := proto.GetExtension(method.Desc.Options(), httppb.E_Http).([]*httppb.Http)
 		if ok {
 			for index, httpOption := range httpOptions {
 				g.gen.P("{")
 				g.gen.P("MethodName: ", strconv.Quote(string(method.Desc.Name())), ",")
-				g.gen.P("Desc: ", strconv.Quote(string(methodDesc)), ",")
+				methodName := g.getCommentTitle(method.Comments)
+				if methodName == "" {
+					methodName = string(method.Desc.Name())
+				}
+				g.gen.P("Name: ", strconv.Quote(methodName), ",")
+				g.gen.P("Desc: ", strconv.Quote(g.getCommentOneLine(method.Comments)), ",")
 				option := utils.ParseMethodHttpOption(service, httpOption)
 				fullPathName := fmt.Sprintf("%s_%s_RestPath", service.GoName, method.GoName)
 				if index != 0 {
@@ -240,6 +242,43 @@ func (g *RestGenerator) genComment(comments protogen.CommentSet) {
 	if comments.Trailing != "" {
 		g.gen.P(strings.TrimSpace(comments.Trailing.String()))
 	}
+}
+
+// 生成一行注释
+func (g *RestGenerator) getCommentOneLine(commentSet protogen.CommentSet) string {
+	commentStr := ""
+	if commentSet.Leading != "" {
+		commentStr += strings.TrimSpace(commentSet.Leading.String())
+	}
+	if commentSet.Trailing != "" {
+		commentStr += strings.TrimSpace(commentSet.Trailing.String())
+	}
+
+	sb := strings.Builder{}
+	commentLines := strings.Split(strings.TrimSuffix(commentStr, "\n"), "\n")
+	commentLinesLen := len(commentLines)
+	for index, line := range commentLines {
+		sb.WriteString(strings.TrimPrefix(line, "//"))
+		if index == commentLinesLen-1 {
+			sb.WriteString(".")
+		} else {
+			sb.WriteString(",")
+		}
+	}
+	return strings.TrimSpace(sb.String())
+}
+
+func (g *RestGenerator) getCommentTitle(commentSet protogen.CommentSet) string {
+	if commentSet.Leading != "" {
+		lines := strings.Split(strings.TrimSuffix(strings.TrimSpace(commentSet.Leading.String()), "\n"), "\n")
+		if len(lines) != 0 {
+			return strings.TrimSpace(strings.TrimPrefix(lines[0], "//"))
+		}
+	}
+	if commentSet.Trailing != "" {
+		return strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(commentSet.Trailing.String()), "//"))
+	}
+	return ""
 }
 
 func (g *RestGenerator) protocVersion() string {

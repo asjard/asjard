@@ -33,6 +33,20 @@ services:
       MYSQL_ROOT_PASSWORD: my-secret-pw
       MYSQL_DATABASE: example-database
       TZ: "Asia/Shanghai"
+  rabbitmq:
+    image: rabbitmq:3.13.7-management-alpine
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "10"
+    networks:
+      - example
+    ports:
+      - 5672:5672
+      - 15692:15692
+      - 15672:15672
   redis:
     image: redis
     restart: always

@@ -143,8 +143,23 @@ func (g *asynqGenerator) genServiceDesc(service *protogen.Service, serverType st
 }
 
 func (g *asynqGenerator) genServiceClient(service *protogen.Service, clientType string) {
+	g.gen.P("type ", clientType, "Options struct {")
+	g.gen.P("clientName string")
+	g.gen.P("}")
+
+	g.gen.P("type ", clientType, "Option func(opts *", clientType, "Options)")
+
+	g.gen.P("func ", clientType, "WithRedis(clientName string)", clientType, "Option{")
+	g.gen.P("return func(opts *", clientType, "Options){")
+	g.gen.P("if clientName != \"\"{")
+	g.gen.P("opts.clientName=clientName")
+	g.gen.P("}")
+	g.gen.P("}")
+	g.gen.P("}")
+
 	g.gen.P("type ", clientType, " struct {")
 	g.gen.P("*", hibikenAsynqPackage.Ident("Client"))
+	g.gen.P("options *", clientType, "Options")
 	g.gen.P("}")
 	g.gen.P("")
 
@@ -155,16 +170,27 @@ func (g *asynqGenerator) genServiceClient(service *protogen.Service, clientType 
 	g.gen.P(lowClientTypeOnce, " ", syncPackage.Ident("Once"))
 	g.gen.P(")")
 
-	g.gen.P("func New", clientType, "()*", clientType, "{")
+	g.gen.P("func New", clientType, "(opts ...", clientType, "Option", ")*", clientType, "{")
 	g.gen.P(lowClientTypeOnce, ".Do(func() {")
-	g.gen.P(lowClientType, "=&", clientType, "{}")
+	g.gen.P("options :=&", clientType, "Options{")
+	g.gen.P("clientName:\"default\",")
+	g.gen.P("}")
+
+	g.gen.P("for _, opt := range opts {")
+	g.gen.P("opt(options)")
+	g.gen.P("}")
+
+	g.gen.P(lowClientType, "=&", clientType, "{")
+	g.gen.P("options:options,")
+	g.gen.P("}")
+
 	g.gen.P(bootstrapPackage.Ident("AddBootstrap"), "(", lowClientType, ")")
 	g.gen.P("})")
 	g.gen.P("return ", lowClientType)
 	g.gen.P("}")
 
 	g.gen.P("func(c *", clientType, ") Start() error {")
-	g.gen.P("conn, err := ", asynqPackage.Ident("NewRedisConn"), "(", configPakcage.Ident("GetString"), `("asjard.topology.services.transaction.asynq.redis", "default"))`)
+	g.gen.P("conn, err := ", asynqPackage.Ident("NewRedisConn"), "(c.options.clientName)")
 	g.gen.P("if err != nil {")
 	g.gen.P("return err")
 	g.gen.P("}")

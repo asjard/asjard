@@ -43,7 +43,7 @@ import (
 )
 
 const (
-	version = "1.3.0"
+	version = "1.0.1"
 	name    = "protoc-gen-go-rest"
 )
 

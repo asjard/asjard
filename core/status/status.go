@@ -5,6 +5,8 @@ Package status 对grpc错误的一层包装，添加了系统码，http状态码
 package status
 
 import (
+	"net/http"
+
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/pkg/protobuf/statuspb"
 	"google.golang.org/grpc/codes"
@@ -15,6 +17,7 @@ import (
 func FromError(err error) *statuspb.Status {
 	result := &statuspb.Status{
 		Success: true,
+		Status:  http.StatusOK,
 	}
 	if err == nil {
 		return result

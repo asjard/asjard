@@ -32,13 +32,16 @@ func _Health_Check_RestHandler(ctx *rest.Context, srv any, interceptor server.Un
 // HealthRestServiceDesc is the rest.ServiceDesc for Health service.
 // It's only intended for direct use with rest.AddHandler,
 // and not to be introspected or modified (even as a copy)
+// Health
 var HealthRestServiceDesc = rest.ServiceDesc{
+	Name:        "Health",
 	ServiceName: "asjard.api.health.Health",
 	HandlerType: (*HealthServer)(nil),
 	OpenAPI:     file_health_proto_openapi,
 	Methods: []rest.MethodDesc{
 		{
 			MethodName: "Check",
+			Name:       "HealthCheck.",
 			Desc:       "HealthCheck..",
 			Method:     "GET",
 			Path:       Health_Check_RestPath,

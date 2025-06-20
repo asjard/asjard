@@ -4,6 +4,7 @@ Package runtime 系统运行时一些参数，系统启动时初始化，后续�
 package runtime
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 
@@ -14,7 +15,7 @@ import (
 )
 
 const (
-	website = "https://github.com/asjard/asjard"
+	website = "https://github.com/%s/%s"
 )
 
 type APP struct {
@@ -56,7 +57,6 @@ var (
 		Environment: "dev",
 		Region:      "default",
 		AZ:          "default",
-		Website:     website,
 		Favicon:     "favicon.ico",
 		Instance: Instance{
 			SystemCode: 100,
@@ -84,6 +84,7 @@ func GetAPP() APP {
 			app.Instance.SystemCode = 100
 		}
 		app.Instance.ID = uuid.NewString()
+		app.Website = fmt.Sprintf(website, app.App, app.Instance.Name)
 		constant.APP.Store(app.App)
 		constant.Region.Store(app.Region)
 		constant.AZ.Store(app.AZ)

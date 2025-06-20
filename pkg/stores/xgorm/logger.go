@@ -73,18 +73,18 @@ func (l *xgormLogger) LogMode(level gormLogger.LogLevel) gormLogger.Interface {
 func (l *xgormLogger) Info(ctx context.Context, format string, v ...any) {
 	l.m.RLock()
 	defer l.m.RUnlock()
-	l.slogger.Info(fmt.Sprintf(format, v...), "db", l.name)
+	l.slogger.L(ctx).Info(fmt.Sprintf(format, v...), "db", l.name)
 }
 
 func (l *xgormLogger) Warn(ctx context.Context, format string, v ...any) {
 	l.m.RLock()
 	defer l.m.RUnlock()
-	l.slogger.Warn(fmt.Sprintf(format, v...), "db", l.name)
+	l.slogger.L(ctx).Warn(fmt.Sprintf(format, v...), "db", l.name)
 }
 func (l *xgormLogger) Error(ctx context.Context, format string, v ...any) {
 	l.m.RLock()
 	defer l.m.RUnlock()
-	l.slogger.Error(fmt.Sprintf(format, v...), "db", l.name)
+	l.slogger.L(ctx).Error(fmt.Sprintf(format, v...), "db", l.name)
 }
 func (l *xgormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
 	l.m.RLock()
@@ -93,11 +93,11 @@ func (l *xgormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql
 	sql, rows := fc()
 	switch {
 	case err != nil && l.logLevel >= gormLogger.Error && (!errors.Is(err, gormLogger.ErrRecordNotFound) || !l.ignoreRecordNotFoundError):
-		l.slogger.Error(err.Error(), "sql", sql, "row", rows, "line", utils.FileWithLineNum(), "cost", elapsed.String(), "db", l.name)
+		l.slogger.L(ctx).Error(err.Error(), "sql", sql, "row", rows, "line", utils.FileWithLineNum(), "cost", elapsed.String(), "db", l.name)
 	case elapsed > l.slowThreshold && l.slowThreshold != 0:
-		l.slogger.Warn(fmt.Sprintf("SLOW SQL >= %s", l.slowThreshold.String()), "sql", sql, "row", rows, "line", utils.FileWithLineNum(), "cost", elapsed.String(), "db", l.name)
+		l.slogger.L(ctx).Warn(fmt.Sprintf("SLOW SQL >= %s", l.slowThreshold.String()), "sql", sql, "row", rows, "line", utils.FileWithLineNum(), "cost", elapsed.String(), "db", l.name)
 	case l.logLevel == gormLogger.Info:
-		l.slogger.Debug(sql, "row", rows, "line", utils.FileWithLineNum(), "cost", elapsed.String(), "db", l.name)
+		l.slogger.L(ctx).Debug(sql, "row", rows, "line", utils.FileWithLineNum(), "cost", elapsed.String(), "db", l.name)
 	}
 }
 
@@ -120,7 +120,7 @@ func (l *xgormLogger) load() error {
 	l.m.Lock()
 	defer l.m.Unlock()
 	// l.slogger = slog.New(logger.NewSlogHandler(&conf.Config))
-	l.slogger = logger.DefaultLogger(slog.New(logger.NewSlogHandler(&conf.Config)))
+	l.slogger = logger.DefaultLogger(slog.New(logger.NewSlogHandler(&conf.Config))).WithCallerSkip(5)
 	l.ignoreRecordNotFoundError = conf.IgnoreRecordNotFoundError
 	l.slowThreshold = conf.SlowThreshold.Duration
 	return nil

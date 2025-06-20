@@ -42,7 +42,7 @@ import (
 )
 
 const (
-	version = "1.3.0"
+	version = "1.0.1"
 	name    = "protoc-gen-ts"
 )
 
@@ -53,7 +53,7 @@ func main() {
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
 	if *showVersion {
-		fmt.Printf("protoc-gen-go-rest %v\n", version)
+		fmt.Printf("%s %v\n", name, version)
 		return
 	}
 

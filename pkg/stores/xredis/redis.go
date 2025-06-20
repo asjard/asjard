@@ -151,7 +151,7 @@ func (m *ClientManager) Stop() {
 		if ok {
 			logger.Debug("redis close", "client", conn.name)
 			if err := conn.client.Close(); err != nil {
-				logger.Error("close redis client fail", "err", err)
+				logger.Error("close redis client fail", "name", conn.name, "err", err)
 			}
 			m.clients.Delete(key)
 		}
@@ -164,7 +164,7 @@ func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	for name, conf := range clients {
 		client, err := m.newClient(name, conf)
 		if err != nil {
-			logger.Debug("connect to redis fail", "name", name, "conf", conf, "err", err)
+			logger.Error("connect to redis fail", "name", name, "conf", conf, "err", err)
 			return err
 		}
 		m.clients.Store(name, &ClientConn{

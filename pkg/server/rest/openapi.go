@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
@@ -18,9 +19,10 @@ import (
 )
 
 type OpenAPI struct {
-	document *openapi_v3.Document
-	conf     OpenapiConfig
-	service  *server.Service
+	document  *openapi_v3.Document
+	mergeOnce sync.Once
+	conf      OpenapiConfig
+	service   *server.Service
 	UnimplementedOpenAPIServer
 }
 
@@ -33,29 +35,9 @@ func NewOpenAPI(conf OpenapiConfig, document *openapi_v3.Document) *OpenAPI {
 }
 
 func (api *OpenAPI) Yaml(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
-	api.document.Info = &openapi_v3.Info{
-		Title:       api.service.App,
-		Description: api.service.Desc,
-		Contact: &openapi_v3.Contact{
-			Name: api.service.App,
-			Url:  api.service.Website,
-		},
-		TermsOfService: api.conf.TermsOfService,
-		Version:        api.service.Instance.Version,
-		License: &openapi_v3.License{
-			Name: api.conf.License.Name,
-			Url:  api.conf.License.Url,
-		},
-	}
-	props := make([]*openapi_v3.NamedSchemaOrReference, 0, len(api.document.Components.Schemas.AdditionalProperties))
-	propMap := make(map[string]struct{})
-	for _, prop := range api.document.Components.Schemas.AdditionalProperties {
-		if _, ok := propMap[prop.Name]; !ok {
-			props = append(props, prop)
-		}
-		propMap[prop.Name] = struct{}{}
-	}
-	api.document.Components.Schemas.AdditionalProperties = props
+	api.mergeOnce.Do(func() {
+		api.merge()
+	})
 	rtx, ok := ctx.(*Context)
 	if ok {
 		b, err := api.document.YAMLValue(fmt.Sprintf("Generated with %s(%s) \n %s",
@@ -70,29 +52,9 @@ func (api *OpenAPI) Yaml(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 	return &emptypb.Empty{}, nil
 }
 func (api *OpenAPI) Json(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
-	api.document.Info = &openapi_v3.Info{
-		Title:       api.service.App,
-		Description: api.service.Desc,
-		Contact: &openapi_v3.Contact{
-			Name: api.service.App,
-			Url:  api.service.Website,
-		},
-		TermsOfService: api.conf.TermsOfService,
-		Version:        api.service.Instance.Version,
-		License: &openapi_v3.License{
-			Name: api.conf.License.Name,
-			Url:  api.conf.License.Url,
-		},
-	}
-	props := make([]*openapi_v3.NamedSchemaOrReference, 0, len(api.document.Components.Schemas.AdditionalProperties))
-	propMap := make(map[string]struct{})
-	for _, prop := range api.document.Components.Schemas.AdditionalProperties {
-		if _, ok := propMap[prop.Name]; !ok {
-			props = append(props, prop)
-		}
-		propMap[prop.Name] = struct{}{}
-	}
-	api.document.Components.Schemas.AdditionalProperties = props
+	api.mergeOnce.Do(func() {
+		api.merge()
+	})
 	rtx, ok := ctx.(*Context)
 	if ok {
 		b, err := api.document.YAMLValue(fmt.Sprintf("Generated with %s(%s) \n %s",
@@ -195,6 +157,32 @@ func (api *OpenAPI) listenAddress() string {
 	return address
 }
 
-func (api OpenAPI) RestServiceDesc() *ServiceDesc {
+func (api *OpenAPI) merge() {
+	api.document.Info = &openapi_v3.Info{
+		Title:       api.service.App,
+		Description: api.service.Desc,
+		Contact: &openapi_v3.Contact{
+			Name: api.service.App,
+			Url:  api.service.Website,
+		},
+		TermsOfService: api.conf.TermsOfService,
+		Version:        api.service.Instance.Version,
+		License: &openapi_v3.License{
+			Name: api.conf.License.Name,
+			Url:  api.conf.License.Url,
+		},
+	}
+	props := make([]*openapi_v3.NamedSchemaOrReference, 0, len(api.document.Components.Schemas.AdditionalProperties))
+	propMap := make(map[string]struct{})
+	for _, prop := range api.document.Components.Schemas.AdditionalProperties {
+		if _, ok := propMap[prop.Name]; !ok {
+			props = append(props, prop)
+		}
+		propMap[prop.Name] = struct{}{}
+	}
+	api.document.Components.Schemas.AdditionalProperties = props
+}
+
+func (api *OpenAPI) RestServiceDesc() *ServiceDesc {
 	return &OpenAPIRestServiceDesc
 }

@@ -85,12 +85,14 @@ func _ErrorHandler_Error_RestHandler(ctx *Context, srv any, interceptor server.U
 // and not to be introspected or modified (even as a copy)
 // ErrorHandler rest错误处理
 var ErrorHandlerRestServiceDesc = ServiceDesc{
+	Name:        "ErrorHandler rest错误处理",
 	ServiceName: "asjard.api.ErrorHandler",
 	HandlerType: (*ErrorHandlerServer)(nil),
 	OpenAPI:     file_rest_errorhandler_proto_openapi,
 	Methods: []MethodDesc{
 		{
 			MethodName: "NotFound",
+			Name:       "Page not found handler",
 			Desc:       "Page not found handler.",
 			Method:     "GET",
 			Path:       ErrorHandler_NotFound_RestPath,
@@ -98,6 +100,7 @@ var ErrorHandlerRestServiceDesc = ServiceDesc{
 		},
 		{
 			MethodName: "MethodNotAllowed",
+			Name:       "Method not allowed handler",
 			Desc:       "Method not allowed handler.",
 			Method:     "GET",
 			Path:       ErrorHandler_MethodNotAllowed_RestPath,
@@ -105,6 +108,7 @@ var ErrorHandlerRestServiceDesc = ServiceDesc{
 		},
 		{
 			MethodName: "Panic",
+			Name:       "Panic handler.",
 			Desc:       "Panic handler..",
 			Method:     "GET",
 			Path:       ErrorHandler_Panic_RestPath,
@@ -112,6 +116,7 @@ var ErrorHandlerRestServiceDesc = ServiceDesc{
 		},
 		{
 			MethodName: "Error",
+			Name:       "Error handler.",
 			Desc:       "Error handler..",
 			Method:     "GET",
 			Path:       ErrorHandler_Error_RestPath,

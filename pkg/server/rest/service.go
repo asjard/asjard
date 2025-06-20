@@ -9,6 +9,8 @@ type methodHandler func(ctx *Context, srv any, interceptor server.UnaryServerInt
 // ServiceDesc represents an RPC service's specification.
 type ServiceDesc struct {
 	ServiceName string
+	Name        string
+	Desc        string
 	HandlerType any
 	ErrPage     string
 	Writer      Writer
@@ -26,6 +28,8 @@ type MethodDesc struct {
 	Path string
 	// 接口处理方法
 	Handler methodHandler
+	// 接口名称
+	Name string
 	// 接口描述
 	Desc       string
 	WriterName string

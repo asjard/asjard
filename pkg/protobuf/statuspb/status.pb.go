@@ -26,9 +26,9 @@ type Status struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// 原始错误码
+	// 全局唯一错误码: system+status+err_code
 	Code uint32 `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
-	// 丢弃掉http状态码的错误码
+	// 错误码
 	ErrCode uint32 `protobuf:"varint,2,opt,name=err_code,json=errCode,proto3" json:"err_code,omitempty"`
 	// http状态码
 	Status uint32 `protobuf:"varint,3,opt,name=status,proto3" json:"status,omitempty"`
@@ -40,7 +40,7 @@ type Status struct {
 	Message string `protobuf:"bytes,6,opt,name=message,proto3" json:"message,omitempty"`
 	// 错误提示信息,由i18n返回
 	Prompt string `protobuf:"bytes,7,opt,name=prompt,proto3" json:"prompt,omitempty"`
-	// 可以处理这个错误的文档地址
+	// 可以处理这个错误的文档地址,由i18n返回
 	Doc string `protobuf:"bytes,8,opt,name=doc,proto3" json:"doc,omitempty"`
 	// 链路追踪ID
 	RequestId string `protobuf:"bytes,9,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
