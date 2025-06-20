@@ -974,22 +974,30 @@ func (g *OpenAPIv3Generator) schemaForMessages(d *v3.Document, message *protogen
 				}
 			}
 			for pattern, rules := range methodRules {
-				for _, rule := range rules {
-					if matched, _ := regexp.MatchString(pattern, fullMethodName); matched {
-						validateRules = append(validateRules, rule)
-					}
+				if matched, _ := regexp.MatchString(pattern, fullMethodName); matched {
+					validateRules = append(validateRules, rules...)
 				}
 			}
 		}
-		for _, rule := range validateRules {
-			if strings.TrimSpace(rule) == "required" {
-				required = append(required, g.reflect.formatFieldName(field.Desc))
-				break
+		validateRuleMap := make(map[string]string)
+		for _, item := range validateRules {
+			rv := strings.Split(item, "=")
+			if len(rv) == 0 {
+				continue
 			}
+			k := rv[0]
+			v := ""
+			if len(rv) > 1 {
+				v = rv[1]
+			}
+			validateRuleMap[k] = v
+		}
+		if _, ok := validateRuleMap["required"]; ok {
+			required = append(required, g.reflect.formatFieldName(field.Desc))
 		}
 
 		// The field is either described by a reference or a schema.
-		fieldSchema := g.reflect.schemaForField(field.Desc, validateRules)
+		fieldSchema := g.reflect.schemaForField(field.Desc, validateRuleMap)
 		if fieldSchema == nil {
 			continue
 		}

@@ -242,7 +242,7 @@ func (r *OpenAPIv3Reflector) schemaOrReferenceForField(field protoreflect.FieldD
 	return kindSchema
 }
 
-func (r *OpenAPIv3Reflector) schemaForField(field protoreflect.FieldDescriptor, validateRules []string) *v3.SchemaOrReference {
+func (r *OpenAPIv3Reflector) schemaForField(field protoreflect.FieldDescriptor, validateRules map[string]string) *v3.SchemaOrReference {
 	var kindSchema *v3.SchemaOrReference
 
 	kind := field.Kind()

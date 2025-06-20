@@ -27,10 +27,10 @@ func NewStringSchema() *v3.SchemaOrReference {
 			Schema: &v3.Schema{Type: "string"}}}
 }
 
-func NewStringSchemaWithValidRules(rules []string) *v3.SchemaOrReference {
+func NewStringSchemaWithValidRules(rules map[string]string) *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "string"}}}
+			Schema: schemaWithValidate(&v3.Schema{Type: "string"}, rules)}}
 }
 
 func NewIntegerStringSchema() *v3.SchemaOrReference {
@@ -46,15 +46,15 @@ func NewIntegerStringSchema() *v3.SchemaOrReference {
 	}
 }
 
-func NewIntegerStringSchemaWithValidRules(rules []string) *v3.SchemaOrReference {
+func NewIntegerStringSchemaWithValidRules(rules map[string]string) *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{
+			Schema: schemaWithValidate(&v3.Schema{
 				Type: "string",
 				Default: &openapi_v3.DefaultType{
 					Oneof: &openapi_v3.DefaultType_Number{},
 				},
-			},
+			}, rules),
 		},
 	}
 }
@@ -65,10 +65,10 @@ func NewBooleanSchema() *v3.SchemaOrReference {
 			Schema: &v3.Schema{Type: "boolean"}}}
 }
 
-func NewBooleanSchemaWithValidRules(rules []string) *v3.SchemaOrReference {
+func NewBooleanSchemaWithValidRules(rules map[string]string) *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "boolean"}}}
+			Schema: schemaWithValidate(&v3.Schema{Type: "boolean"}, rules)}}
 }
 
 func NewBytesSchema() *v3.SchemaOrReference {
@@ -77,10 +77,10 @@ func NewBytesSchema() *v3.SchemaOrReference {
 			Schema: &v3.Schema{Type: "string", Format: "bytes"}}}
 }
 
-func NewBytesSchemaWithValidRules(rules []string) *v3.SchemaOrReference {
+func NewBytesSchemaWithValidRules(rules map[string]string) *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "string", Format: "bytes"}}}
+			Schema: schemaWithValidate(&v3.Schema{Type: "string", Format: "bytes"}, rules)}}
 }
 
 func NewIntegerSchema(format string) *v3.SchemaOrReference {
@@ -89,10 +89,10 @@ func NewIntegerSchema(format string) *v3.SchemaOrReference {
 			Schema: &v3.Schema{Type: "integer", Format: format}}}
 }
 
-func NewIntegerSchemaWithValidRules(format string, rules []string) *v3.SchemaOrReference {
+func NewIntegerSchemaWithValidRules(format string, rules map[string]string) *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "integer", Format: format}}}
+			Schema: schemaWithValidate(&v3.Schema{Type: "integer", Format: format}, rules)}}
 }
 
 func NewNumberSchema(format string) *v3.SchemaOrReference {
@@ -101,10 +101,10 @@ func NewNumberSchema(format string) *v3.SchemaOrReference {
 			Schema: &v3.Schema{Type: "number", Format: format}}}
 }
 
-func NewNumberSchemaWithValidRules(format string, rules []string) *v3.SchemaOrReference {
+func NewNumberSchemaWithValidRules(format string, rules map[string]string) *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "number", Format: format}}}
+			Schema: schemaWithValidate(&v3.Schema{Type: "number", Format: format}, rules)}}
 }
 
 func NewEnumSchema(enum_type *string, field protoreflect.FieldDescriptor) *v3.SchemaOrReference {
@@ -136,13 +136,13 @@ func NewListSchema(item_schema *v3.SchemaOrReference) *v3.SchemaOrReference {
 	}
 }
 
-func NewListSchemaWithValidRules(item_schema *v3.SchemaOrReference, rules []string) *v3.SchemaOrReference {
+func NewListSchemaWithValidRules(item_schema *v3.SchemaOrReference, rules map[string]string) *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{
+			Schema: schemaWithValidate(&v3.Schema{
 				Type:  "array",
 				Items: &v3.ItemsItem{SchemaOrReference: []*v3.SchemaOrReference{item_schema}},
-			},
+			}, rules),
 		},
 	}
 }
