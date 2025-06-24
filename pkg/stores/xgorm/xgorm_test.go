@@ -21,6 +21,10 @@ func TestMain(m *testing.M) {
 	config.Set("asjard.stores.gorm.dbs.another.dsn", "test_another.db")
 	config.Set("asjard.stores.gorm.dbs.another.driver", "sqlite")
 
+	config.Set("asjard.stores.gorm.dbs.ciphered.dsn", "dGVzdF9jaXBoZXJlZC5kYg==")
+	config.Set("asjard.stores.gorm.dbs.ciphered.driver", "sqlite")
+	config.Set("asjard.stores.gorm.dbs.ciphered.cipherName", "base64")
+
 	config.Set("asjard.stores.gorm.dbs.lock.dsn", "root:my-secret-pw@tcp(127.0.0.1:3306)/example-database?charset=utf8&parseTime=True&loc=Local&timeout=5s&readTimeout=5s")
 	config.Set("asjard.stores.gorm.dbs.lock.driver", "mysql")
 	time.Sleep(50 * time.Millisecond)
@@ -35,7 +39,7 @@ func TestMain(m *testing.M) {
 func TestLoadAndWatchConfig(t *testing.T) {
 	conf, err := dbManager.loadAndWatchConfig()
 	assert.Nil(t, err)
-	assert.Equal(t, 3, len(conf))
+	assert.Equal(t, 4, len(conf))
 }
 
 type testTable struct {
@@ -54,6 +58,19 @@ func TestConnDBs(t *testing.T) {
 		assert.Nil(t, err)
 		var result testTable
 		err = db.Where("db_name=?", "default").First(&result).Error
+		assert.Nil(t, err)
+		assert.NotEmpty(t, result.DBName)
+	})
+	t.Run("cipher", func(t *testing.T) {
+		db, err := DB(context.Background(), WithConnName("ciphered"))
+		assert.Nil(t, err)
+		assert.NotNil(t, db)
+		err = db.AutoMigrate(&testTable{})
+		assert.Nil(t, err)
+		err = db.Create(&testTable{DBName: "cipher"}).Error
+		assert.Nil(t, err)
+		var result testTable
+		err = db.Where("db_name=?", "cipher").First(&result).Error
 		assert.Nil(t, err)
 		assert.NotEmpty(t, result.DBName)
 	})

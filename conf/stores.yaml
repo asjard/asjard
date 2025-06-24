@@ -12,6 +12,11 @@ asjard:
           ## mysql, postgres,sqlite,sqlserver,clickhouse
           ## ref: https://gorm.io/zh_CN/docs/connecting_to_the_database.html#PostgreSQL
           driver: mysql
+          ## 加密组件名称
+          ## 不为空则使用加密组件解密后连接数据库
+          cipherName: ""
+          ## 加密组件参数, map[string]any类型
+          cipherParams: {}
           ## 驱动自定义配置
           options:
             ## 继承asjard.stores.gorm.options

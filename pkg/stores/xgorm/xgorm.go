@@ -10,6 +10,7 @@ import (
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/metrics"
+	"github.com/asjard/asjard/core/security"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -83,6 +84,9 @@ type Options struct {
 type DBConnConfig struct {
 	// 数据库连接配置
 	Dsn string `json:"dsn"`
+	// 加解密名称
+	CipherName   string         `json:"cipherName"`
+	CipherParams map[string]any `json:"cipherParams"`
 	// 驱动名称
 	Driver string `json:"driver"`
 	// 驱动自定义配置
@@ -221,7 +225,11 @@ func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	db, err := gorm.Open(m.dialector(cfg), &gorm.Config{
+	dial, err := m.dialector(cfg)
+	if err != nil {
+		return nil, err
+	}
+	db, err := gorm.Open(dial, &gorm.Config{
 		SkipDefaultTransaction:                   cfg.Options.SkipDefaultTransaction,
 		FullSaveAssociations:                     cfg.Options.FullSaveAssociations,
 		DryRun:                                   cfg.Options.DryRun,
@@ -257,35 +265,37 @@ func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) (*gorm.DB, error) {
 	return db, nil
 }
 
-func (m *DBManager) dialector(cfg *DBConnConfig) gorm.Dialector {
+func (m *DBManager) dialector(cfg *DBConnConfig) (gorm.Dialector, error) {
+	dsn := cfg.Dsn
+	if cfg.CipherName != "" {
+		plainDsn, err := security.Decrypt(dsn, security.WithCipherName(cfg.CipherName), security.WithParams(cfg.CipherParams))
+		if err != nil {
+			return nil, err
+		}
+		dsn = plainDsn
+	}
 	switch cfg.Driver {
 	case postgresDefaultDriverName:
 		return postgres.New(postgres.Config{
 			DriverName: cfg.Options.CustomeDriverName,
-			DSN:        cfg.Dsn,
-		})
+			DSN:        dsn,
+		}), nil
 	case sqliteDefaultDriverName:
 		return sqlite.New(sqlite.Config{
 			DriverName: cfg.Options.CustomeDriverName,
-			DSN:        cfg.Dsn,
-		})
+			DSN:        dsn,
+		}), nil
 	case sqlserverDefaultDrierName:
 		return sqlserver.New(sqlserver.Config{
 			DriverName: cfg.Options.CustomeDriverName,
-			DSN:        cfg.Dsn,
-		})
-	// case clickhouseDefaultDriverName:
-	// 	return clickhouse.New(clickhouse.Config{
-	// 		DriverName:                cfg.Options.CustomeDriverName,
-	// 		DSN:                       cfg.Dsn,
-	// 		SkipInitializeWithVersion: cfg.Options.SkipInitializeWithVersion,
-	// 	})
+			DSN:        dsn,
+		}), nil
 	default:
 		return mysql.New(mysql.Config{
 			DriverName:                cfg.Options.CustomeDriverName,
-			DSN:                       cfg.Dsn,
+			DSN:                       dsn,
 			SkipInitializeWithVersion: cfg.Options.SkipInitializeWithVersion,
-		})
+		}), nil
 	}
 }
 
