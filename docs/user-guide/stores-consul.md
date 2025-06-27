@@ -7,6 +7,7 @@ asjard:
     consul:
       clients:
         default:
+          ## address,username,password受cipherName保护
           # address: 127.0.0.1:8500
           # schema: ""
           # pathPrefix: ""
@@ -17,4 +18,7 @@ asjard:
           # token: ""
           # namespace: ""
           # partition: ""
+          ## 解密组件名称
+          cipherName: ""
+          cipherParams: {}
 ```

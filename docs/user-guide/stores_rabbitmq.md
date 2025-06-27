@@ -6,8 +6,12 @@ asjard:
     rabbitmq:
       clients:
         default:
+          ## url受cipherName保护
           url: ""
           vhost: ""
+          ## 解密组件名称
+          cipherName: ""
+          cipherParams: {}
         options:
           channelMax: 0
           frameSize: 0

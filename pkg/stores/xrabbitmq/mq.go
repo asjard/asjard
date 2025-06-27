@@ -12,6 +12,7 @@ import (
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/security"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
 	"github.com/streadway/amqp"
@@ -43,9 +44,12 @@ type Config struct {
 }
 
 type ClientConnConfig struct {
-	Url     string  `json:"url"`
-	Vhost   string  `json:"vhost"`
-	Options Options `json:"options"`
+	Url string `json:"url"`
+	// 加解密名称
+	CipherName   string         `json:"cipherName"`
+	CipherParams map[string]any `json:"cipherParams"`
+	Vhost        string         `json:"vhost"`
+	Options      Options        `json:"options"`
 }
 
 type Options struct {
@@ -202,7 +206,15 @@ func (c *ClientManager) newClient(name string, conf *ClientConnConfig) (*amqp.Co
 			RootCAs:      pool,
 		}
 	}
-	conn, err := amqp.DialConfig(conf.Url, dialConfig)
+	connUrl := conf.Url
+	if conf.CipherName != "" {
+		plainText, err := security.Decrypt(conf.Url, security.WithCipherName(conf.CipherName), security.WithParams(conf.CipherParams))
+		if err != nil {
+			return nil, err
+		}
+		connUrl = plainText
+	}
+	conn, err := amqp.DialConfig(connUrl, dialConfig)
 	if err != nil {
 		return nil, err
 	}
