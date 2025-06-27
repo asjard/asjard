@@ -729,12 +729,16 @@ func (g *OpenAPIv3Generator) addPathsToDocumentV3(d *v3.Document, services []*pr
 					if summary == "" {
 						summary = comment
 					}
+					tagName := g.getCommentTitle(service.Comments) + "(" + httpOption.Version + ")"
+					if tagName == "" {
+						tagName = httpOption.Service + "/" + httpOption.Api + "/" + httpOption.Version + "/" + service.GoName
+					}
 					if httpOption.Method != "" {
 						defaultHost := proto.GetExtension(service.Desc.Options(), annotations.E_DefaultHost).(string)
 						op, path2 := g.buildOperationV3(
 							d, operationID+"_"+strconv.Itoa(index),
 							fmt.Sprintf("/%s/%s", service.Desc.FullName(), method.GoName),
-							httpOption.Service+"/"+httpOption.Api+"/"+httpOption.Version+"/"+service.GoName,
+							tagName,
 							comment, summary, defaultHost,
 							httpOption.GetPath(), httpOption.Body, inputMessage, outputMessage)
 
@@ -755,6 +759,19 @@ func (g *OpenAPIv3Generator) addPathsToDocumentV3(d *v3.Document, services []*pr
 			d.Tags = append(d.Tags, &v3.Tag{Name: service.GoName, Description: comment})
 		}
 	}
+}
+
+func (g *OpenAPIv3Generator) getCommentTitle(commentSet protogen.CommentSet) string {
+	if commentSet.Leading != "" {
+		lines := strings.Split(strings.TrimSuffix(strings.TrimSpace(commentSet.Leading.String()), "\n"), "\n")
+		if len(lines) != 0 {
+			return strings.TrimSpace(strings.TrimPrefix(lines[0], "//"))
+		}
+	}
+	if commentSet.Trailing != "" {
+		return strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(commentSet.Trailing.String()), "//"))
+	}
+	return ""
 }
 
 // addSchemaForMessageToDocumentV3 adds the schema to the document if required

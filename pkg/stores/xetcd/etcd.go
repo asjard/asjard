@@ -14,6 +14,7 @@ import (
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/security"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -52,8 +53,6 @@ type Options struct {
 	DialKeepAliveTimeout  utils.JSONDuration `json:"dialKeepAliveTimeout"`
 	MaxCallSendMsgSize    int                `json:"maxCallSendMsgSize"`
 	MaxCallRecvMsgSize    int                `json:"maxCallRecvMsgSize"`
-	Username              string             `json:"username"`
-	Password              string             `json:"password"`
 	RejectOldCluster      bool               `json:"rejectOldCluster"`
 	PermitWithoutStream   bool               `json:"permitWithoutStream"`
 	MaxUnaryRetries       uint               `json:"maxUnaryRetries"`
@@ -67,7 +66,12 @@ type Options struct {
 // 客户端连接配置
 type ClientConnConfig struct {
 	Endpoints utils.JSONStrings `json:"endpoints"`
-	Options   Options           `json:"options"`
+	Username  string            `json:"username"`
+	Password  string            `json:"password"`
+	// 加解密名称
+	CipherName   string         `json:"cipherName"`
+	CipherParams map[string]any `json:"cipherParams"`
+	Options      Options        `json:"options"`
 }
 
 type ClientOptions struct {
@@ -172,40 +176,62 @@ func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	return nil
 }
 
-func (m *ClientManager) newClient(name string, cfg *ClientConnConfig) (*clientv3.Client, error) {
-	clientConfig := clientv3.Config{Endpoints: cfg.Endpoints,
+func (m *ClientManager) newClientConfig(cfg *ClientConnConfig) (clientv3.Config, error) {
+	clientConfig := clientv3.Config{
+		Endpoints:             cfg.Endpoints,
 		AutoSyncInterval:      cfg.Options.AutoSyncInterval.Duration,
 		DialTimeout:           cfg.Options.DialTimeout.Duration,
 		DialKeepAliveTime:     cfg.Options.DialKeepAliveTime.Duration,
 		DialKeepAliveTimeout:  cfg.Options.DialKeepAliveTimeout.Duration,
-		Username:              cfg.Options.Username,
-		Password:              cfg.Options.Password,
+		Username:              cfg.Username,
+		Password:              cfg.Password,
 		RejectOldCluster:      cfg.Options.RejectOldCluster,
 		PermitWithoutStream:   cfg.Options.PermitWithoutStream,
 		MaxUnaryRetries:       cfg.Options.MaxUnaryRetries,
 		BackoffWaitBetween:    cfg.Options.BackoffWaitBetween.Duration,
 		BackoffJitterFraction: cfg.Options.BackoffJitterFraction,
 	}
+	if cfg.CipherName != "" {
+		var err error
+		cipherOptions := []security.Option{security.WithCipherName(cfg.CipherName), security.WithParams(cfg.CipherParams)}
+		clientConfig.Username, err = security.Decrypt(cfg.Username, cipherOptions...)
+		if err != nil {
+			return clientConfig, err
+		}
+		clientConfig.Password, err = security.Decrypt(cfg.Password, cipherOptions...)
+		if err != nil {
+			return clientConfig, err
+		}
+		endpoints := make([]string, len(cfg.Endpoints))
+		for idx, item := range cfg.Endpoints {
+			plainText, err := security.Decrypt(item, cipherOptions...)
+			if err != nil {
+				return clientConfig, err
+			}
+			endpoints[idx] = plainText
+		}
+		clientConfig.Endpoints = endpoints
+	}
 	if cfg.Options.CAFile != "" && cfg.Options.CertFile != "" && cfg.Options.KeyFile != "" {
 		cfg.Options.CAFile = filepath.Join(utils.GetCertDir(), cfg.Options.CAFile)
 		if !utils.IsPathExists(cfg.Options.CAFile) {
-			return nil, fmt.Errorf("cafile %s not found", cfg.Options.CAFile)
+			return clientConfig, fmt.Errorf("cafile %s not found", cfg.Options.CAFile)
 		}
 		cfg.Options.CertFile = filepath.Join(utils.GetCertDir(), cfg.Options.CertFile)
 		if !utils.IsPathExists(cfg.Options.CertFile) {
-			return nil, fmt.Errorf("certFile %s not found", cfg.Options.CertFile)
+			return clientConfig, fmt.Errorf("certFile %s not found", cfg.Options.CertFile)
 		}
 		cfg.Options.KeyFile = filepath.Join(utils.GetCertDir(), cfg.Options.KeyFile)
 		if !utils.IsPathExists(cfg.Options.KeyFile) {
-			return nil, fmt.Errorf("keyFile %s not found", cfg.Options.KeyFile)
+			return clientConfig, fmt.Errorf("keyFile %s not found", cfg.Options.KeyFile)
 		}
 		cert, err := tls.LoadX509KeyPair(cfg.Options.CertFile, cfg.Options.KeyFile)
 		if err != nil {
-			return nil, err
+			return clientConfig, err
 		}
 		caData, err := os.ReadFile(cfg.Options.CAFile)
 		if err != nil {
-			return nil, err
+			return clientConfig, err
 		}
 		pool := x509.NewCertPool()
 		pool.AppendCertsFromPEM(caData)
@@ -214,11 +240,19 @@ func (m *ClientManager) newClient(name string, cfg *ClientConnConfig) (*clientv3
 			RootCAs:      pool,
 		}
 	}
+	return clientConfig, nil
+}
+
+func (m *ClientManager) newClient(name string, cfg *ClientConnConfig) (*clientv3.Client, error) {
+	clientConfig, err := m.newClientConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
 	client, err := clientv3.New(clientConfig)
 	if err != nil {
 		return nil, err
 	}
-	for _, endpoint := range cfg.Endpoints {
+	for _, endpoint := range clientConfig.Endpoints {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Options.DialTimeout.Duration)
 		_, err = client.Status(ctx, endpoint)
 		cancel()

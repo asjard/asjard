@@ -13,6 +13,7 @@ import (
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/security"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
 	"github.com/redis/go-redis/extra/redisotel/v9"
@@ -42,11 +43,14 @@ type Config struct {
 }
 
 type ClientConnConfig struct {
-	Address  string  `json:"address"`
-	UserName string  `json:"username"`
-	Password string  `json:"password"`
-	DB       int     `json:"db"`
-	Options  Options `json:"options"`
+	Address  string `json:"address"`
+	UserName string `json:"username"`
+	Password string `json:"password"`
+	// 加解密名称
+	CipherName   string         `json:"cipherName"`
+	CipherParams map[string]any `json:"cipherParams"`
+	DB           int            `json:"db"`
+	Options      Options        `json:"options"`
 }
 
 type Options struct {
@@ -176,7 +180,7 @@ func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	return nil
 }
 
-func (m *ClientManager) newClient(name string, conf *ClientConnConfig) (*redis.Client, error) {
+func (m *ClientManager) newClientOptions(conf *ClientConnConfig) (*redis.Options, error) {
 	clientOptions := &redis.Options{
 		Addr:                  conf.Address,
 		ClientName:            conf.Options.ClientName,
@@ -201,6 +205,22 @@ func (m *ClientManager) newClient(name string, conf *ClientConnConfig) (*redis.C
 		ConnMaxLifetime:       conf.Options.ConnMaxLifeTime.Duration,
 		DisableIndentity:      conf.Options.DisableIndentity,
 		IdentitySuffix:        conf.Options.IndentitySuffix,
+	}
+	if conf.CipherName != "" {
+		var err error
+		cipherOptions := []security.Option{security.WithCipherName(conf.CipherName), security.WithParams(conf.CipherParams)}
+		clientOptions.Username, err = security.Decrypt(conf.UserName, cipherOptions...)
+		if err != nil {
+			return nil, err
+		}
+		clientOptions.Password, err = security.Decrypt(conf.Password, cipherOptions...)
+		if err != nil {
+			return nil, err
+		}
+		clientOptions.Addr, err = security.Decrypt(conf.Address, cipherOptions...)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if conf.Options.CAFile != "" && conf.Options.CertFile != "" && conf.Options.KeyFile != "" {
 		conf.Options.CAFile = filepath.Join(utils.GetCertDir(), conf.Options.CAFile)
@@ -229,6 +249,14 @@ func (m *ClientManager) newClient(name string, conf *ClientConnConfig) (*redis.C
 			Certificates: []tls.Certificate{cert},
 			RootCAs:      pool,
 		}
+	}
+	return clientOptions, nil
+}
+
+func (m *ClientManager) newClient(name string, conf *ClientConnConfig) (*redis.Client, error) {
+	clientOptions, err := m.newClientOptions(conf)
+	if err != nil {
+		return nil, err
 	}
 	client := redis.NewClient(clientOptions)
 	if !conf.Options.DisableCheckStatus {

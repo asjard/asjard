@@ -9,8 +9,19 @@ asjard:
       ## etcd列表
       clients:
         default:
+          ## etcd地址列表
+          ## endpoints,username,password受cipherName保护
           endpoints:
             - 127.0.0.1:2379
+          # endpoints: 127.0.0.1:2379
+          ## Username is a user name for authentication.
+          # userName: ""
+
+          ## Password is a password for authentication.
+          # password: ""
+          ## 解密组件名称
+          cipherName: ""
+          cipherParams: {}
       options:
         ## AutoSyncInterval is the interval to update endpoints with its latest members.
         ## 0 disables auto-sync. By default auto-sync is disabled.
@@ -39,12 +50,6 @@ asjard:
         ## Make sure that "MaxCallRecvMsgSize" >= server-side default send/recv limit.
         ## ("--max-request-bytes" flag to etcd or "embed.Config.MaxRequestBytes").
         # maxCallRecvMsgSize: 2147483647
-
-        ## Username is a user name for authentication.
-        # userName: ""
-
-        ## Password is a password for authentication.
-        # password: ""
 
         ## RejectOldCluster when set will refuse to create a client against an outdated cluster.
         # projectOldCluster: false

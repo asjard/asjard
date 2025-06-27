@@ -7,6 +7,7 @@ import (
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/core/security"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
 	"github.com/hashicorp/consul/api"
@@ -34,17 +35,20 @@ type Config struct {
 }
 
 type ClientConnConfig struct {
-	Address    string             `json:"address"`
-	Scheme     string             `json:"scheme"`
-	PathPrefix string             `json:"pathPrefix"`
-	Datacenter string             `json:"datacenter"`
-	Username   string             `json:"username"`
-	Password   string             `json:"password"`
-	WaitTime   utils.JSONDuration `json:"waitTime"`
-	Token      string             `json:"token"`
-	Namespace  string             `json:"namespace"`
-	Partition  string             `json:"partition"`
-	Options    Options            `json:"options"`
+	Address    string `json:"address"`
+	Scheme     string `json:"scheme"`
+	PathPrefix string `json:"pathPrefix"`
+	Datacenter string `json:"datacenter"`
+	Username   string `json:"username"`
+	Password   string `json:"password"`
+	// 加解密名称
+	CipherName   string             `json:"cipherName"`
+	CipherParams map[string]any     `json:"cipherParams"`
+	WaitTime     utils.JSONDuration `json:"waitTime"`
+	Token        string             `json:"token"`
+	Namespace    string             `json:"namespace"`
+	Partition    string             `json:"partition"`
+	Options      Options            `json:"options"`
 }
 
 type Options struct{}
@@ -131,7 +135,7 @@ func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	return nil
 }
 
-func (m *ClientManager) newClient(name string, conf *ClientConnConfig) (*api.Client, error) {
+func (m *ClientManager) newApiConfig(conf *ClientConnConfig) (*api.Config, error) {
 	apiConf := &api.Config{
 		Address:    conf.Address,
 		Scheme:     conf.Scheme,
@@ -141,6 +145,41 @@ func (m *ClientManager) newClient(name string, conf *ClientConnConfig) (*api.Cli
 		Token:      conf.Token,
 		Namespace:  conf.Namespace,
 		Partition:  conf.Partition,
+	}
+	if conf.Username != "" && conf.Password != "" {
+		apiConf.HttpAuth = &api.HttpBasicAuth{
+			Username: conf.Username,
+			Password: conf.Password,
+		}
+	}
+	if conf.CipherName != "" {
+		var err error
+		cipherOptions := []security.Option{security.WithCipherName(conf.CipherName), security.WithParams(conf.CipherParams)}
+		apiConf.Address, err = security.Decrypt(conf.Address, cipherOptions...)
+		if err != nil {
+			return nil, err
+		}
+
+		if conf.Username != "" && conf.Password != "" {
+			username, err := security.Decrypt(conf.Username, cipherOptions...)
+			if err != nil {
+				return nil, err
+			}
+			password, err := security.Decrypt(conf.Password, cipherOptions...)
+			if err != nil {
+				return nil, err
+			}
+			apiConf.HttpAuth = &api.HttpBasicAuth{Username: username, Password: password}
+		}
+
+	}
+	return apiConf, nil
+}
+
+func (m *ClientManager) newClient(name string, conf *ClientConnConfig) (*api.Client, error) {
+	apiConf, err := m.newApiConfig(conf)
+	if err != nil {
+		return nil, err
 	}
 	client, err := api.NewClient(apiConf)
 	if err != nil {

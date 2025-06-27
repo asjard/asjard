@@ -32,6 +32,10 @@ asjard:
     environment: "dev"
 ```
 
+### 加密文件,文件名格式
+
+  encrypted_{加密库名称}.{yaml|yml|json|toml|props|properties}
+
 程序中可以这样使用
 
 ```go

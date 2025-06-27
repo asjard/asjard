@@ -359,10 +359,23 @@ func TestGetWithParam(t *testing.T) {
 }
 
 func TestGetWithCipher(t *testing.T) {
-	key := "test_base64_cipher"
-	value := "test_base64_cipher_value"
-	assert.Nil(t, Set(key, base64.StdEncoding.EncodeToString([]byte(value))))
-	assert.Equal(t, value, GetString(key, "", WithCipher("base64")))
+	t.Run("normal", func(t *testing.T) {
+		key := "test_base64_cipher"
+		value := "test_base64_cipher_value"
+		assert.Nil(t, Set(key, base64.StdEncoding.EncodeToString([]byte(value))))
+		assert.Equal(t, value, GetString(key, "", WithCipher("base64")))
+	})
+	t.Run("autoEncrypt", func(t *testing.T) {
+		key := "test_auto_decrypt"
+		value := "test_auto_decrypt_value"
+		encryptedValue := "encrypted_base64:" + base64.StdEncoding.EncodeToString([]byte(value))
+		assert.Nil(t, Set(key, encryptedValue))
+		// 自动解密
+		assert.Equal(t, value, GetString(key, ""))
+		// 禁用自动解密
+		assert.Equal(t, encryptedValue, GetString(key, "", WithDisableAutoDecryptValue()))
+	})
+
 }
 
 func TestSetWithCipher(t *testing.T) {

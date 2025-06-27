@@ -9,10 +9,13 @@ asjard:
       clients:
         default:
           ## host:port address
+          ## address,username,password受cipherName保护
           # address: 127.0.0.1
           # username: ""
           # password: ""
-          # db: 0
+          ## 加解密组件名称
+          cipherName: ""
+          cipherParams: {}
           options:
             ## 继承asjard.stores.redis.options
       options:

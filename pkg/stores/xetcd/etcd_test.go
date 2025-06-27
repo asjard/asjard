@@ -1,6 +1,7 @@
 package xetcd
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -15,6 +16,8 @@ func TestMain(m *testing.M) {
 	}
 	config.Set("asjard.stores.etcd.clients.default.endpoints", "127.0.0.1:2379")
 	config.Set("asjard.stores.etcd.clients.another.endpoints", "127.0.0.1:2379")
+	config.Set("asjard.stores.etcd.clients.cipher.endpoints", "MTI3LjAuMC4xOjIzNzk=")
+	config.Set("asjard.stores.etcd.clients.cipher.cipherName", "base64")
 	time.Sleep(50 * time.Millisecond)
 	if err := clientManager.Start(); err != nil {
 		panic(err)
@@ -35,6 +38,17 @@ func TestNewClients(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, client)
 		assert.Equal(t, config.GetStrings("asjard.stores.etcd.clients.another.endpoints", []string{}), client.Endpoints())
+	})
+
+	t.Run("cipher", func(t *testing.T) {
+		client, err := Client(WithClientName("cipher"))
+		assert.Nil(t, err)
+		assert.NotNil(t, client)
+		assert.NotEqual(t, config.GetStrings("asjard.stores.etcd.clients.cipher.endpoints", []string{}), client.Endpoints())
+		_, err = client.Put(context.Background(), "test_cipher_key", "test_cipher_value")
+		assert.Nil(t, err)
+		_, err = client.Delete(context.Background(), "test_cipher_key")
+		assert.Nil(t, err)
 	})
 
 	t.Run("new", func(t *testing.T) {

@@ -28,6 +28,17 @@ var (
 	loadedFlag         atomic.Bool
 )
 
+const (
+	// value值加密标志
+	ValueEncryptFlag = "encrypted_"
+	// value值加密加密名称分隔符
+	// 用来解析加密组件名称
+	ValueEncryptCipherNameSplitSymbol = "_"
+	// value值加密分隔符
+	// 用来解析加密组件名称和value值
+	ValueEncryptSplitSymbol = ":"
+)
+
 // Sourcer 配置源需要实现的方法
 type Sourcer interface {
 	// 获取所有配置,首次初始化完毕后会去配置源获取一次所有配置,
@@ -431,24 +442,51 @@ func (m *ConfigManager) getValueWithOptions(value any, opts *Options) any {
 		decryptedValue, err := security.Decrypt(cast.ToString(value), security.WithCipherName(opts.cipherName))
 		if err != nil {
 			logger.Error("decrypt fail",
+				"value", value,
 				"cipher", opts.cipherName,
 				"err", err.Error())
 		} else {
 			value = decryptedValue
 		}
 	}
-	// 支持参数渲染
 	valueStr, ok := value.(string)
-	if ok && configParamCompile.MatchString(valueStr) {
-		for _, matchKey := range configParamCompile.FindAllString(valueStr, -1) {
-			k1 := strings.Split(matchKey, "${")
-			if len(k1) == 2 {
-				k2 := strings.Split(k1[1], "}")
-				if len(k2) == 2 {
-					valueStr = strings.Replace(valueStr, matchKey, GetString(strings.TrimSpace(k2[0]), ""), -1)
+	if ok {
+		// 支持参数渲染
+		if configParamCompile.MatchString(valueStr) {
+			for _, matchKey := range configParamCompile.FindAllString(valueStr, -1) {
+				k1 := strings.Split(matchKey, "${")
+				if len(k1) == 2 {
+					k2 := strings.Split(k1[1], "}")
+					if len(k2) == 2 {
+						valueStr = strings.Replace(valueStr, matchKey, GetString(strings.TrimSpace(k2[0]), ""), -1)
+					}
 				}
 			}
 		}
+		// 数据解密
+		if !opts.disableAutoDecryptValue && strings.HasPrefix(valueStr, ValueEncryptFlag) {
+			kv := strings.Split(valueStr, ValueEncryptSplitSymbol)
+			cn := ""
+			if len(kv) > 1 {
+				cv := strings.Split(kv[0], ValueEncryptCipherNameSplitSymbol)
+				if len(cv) > 1 {
+					cn = cv[1]
+				}
+			}
+			if cn != "" {
+				ev := strings.Join(kv[1:], ValueEncryptSplitSymbol)
+				dv, err := security.Decrypt(ev, security.WithCipherName(cn))
+				if err != nil {
+					logger.Error("decrypt fail",
+						value, ev,
+						"cipher", cn,
+						"err", err)
+				} else {
+					valueStr = dv
+				}
+			}
+		}
+
 		value = valueStr
 	}
 	return value
