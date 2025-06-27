@@ -26,6 +26,9 @@ type Options struct {
 	cipherName string
 	// 是否加解密
 	cipher bool
+	// 禁用自动解密
+	// 如果value值前缀包含'encrypted_cipherName:encryptedValue'则自动解密
+	disableAutoDecryptValue bool
 	// 时区, 转化为time.Time时有用
 	location *time.Location
 	// 分隔符, 字符串转换为列表时有用, 默认空白符
@@ -115,6 +118,13 @@ func WithSource(sourceName string) func(opts *Options) {
 			}
 		}
 		opts.sourceNames = append(opts.sourceNames, sourceName)
+	}
+}
+
+// 禁用自动解密value值
+func WithDisableAutoDecryptValue() func(opts *Options) {
+	return func(opts *Options) {
+		opts.disableAutoDecryptValue = true
 	}
 }
 

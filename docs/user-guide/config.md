@@ -198,6 +198,8 @@ if err := config.GetWithUnmarshal("examples.mysql", &dbConf); err != nil {
 
 > 加密内容始终都是以密文存储在内存中的，只有在获取时才会解密
 
+- 手动解密
+
 ```go
 import "github.com/asjard/asjard/core/config"
 
@@ -205,6 +207,21 @@ import "github.com/asjard/asjard/core/config"
 val := config.GetString("encrypted_key","default_value", config.WithCipher("base64"))
 ```
 
+- 自动解密
+
+```yaml
+## value值以'encrypted_'为前缀,用英文':'分割值与前缀
+## 值明文为encrypted_value
+encrypted_key: encrypted_base64:ZW5jcnlwdGVkX3ZhbHVl
+```
+
+```go
+val := config.GetString("encrypted_key", "default_value")
+// output: encrypted_value
+// 或者禁用自动解密
+val := config.GetString("encrypted_key", "default_value", config.WithDisableAutoDecryptValue())
+// output: encrypted_base64:ZW5jcnlwdGVkX3ZhbHVl
+```
 ## 配置监听
 
 ```go
