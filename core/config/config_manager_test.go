@@ -263,6 +263,37 @@ func TestGetWithUnmarshal(t *testing.T) {
 		}
 	})
 
+	t.Run("UnmarshalList", func(t *testing.T) {
+		type listValue struct {
+			Id   int    `json:"id"`
+			Name string `json:"name"`
+			Age  int    `json:"age"`
+		}
+
+		datas := []listValue{
+			{Id: 1, Name: "a", Age: 1},
+			{Id: 2, Name: "b", Age: 2},
+			{Id: 3, Name: "c", Age: 3},
+			{Id: 4, Name: "d", Age: 4},
+		}
+		prefix := "testUnmarshalList"
+		for idx, data := range datas {
+			Set(fmt.Sprintf("%s[%d].id", prefix, idx), data.Id)
+			Set(fmt.Sprintf("%s[%d].name", prefix, idx), data.Name)
+			Set(fmt.Sprintf("%s[%d].age", prefix, idx), data.Age)
+		}
+		values := make([]listValue, len(datas))
+		for idx := range datas {
+			var value listValue
+			if err := GetWithUnmarshal(fmt.Sprintf("%s[%d]", prefix, idx), &value); err != nil {
+				t.Error(err)
+				t.FailNow()
+			}
+			values[idx] = value
+		}
+		assert.Equal(t, datas, values)
+	})
+
 	t.Run("YamlUnmarshal", func(t *testing.T) {
 		datas := []struct {
 			prefix string
