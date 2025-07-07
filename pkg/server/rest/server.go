@@ -129,11 +129,11 @@ func (s *RestServer) Start(startErr chan error) error {
 	s.router.NotFound = s.newHandler(_ErrorHandler_NotFound_RestHandler, s.errorHandler, DefaultWriterName)
 	s.router.MethodNotAllowed = s.newHandler(_ErrorHandler_MethodNotAllowed_RestHandler, s.errorHandler, DefaultWriterName)
 	s.server.ErrorHandler = func(ctx *fasthttp.RequestCtx, err error) {
-		logger.Error("request error",
+		logger.L(ctx).Error("request error",
 			"method", string(ctx.Method()),
 			"path", string(ctx.Path()),
 			"header", ctx.Request.Header.String(),
-			"err", err)
+			"err", err.Error())
 		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
 		cc.WriteData(_ErrorHandler_Error_RestHandler(cc, s.errorHandler, s.interceptor))
 	}

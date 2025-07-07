@@ -69,7 +69,7 @@ func (c *Context) ReadEntity(entity proto.Message) error {
 	}
 	tmpEntity := proto.Clone(entity)
 	requestMethod := string(c.Method())
-	for _, source := range c.readEntitySources() {
+	for _, source := range c.ReadEntitySources() {
 		if _, ok := source.skipMethods[requestMethod]; ok {
 			continue
 		}
@@ -181,16 +181,16 @@ func (c *Context) ReadPathParams() map[string][]string {
 	return params
 }
 
-type readEntitySource struct {
+type ReadEntitySource struct {
 	reader      func(entity proto.Message, entityKeys map[string]struct{}) error
 	skipMethods map[string]struct{}
 }
 
-func (c *Context) readEntitySources() []*readEntitySource {
-	return []*readEntitySource{
-		{reader: c.readQueryParamsToEntity},
-		{reader: c.readHeaderParamsToEntity},
-		{reader: c.readBodyParamsToEntity, skipMethods: map[string]struct{}{
+func (c *Context) ReadEntitySources() []*ReadEntitySource {
+	return []*ReadEntitySource{
+		{reader: c.ReadQueryParamsToEntity},
+		{reader: c.ReadHeaderParamsToEntity},
+		{reader: c.ReadBodyParamsToEntity, skipMethods: map[string]struct{}{
 			http.MethodDelete:  struct{}{},
 			http.MethodGet:     struct{}{},
 			http.MethodConnect: struct{}{},
@@ -198,38 +198,38 @@ func (c *Context) readEntitySources() []*readEntitySource {
 			http.MethodHead:    struct{}{},
 			http.MethodTrace:   struct{}{},
 		}},
-		{reader: c.readPathParamsToEntity},
+		{reader: c.ReadPathParamsToEntity},
 	}
 }
 
-func (c *Context) readQueryParamsToEntity(entity proto.Message, entityKeys map[string]struct{}) error {
-	if err := c.readMapToEntity(c.ReadQueryParams(), entity, entityKeys); err != nil {
+func (c *Context) ReadQueryParamsToEntity(entity proto.Message, entityKeys map[string]struct{}) error {
+	if err := c.ReadMapToEntity(c.ReadQueryParams(), entity, entityKeys); err != nil {
 		return status.Errorf(codes.InvalidArgument, "read query params to entity fail: %v", err)
 	}
 	return nil
 }
 
-func (c *Context) readHeaderParamsToEntity(entity proto.Message, entityKeys map[string]struct{}) error {
-	if err := c.readMapToEntity(c.ReadHeaderParams(), entity, entityKeys); err != nil {
+func (c *Context) ReadHeaderParamsToEntity(entity proto.Message, entityKeys map[string]struct{}) error {
+	if err := c.ReadMapToEntity(c.ReadHeaderParams(), entity, entityKeys); err != nil {
 		return status.Errorf(codes.InvalidArgument, "read header params to entity fail: %v", err)
 	}
 	return nil
 }
-func (c *Context) readPathParamsToEntity(entity proto.Message, entityKeys map[string]struct{}) error {
-	if err := c.readMapToEntity(c.ReadPathParams(), entity, entityKeys); err != nil {
+func (c *Context) ReadPathParamsToEntity(entity proto.Message, entityKeys map[string]struct{}) error {
+	if err := c.ReadMapToEntity(c.ReadPathParams(), entity, entityKeys); err != nil {
 		return status.Errorf(codes.InvalidArgument, "read path params to entity fail: %v", err)
 	}
 	return nil
 }
 
-func (c *Context) readBodyParamsToEntity(entity proto.Message, _ map[string]struct{}) error {
-	if err := c.readBytesToEntity(c.JSONBodyParams(), entity); err != nil {
+func (c *Context) ReadBodyParamsToEntity(entity proto.Message, _ map[string]struct{}) error {
+	if err := c.ReadBytesToEntity(c.JSONBodyParams(), entity); err != nil {
 		return status.Errorf(codes.InvalidArgument, "read body params to entity fail: %v", err)
 	}
 	return nil
 }
 
-func (c *Context) readMapToEntity(params map[string][]string, entity proto.Message, entityKeys map[string]struct{}) error {
+func (c *Context) ReadMapToEntity(params map[string][]string, entity proto.Message, entityKeys map[string]struct{}) error {
 	if len(params) == 0 {
 		return nil
 	}
@@ -251,10 +251,10 @@ func (c *Context) readMapToEntity(params map[string][]string, entity proto.Messa
 	if err != nil {
 		return err
 	}
-	return c.readBytesToEntity(mapBytes, entity)
+	return c.ReadBytesToEntity(mapBytes, entity)
 }
 
-func (c *Context) readBytesToEntity(b []byte, entity proto.Message) error {
+func (c *Context) ReadBytesToEntity(b []byte, entity proto.Message) error {
 	if len(b) == 0 {
 		return nil
 	}
