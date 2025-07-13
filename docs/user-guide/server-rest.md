@@ -35,6 +35,9 @@ asjard:
           # darkMode: false
           # hideClients: []
           # authentication: ""
+      routes:
+        ## 开启后会多一个接口/routes,返回当前服务所有的rest routes
+        enabled: true
       ## 国际化是否相关配置
       i18n:
         # enabled: false

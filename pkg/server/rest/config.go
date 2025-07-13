@@ -17,11 +17,15 @@ const (
 // Config 服务配置
 type Config struct {
 	server.Config
-	EnableDefaultHandler bool          `json:"enableDefaultHandler"`
-	Doc                  DocConfig     `json:"doc"`
-	Openapi              OpenapiConfig `json:"openapi"`
-	Cors                 CorsConfig    `json:"cors"`
-	Options              OptionsConfig `json:"options"`
+	Routes  RoutesConfig  `json:"routes"`
+	Doc     DocConfig     `json:"doc"`
+	Openapi OpenapiConfig `json:"openapi"`
+	Cors    CorsConfig    `json:"cors"`
+	Options OptionsConfig `json:"options"`
+}
+
+type RoutesConfig struct {
+	Enabled bool `json:"enabled"`
 }
 
 type DocConfig struct {
@@ -40,7 +44,7 @@ type OpenapiConfig struct {
 	Scalar         ScalarOpenapiConfig  `json:"scalar"`
 	// openapi访问域名
 	// 如果为空则使用listenAddress
-	Endpoint string `json:"domain"`
+	Endpoint string `json:"endpoint"`
 }
 
 type ScalarOpenapiConfig struct {
