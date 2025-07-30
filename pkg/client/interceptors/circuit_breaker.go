@@ -136,7 +136,7 @@ func (ccb *CircuitBreaker) match(protocol, service, method string) string {
 	ccb.cm.RLock()
 	defer ccb.cm.RUnlock()
 	for _, name := range priorities {
-		logger.Debug("circuit breaker match priority", "fullname", fullName, "priority", name)
+		// logger.Debug("circuit breaker match priority", "fullname", fullName, "priority", name)
 		if _, ok := ccb.commandConfig[name]; ok {
 			logger.Debug("circuit breaker matched command", "fullname", fullName, "command", name)
 			ccb.cache.Store(fullName, name)

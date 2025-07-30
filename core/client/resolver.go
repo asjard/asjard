@@ -120,8 +120,7 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 }
 
 func (r *clientResolver) watch(event *registry.Event) {
-	logger.Debug("receive changed event",
-		"event", event.Instance)
+	logger.Debug("receive changed event", "type", event.Type, "instance", event.Instance)
 	if event.Type == registry.EventTypeDelete {
 		r.cc.UpdateState(resolver.State{})
 	} else {
