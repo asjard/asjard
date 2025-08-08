@@ -98,6 +98,7 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 		if ok {
 			if len(endpoint.Listen) != 0 {
 				for _, addr := range endpoint.Listen {
+					logger.Debug("client resolver add addr", "addr", addr)
 					addresses = append(addresses, resolver.Address{
 						Addr:       addr,
 						Attributes: attr.WithValue(ListenAddressKey{}, true),
@@ -106,6 +107,7 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 			}
 			if len(endpoint.Advertise) != 0 {
 				for _, addr := range endpoint.Advertise {
+					logger.Debug("client resolver add addr", "addr", addr)
 					addresses = append(addresses, resolver.Address{
 						Addr:       addr,
 						Attributes: attr.WithValue(AdvertiseAddressKey{}, true),
@@ -114,9 +116,18 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 			}
 		}
 	}
-	r.cc.UpdateState(resolver.State{
+	if len(addresses) == 0 {
+		logger.Warn("no valid addresses found, skipping UpdateState")
+		return
+	}
+
+	logger.Debug("updating state with addresses", "addresses", addresses)
+
+	if err := r.cc.UpdateState(resolver.State{
 		Addresses: addresses,
-	})
+	}); err != nil {
+		logger.Error("update state fail", "err", err)
+	}
 }
 
 func (r *clientResolver) watch(event *registry.Event) {
