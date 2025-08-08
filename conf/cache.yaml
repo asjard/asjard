@@ -5,6 +5,10 @@ asjard:
     # enabled: false
     ## 全局是否自动刷新
     # autoRefresh: false
+    ## 忽略版本差异
+    ## 默认缓存key带version标签
+    ## 升级服务版本后缓存将会集体失效
+    # ignoreVersionDiff: false
     ## 全局过期时间
     # expiresIn: 10m
     ## 空值过期时间

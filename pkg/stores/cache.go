@@ -3,6 +3,7 @@ package stores
 import (
 	"context"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/asjard/asjard/core/runtime"
@@ -39,6 +40,11 @@ type CacheConfig struct {
 	Enabled bool `json:"enabled"`
 	// 是否自动刷新
 	AutoRefresh bool `json:"autoRefresh"`
+	// 忽略版本差异
+	// 默认缓存key带version标签
+	// 不同版本缓存key不共享
+	// 升级服务版本后缓存将会集体失效
+	IgnoreVersionDiff bool `json:"ignoreVersionDiff"`
 	// 缓存过期时间
 	ExpiresIn utils.JSONDuration `json:"expiresIn"`
 	// 空值缓存过期时间
@@ -47,6 +53,8 @@ type CacheConfig struct {
 
 // Cache 缓存相关
 type Cache struct {
+	// 配置锁
+	cm sync.RWMutex
 	// 缓存配置
 	conf *CacheConfig
 	// 缓存表
@@ -72,23 +80,32 @@ func NewCache(model Modeler) *Cache {
 
 // WithConf 设置配置文件
 func (c *Cache) WithConf(conf *CacheConfig) *Cache {
+	c.cm.Lock()
+	defer c.cm.Unlock()
 	c.conf = conf
 	return c
 }
 
 // Enabled 否开启缓存
 func (c *Cache) Enabled() bool {
+	c.cm.RLock()
+	defer c.cm.RUnlock()
 	return c.conf.Enabled
 }
 
 // AutoRefresh 是否自动刷新
 func (c *Cache) AutoRefresh() bool {
+	c.cm.RLock()
+	defer c.cm.RUnlock()
 	return c.conf.AutoRefresh
 }
 
 // NewKey 缓存key
 func (c *Cache) NewKey(key string) string {
-	return c.app.ResourceKey("caches", c.ModelKey(key), runtime.WithDelimiter(":"))
+	c.cm.RLock()
+	defer c.cm.RUnlock()
+	return c.app.ResourceKey("caches", c.ModelKey(key),
+		runtime.WithDelimiter(":"), runtime.WithoutVersion(c.conf.IgnoreVersionDiff))
 }
 
 // App 返回app信息
@@ -104,12 +121,16 @@ func (c *Cache) ModelKey(key string) string {
 // ExpiresIn 缓存过期时间
 // 添加随机事件
 func (c *Cache) ExpiresIn() time.Duration {
+	c.cm.RLock()
+	defer c.cm.RUnlock()
 	return c.conf.ExpiresIn.Duration + time.Duration(rand.Int63n(int64(c.conf.ExpiresIn.Duration)))
 }
 
 // EmptyExpiresIn 空值缓存过期时间
 // 添加随机时间
 func (c *Cache) EmptyExpiresIn() time.Duration {
+	c.cm.RLock()
+	defer c.cm.RUnlock()
 	expiresIn := c.conf.EmptyExpiresIn.Duration
 	if expiresIn == 0 {
 		expiresIn = c.conf.ExpiresIn.Duration / 2

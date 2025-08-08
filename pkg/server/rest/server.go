@@ -129,11 +129,11 @@ func (s *RestServer) Start(startErr chan error) error {
 	s.router.NotFound = s.newHandler(_ErrorHandler_NotFound_RestHandler, s.errorHandler, DefaultWriterName)
 	s.router.MethodNotAllowed = s.newHandler(_ErrorHandler_MethodNotAllowed_RestHandler, s.errorHandler, DefaultWriterName)
 	s.server.ErrorHandler = func(ctx *fasthttp.RequestCtx, err error) {
-		logger.Error("request error",
+		logger.L(ctx).Error("request error",
 			"method", string(ctx.Method()),
 			"path", string(ctx.Path()),
 			"header", ctx.Request.Header.String(),
-			"err", err)
+			"err", err.Error())
 		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
 		cc.WriteData(_ErrorHandler_Error_RestHandler(cc, s.errorHandler, s.interceptor))
 	}
@@ -141,8 +141,9 @@ func (s *RestServer) Start(startErr chan error) error {
 		// 添加openapi接口
 		s.AddHandler(NewOpenAPI(s.conf.Openapi, s.openapi))
 	}
-	if s.conf.EnableDefaultHandler {
-		s.AddHandler(NewRestDefaultHandlerAPI(s.handlers))
+	if s.conf.Routes.Enabled {
+		// 添加路由接口
+		s.AddHandler(NewRoutesAPI(s.handlers))
 	}
 	s.server.Handler = s.router.Handler
 	if s.conf.Addresses.Listen == "" {

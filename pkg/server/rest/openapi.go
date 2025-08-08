@@ -137,6 +137,7 @@ func (api *OpenAPI) scalarOptions() []scalargo.Option {
 	if api.conf.Scalar.Authentication != "" {
 		options = append(options, scalargo.WithAuthentication(api.conf.Scalar.Authentication))
 	}
+	options = append(options, scalargo.WithBaseServerURL(api.listenAddress()))
 	return options
 }
 
@@ -181,6 +182,9 @@ func (api *OpenAPI) merge() {
 		propMap[prop.Name] = struct{}{}
 	}
 	api.document.Components.Schemas.AdditionalProperties = props
+	api.document.Servers = []*openapi_v3.Server{{
+		Url: api.listenAddress(),
+	}}
 }
 
 func (api *OpenAPI) RestServiceDesc() *ServiceDesc {

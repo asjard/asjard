@@ -8,14 +8,15 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-type RestDefaultHandlerAPI struct {
+type RoutesAPI struct {
 	handlers []Handler
 	routes   *RouteInfo
-	UnsafeRestDefaultHandlerServer
+
+	UnimplementedRoutesServer
 }
 
-func NewRestDefaultHandlerAPI(handlers []Handler) *RestDefaultHandlerAPI {
-	api := &RestDefaultHandlerAPI{
+func NewRoutesAPI(handlers []Handler) *RoutesAPI {
+	api := &RoutesAPI{
 		handlers: handlers,
 		routes:   &RouteInfo{},
 	}
@@ -23,7 +24,7 @@ func NewRestDefaultHandlerAPI(handlers []Handler) *RestDefaultHandlerAPI {
 	return api
 }
 
-func (api RestDefaultHandlerAPI) Routes(ctx context.Context, in *emptypb.Empty) (*RouteInfo, error) {
+func (api RoutesAPI) List(ctx context.Context, in *emptypb.Empty) (*RouteInfo, error) {
 	return api.routes, nil
 }
 
@@ -81,7 +82,7 @@ type nodeDesc struct {
 
 ]
 */
-func (api *RestDefaultHandlerAPI) genRoutes() {
+func (api *RoutesAPI) genRoutes() {
 	serviceDescs := []ServiceDesc{}
 	for _, handler := range api.handlers {
 		serviceDescs = append(serviceDescs, *handler.RestServiceDesc())
@@ -149,7 +150,7 @@ func (api *RestDefaultHandlerAPI) genRoutes() {
 	}
 }
 
-func (api *RestDefaultHandlerAPI) routeIndex(value string, nodes []*RouteInfo_Node) int {
+func (api *RoutesAPI) routeIndex(value string, nodes []*RouteInfo_Node) int {
 	for index, route := range nodes {
 		if route.Value == value {
 			return index
@@ -158,7 +159,7 @@ func (api *RestDefaultHandlerAPI) routeIndex(value string, nodes []*RouteInfo_No
 	return -1
 }
 
-func (api *RestDefaultHandlerAPI) addMethod(node *RouteInfo_Node, method MethodDesc) {
+func (api *RoutesAPI) addMethod(node *RouteInfo_Node, method MethodDesc) {
 	label := method.Name
 	if label == "" {
 		label = method.MethodName
@@ -169,7 +170,7 @@ func (api *RestDefaultHandlerAPI) addMethod(node *RouteInfo_Node, method MethodD
 	})
 }
 
-func (api *RestDefaultHandlerAPI) addRoute(node *RouteInfo_Node, label, value string) {
+func (api *RoutesAPI) addRoute(node *RouteInfo_Node, label, value string) {
 	if label == "" {
 		keys := strings.Split(value, ".")
 		if len(keys) > 0 {
@@ -183,6 +184,6 @@ func (api *RestDefaultHandlerAPI) addRoute(node *RouteInfo_Node, label, value st
 	})
 }
 
-func (RestDefaultHandlerAPI) RestServiceDesc() *ServiceDesc {
-	return &RestDefaultHandlerRestServiceDesc
+func (RoutesAPI) RestServiceDesc() *ServiceDesc {
+	return &RoutesRestServiceDesc
 }

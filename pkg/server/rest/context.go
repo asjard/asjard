@@ -2,7 +2,6 @@ package rest
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strings"
 	"sync"
@@ -62,22 +61,18 @@ func (c *Context) ReadEntity(entity proto.Message) error {
 	if entity == nil {
 		return nil
 	}
-	fields := entity.ProtoReflect().Descriptor().Fields()
-	entityKeys := make(map[string]struct{}, fields.Len())
-	for i := 0; i < fields.Len(); i++ {
-		entityKeys[fields.Get(i).TextName()] = struct{}{}
-	}
-	tmpEntity := proto.Clone(entity)
+	return c.ReadEntityWithReaders(entity, c.DefaultEntityReaders())
+}
+
+func (c *Context) ReadEntityWithReaders(entity proto.Message, readers []*EntityReader) error {
 	requestMethod := string(c.Method())
-	for _, source := range c.readEntitySources() {
-		if _, ok := source.skipMethods[requestMethod]; ok {
+	for _, source := range readers {
+		if _, ok := source.SkipMethods[requestMethod]; ok {
 			continue
 		}
-		proto.Reset(tmpEntity)
-		if err := source.reader(tmpEntity, entityKeys); err != nil {
+		if err := source.Reader(entity); err != nil {
 			return err
 		}
-		proto.Merge(entity, tmpEntity)
 	}
 	return nil
 }
@@ -139,7 +134,7 @@ func (c *Context) JSONBodyParams() []byte {
 // ReadQueryParams 获取query参数
 func (c *Context) ReadQueryParams() map[string][]string {
 	params := make(map[string][]string)
-	c.QueryArgs().VisitAll(func(key, value []byte) {
+	c.QueryArgs().All()(func(key, value []byte) bool {
 		k := string(key)
 		v := string(value)
 		if _, ok := params[k]; !ok {
@@ -147,6 +142,7 @@ func (c *Context) ReadQueryParams() map[string][]string {
 		} else {
 			params[k] = append(params[k], v)
 		}
+		return true
 	})
 	return params
 }
@@ -154,7 +150,7 @@ func (c *Context) ReadQueryParams() map[string][]string {
 // ReadHeaderParams 读取header请求参数
 func (c *Context) ReadHeaderParams() map[string][]string {
 	params := make(map[string][]string)
-	c.Request.Header.VisitAll(func(key, value []byte) {
+	c.Request.Header.All()(func(key, value []byte) bool {
 		k := strings.ToLower(string(key))
 		v := string(value)
 		if _, ok := params[k]; !ok {
@@ -162,6 +158,7 @@ func (c *Context) ReadHeaderParams() map[string][]string {
 		} else {
 			params[k] = append(params[k], v)
 		}
+		return true
 	})
 	return params
 }
@@ -181,82 +178,53 @@ func (c *Context) ReadPathParams() map[string][]string {
 	return params
 }
 
-type readEntitySource struct {
-	reader      func(entity proto.Message, entityKeys map[string]struct{}) error
-	skipMethods map[string]struct{}
+type EntityReader struct {
+	Reader      func(entity proto.Message) error
+	SkipMethods map[string]struct{}
 }
 
-func (c *Context) readEntitySources() []*readEntitySource {
-	return []*readEntitySource{
-		{reader: c.readQueryParamsToEntity},
-		{reader: c.readHeaderParamsToEntity},
-		{reader: c.readBodyParamsToEntity, skipMethods: map[string]struct{}{
-			http.MethodDelete:  struct{}{},
-			http.MethodGet:     struct{}{},
-			http.MethodConnect: struct{}{},
-			http.MethodOptions: struct{}{},
-			http.MethodHead:    struct{}{},
-			http.MethodTrace:   struct{}{},
-		}},
-		{reader: c.readPathParamsToEntity},
+func (c *Context) DefaultEntityReaders() []*EntityReader {
+	return []*EntityReader{
+		{Reader: c.ReadQueryParamsToEntity},
+		{Reader: c.ReadHeaderParamsToEntity},
+		{
+			Reader: c.ReadBodyParamsToEntity,
+			SkipMethods: map[string]struct{}{
+				http.MethodDelete:  struct{}{},
+				http.MethodGet:     struct{}{},
+				http.MethodConnect: struct{}{},
+				http.MethodOptions: struct{}{},
+				http.MethodHead:    struct{}{},
+				http.MethodTrace:   struct{}{},
+			},
+		},
+		{Reader: c.ReadPathParamsToEntity},
 	}
 }
 
-func (c *Context) readQueryParamsToEntity(entity proto.Message, entityKeys map[string]struct{}) error {
-	if err := c.readMapToEntity(c.ReadQueryParams(), entity, entityKeys); err != nil {
+func (c *Context) ReadQueryParamsToEntity(entity proto.Message) error {
+	if err := protoForm(entity, c.ReadQueryParams()); err != nil {
 		return status.Errorf(codes.InvalidArgument, "read query params to entity fail: %v", err)
 	}
 	return nil
 }
 
-func (c *Context) readHeaderParamsToEntity(entity proto.Message, entityKeys map[string]struct{}) error {
-	if err := c.readMapToEntity(c.ReadHeaderParams(), entity, entityKeys); err != nil {
+func (c *Context) ReadHeaderParamsToEntity(entity proto.Message) error {
+	if err := protoForm(entity, c.ReadHeaderParams()); err != nil {
 		return status.Errorf(codes.InvalidArgument, "read header params to entity fail: %v", err)
 	}
 	return nil
 }
-func (c *Context) readPathParamsToEntity(entity proto.Message, entityKeys map[string]struct{}) error {
-	if err := c.readMapToEntity(c.ReadPathParams(), entity, entityKeys); err != nil {
+func (c *Context) ReadPathParamsToEntity(entity proto.Message) error {
+	if err := protoForm(entity, c.ReadPathParams()); err != nil {
 		return status.Errorf(codes.InvalidArgument, "read path params to entity fail: %v", err)
 	}
 	return nil
 }
 
-func (c *Context) readBodyParamsToEntity(entity proto.Message, _ map[string]struct{}) error {
-	if err := c.readBytesToEntity(c.JSONBodyParams(), entity); err != nil {
+func (c *Context) ReadBodyParamsToEntity(entity proto.Message) error {
+	if err := protojson.Unmarshal(c.JSONBodyParams(), entity); err != nil {
 		return status.Errorf(codes.InvalidArgument, "read body params to entity fail: %v", err)
 	}
 	return nil
-}
-
-func (c *Context) readMapToEntity(params map[string][]string, entity proto.Message, entityKeys map[string]struct{}) error {
-	if len(params) == 0 {
-		return nil
-	}
-	paramsMap := make(map[string]any, len(params))
-	for k, v := range params {
-		if _, ok := entityKeys[k]; !ok {
-			continue
-		}
-		if len(v) > 0 {
-			paramsMap[k] = v[0]
-		} else {
-			paramsMap[k] = v
-		}
-	}
-	if len(paramsMap) == 0 {
-		return nil
-	}
-	mapBytes, err := json.Marshal(&paramsMap)
-	if err != nil {
-		return err
-	}
-	return c.readBytesToEntity(mapBytes, entity)
-}
-
-func (c *Context) readBytesToEntity(b []byte, entity proto.Message) error {
-	if len(b) == 0 {
-		return nil
-	}
-	return protojson.Unmarshal(b, entity)
 }

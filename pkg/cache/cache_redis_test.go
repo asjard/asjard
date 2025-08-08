@@ -89,5 +89,11 @@ func TestRedisCache(t *testing.T) {
 				assert.NotNil(t, keyExist.Err())
 			}
 		})
+		t.Run("TestKey", func(t *testing.T) {
+			assert.Contains(t, cache.WithKey("test_version").Key(), "1.0.0")
+			config.Set("asjard.cache.redis.ignoreVersionDiff", true)
+			time.Sleep(500 * time.Millisecond)
+			assert.NotContains(t, cache.WithKey("test_version").Key(), "1.0.0")
+		})
 	})
 }

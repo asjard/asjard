@@ -15,23 +15,25 @@ asjard:
       ## https://github.com/afex/hystrix-go/blob/master/hystrix/settings.go#CommandConfig
       ## 优先级 methods -> service -> default
       circuitBreaker:
-        ## 默认超时时间,单位毫秒
+        ## 默认配置
+        ## 超时时间,单位毫秒
         # timeout: 1000
         # max_concurrent_requests: 1000
         # request_volume_threshold: 20
         # sleep_window: 5000
         # error_percent_threshold: 50
-        ## 服务自定义配置
-        # services:
-        #   helloGrpc:
-        #     timeout: 1
-        # ## 方法自定义配置
-        # ## 用下划线分隔
-        # methods:
-        #   api_v1_hello_Hello_Call:
-        #     timeout: 1
-        #   api_v1_hello_Hello_Say:
-        #     timeout: 2
+        ## 方法优先级
+        ## protocol://service/method
+        ## protocol://service
+        ## protocol:///method
+        ## protocol
+        ## //service/method
+        ## ///method
+        ## //service
+        methods:
+          - name: grpc://servicesName/method
+            timeout: 1000
+          - name: //serviceName
 ```
 
 ### rest转grpc协议
