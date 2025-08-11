@@ -45,9 +45,30 @@ type CacheConfig struct {
 	// 不同版本缓存key不共享
 	// 升级服务版本后缓存将会集体失效
 	IgnoreVersionDiff bool `json:"ignoreVersionDiff"`
+	// 忽略应用差异
+	// 开启后缓存key不带app标签
+	// 不同app的缓存可以共享
+	IgnoreAppDiff bool `json:"ignoreAppDiff"`
+	// 忽略环境差异
+	// 开启后缓存key不带env标签
+	// 不同环境的缓存可共享
+	IgnoreEnvDiff bool `json:"ignoreEnvDiff"`
+	// 忽略服务差异
+	// 开启后缓存key不带service标签
+	// 不同service的缓存可以共享
+	IgnoreServiceDiff bool `json:"ignoreServiceDiff"`
+	// 忽略地域差异
+	// 开启后缓存key不带region标签
+	// 不同地域的缓存可共享
+	IgnoreRegionDiff bool `json:"ignoreRegionDiff"`
+	// 忽略可用去差异
+	// 开启后混存key不带az标签
+	// 不同可用区的缓存可以共享
+	IgnoreAzDiff bool `json:"ignoreAzDiff"`
 	// 缓存过期时间
 	ExpiresIn utils.JSONDuration `json:"expiresIn"`
 	// 空值缓存过期时间
+	// 如果为空则为ExpiresIn的一半
 	EmptyExpiresIn utils.JSONDuration `json:"emptyExpiresIn"`
 }
 
@@ -105,7 +126,13 @@ func (c *Cache) NewKey(key string) string {
 	c.cm.RLock()
 	defer c.cm.RUnlock()
 	return c.app.ResourceKey("caches", c.ModelKey(key),
-		runtime.WithDelimiter(":"), runtime.WithoutVersion(c.conf.IgnoreVersionDiff))
+		runtime.WithDelimiter(":"),
+		runtime.WithoutVersion(c.conf.IgnoreVersionDiff),
+		runtime.WithoutApp(c.conf.IgnoreAppDiff),
+		runtime.WithoutEnv(c.conf.IgnoreEnvDiff),
+		runtime.WithoutService(c.conf.IgnoreServiceDiff),
+		runtime.WithoutRegion(c.conf.IgnoreRegionDiff),
+		runtime.WithoutApp(c.conf.IgnoreAzDiff))
 }
 
 // App 返回app信息

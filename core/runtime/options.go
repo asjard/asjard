@@ -7,8 +7,12 @@ type Options struct {
 	endWithDelimiter bool
 	// 分隔符
 	delimiter string
+	// 不包含APP信息
+	withoutApp bool
 	// 不包含region信息
 	withoutRegion bool
+	// 不包含az信息
+	withoutAz bool
 	// 不包含环境信息
 	withoutEnv bool
 	// 不包含service信息
@@ -39,6 +43,13 @@ func WithEndWithDelimiter(value bool) Option {
 func WithDelimiter(delimiter string) Option {
 	return func(options *Options) {
 		options.delimiter = delimiter
+	}
+}
+
+// WithoutApp 不包含app信息
+func WithoutApp(value bool) Option {
+	return func(options *Options) {
+		options.withoutApp = value
 	}
 }
 
