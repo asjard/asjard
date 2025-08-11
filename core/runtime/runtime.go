@@ -113,8 +113,9 @@ func (app APP) ResourceKey(resource, key string, opts ...Option) string {
 		resource = "resource"
 	}
 	if !options.withoutApp {
-		keys = append(keys, app.App, resource)
+		keys = append(keys, app.App)
 	}
+	keys = append(keys, resource)
 	if !options.withoutEnv {
 		keys = append(keys, app.Environment)
 	}

@@ -60,6 +60,13 @@ func WithoutRegion(value bool) Option {
 	}
 }
 
+// WithoutAz 不包含Az信息
+func WithoutAz(value bool) Option {
+	return func(options *Options) {
+		options.withoutAz = value
+	}
+}
+
 // WithoutEnv 不包含环境信息
 func WithoutEnv(value bool) Option {
 	return func(options *Options) {

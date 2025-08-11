@@ -24,8 +24,8 @@ func TestGetAPP(t *testing.T) {
 func TestResourceKey(t *testing.T) {
 	app := GetAPP()
 	datas := []struct {
-		resource, delimiter, key, fullKey                                                                              string
-		startWithDelimiter, endWithDelimiter, withoutRegion, withoutEnv, withoutService, withServiceId, withoutVersion bool
+		resource, delimiter, key, fullKey                                                                                                     string
+		startWithDelimiter, endWithDelimiter, withoutApp, withoutRegion, withoutAz, withoutEnv, withoutService, withServiceId, withoutVersion bool
 	}{
 		{
 			resource:  "test_resource_colon",
@@ -92,6 +92,21 @@ func TestResourceKey(t *testing.T) {
 			}, "/"),
 		},
 		{
+			resource:   "test_resource_withoutApp",
+			delimiter:  "/",
+			key:        "test_key",
+			withoutApp: true,
+			fullKey: strings.Join([]string{
+				"test_resource_withoutApp",
+				app.Environment,
+				app.Instance.Name,
+				app.Instance.Version,
+				app.Region,
+				app.AZ,
+				"test_key",
+			}, "/"),
+		},
+		{
 			resource:      "test_resource_withoutRegion",
 			delimiter:     "/",
 			key:           "test_key",
@@ -102,6 +117,22 @@ func TestResourceKey(t *testing.T) {
 				app.Environment,
 				app.Instance.Name,
 				app.Instance.Version,
+				app.AZ,
+				"test_key",
+			}, "/"),
+		},
+		{
+			resource:  "test_resource_withoutAz",
+			delimiter: "/",
+			key:       "test_key",
+			withoutAz: true,
+			fullKey: strings.Join([]string{
+				app.App,
+				"test_resource_withoutAz",
+				app.Environment,
+				app.Instance.Name,
+				app.Instance.Version,
+				app.Region,
 				"test_key",
 			}, "/"),
 		},
@@ -172,7 +203,9 @@ func TestResourceKey(t *testing.T) {
 			WithDelimiter(data.delimiter),
 			WithStartWithDelimiter(data.startWithDelimiter),
 			WithEndWithDelimiter(data.endWithDelimiter),
+			WithoutApp(data.withoutApp),
 			WithoutRegion(data.withoutRegion),
+			WithoutAz(data.withoutAz),
 			WithoutEnv(data.withoutEnv),
 			WithoutService(data.withoutService),
 			WithServiceId(data.withServiceId),
