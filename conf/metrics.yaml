@@ -1,11 +1,9 @@
 asjard:
-  ## 监控相关配置
+  ## mertrics configuration.
   metrics:
-    ## 是否开启监控
     # enabled: false
-    ## 需要收集的指标
     # collectors: ""
-    ## 内建配置的收集指标
+    ## builtin collectors
     # builtInCollectors:
     #   - go_collector
     #   - process_collector
@@ -14,9 +12,7 @@ asjard:
     #   - api_requests_latency_seconds
     #   - api_requests_size_bytes
     #   - api_response_size_bytes
-    ## 推送到pushgateway中
+    ## prometheus push gateway configuration.
     pushGateway:
-      ## gateway地址
       # endpoint: http://127.0.0.1:9091
-      ## 推送间隔
       # interval: 5s

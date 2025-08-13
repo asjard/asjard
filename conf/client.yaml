@@ -1,32 +1,31 @@
-## 客户端相关配置
 asjard:
+  ## client configurations
   clients:
-    ## 客户端负载均衡, 不存在或者为空，则默认为localityRoundRobin
+    ## client loadbalance, default: localityRoundRobin
     # loadbalance: "localityRoundRobin"
-    ## 自定义客户端拦截器配置
-    ## 同servers.interceptors配置
+    ## client interceptors
+    ## same as asjard.servers.interceptors
     # interceptors: ""
-    ## 框架内建客户端拦截器
+    ## builtin client interceptors
     # builtInInterceptors: rest2RpcContext,cycleChainInterceptor,circuitBreaker
-    ## 或者可以按照yaml列表配置
+    ## or yaml list
     # builtInInterceptors:
     #   - rest2RpcContext
     #   - cycleChainInterceptor
     #   - circuitBreaker
-    ## 同servers.certFile配置
+    ## cert file path, relative path to CONF_DIR/certs/
     # certFile: ""
-    ## grpc客户端相关配置
+    ## grpc client configuration
     grpc:
-      ## grpc客户端负载均衡相关配置
-      ## 一级目录下的所有配置均可在某个服务中配置
+      ## grpc client loadbalance
       # loadbalance: ""
-      ## grpc客户端拦截器
+      ## grpc client interceptors
       # interceptors: ""
-      ## grpc客户端证书配置, 路径同servers.certFile配置
+      ## cert file path, relative path to CONF_DIR/certs/
       # certFile: ""
-      ## grpc客户端相关参数
+      ## grpc client connect options
       options:
-        ## keepalive相关参数
+        ## keepalive
         keepalive:
           ## After a duration of this time if the client doesn't see any activity it
           ## pings the server to see if the transport is still alive.
@@ -40,17 +39,12 @@ asjard:
           ## when there are no active RPCs, Time and Timeout will be ignored and no
           ## keepalive pings will be sent.
           # permitWithoutStream: false
-      ## 指定服务的自定义配置
-      ## 连接到instance.name为helloGrpc这个服务的grpc客户端相关配置
-      ## 配置同asjard.clients.grpc相关配置
+      ## specify service configuration
       helloGrpc:
-        ## helloGrpc 这个服务的负载均衡
+        ## same as asjard.client.grpc configurations
         # loadbalance: ""
-        ## heeloGrpc 这个服务的证书
         # certFile: ""
-        ## helloGrpc 这个服务的拦截器
         # interceptors: ""
-        ## 同clients.grpc.options相关配置
         # options: {}
     asynq:
       redis: default

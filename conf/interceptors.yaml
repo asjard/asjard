@@ -1,21 +1,19 @@
 asjard:
-  ## 拦截器相关配置
+  ## interceptor configurations.
   interceptors:
-    ## 客户端拦截器
+    ## client interceptor configurations.
     client:
-      ## 断路器相关配置
-      ## 服务
+      ## circuit breaker interceptor configurations.
       ## https://github.com/afex/hystrix-go/blob/master/hystrix/settings.go#CommandConfig
-      ## 优先级 methods -> service -> default
+      ## priority methods -> service -> default
       circuitBreaker:
-        ## 默认配置
-        ## 超时时间,单位毫秒
+        ## default timeout, in milliseconds
         # timeout: 1000
         # max_concurrent_requests: 1000
         # request_volume_threshold: 20
         # sleep_window: 5000
         # error_percent_threshold: 50
-        ## 方法优先级
+        ## method priority
         ## protocol://service/method
         ## protocol://service
         ## protocol:///method
@@ -27,11 +25,11 @@ asjard:
           - name: grpc://servicesName/method
             timeout: 1000
           - name: //serviceName
-      ## rest请求头注入到rpc的context上下文中
+      ## rest to grpc interceptor
       rest2RpcContext:
-        ## 允许注入的请求头
+        ## Allows injection of request headers from rest into grpc
         # allowHeaders: ""
-        ## 内建允许注入的请求头
+        ## builtin allow headers
         # builtInAllowHeaders:
         #   - x-request-region
         #   - x-request-az
@@ -39,26 +37,25 @@ asjard:
         #   - x-request-instance
         #   - x-forward-for
         #   - traceparent
-    ## 服务端拦截器相关配置
+    ## server interceptor
     server:
-      ## 限速器配置
+      ## ratelimiter configuration.
       rateLimiter:
-        ## 是否开启限速
         # enabled: false
-        ## 每秒最多多少个请求
-        ## <0表示不限制
+        ## Maximum number of requests per second
+        ## <0 means no limit
         # limit: -1
-        ## 桶容量大小,小于0则为limit值
+        ## Bucket capacity, if less than 0, it is the limit value.
         # burst: -1
-        ## 单独方法的限速配置
+        ## specify method ratelimiter configuration.
         methods:
-          ## 方法名称
+          ## method name
           ## [{protocol}://]{method}
-          ## 所有协议健康检查限速每秒10个请求
+          ## All protocol health checks are limited to 10 requests per second
           # - name: /asjard.api.health.Health/Check
           #   limit: 10
           #   burst: 10
-          ## grpc协议的/api.v1.server.Server/Hello限速每秒20个请求
+          ## The grpc protocol /api.v1.server.Server/Hello has a rate limit of 20 requests per second
           # - name: grpc:///api.v1.server.Server/Hello
           #   limit: 20
           #   burst: 20

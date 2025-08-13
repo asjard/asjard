@@ -1,27 +1,22 @@
-## 配置中心相关
 asjard:
+  ## config management
   config:
-    ## 添加配置默认配置源
-    ## Set方法默认配置源, 如果不配置或者为空，则发送给所有配置源, 默认mem
-    ## 具体是否能够添加配置到配置源中要看具体配置源是否实现Set功能
+    ## Adding a default configuration source
+    ## The Set method sets the default configuration source. If not specified or empty, all configuration sources are sent. Defaults to mem
+    ## Whether you can add a configuration source depends on whether the specific configuration source implements the Set function.
     # setDefaultSource: mem
 
-    ## 配置源相关配置
-    ## key为配置源名称
-    ## value为配置源相关的配置
-    ## etcd配置中心配置
+    ## etcd configuration source
     etcd:
-      ## 配置中心名称
-      ## 依赖asjard.stores.etcd.clients.{client}的配置
+      ## etcd client name
+      ## asjard.stores.etcd.clients.{this name}
       # client: default
-      ## 分隔符
-      ## etcd中多个key之间分隔符
+      ## key split delimiter
       # delimiter: "/"
-    ## consul配置中心相关配置
+    ## consul configuration source
     consul:
-      ## 配置中心名称
-      ## 依赖asjard.stores.consul.clients.{cllient}的配置
+      ## consul client name
+      ## asjard.stores.consul.clients.{this name}
       # client: default
-      ## 分隔符
-      ## consul中多个key之间分隔符
+      ## key split delimiter
       # delimiter: "/"

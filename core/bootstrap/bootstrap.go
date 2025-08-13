@@ -4,27 +4,25 @@ Package bootstrap 服务初始化后启动之前执行的一些初始化任务�
 package bootstrap
 
 import (
-	// 加载加解密组件
+	// init security component
 	_ "github.com/asjard/asjard/pkg/security"
-	// 服务端拦截器
+	// init server interceptors
 	_ "github.com/asjard/asjard/pkg/server/interceptors"
-	// 默认handler
+	// init server handlers
 	_ "github.com/asjard/asjard/pkg/server/handlers"
-	// 客户端拦截器
+	// init client interceptors
 	_ "github.com/asjard/asjard/pkg/client/interceptors"
-	// 导入pprof包, 这样就不需要在main函数中导入了
+	// init pprof
 	_ "github.com/asjard/asjard/pkg/server/pprof"
-	// 导入内存配置源
+	// init mem configuration source
 	_ "github.com/asjard/asjard/pkg/config/mem"
-	// 导入环境变量配置源
+	// init env configuration source
 	_ "github.com/asjard/asjard/pkg/config/env"
 )
 
-// Initiator 初始化需要实现的方法
+// Initiator Initialization methods that need to be implemented
 type Initiator interface {
-	// 启动
 	Start() error
-	// 停止
 	Stop()
 }
 
@@ -36,8 +34,8 @@ var (
 	initiatorMap      = make(map[Initiator]struct{})
 )
 
-// AddBootstrap 添加启动方法
-// 初始化后，服务启动前执行
+// AddBootstrap adds the startup method
+// Executed after initialization and before the service starts
 func AddBootstrap(handler Initiator) {
 	if _, ok := bootstrapedMap[handler]; !ok {
 		bootstrapHandlers = append(bootstrapHandlers, handler)
@@ -45,15 +43,15 @@ func AddBootstrap(handler Initiator) {
 	}
 }
 
-// AddBootstraps 批量添加启动方法
+// AddBootstraps Batch add startup method
 func AddBootstraps(handlers ...Initiator) {
 	for _, handler := range handlers {
 		AddBootstrap(handler)
 	}
 }
 
-// AddInitator 添加初始化方法
-// 加载到env,file环境变量后执行
+// AddInitator adds initialization methods
+// Loads into the env file environment variable and executes
 func AddInitiator(handler Initiator) {
 	if _, ok := initiatorMap[handler]; !ok {
 		initiatorHandlers = append(initiatorHandlers, handler)
@@ -61,14 +59,14 @@ func AddInitiator(handler Initiator) {
 	}
 }
 
-// AddInitiators 批量添加初始化方法
+// AddInitiators Batch add initialization method
 func AddInitiators(handlers ...Initiator) {
 	for _, handler := range handlers {
 		AddInitiator(handler)
 	}
 }
 
-// Init 初始化
+// Init run all initialization methods.
 func Init() error {
 	for _, handler := range initiatorHandlers {
 		if err := handler.Start(); err != nil {
@@ -78,7 +76,7 @@ func Init() error {
 	return nil
 }
 
-// Bootstrap 系统启动
+// Bootstrap run all startup methods.
 func Bootstrap() error {
 	for _, handler := range bootstrapHandlers {
 		if err := handler.Start(); err != nil {
@@ -88,7 +86,7 @@ func Bootstrap() error {
 	return nil
 }
 
-// Shutdown 系统停止
+// Shutdown stop all initializaiton and startup methods.
 func Shutdown() {
 	for idx := len(bootstrapHandlers) - 1; idx >= 0; idx-- {
 		bootstrapHandlers[idx].Stop()
