@@ -120,7 +120,12 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 	if err := r.cc.UpdateState(resolver.State{
 		Addresses: addresses,
 	}); err != nil {
-		logger.Error("update state fail", "err", err)
+		logger.Error("update state fail",
+			"resolve_protocol", r.protocol,
+			"resolve_service", r.serviceName,
+			"resolve_instance", r.instanceID,
+			"resolve_registry", r.registryName,
+			"err", err)
 	}
 }
 
