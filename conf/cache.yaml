@@ -1,36 +1,47 @@
-## 缓存相关配置
 asjard:
+  ## cache configuration section
   cache:
-    ## 全局是否开启缓存
+    ## enable cache.
     # enabled: false
-    ## 全局是否自动刷新
+    ## auto refresh.
+    ## If enabled, the cache expiration time will be refreshed after the cache is obtained.
     # autoRefresh: false
-    ## 忽略版本差异
-    ## 默认缓存key带version标签
-    ## 升级服务版本后缓存将会集体失效
+    ## ignore ${asjard.service.instance.version} value in cache key.
+    ## If enabled, After upgrading the service version, the cache will be collectively invalidated.
     # ignoreVersionDiff: false
-    ## 全局过期时间
+    ## ignore ${asjard.service.app} value in cache key.
+    # ignoreAppDiff: false
+    ## ignore ${asjard.service.environment} value in cache key.
+    # ignoreEnvDiff: false
+    ## ignore ${asjard.service.instance.name} value in cache key.
+    # ignoreServiceDiff: false
+    ## ignore ${asjard.service.region} in cache key.
+    # ignoreRegionDiff: false
+    ## ignore ${asjard.service.az} in cache key.
+    # ignoreAzDiff: false
+    ## cache expire time
     # expiresIn: 10m
-    ## 空值过期时间
+    ## empty cache expire time
+    ## if not set, it will be set half of expiresIn
     # emptyExpiresIn: 5m
-    ## 全局表缓存配置
+    ## specify table cache configuration
     models:
-      ## 表名
-      ## 配置同asjard.cache相关配置
+      ## table name
       modelName:
+        ## the configurate is same as asjard.cache
         # enabled: false
         # autoRefresh: false
-    ## redis缓存相关配置
-    ## 如果不配置则继承asjard.cache
+    ## redis cache configuration
     redis:
-      ## redis客户端
-      ## asjard.stores.redis.clients.{这里的名称}
+      ## redis client name
+      ## asjard.stores.redis.clients.{this name}
       # client: default
-    ## 本地缓存相关配置
-    ## 除redisClient字段其他字段如果不配置则继承asjard.cache
+      ## other configurations same as asjard.cache
+    ## local cache configuration
     local:
-      ## redis客户端
-      ## 多实例情况下需要通过redis删除其他节点的缓存
+      ## redis client name
+      ## Use redis to broadcast other instances to delete local cache
       # redisClient: default
-      ## 最大内存使用, 默认100 * 1024 * 1024
+      ## max memory use, default: 100 * 1024 * 1024
       # maxSize: 104857600
+      ## other configurations same as asjard.cache

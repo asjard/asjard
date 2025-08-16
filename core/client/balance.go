@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	// DefaultBalanceRoundRobin 默认负载均衡器roundrobin
+	// DefaultBalanceRoundRobin default loading balance roundrobin
 	DefaultBalanceRoundRobin = "roundRobin"
-	// HeaderRequestSource 请求源服务
+	// HeaderRequestSource request source
 	HeaderRequestSource = "x-request-source"
-	// HeaderRequestDest 请求目的地
+	// HeaderRequestDest request destination
 	HeaderRequestDest = "x-request-dest"
-	// HeaderRequestApp 请求应用
+	// HeaderRequestApp request app
 	HeaderRequestApp = "x-request-app"
 )
 
@@ -26,15 +26,15 @@ type SubConn struct {
 // NewBalancerPicker .
 type NewBalancerPicker func(scs map[balancer.SubConn]base.SubConnInfo) Picker
 
-// 负载均衡器列表
+// all balances
 var balancers = make(map[string]NewBalancerPicker)
 
-// AddBalancer 添加负载均衡器
+// AddBalancer add custome loadbalance
 func AddBalancer(name string, newPicker NewBalancerPicker) {
 	balancers[name] = newPicker
 }
 
-// BalanceBuilder 负载均衡构造器
+// BalanceBuilder balance builder
 type BalanceBuilder struct {
 	newPicker NewBalancerPicker
 }

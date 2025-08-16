@@ -1,30 +1,26 @@
 asjard:
-  ## 数据相关配置
   stores:
-    ## gorm数据库相关配置
+    ## gorm configuration.
     gorm:
-      ## 数据库列表
       dbs:
-        ## default数据库配置
+        ## client name
         default:
-          ## 此字段受cipherName保护
+          ## This field is protected by cipherName
           dsn: root:my-secret-pw@tcp(127.0.0.1:3306)/exmple-database?charset=utf8&parseTime=True&loc=Local
-          ## 数据库驱动
           ## mysql, postgres,sqlite,sqlserver,clickhouse
           ## ref: https://gorm.io/zh_CN/docs/connecting_to_the_database.html#PostgreSQL
           driver: mysql
-          ## 加密组件名称
-          ## 不为空则使用加密组件解密后连接数据库
+          ## cipher name
+          ## If not empty, use the encryption component to decrypt and connect to the database
           cipherName: ""
-          ## 加密组件参数, map[string]any类型
+          ## Encryption component parameters, map[string]any type
           cipherParams: {}
-          ## 驱动自定义配置
+          ## Driver Custom Configuration
           options:
-            ## 继承asjard.stores.gorm.options
-            ## 自定义驱动名称
+            ## custome driver name.
             ## ref: https://gorm.io/docs/connecting_to_the_database.html#Customize-Driver
             # driverName: ""
-      ## 数据库连接配置
+            ## other configuration same as asjard.stores.gorm.options.
       options:
         # maxIdleConns: 10
         # maxOpenConns: 1001
@@ -36,13 +32,11 @@ asjard:
         # traceable: false
         # metricsable: false
 
-    ## etcd相关配置
+    ## etcd client configuration.
     etcd:
-      ## etcd列表
       clients:
         default:
-          ## etcd地址列表
-          ## endpoints,username,password受cipherName保护
+          ## endpoints,username,password protected by cipherName
           endpoints:
             - 127.0.0.1:2379
           # endpoints: 127.0.0.1:2379
@@ -51,7 +45,6 @@ asjard:
 
           ## Password is a password for authentication.
           # password: ""
-          ## 解密组件名称
           cipherName: ""
           cipherParams: {}
       options:
@@ -102,34 +95,33 @@ asjard:
         # certFile: ""
         # keyFile: ""
 
+    ## rabbitmq client configuration.
     rabbitmq:
       clients:
         default:
-          ## url受cipherName保护
+          ## protected by cipherName
           url: ""
           vhost: ""
-          ## 解密组件名称
           cipherName: ""
           cipherParams: {}
         options:
           channelMax: 0
           frameSize: 0
           heartBeat: 1s
-    ## redis相关配置
+    ## redis client configuration.
     redis:
       clients:
         default:
           ## host:port address
-          ## address,username,password受cipherName保护
+          ## address,username,password protected by cipherName
           # address: 127.0.0.1
           # username: ""
           # password: ""
-          ## 加解密组件名称
           cipherName: ""
           cipherParams: {}
           # db: 0
           options:
-            ## 继承asjard.stores.redis.options
+            ## same as asjard.stores.redis.options
         # cache: ${asjard.stores.clients.default}
       options:
         ## ClientName will execute the `CLIENT SETNAME ClientName` command for each conn.
@@ -229,7 +221,7 @@ asjard:
     consul:
       clients:
         default:
-          ## address,username,password受cipherName保护
+          ## address,username,password protected by cipherName
           # address: 127.0.0.1:8500
           # schema: ""
           # pathPrefix: ""
@@ -240,7 +232,6 @@ asjard:
           # token: ""
           # namespace: ""
           # partition: ""
-          ## 解密组件名称
           cipherName: ""
           cipherParams: {}
     mongo:

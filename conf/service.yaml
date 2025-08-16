@@ -1,33 +1,30 @@
 asjard:
   service:
-    ## 项目名称
-    ## 一个项目下可能会有多个服务
-    ## 不实时生效，修改后需重新启动服务
+    ## project name
+    ## There may be multiple services under a project
     # app: asjard
-    ## 当前部署环境，例如: dev, sit, uat,rc,pro等
-    ## 如果对接的是service_center则这里需要配置development,testing,production,acceptance
+    ## Current deployment environment, e.g., dev, sit, uat, rc, pro, etc.
+    ## If you are connecting to a service_center, you will need to configure development, testing, production, and acceptance here.
     # environment: "dev"
-    ## 部署区域,例如: east-1, east-2
-    ## 表示不同地域，内网不互通，只能通过公网相互连接的不同区域
+    ## Deployment region, for example: east-1, east-2
+    ## Indicates different regions with no intranet connectivity and can only be connected via the public network.
     # region: "default"
-    ## 可用区，例如: az-1,az-2
-    ## 表示同一区域内，或者同一个机房内，可以内网互通
+    ## Availability Zone, for example: az-1,az-2
+    ## Indicates that the devices are within the same region or data center, allowing intranet connectivity.
     # avaliablezone: "default"
-    ## 站点地址
     # website: "https://github.com/${asjard.service.app}/${asjard.service.instance.name}"
     # favicon: "favicon.ico"
-    ## 服务描述
+    ## service description.
     desc: |
-      这里是服务描述
-    ## 服务实例详情
+      here is the service description, support markdown
     instance:
-      ## 系统码
+      ## System unique identification code
       # systemCode: 100
-      ## 可被共享
+      ## Can be accessed by services in different az
       # shareable: false
-      ## 服务名称
+      ## service name
       # name: ${asjard.app}
-      ## 服务版本
+      ## service version
       # version: 1.0.0
-      ## 自定义服务源数据
+      ## custome service configuration.
       # metadata:

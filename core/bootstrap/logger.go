@@ -7,14 +7,14 @@ import (
 	"github.com/asjard/asjard/core/logger"
 )
 
-// Logger 服务启动后日志配置变化监听
+// Logger watch log configuration change after server start.
 type Logger struct{}
 
 func init() {
 	AddBootstrap(&Logger{})
 }
 
-// Start 监听日志变化
+// Start watch log cofiguration change.
 func (l Logger) Start() error {
 	l.update()
 	config.AddPrefixListener("asjard.logger", func(*config.Event) {

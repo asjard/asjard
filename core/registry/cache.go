@@ -37,7 +37,7 @@ type cache struct {
 	// value: 失败次数
 	failureThresholds map[string]int
 	fm                sync.RWMutex
-	listeners         map[string]*listener
+	listeners         map[string][]*listener
 	lm                sync.RWMutex
 }
 
@@ -53,7 +53,7 @@ func newCache(conf *Config, hf healthCheckFunc) *cache {
 		failureThreshold:  conf.FailureThreshold,
 		healthCheckFunc:   hf,
 		failureThresholds: map[string]int{},
-		listeners:         map[string]*listener{},
+		listeners:         map[string][]*listener{},
 		conf:              conf,
 	}
 	if conf.HealthCheck {
@@ -88,10 +88,10 @@ func (c *cache) pick(options *Options) []*Instance {
 func (c *cache) addListener(options *Options) {
 	if options.watchName != "" && options.watch != nil {
 		c.lm.Lock()
-		c.listeners[options.watchName] = &listener{
+		c.listeners[options.watchName] = append(c.listeners[options.watchName], &listener{
 			options:  options,
 			callback: options.watch,
-		}
+		})
 		c.lm.Unlock()
 	}
 }
@@ -135,12 +135,14 @@ func (c *cache) delete(instance *Instance) {
 
 func (c *cache) notify(eventType EventType, instance *Instance) {
 	c.lm.RLock()
-	for _, listener := range c.listeners {
-		if instance.canPick(listener.options) {
-			listener.options.watch(&Event{
-				Type:     eventType,
-				Instance: instance,
-			})
+	for _, listeners := range c.listeners {
+		for _, listener := range listeners {
+			if instance.canPick(listener.options) {
+				listener.options.watch(&Event{
+					Type:     eventType,
+					Instance: instance,
+				})
+			}
 		}
 	}
 	c.lm.RUnlock()

@@ -1,12 +1,7 @@
-## 加解密相关配置
 asjard:
+  ## encrypt and decrypt configuration
   cipher:
-    ## 如果需要加解密配置文件则需要将此配置加载到环境变量中
-    ## cipher_aesCBCPkcs5padding_base64Key=
-    ## cipher_aesCBCPkcs5padding_base64Iv=
+    ## cipher name
     aesCBCPkcs5padding:
-      ## 密钥， 长度必须为16,24,32
       # base64Key: ""
-      ## 偏移量, 长度必须为16
-      ## 如果为空则获取base64Key的前16个字符
       # base64Iv: ""

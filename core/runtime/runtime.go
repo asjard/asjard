@@ -112,7 +112,10 @@ func (app APP) ResourceKey(resource, key string, opts ...Option) string {
 	if resource == "" {
 		resource = "resource"
 	}
-	keys = append(keys, app.App, resource)
+	if !options.withoutApp {
+		keys = append(keys, app.App)
+	}
+	keys = append(keys, resource)
 	if !options.withoutEnv {
 		keys = append(keys, app.Environment)
 	}
@@ -129,7 +132,10 @@ func (app APP) ResourceKey(resource, key string, opts ...Option) string {
 	}
 
 	if !options.withoutRegion {
-		keys = append(keys, app.Region, app.AZ)
+		keys = append(keys, app.Region)
+	}
+	if !options.withoutAz {
+		keys = append(keys, app.AZ)
 	}
 	if key != "" {
 		keys = append(keys, key)

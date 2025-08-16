@@ -1,43 +1,35 @@
 asjard:
-  ## 服务发现，注册相关配置
+  ## registry configuration.
   registry:
-    ## 是否自动服务注册
+    ## if enabled, the service will register into registration center after service start
     # autoRegiste: true
-    ## 延迟注册, 服务启动后等待延迟时间后注册服务到注册中心
+    ## Delayed registration, wait for the delay time after the service starts and then register the service to the registration center
     # delayRegiste: 0s
-    ## 注册心跳, 开启后每隔一个心跳时间注册服务到服务注册中心
     # heartbeat: false
-    ## 心跳频率
     # heartbeatInterval: 5s
 
-    ## 自动服务发现, 自动从配置中心发现服务
+    ## Automatic service discovery, automatically discover services from the service center
     # autoDiscove: true
-    ## 服务健康检查，检查服务是否正常，如果不正常则从本地缓存中删除该服务
     # healthCheck: false
-    ## 健康检查间隔时间
     # healthCheckInterval: 10s
-    ## 认定检查失败的检查阈值(连续失败次数)
     # failureThreshold: 1
 
-    ## 本地服务发现配置
-    ## 实时生效，无需重启服务
+    ## Local service discovery configuration
     localDiscover:
-      ## 服务名称
-      ## 配置格式{protocol}://{ip}:{port}
+      ## servicename
+      ## format: {protocol}://{ip}:{port}
       # helloGrpc:
       # - grpc://127.0.0.1:7010
       # - grpc://127.0.0.1:7011
 
-    ## etcd注册发现中心相关配置
+    ## etcd service discovery configuration.
     etcd:
-      ## 配置asjard.stores.etcd.clients中的数据库名称(key)
+      ## etcd client name
       # client: default
-      ## 超时时间
       # timeout: 5s
 
-    ## consul注册发现中心相关配置
+    ## consul service disconver configuration.
     consul:
-      ## 配置asjard.stores.consul.clients中的数据库名称
+      ## consul client name
       # client: default
-      ## 超时时间
       # timeout: 5s

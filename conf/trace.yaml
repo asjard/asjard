@@ -1,17 +1,14 @@
-## 链路追踪相关配置
 asjard:
   trace:
-    ## 是否开启链路追踪
     enabled: false
 
-    ## 支持otel协议的地址
-    ## 带协议路径的地址
+    ## the address that support otel protocol
     ## http://127.0.0.1:4318
     ## grpc://127.0.0.1:4319
     # endpoint: http://127.0.0.1:4318
 
     # timeout: 1s
-    ## ASJARD_CERT_DIR路径下的配置文件
+    ## relative ASJARD_CERT_DIR
     # certFile: ""
     # keyFile: ""
     # caFile: ""

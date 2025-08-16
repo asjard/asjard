@@ -1,11 +1,9 @@
-## 服务欧相关配置
 asjard:
-  ## 多协议服务相关配置
-  ## 不实时生效，修改后需重新启动
+  ## servers configuration.
   servers:
-    ## 协议无关的服务端拦截器列表,多个拦截器以英文逗号(,)分隔
+    ## server interceptors.
     # interceptors: ""
-    ## 内建配置的拦截器
+    ## builtin server interceptors.
     # builtInInterceptors:
     #   - ratelimiter
     #   - metrics
@@ -14,43 +12,36 @@ asjard:
     #   - restResponseHeader
     #   - i18n
     #   - trace
-    ## 默认处理器
     # defaultHandlers: ""
-    ## 内建配置的默认处理器
+    ## builtin default handlers.
     # builtInDefaultHandlers:
     #   - health
     #   - metrics
-    ## 证书文件,ASJARD_CERT_DIR下的路径
+    ## relative ASJARD_CERT_DIR
     certFile: ""
-    ## 私钥文件, ASJARD_CERT_DIR下的路径
+    ## relative ASJARD_CERT_DIR
     keyFile: ""
 
-    ## rabbitmq server相关配置
+    ## rabbitmq server
     rabbitmq:
       ## asjard.stores.rabbitmq.client.{name}
       clientName: default
-      ## channel qos配置
-      ## 一次能接受的最大消息数量
+      ## channel qos
       prefetchCount: 1
-      ## 服务器传递最大容量
       prefetchSize: 0
       global: false
 
-    ## grpc相依相关配置
-    ## 继承asjard.servers配置
+    ## grpc configuration
     grpc:
-      ## 是否开启grpc服务
+      ## enable grpc server
       enabled: false
       addresses:
-        ## 本机监听地址
-        ## 如果配置为"0.0.0.0"的IPv4地址或者"::"的IPv6地址,注册到注册中的地址会被修改为
-        ## 网卡中读取到的第一个IPv4地址，或者第一个IPv6地址
+        ## If the IPv4 address is "0.0.0.0" or the IPv6 address is "::", the address registered in the register will be changed to
+        ## The first IPv4 address or the first IPv6 address read by the network card
         # listen: 127.0.0.1:7010
-        ## 垮区域访问地址,可以为IP地址加端口，或者域名
+        ## Cross-region access address, you can add IP address and port, or domain name
         # advertise: 47.121.0.5:8080
-      ## 服务启动相关参数配置
       options:
-        ## keepalive相关配置
         keepaliveParams:
           ## MaxConnectionIdle is a duration for the amount of time after which an
           ## idle connection would be closed by sending a GoAway. Idleness duration is
@@ -75,27 +66,19 @@ asjard:
           ## of Timeout and if no activity is seen even after that the connection is
           ## closed.
           # timeout: !!str 1s
-    ## pprof相关配置
     pprof:
-      ## 同grpc相关配置
       # enabled: false
-      ## 同grpc相关配置
       # addresses:
       # listen: 127.0.0.1:7020
-    ## rest(HTTP)协议相关配置
     rest:
-      ## 同grpc相关配置
       enabled: true
-      ## 文档相关配置
       doc:
-        ## 错误页地址, 如果错误返回，默认可以解决错误的文档地址
-        ## 如果不配置则使用website配置
+        ## Error page address. If an error is returned, the default document address that can resolve the error is used.
+        ## If not configured, the website configuration is used.
         # errPage: ${asjard.service.website}
-      ## openapi相关配置
       openapi:
-        ## 是否开启openapi
         # enabled: false
-        ## 文档域名,为空则依次为
+        ## Document domain name, if empty then
         ## asjard.servers.rest.addresses.advertise
         ## asjard.servers.rest.addresses.listen
         # endpoint: https://example.com
@@ -114,12 +97,11 @@ asjard:
           # hideClients: []
           # authentication: ""
       routes:
-        ## 开启后会多一个接口/routes,返回当前服务所有的rest routes
+        ## if enabled, there will be an additional interface /routes, which returns all the rest routes of the current service
         enabled: true
       ## 国际化是否相关配置
       i18n:
         # enabled: false
-      ## 跨域相关配置
       cors:
         # allowAllOrigins: false
         # allowOrigins: "*"
@@ -136,13 +118,11 @@ asjard:
         #   - Content-Type
         # exposeHeaders: ""
         # allowCredentials: false
-        # maxAge: 12h
       ## 同grpc相关配置
       addresses:
         # listen: 127.0.0.1:7030
         # advertise: 127.0.0.1:7030
-      ## 服务启动相关配置
-      ## 具体配置信息可参考https://github.com/valyala/fasthttp/blob/v1.55.0/server.go#L148
+      ## reference https://github.com/valyala/fasthttp/blob/v1.55.0/server.go#L148
       # options:
       #   ## The maximum number of concurrent connections the server may serve.
       #   ##

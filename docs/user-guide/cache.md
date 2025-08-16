@@ -18,9 +18,15 @@ asjard:
     ## 默认缓存key带version标签
     ## 升级服务版本后缓存将会集体失效
     # ignoreVersionDiff: false
+    # ignoreAppDiff: false
+    # ignoreEnvDiff: false
+    # ignoreServiceDiff: false
+    # ignoreRegionDiff: false
+    # ignoreAzDiff: false
     ## 全局过期时间
     # expiresIn: 10m
     ## 空值过期时间
+    ## 如果不设置则为expiresIn的一半
     # emptyExpiresIn: 5m
     ## 全局表缓存配置
     models:

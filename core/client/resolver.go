@@ -91,7 +91,7 @@ func (r *clientResolver) listenerName() string {
 }
 
 func (r *clientResolver) update(instances []*registry.Instance) {
-	var addresses []resolver.Address
+	addresses := []resolver.Address{}
 	for _, instance := range instances {
 		attr := attributes.New(AddressAttrKey{}, instance)
 		endpoint, ok := instance.Service.GetEndpoint(r.protocol)
@@ -116,17 +116,16 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 			}
 		}
 	}
-	if len(addresses) == 0 {
-		logger.Warn("no valid addresses found, skipping UpdateState")
-		return
-	}
-
 	logger.Debug("updating state with addresses", "addresses", addresses)
-
 	if err := r.cc.UpdateState(resolver.State{
 		Addresses: addresses,
 	}); err != nil {
-		logger.Error("update state fail", "err", err)
+		logger.Error("update state fail",
+			"resolve_protocol", r.protocol,
+			"resolve_service", r.serviceName,
+			"resolve_instance", r.instanceID,
+			"resolve_registry", r.registryName,
+			"err", err)
 	}
 }
 
