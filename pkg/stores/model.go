@@ -1,6 +1,3 @@
-/*
-存储实现,存储规范定义
-*/
 package stores
 
 import (
@@ -12,27 +9,26 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-// Model 带缓存的数据存储，获取，删除
+// Model provider some methods that manager data in database and cache
 type Model struct {
 	sg singleflight.Group
 }
 
-// Modeler 模型需要实现的方法
+// Modeler is a interface that who want need mangager data in database and cache to implement
 type Modeler interface {
-	// 返回库名和表名
+	// unique model name, like: database_name_table_name
 	ModelName() string
 }
 
 const (
-	// DefaultSingleflightKey 默认singleflight
+	// DefaultSingleflightKey default single flight key
 	DefaultSingleflightKey = "default"
 )
 
-// GetData 获取数据
-// 先从缓存获取数据，如果缓存中没有数据则从数据源获取数据
-// out: 将获取到的数据赋值给这个参数
-// cacher: 将从这个缓存获取数据，如果获取不到数据则会执行do方法
-// get: 从数据源获取数据
+// GetData from database or cache.
+// get data from cache first
+// if cache not enabled or not found in cache
+// call get function get data from database
 func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (any, error)) (err error) {
 	if out == nil {
 		logger.Error("GetData out is nil")
@@ -45,27 +41,26 @@ func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (
 		}
 		return m.copy(result, out)
 	}
-	// 从缓存获取数据
+	// get data from cache
 	fromCurrent, err := cache.Get(ctx, cache.Key(), out)
 	if err != nil {
-		// 从数据源获取数据
+		// get data from database
 		result, err, _ := m.sg.Do(cache.Key(), get)
 		if err != nil {
-			// 如果从数据源也没有获取到数据
-			// 则可以设置一个空值
+			// if data not found from database
+			// set a empty data in cache
 			if rerr := cache.Set(ctx, cache.Key(), out, cache.EmptyExpiresIn()); rerr != nil {
 				logger.Error("set empty into cache fail", "err", rerr)
 			}
 			return err
 		}
-		// 设置缓存
+		// update cache
 		if err := cache.Set(ctx, cache.Key(), result, cache.ExpiresIn()); err != nil {
 			logger.Error("set cache fail", "key", cache.Key(), "err", err)
 		}
 		return m.copy(result, out)
 	}
-	// 刷新缓存时间
-	// 如果获取到的数据是从当前缓存中获取到的则刷新缓存
+	// refresh cache expire time
 	if fromCurrent && cache.AutoRefresh() {
 		if err := cache.Refresh(ctx, cache.Key(), out, cache.ExpiresIn()); err != nil {
 			logger.Error("refresh cache expire fail", "key", cache.Key(), "err", err)
@@ -74,36 +69,44 @@ func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (
 	return nil
 }
 
-// SetData 更新数据源并删除缓存
-// 先更新数据源，然后删除缓存
-// set: 更新数据源数据, 如果删除缓存过程中出现失败则会通过管道通知
-// caches: 缓存
+// SetData update database and remove cache.
 func (m *Model) SetData(ctx context.Context, set func() error, caches ...Cacher) error {
-	// 更新数据源数据
-	if err := set(); err != nil {
-		return err
-	}
+	// remove cache
 	for _, cache := range caches {
-		// 删除缓存
 		if err := m.delCache(ctx, cache); err != nil {
 			return err
 		}
 	}
+	// update database
+	if err := set(); err != nil {
+		return err
+	}
+
+	// remove cache again
+	go func(ctx context.Context, caches ...Cacher) {
+		for _, cache := range caches {
+			// 删除缓存
+			if err := m.delCache(ctx, cache); err != nil {
+				logger.L(ctx).Error("delay delete cache fail", "err", err)
+			}
+		}
+	}(ctx, caches...)
 	return nil
 }
 
-// SetAndGetData 更新数据并返回更新后的数据
+// SetAndGetData update database and update cache.
 func (m *Model) SetAndGetData(ctx context.Context, out any, cache Cacher, set func() (any, error)) error {
 	if out == nil {
 		logger.Error("SetAndGetData out is nil")
 		return status.InternalServerError()
 	}
-	result, err := set()
-	if err != nil {
+
+	if err := m.delCache(ctx, cache); err != nil {
 		return err
 	}
 
-	if err := m.delCache(ctx, cache); err != nil {
+	result, err := set()
+	if err != nil {
 		return err
 	}
 
@@ -127,9 +130,6 @@ func (m *Model) delCache(ctx context.Context, cache Cacher) error {
 	return nil
 }
 
-// from值拷贝到to
-// from和to必须是同类型
-// from 和to 必须是指针
 func (m *Model) copy(from, to any) error {
 	fromVal := reflect.ValueOf(from)
 	toVal := reflect.ValueOf(to)
