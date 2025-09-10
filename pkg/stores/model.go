@@ -3,6 +3,7 @@ package stores
 import (
 	"context"
 	"reflect"
+	"time"
 
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
@@ -84,10 +85,12 @@ func (m *Model) SetData(ctx context.Context, set func() error, caches ...Cacher)
 
 	// remove cache again
 	go func(ctx context.Context, caches ...Cacher) {
-		for _, cache := range caches {
-			// 删除缓存
-			if err := m.delCache(ctx, cache); err != nil {
-				logger.L(ctx).Error("delay delete cache fail", "err", err)
+		select {
+		case <-time.After(100 * time.Millisecond):
+			for _, cache := range caches {
+				if err := m.delCache(ctx, cache); err != nil {
+					logger.L(ctx).Error("delay delete cache fail", "err", err)
+				}
 			}
 		}
 	}(ctx, caches...)
@@ -122,7 +125,6 @@ func (m *Model) delCache(ctx context.Context, cache Cacher) error {
 	if cache == nil || !cache.Enabled() {
 		return nil
 	}
-	// 删除缓存数据
 	if err := cache.Del(ctx, cache.Key()); err != nil {
 		logger.Error("delete cache fail", "key", cache.Key(), "err", err)
 		return status.DeleteCacheFailError()
