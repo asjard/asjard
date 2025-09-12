@@ -3,9 +3,9 @@
 ```yaml
 asjard:
   servers:
-    ## rabbitmq server相关配置
-    rabbitmq:
-      ## asjard.stores.rabbitmq.client.{name}
+    ## amqp server相关配置
+    amqp:
+      ## asjard.stores.amqp.client.{name}
       clientName: default
       ## channel qos配置
       ## 一次能接受的最大消息数量

@@ -1,4 +1,4 @@
-package xrabbitmq
+package xamqp
 
 type PublishOptions struct {
 	Mandatory, Immediate bool

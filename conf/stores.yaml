@@ -95,8 +95,8 @@ asjard:
         # certFile: ""
         # keyFile: ""
 
-    ## rabbitmq client configuration.
-    rabbitmq:
+    ## amqp client configuration.
+    amqp:
       clients:
         default:
           ## protected by cipherName

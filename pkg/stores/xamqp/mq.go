@@ -1,4 +1,4 @@
-package xrabbitmq
+package xamqp
 
 import (
 	"crypto/tls"
@@ -105,12 +105,12 @@ func Client(opts ...Option) (*ClientConn, error) {
 	}
 	conn, ok := clientManager.clients.Load(options.clientName)
 	if !ok {
-		logger.Error("rabbitmq not found", "name", options.clientName)
+		logger.Error("amqp not found", "name", options.clientName)
 		return nil, status.DatabaseNotFoundError()
 	}
 	client, ok := conn.(*ClientConn)
 	if !ok {
-		logger.Error("invalid rabbitmq client, must be *ClientConn", "current", fmt.Sprintf("%T", conn))
+		logger.Error("invalid amqp client, must be *ClientConn", "current", fmt.Sprintf("%T", conn))
 		return nil, status.InternalServerError()
 	}
 	return client, nil
@@ -128,9 +128,9 @@ func (c *ClientManager) Stop() {
 	c.clients.Range(func(key, value any) bool {
 		conn, ok := value.(*ClientConn)
 		if ok && !conn.conn.IsClosed() {
-			logger.Debug("rabbitmq close", "client", conn.name)
+			logger.Debug("amqp close", "client", conn.name)
 			// if err := conn.conn.Close(); err != nil {
-			// 	logger.Error("close rabbitmq conn fail", "name", conn.name, "err", err)
+			// 	logger.Error("close amqp conn fail", "name", conn.name, "err", err)
 			// }
 			close(conn.done)
 			c.clients.Delete(key)
@@ -144,7 +144,7 @@ func (c *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	for name, conf := range clients {
 		conn, err := c.newClient(name, conf)
 		if err != nil {
-			logger.Error("connect to rabbitmq fail", "name", name, "conf", conf, "err", err)
+			logger.Error("connect to amqp fail", "name", name, "conf", conf, "err", err)
 			return err
 		}
 		clientConn := &ClientConn{
@@ -166,7 +166,7 @@ func (c *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 			clientConn.keepalive()
 		}
 		c.clients.Store(name, clientConn)
-		logger.Debug("connect to rabbitmq success", "name", name, "conf", conf)
+		logger.Debug("connect to amqp success", "name", name, "conf", conf)
 	}
 	return nil
 }
@@ -226,22 +226,22 @@ func (c *ClientManager) loadAndWatch() (map[string]*ClientConnConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	config.AddPatternListener("asjard.stores.rabbitmq.*", c.watch)
+	config.AddPatternListener("asjard.stores.amqp.*", c.watch)
 	return clients, err
 }
 
 func (c *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 	clients := make(map[string]*ClientConnConfig)
 	options := defaultOptions
-	if err := config.GetWithUnmarshal("asjard.stores.rabbitmq.options", &options); err != nil {
+	if err := config.GetWithUnmarshal("asjard.stores.amqp.options", &options); err != nil {
 		return clients, err
 	}
-	if err := config.GetWithUnmarshal("asjard.stores.rabbitmq.clients", &clients); err != nil {
+	if err := config.GetWithUnmarshal("asjard.stores.amqp.clients", &clients); err != nil {
 		return clients, err
 	}
 	for name, client := range clients {
 		client.Options = options
-		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.stores.rabbitmq.clients.%s.options", name), &client.Options); err != nil {
+		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.stores.amqp.clients.%s.options", name), &client.Options); err != nil {
 			return clients, err
 		}
 	}
@@ -254,7 +254,7 @@ func (c *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 func (c *ClientManager) watch(event *config.Event) {
 	clients, err := c.loadConfig()
 	if err != nil {
-		logger.Error("load rabbitmq config fail", "err", err)
+		logger.Error("load amqp config fail", "err", err)
 		return
 	}
 	if err := c.newClients(clients); err != nil {
@@ -287,11 +287,11 @@ func (c *ClientConn) keepalive() {
 				return
 			default:
 				if c.conn.IsClosed() {
-					logger.Debug("rabbitmq disconnect, start to reconnect", "name", c.name)
+					logger.Debug("amqp disconnect, start to reconnect", "name", c.name)
 					if err := clientManager.newClients(map[string]*ClientConnConfig{
 						c.name: c.conf,
 					}); err == nil {
-						logger.Info("reconnect to rabbitmq success", "name", c.name)
+						logger.Info("reconnect to amqp success", "name", c.name)
 						duration = time.Second
 					} else {
 						duration += time.Second
