@@ -10,87 +10,85 @@ import (
 	"github.com/asjard/asjard/utils"
 )
 
-// Cacher 缓存需要实现的方法
+// Cacher defines the functions cache need to perform
 type Cacher interface {
-	// 从缓存获取数据
-	// fromCurrent 获取到的数据是从当前缓存中获取到的
+	// get data from cache.
+	// if current cache dependence on other cache
+	// need return if not data from current cache flag
+	// if get data from current cache it will excute refresh cache logic.
 	Get(ctx context.Context, key string, out any) (fromCurrent bool, err error)
-	// 从缓存删除数据
+	// remove data from cache.
 	Del(ctx context.Context, keys ...string) error
-	// 设置缓存数据
+	// set data in cache.
 	Set(ctx context.Context, key string, in any, expiresIn time.Duration) error
-	// 刷新缓存过期时间
+	// refresh cache expire time.
 	Refresh(ctx context.Context, key string, in any, expiresIn time.Duration) error
-	// 返回缓存Key名称
+	// return cache key.
 	Key() string
 
-	// 是否开启了缓存
+	// this functions at blow will be implement in default cache.
+	// is cache enabled.
 	Enabled() bool
-	// 是否自动刷新缓存
+	// whether refresh cache expire time.
 	AutoRefresh() bool
-	// 过期时间
+	// return cache expire time.
 	ExpiresIn() time.Duration
-	// 空值过期时间
+	// return empty cache expire time.
+	// if get from database is empty, it will set an empty data in cache.
 	EmptyExpiresIn() time.Duration
 }
 
-// 缓存配置
+// CacheConfig defines the cache config.
 type CacheConfig struct {
-	// 是否开启缓存
+	// enable or disable cache
 	Enabled bool `json:"enabled"`
-	// 是否自动刷新
+	// whether refresh cache
 	AutoRefresh bool `json:"autoRefresh"`
-	// 忽略版本差异
-	// 默认缓存key带version标签
-	// 不同版本缓存key不共享
-	// 升级服务版本后缓存将会集体失效
+	// ignore version different in cache key.
+	// default will take version tag in cache key.
+	// in some scence, cache no need to change in different service version.
 	IgnoreVersionDiff bool `json:"ignoreVersionDiff"`
-	// 忽略应用差异
-	// 开启后缓存key不带app标签
-	// 不同app的缓存可以共享
+	// ignore service different in cache key.
+	// default will take app tag in cache key.
+	// if set true, you can share cache in different product.
 	IgnoreAppDiff bool `json:"ignoreAppDiff"`
-	// 忽略环境差异
-	// 开启后缓存key不带env标签
-	// 不同环境的缓存可共享
+	// ignore environment different in cache key.
+	// default will take env tag in cache key.
+	// if set true, you can share cache in different environment.
 	IgnoreEnvDiff bool `json:"ignoreEnvDiff"`
-	// 忽略服务差异
-	// 开启后缓存key不带service标签
-	// 不同service的缓存可以共享
+	// ignore service different in cache key.
+	// default will take service tag in cache key.
+	// if set true, you can share cache in different service.
 	IgnoreServiceDiff bool `json:"ignoreServiceDiff"`
-	// 忽略地域差异
-	// 开启后缓存key不带region标签
-	// 不同地域的缓存可共享
+	// ignore region different in cache key.
 	IgnoreRegionDiff bool `json:"ignoreRegionDiff"`
-	// 忽略可用去差异
-	// 开启后混存key不带az标签
-	// 不同可用区的缓存可以共享
+	// ignore az different in cache key
 	IgnoreAzDiff bool `json:"ignoreAzDiff"`
-	// 缓存过期时间
+	// cache expire time
 	ExpiresIn utils.JSONDuration `json:"expiresIn"`
-	// 空值缓存过期时间
-	// 如果为空则为ExpiresIn的一半
+	// empty cache expire time
+	// if empty it will set to half of ExpiresIn
 	EmptyExpiresIn utils.JSONDuration `json:"emptyExpiresIn"`
 }
 
-// Cache 缓存相关
+// Cache defines some common functions on this struct, embed on other cache.
 type Cache struct {
-	// 配置锁
+	// config read write lock, protect conf field
 	cm sync.RWMutex
-	// 缓存配置
-	conf *CacheConfig
-	// 缓存表
+	// cache config
+	conf  *CacheConfig
 	model Modeler
 	app   runtime.APP
 }
 
 var (
-	// DefaultCacheConfig 默认配置
+	// DefaultCacheConfig default cache config
 	DefaultCacheConfig = CacheConfig{
 		ExpiresIn: utils.JSONDuration{Duration: 10 * time.Minute},
 	}
 )
 
-// NewCache 创建新缓存
+// NewCache create a new cache.
 func NewCache(model Modeler) *Cache {
 	return &Cache{
 		model: model,
@@ -99,7 +97,7 @@ func NewCache(model Modeler) *Cache {
 	}
 }
 
-// WithConf 设置配置文件
+// WithConf set cache config.
 func (c *Cache) WithConf(conf *CacheConfig) *Cache {
 	c.cm.Lock()
 	defer c.cm.Unlock()
@@ -107,21 +105,21 @@ func (c *Cache) WithConf(conf *CacheConfig) *Cache {
 	return c
 }
 
-// Enabled 否开启缓存
+// Enabled return is cache enabled.
 func (c *Cache) Enabled() bool {
 	c.cm.RLock()
 	defer c.cm.RUnlock()
 	return c.conf.Enabled
 }
 
-// AutoRefresh 是否自动刷新
+// AutoRefresh return whether refresh cache.
 func (c *Cache) AutoRefresh() bool {
 	c.cm.RLock()
 	defer c.cm.RUnlock()
 	return c.conf.AutoRefresh
 }
 
-// NewKey 缓存key
+// NewKey return cache key.
 func (c *Cache) NewKey(key string) string {
 	c.cm.RLock()
 	defer c.cm.RUnlock()
@@ -135,26 +133,26 @@ func (c *Cache) NewKey(key string) string {
 		runtime.WithoutApp(c.conf.IgnoreAzDiff))
 }
 
-// App 返回app信息
+// App return service info.
 func (c *Cache) App() runtime.APP {
 	return c.app
 }
 
-// ModelKey key组合
+// ModelKey return model cache key.
 func (c *Cache) ModelKey(key string) string {
 	return c.model.ModelName() + ":" + key
 }
 
-// ExpiresIn 缓存过期时间
-// 添加随机事件
+// ExpiresIn return cache expire time
+// it will add any random time in confined expire time.
 func (c *Cache) ExpiresIn() time.Duration {
 	c.cm.RLock()
 	defer c.cm.RUnlock()
 	return c.conf.ExpiresIn.Duration + time.Duration(rand.Int63n(int64(c.conf.ExpiresIn.Duration)))
 }
 
-// EmptyExpiresIn 空值缓存过期时间
-// 添加随机时间
+// EmptyExpiresIn return empty cache expire time
+// if not config it will be setted to half of ExpiresIn
 func (c *Cache) EmptyExpiresIn() time.Duration {
 	c.cm.RLock()
 	defer c.cm.RUnlock()

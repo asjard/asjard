@@ -15,15 +15,15 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// CacheType 缓存类型
+// CacheRedisType redis type that used in redis cache.
 type CacheRedisType uint
 
 const (
-	// CacheRedisTypeKeyValue key-value缓存
+	// CacheRedisTypeKeyValue key-value cache type
 	CacheRedisTypeKeyValue CacheRedisType = iota
-	// CacheRedisTypeHash hash缓存
+	// CacheRedisTypeHash hash cache type
 	CacheRedisTypeHash
-	// CacheRedisTypeSet 集合缓存
+	// CacheRedisTypeSet set cache type
 	CacheRedisTypeSet
 )
 
@@ -40,17 +40,14 @@ func (c CacheRedisType) String() string {
 	return "Type:" + strconv.Itoa(int(c))
 }
 
-// CacheRedis redis缓存
+// CacheRedis redis cache implement.
 type CacheRedis struct {
 	*stores.Cache
 
-	// 缓存key
-	key string
-	// 延迟缓存key,优先使用，如果为nil则使用key
+	key     string
 	keyFunc func() string
-	// hash中的field， set中的member
-	field string
-	// 缓存类型
+	// field in hash, member in set
+	field  string
 	tp     CacheRedisType
 	groups []string
 
@@ -59,12 +56,12 @@ type CacheRedis struct {
 	options   *CacheRedisOptions
 }
 
-// CacheRedisOptions 初始化redis缓存的一些参数
+// CacheRedisOptions .
 type CacheRedisOptions struct {
 	localCache stores.Cacher
 }
 
-// CacheRedisConfig 缓存配置
+// CacheRedisConfig redis cache config.
 type CacheRedisConfig struct {
 	stores.CacheConfig
 	Client string `json:"client"`
@@ -73,15 +70,14 @@ type CacheRedisConfig struct {
 type CacheRedisOption func(options *CacheRedisOptions)
 
 var (
-	_ stores.Cacher = &CacheRedis{}
-	// 默认缓存配置
-	defaultCacheRedisConfig = CacheRedisConfig{
+	_                       stores.Cacher = &CacheRedis{}
+	defaultCacheRedisConfig               = CacheRedisConfig{
 		CacheConfig: stores.DefaultCacheConfig,
 		Client:      xredis.DefaultClientName,
 	}
 )
 
-// NewKeyValueCache key/value缓存初始化
+// NewKeyValueCache create a key-value redis cache.
 func NewRedisKeyValueCache(model stores.Modeler, options ...CacheRedisOption) (*CacheRedis, error) {
 	newCache, err := NewRedisCache(model, options...)
 	if err != nil {
@@ -90,7 +86,7 @@ func NewRedisKeyValueCache(model stores.Modeler, options ...CacheRedisOption) (*
 	return newCache.WithType(CacheRedisTypeKeyValue), nil
 }
 
-// NewHashCache hash缓存
+// NewHashCache create a hash redis cache.
 func NewRedisHashCache(model stores.Modeler, options ...CacheRedisOption) (*CacheRedis, error) {
 	newCache, err := NewRedisCache(model, options...)
 	if err != nil {
@@ -99,7 +95,7 @@ func NewRedisHashCache(model stores.Modeler, options ...CacheRedisOption) (*Cach
 	return newCache.WithType(CacheRedisTypeHash), nil
 }
 
-// NewSetCache set缓存
+// NewSetCache create a set redis cache.
 func NewRedisSetCache(model stores.Modeler, options ...CacheRedisOption) (*CacheRedis, error) {
 	newCache, err := NewRedisCache(model, options...)
 	if err != nil {
@@ -108,14 +104,14 @@ func NewRedisSetCache(model stores.Modeler, options ...CacheRedisOption) (*Cache
 	return newCache.WithType(CacheRedisTypeSet), nil
 }
 
-// WithLocalCache 设置本地缓存
+// WithLocalCache set local cache.
 func WithLocalCache(cache stores.Cacher) CacheRedisOption {
 	return func(options *CacheRedisOptions) {
 		options.localCache = cache
 	}
 }
 
-// NewCache 缓存初始化
+// NewCache create redis cache with options.
 func NewRedisCache(model stores.Modeler, options ...CacheRedisOption) (*CacheRedis, error) {
 	cacheOptions := &CacheRedisOptions{}
 	for _, opt := range options {
@@ -129,7 +125,8 @@ func NewRedisCache(model stores.Modeler, options ...CacheRedisOption) (*CacheRed
 	return cache.loadAndWatch()
 }
 
-// WithGroup 分组
+// WithGroup set cache group
+// it will delete group and all keys in group when delete group.
 func (c *CacheRedis) WithGroup(group string) *CacheRedis {
 	return &CacheRedis{
 		Cache:   c.Cache,
@@ -143,7 +140,7 @@ func (c *CacheRedis) WithGroup(group string) *CacheRedis {
 	}
 }
 
-// WithKey 设置缓存key
+// WithKey set cache key.
 func (c *CacheRedis) WithKey(key string) *CacheRedis {
 	return &CacheRedis{
 		Cache:   c.Cache,
@@ -157,7 +154,9 @@ func (c *CacheRedis) WithKey(key string) *CacheRedis {
 	}
 }
 
-// WithKeyFunc 延迟设置缓存key，在部分场景下缓存key有可能需要创建/更新完数据库后才能拿得到完整key
+// WithKeyFunc set cache key use function.
+// if keyFunc was settled, it will be first to use.
+// it is only called when used.
 func (c *CacheRedis) WithKeyFunc(keyFunc func() string) *CacheRedis {
 	return &CacheRedis{
 		Cache:   c.Cache,
@@ -171,7 +170,7 @@ func (c *CacheRedis) WithKeyFunc(keyFunc func() string) *CacheRedis {
 	}
 }
 
-// WithField hash, set设置field
+// WithField hash, set field in hash or set.
 func (c *CacheRedis) WithField(field string) *CacheRedis {
 	return &CacheRedis{
 		Cache:   c.Cache,
@@ -185,7 +184,7 @@ func (c *CacheRedis) WithField(field string) *CacheRedis {
 	}
 }
 
-// WithType 设置缓存类型
+// WithType set cache type.
 func (c *CacheRedis) WithType(tp CacheRedisType) *CacheRedis {
 	return &CacheRedis{
 		Cache:   c.Cache,
@@ -199,16 +198,16 @@ func (c *CacheRedis) WithType(tp CacheRedisType) *CacheRedis {
 	}
 }
 
-// Get 从缓存获取数据
-// 如果设置了本地缓存先从本地缓存获取数据
-// 获取不到再去redis获取数据
+// Get data from cache
+// first get data from local cache if setted local cache,
+// if can not get data from local then get data from redis.
 func (c CacheRedis) Get(ctx context.Context, key string, out any) (bool, error) {
 	if key == "" {
 		return true, nil
 	}
 	switch c.tp {
 	case CacheRedisTypeKeyValue:
-		// 先从本地缓存获取，如果获取到则直接返回
+		// get data from local cache.
 		if c.options.localCache != nil && c.options.localCache.Enabled() {
 			if _, err := c.options.localCache.Get(ctx, key, out); err == nil {
 				return false, nil
@@ -238,8 +237,9 @@ func (c CacheRedis) Get(ctx context.Context, key string, out any) (bool, error) 
 	}
 }
 
-// Del 删除缓存
-// 如果设置了本地缓存先删除本地缓存再删除redis缓存
+// Del delet cache
+// delete cache from redis and local if setted local cache.
+// delete all keys in group and group if group setted.
 func (c CacheRedis) Del(ctx context.Context, keys ...string) error {
 	if len(keys) == 0 {
 		return nil
@@ -276,8 +276,8 @@ func (c CacheRedis) Del(ctx context.Context, keys ...string) error {
 	return c.delGroup(ctx)
 }
 
-// Set 设置缓存
-// 如果设置了本地缓存则同时设置本地缓存
+// Set data in cache
+// if local cache enabled then set data in local cache also.
 func (c CacheRedis) Set(ctx context.Context, key string, in any, expiresIn time.Duration) error {
 	if key == "" {
 		return nil
@@ -318,8 +318,8 @@ func (c CacheRedis) Set(ctx context.Context, key string, in any, expiresIn time.
 	return c.addGroup(ctx, key)
 }
 
-// Refresh 更新缓存时间
-// 如果设置了本地缓存则更新本地缓存数据再刷新redis缓存过期时间
+// Refresh cache expire time
+// if local cache enabled refresh local cache also.
 func (c CacheRedis) Refresh(ctx context.Context, key string, in any, expiresIn time.Duration) (err error) {
 	if key == "" {
 		return nil
@@ -350,7 +350,7 @@ func (c CacheRedis) Key() string {
 	return c.key
 }
 
-// Group 缓存分组
+// Group cache group.
 func (c CacheRedis) Group(group string) string {
 	return c.App().ResourceKey("caches_group",
 		c.ModelKey(group),
@@ -361,9 +361,7 @@ func (c CacheRedis) Close() {
 	c.client.Close()
 }
 
-// 添加分组
 func (c CacheRedis) addGroup(ctx context.Context, key string) error {
-	// 添加分组
 	if len(c.groups) != 0 {
 		for _, group := range c.groups {
 			logger.Debug("add group", "group", group, "key", key)
@@ -375,9 +373,7 @@ func (c CacheRedis) addGroup(ctx context.Context, key string) error {
 	return nil
 }
 
-// 删除分组
 func (c CacheRedis) delGroup(ctx context.Context) error {
-	// 删除分组内的所有缓存
 	if len(c.groups) != 0 {
 		for _, group := range c.groups {
 			result := c.client.HGetAll(ctx, group)
@@ -408,7 +404,6 @@ func (c CacheRedis) delGroup(ctx context.Context) error {
 	return nil
 }
 
-// 加载并监听配置变化
 func (c *CacheRedis) loadAndWatch() (*CacheRedis, error) {
 	if err := c.load(); err != nil {
 		logger.Error("redis cache load config fail", "err", err)

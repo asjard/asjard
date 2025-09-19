@@ -16,21 +16,21 @@
  *
  */
 
-// protoc-gen-go-rabbitmq is a plugin for the Google protocol buffer compiler to
+// protoc-gen-go-amqp is a plugin for the Google protocol buffer compiler to
 // generate Go code. Install it by building this program and making it
 // accessible within your PATH with the name:
 //
-//	protoc-gen-go-rabbitmq
+//	protoc-gen-go-amqp
 //
-// The 'go-rabbitmq' suffix becomes part of the argument for the protocol compiler,
+// The 'go-amqp' suffix becomes part of the argument for the protocol compiler,
 // such that it can be invoked as:
 //
-//	protoc --go-rabbitmq_out=. path/to/file.proto
+//	protoc --go-amqp_out=. path/to/file.proto
 //
 // This generates Go service definitions for the protocol buffer defined by
 // file.proto.  With that input, the output will be written to:
 //
-//	path/to/file_rabbitmq.pb.go
+//	path/to/file_amqp.pb.go
 package main
 
 import (
@@ -43,7 +43,7 @@ import (
 
 const (
 	version = "1.0.0"
-	name    = "protoc-gen-go-rabbitmq"
+	name    = "protoc-gen-go-amqp"
 )
 
 var requireUnimplemented *bool
@@ -70,7 +70,7 @@ func main() {
 			if !f.Generate {
 				continue
 			}
-			NewRabbitmqGenerator(gen, f).Run()
+			NewAmqpGenerator(gen, f).Run()
 		}
 		return nil
 	})

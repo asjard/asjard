@@ -22,9 +22,9 @@ asjard:
     ## relative ASJARD_CERT_DIR
     keyFile: ""
 
-    ## rabbitmq server
-    rabbitmq:
-      ## asjard.stores.rabbitmq.client.{name}
+    ## amqp server
+    amqp:
+      ## asjard.stores.amqp.client.{name}
       clientName: default
       ## channel qos
       prefetchCount: 1

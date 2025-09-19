@@ -25,8 +25,8 @@ build_gen_go_validate: ## 生成protoc-gen-go-validate命令
 build_gen_go_asynq: ## 生成protoc-gen-go-rest命令
 	go build -o $(GOPATH)/bin/protoc-gen-go-asynq -ldflags '-w -s' ./cmd/protoc-gen-go-asynq/*.go
 
-build_gen_go_rabbitmq: ## 生成protoc-gen-go-rabbitmq命令
-	go build -o $(GOPATH)/bin/protoc-gen-go-rabbitmq -ldflags '-w -s' ./cmd/protoc-gen-go-rabbitmq/*.go
+build_gen_go_amqp: ## 生成protoc-gen-go-amqp命令
+	go build -o $(GOPATH)/bin/protoc-gen-go-amqp -ldflags '-w -s' ./cmd/protoc-gen-go-amqp/*.go
 
 build_gen_go_rest2grpc_gw: ## 生成protoc-gen-go-rest2grpc-gw命令
 	go build -o $(GOPATH)/bin/protoc-gen-go-rest2grpc-gw -ldflags '-w -s' ./cmd/protoc-gen-go-rest2grpc-gw/*.go

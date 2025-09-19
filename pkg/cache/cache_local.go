@@ -16,31 +16,28 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// CacheLocal 本地缓存
+// CacheLocal implement local cache
 type CacheLocal struct {
 	*stores.Cache
 
-	// 缓存Key
-	key     string
-	keyFunc func() string
-	// 本实例ID
+	key        string
+	keyFunc    func() string
 	instanceId string
 
 	modelName string
-	// redis客户端
-	// TODO 用interface实现,可以不止用redis广播
-	redis   *redis.Client
+	redis     *redis.Client
+	// publish and subcribe other instance delete cache event
 	pubsub  *redis.PubSub
 	cache   *freecache.Cache
 	maxSize int
 }
 
-// CacheLocalConfig 本地缓存配置
+// CacheLocalConfig define local cache config
 type CacheLocalConfig struct {
 	stores.CacheConfig
-	// redis客户端
+	// redis client name
 	RedisClient string `json:"redisClient"`
-	// 最大使用内存
+	// max memory used by local cache
 	MaxSize int `json:"maxSize"`
 }
 
@@ -52,7 +49,7 @@ var (
 	}
 )
 
-// NewLocalCache 本地缓存初始化
+// NewLocalCache create local cache
 func NewLocalCache(model stores.Modeler) (*CacheLocal, error) {
 	cache := &CacheLocal{
 		Cache:      stores.NewCache(model),
@@ -62,7 +59,7 @@ func NewLocalCache(model stores.Modeler) (*CacheLocal, error) {
 	return cache.loadAndWatch()
 }
 
-// WithKey 设置缓存key
+// WithKey set cache key.
 func (c *CacheLocal) WithKey(key string) *CacheLocal {
 	return &CacheLocal{
 		Cache:      c.Cache,
@@ -75,6 +72,9 @@ func (c *CacheLocal) WithKey(key string) *CacheLocal {
 	}
 }
 
+// WithKeyFunc set cache key use function.
+// if keyFunc was settled, it will be first to use.
+// it is only called when used.
 func (c *CacheLocal) WithKeyFunc(keyFunc func() string) *CacheLocal {
 	return &CacheLocal{
 		Cache:      c.Cache,
@@ -87,7 +87,7 @@ func (c *CacheLocal) WithKeyFunc(keyFunc func() string) *CacheLocal {
 	}
 }
 
-// 从缓存获取数据
+// Get cache from local and set into out params.
 func (c *CacheLocal) Get(ctx context.Context, key string, out any) (bool, error) {
 	if key == "" {
 		return true, nil
@@ -100,7 +100,7 @@ func (c *CacheLocal) Get(ctx context.Context, key string, out any) (bool, error)
 	return true, json.Unmarshal(value, out)
 }
 
-// 从缓存删除数据
+// Del delete cache from local and publish delete event to other instance if redis.client was setted.
 func (c *CacheLocal) Del(ctx context.Context, keys ...string) error {
 	if len(keys) == 0 {
 		return nil
@@ -118,7 +118,7 @@ func (c *CacheLocal) del(keys ...string) error {
 	return nil
 }
 
-// 设置缓存数据
+// Set data into local cache.
 func (c *CacheLocal) Set(ctx context.Context, key string, in any, expiresIn time.Duration) error {
 	if key == "" {
 		return nil
@@ -131,12 +131,12 @@ func (c *CacheLocal) Set(ctx context.Context, key string, in any, expiresIn time
 	return c.cache.Set(utils.String2Byte(key), value, int(expiresIn.Seconds()))
 }
 
-// 刷新缓存过期时间
+// Refresh local cache expire time.
 func (c *CacheLocal) Refresh(ctx context.Context, key string, in any, expiresIn time.Duration) error {
 	return c.cache.Touch(utils.String2Byte(key), int(expiresIn.Seconds()))
 }
 
-// 返回缓存Key名称
+// Key return local cache key.
 func (c *CacheLocal) Key() string {
 	if c.keyFunc != nil {
 		return c.NewKey(c.keyFunc())
@@ -153,7 +153,6 @@ func (c *CacheLocal) loadAndWatch() (*CacheLocal, error) {
 	return c, nil
 }
 
-// 本地缓存广播消息
 type cacheLocalDelPublishMessage struct {
 	// 实例ID
 	InstanceId string
@@ -161,7 +160,6 @@ type cacheLocalDelPublishMessage struct {
 	Keys []string
 }
 
-// 删除发布
 func (c *CacheLocal) delPublish(ctx context.Context, keys ...string) error {
 	if c.redis == nil {
 		return nil
@@ -178,7 +176,6 @@ func (c *CacheLocal) delPublish(ctx context.Context, keys ...string) error {
 	return c.redis.Publish(ctx, c.delChannel(), string(v)).Err()
 }
 
-// 删除订阅
 func (c *CacheLocal) delSubscribe() {
 	if c.redis == nil {
 		return

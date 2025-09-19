@@ -31,7 +31,7 @@ Commands:
   build_gen_go_rest            生成protoc-gen-go-rest命令
   build_gen_go_validate        生成protoc-gen-go-validate命令
   build_gen_go_asynq           生成protoc-gen-go-rest命令
-  build_gen_go_rabbitmq        生成protoc-gen-go-rabbitmq命令
+  build_gen_go_amqp        生成protoc-gen-go-amqp命令
   build_gen_go_rest2grpc_gw    生成protoc-gen-go-rest2grpc-gw命令
   build_gen_ts                 生成protoc-gen-ts命令
   build_gen_ts_enum            生成protoc-gen-ts-enum命令
@@ -66,9 +66,9 @@ Envs:
   GEN_PROTO_TS_OUT           生成的*.pb.ts文件输出目录                      默认: ./..      当前: ./..
   GEN_PROTO_GO_ASYNQ         是否根据protobuf文件生成*_asynq.pb.go文件      默认: false     当前: false
   GEN_PROTO_GO_ASYNQ_OPT     生成*_asynq.pb.go所需要的参数                  默认:           当前:
-  GEN_PROTO_GO_RABBITMQ      是否根据protobuf文件生成*_rabbitmq.pb.go文件   默认: false     当前: false
-  GEN_PROTO_GO_RABBITMQ_OPT  生成*_rabbitmq.pb.go所需要的参数               默认:           当前:
-  GEN_PROTO_GO_VALIDATE      是否根据protobuf文件生成*_validate.pb.go文件   默认: true      当前: true
+  GEN_PROTO_GO_AMQP          是否根据protobuf文件生成*_amqp.pb.go文件        默认: false     当前: false
+  GEN_PROTO_GO_AMQP_OPT      生成*_amqp.pb.go所需要的参数                   默认:           当前:
+  GEN_PROTO_GO_VALIDATE      是否根据protobuf文件生成*_validate.pb.go文件    默认: true      当前: true
   GEN_PROTO_GO_VALIDATE_OPT  生成*_validate.pb.go文件的参数                 默认:           当前:
   GOOS                       运行环境,可选:linux,darwin,windows             默认: linux     当前: linux
   CGO_ENABLED                是否开启CGO,可选:0,1                           默认: 0         当前: 0

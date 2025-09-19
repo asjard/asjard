@@ -1,4 +1,4 @@
-package xrabbitmq
+package xamqp
 
 import "github.com/asjard/asjard/core/server"
 

@@ -36,6 +36,7 @@ type Consul struct {
 type Config struct {
 	Client  string             `json:"client"`
 	Timeout utils.JSONDuration `json:"timeout"`
+	Tags    utils.JSONStrings  `json:"tags"`
 }
 
 var (
@@ -108,14 +109,23 @@ func (c *Consul) Registe(service *server.Service) error {
 		return err
 	}
 	ttl := c.conf.Timeout.Duration + time.Second
+	meta := map[string]string{
+		"app":        service.App,
+		"app_detail": string(appDetail),
+		"endpoints":  string(endpoints),
+	}
+	for k, v := range service.APP.Instance.MetaData {
+		meta[k] = v
+	}
+	tags := c.conf.Tags
+	for protocol := range service.Endpoints {
+		tags = append(tags, protocol)
+	}
 	registration := &api.AgentServiceRegistration{
 		ID:   service.Instance.ID,
 		Name: service.Instance.Name,
-		Meta: map[string]string{
-			"app":        service.App,
-			"app_detail": string(appDetail),
-			"endpoints":  string(endpoints),
-		},
+		Meta: meta,
+		Tags: tags,
 		Check: &api.AgentServiceCheck{
 			CheckID:                        service.Instance.ID,
 			Name:                           service.Instance.Name,

@@ -1,4 +1,4 @@
-package xrabbitmq
+package xamqp
 
 import (
 	"context"

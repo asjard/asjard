@@ -3,7 +3,7 @@
 ```yaml
 asjard:
   stores:
-    rabbitmq:
+    amqp:
       clients:
         default:
           ## url受cipherName保护
@@ -22,9 +22,9 @@ asjard:
 ## 使用
 
 ```go
-import "github.com/asjard/asjard/pkg/stores/xrabbitmq"
+import "github.com/asjard/asjard/pkg/stores/xamqp"
 
-client, err := xrabbitmq.Client()
+client, err := xamqp.Client()
 if err != nil {
 	return err
 }
