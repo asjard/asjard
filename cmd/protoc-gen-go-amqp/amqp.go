@@ -285,7 +285,7 @@ func (g *amqpGenerator) genServiceClient(service *protogen.Service, clientType s
 
 	g.gen.P("func(c *", clientType, ") Stop() {}")
 
-	g.gen.P("func(c *", clientType, ") GetChannel()(*", xamqpPackage.Ident("Channel"), ",error) {")
+	g.gen.P("func(c *", clientType, ") GetChannel()(*", amqpPackage.Ident("Channel"), ",error) {")
 	g.gen.P("return c.ClientConn.Channel()")
 	g.gen.P("}")
 }
