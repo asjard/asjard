@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 	"strings"
+	"sync"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -15,13 +16,24 @@ type RoutesAPI struct {
 	UnimplementedRoutesServer
 }
 
+var (
+	routesAPI     *RoutesAPI
+	routesAPIOnce sync.Once
+)
+
+func DefaultRoutes() *RoutesAPI {
+	return routesAPI
+}
+
 func NewRoutesAPI(handlers []Handler) *RoutesAPI {
-	api := &RoutesAPI{
-		handlers: handlers,
-		routes:   &RouteInfo{},
-	}
-	api.genRoutes()
-	return api
+	routesAPIOnce.Do(func() {
+		routesAPI = &RoutesAPI{
+			handlers: handlers,
+			routes:   &RouteInfo{},
+		}
+		routesAPI.genRoutes()
+	})
+	return routesAPI
 }
 
 func (api RoutesAPI) List(ctx context.Context, in *emptypb.Empty) (*RouteInfo, error) {

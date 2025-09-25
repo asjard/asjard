@@ -141,9 +141,10 @@ func (s *RestServer) Start(startErr chan error) error {
 		// 添加openapi接口
 		s.AddHandler(NewOpenAPI(s.conf.Openapi, s.openapi))
 	}
+	routesAPI := NewRoutesAPI(s.handlers)
 	if s.conf.Routes.Enabled {
 		// 添加路由接口
-		s.AddHandler(NewRoutesAPI(s.handlers))
+		s.AddHandler(routesAPI)
 	}
 	s.server.Handler = s.router.Handler
 	if s.conf.Addresses.Listen == "" {
