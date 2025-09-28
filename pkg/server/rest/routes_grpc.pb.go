@@ -20,6 +20,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	Routes_Tree_FullMethodName = "/asjard.api.Routes/Tree"
 	Routes_List_FullMethodName = "/asjard.api.Routes/List"
 )
 
@@ -27,8 +28,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RoutesClient interface {
-	// Return route list
-	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*RouteInfo, error)
+	// Return route tree
+	Tree(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*RouteInfo, error)
+	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*RouteList, error)
 }
 
 type routesClient struct {
@@ -39,8 +41,17 @@ func NewRoutesClient(cc grpc.ClientConnInterface) RoutesClient {
 	return &routesClient{cc}
 }
 
-func (c *routesClient) List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*RouteInfo, error) {
+func (c *routesClient) Tree(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*RouteInfo, error) {
 	out := new(RouteInfo)
+	err := c.cc.Invoke(ctx, Routes_Tree_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *routesClient) List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*RouteList, error) {
+	out := new(RouteList)
 	err := c.cc.Invoke(ctx, Routes_List_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -52,8 +63,9 @@ func (c *routesClient) List(ctx context.Context, in *emptypb.Empty, opts ...grpc
 // All implementations must embed UnimplementedRoutesServer
 // for forward compatibility
 type RoutesServer interface {
-	// Return route list
-	List(context.Context, *emptypb.Empty) (*RouteInfo, error)
+	// Return route tree
+	Tree(context.Context, *emptypb.Empty) (*RouteInfo, error)
+	List(context.Context, *emptypb.Empty) (*RouteList, error)
 	mustEmbedUnimplementedRoutesServer()
 }
 
@@ -61,7 +73,10 @@ type RoutesServer interface {
 type UnimplementedRoutesServer struct {
 }
 
-func (UnimplementedRoutesServer) List(context.Context, *emptypb.Empty) (*RouteInfo, error) {
+func (UnimplementedRoutesServer) Tree(context.Context, *emptypb.Empty) (*RouteInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Tree not implemented")
+}
+func (UnimplementedRoutesServer) List(context.Context, *emptypb.Empty) (*RouteList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedRoutesServer) mustEmbedUnimplementedRoutesServer() {}
@@ -75,6 +90,24 @@ type UnsafeRoutesServer interface {
 
 func RegisterRoutesServer(s grpc.ServiceRegistrar, srv RoutesServer) {
 	s.RegisterService(&Routes_ServiceDesc, srv)
+}
+
+func _Routes_Tree_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoutesServer).Tree(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Routes_Tree_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoutesServer).Tree(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Routes_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -102,6 +135,10 @@ var Routes_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "asjard.api.Routes",
 	HandlerType: (*RoutesServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Tree",
+			Handler:    _Routes_Tree_Handler,
+		},
 		{
 			MethodName: "List",
 			Handler:    _Routes_List_Handler,
