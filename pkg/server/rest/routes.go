@@ -163,7 +163,7 @@ func (api *RoutesAPI) genRoutes() {
 		// 方法
 		for _, method := range desc.Methods {
 			api.addMethod(api.tree.Routes[tpIndex].Children[vIndex].Children[sIndex], method)
-			api.list = append(api.list, desc.ServiceName+"."+method.Name)
+			api.list = append(api.list, desc.ServiceName+"."+method.MethodName)
 		}
 
 	}
