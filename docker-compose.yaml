@@ -4,7 +4,7 @@ networks:
 
 services:
   etcd:
-    image: rancher/etcd:v3.4.13-k3s1
+    image: docker pull bitnamicharts/etcd:sha256-e65d94470c62e6715101eb05f865e07cc25af790bbabac3e13a0a9df51eca405
     restart: always
     logging:
       driver: json-file
