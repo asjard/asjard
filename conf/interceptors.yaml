@@ -37,6 +37,10 @@ asjard:
         #   - x-request-instance
         #   - x-forward-for
         #   - traceparent
+      ## error log client interceptor
+      errLog:
+        ebaled: false
+        skipMethods: ""
     ## server interceptor
     server:
       ## ratelimiter configuration.

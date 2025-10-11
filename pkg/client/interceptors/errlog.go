@@ -21,7 +21,7 @@ type ErrLogInterceptor struct {
 }
 type ErrLogInterceptorConfig struct {
 	Enabled     bool              `json:"enabled"`
-	Skipmethods utils.JSONStrings `json:"skipMethods"`
+	SkipMethods utils.JSONStrings `json:"skipMethods"`
 	methodMap   map[string]bool
 }
 
@@ -80,7 +80,7 @@ func (e *ErrLogInterceptor) watch(event *config.Event) {
 	conf := defaultErrLogInterceptorConfig
 	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientErrLogPrefix, &conf); err == nil {
 		e.cfgMutex.Lock()
-		for _, item := range conf.Skipmethods {
+		for _, item := range conf.SkipMethods {
 			conf.methodMap[item] = true
 		}
 		e.cfg = conf

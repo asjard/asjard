@@ -34,7 +34,7 @@ const (
 	contextPackage   = protogen.GoImportPath("context")
 	configPakcage    = protogen.GoImportPath("github.com/asjard/asjard/core/config")
 	xamqpPackage     = protogen.GoImportPath("github.com/asjard/asjard/pkg/server/xamqp")
-	amqpStorePackage = protogen.GoImportPath("github.com/asjard/asjard/pkg/stores/amqp")
+	amqpStorePackage = protogen.GoImportPath("github.com/asjard/asjard/pkg/stores/xamqp")
 	jsonPackage      = protogen.GoImportPath("encoding/json")
 	amqpPackage      = protogen.GoImportPath("github.com/streadway/amqp")
 	serverPackage    = protogen.GoImportPath("github.com/asjard/asjard/core/server")
@@ -285,7 +285,7 @@ func (g *amqpGenerator) genServiceClient(service *protogen.Service, clientType s
 
 	g.gen.P("func(c *", clientType, ") Stop() {}")
 
-	g.gen.P("func(c *", clientType, ") GetChannel()(*", xamqpPackage.Ident("Channel"), ",error) {")
+	g.gen.P("func(c *", clientType, ") GetChannel()(*", amqpPackage.Ident("Channel"), ",error) {")
 	g.gen.P("return c.ClientConn.Channel()")
 	g.gen.P("}")
 }

@@ -4,28 +4,46 @@ import (
 	"context"
 	"sort"
 	"strings"
+	"sync"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type RoutesAPI struct {
 	handlers []Handler
-	routes   *RouteInfo
+
+	tree *RouteInfo
+	list []string
 
 	UnimplementedRoutesServer
 }
 
-func NewRoutesAPI(handlers []Handler) *RoutesAPI {
-	api := &RoutesAPI{
-		handlers: handlers,
-		routes:   &RouteInfo{},
-	}
-	api.genRoutes()
-	return api
+var (
+	routesAPI     *RoutesAPI
+	routesAPIOnce sync.Once
+)
+
+func DefaultRoutes() *RoutesAPI {
+	return routesAPI
 }
 
-func (api RoutesAPI) List(ctx context.Context, in *emptypb.Empty) (*RouteInfo, error) {
-	return api.routes, nil
+func NewRoutesAPI(handlers []Handler) *RoutesAPI {
+	routesAPIOnce.Do(func() {
+		routesAPI = &RoutesAPI{
+			handlers: handlers,
+			tree:     &RouteInfo{},
+		}
+		routesAPI.genRoutes()
+	})
+	return routesAPI
+}
+
+func (api RoutesAPI) Tree(ctx context.Context, in *emptypb.Empty) (*RouteInfo, error) {
+	return api.tree, nil
+}
+
+func (api RoutesAPI) List(ctx context.Context, in *emptypb.Empty) (*RouteList, error) {
+	return &RouteList{Routes: api.list}, nil
 }
 
 type nodeDesc struct {
@@ -99,52 +117,53 @@ func (api *RoutesAPI) genRoutes() {
 		}
 		// api|v1|service.Handler
 		// 接口类型
-		tpIndex := api.routeIndex(keys[0], api.routes.Routes)
+		tpIndex := api.routeIndex(keys[0], api.tree.Routes)
 		if tpIndex < 0 {
 			label := strings.ToUpper(keys[0])
 			if keyLen <= 1 {
 				label = desc.Name
 			}
-			api.routes.Routes = append(api.routes.Routes, &RouteInfo_Node{
+			api.tree.Routes = append(api.tree.Routes, &RouteInfo_Node{
 				Label:    label,
 				Value:    keys[0],
 				Children: []*RouteInfo_Node{},
 			})
-			tpIndex = len(api.routes.Routes) - 1
+			tpIndex = len(api.tree.Routes) - 1
 		}
 		if keyLen <= 1 {
 			for _, method := range desc.Methods {
-				api.addMethod(api.routes.Routes[tpIndex], method)
+				api.addMethod(api.tree.Routes[tpIndex], method)
 			}
 			continue
 		}
 		// 版本号
-		vIndex := api.routeIndex(keys[1], api.routes.Routes[tpIndex].Children)
+		vIndex := api.routeIndex(keys[1], api.tree.Routes[tpIndex].Children)
 		if vIndex < 0 {
 			label := strings.ToUpper(keys[1])
 			if len(keys) <= 2 {
 				label = desc.Name
 			}
-			api.addRoute(api.routes.Routes[tpIndex], label, keys[1])
-			vIndex = len(api.routes.Routes[tpIndex].Children) - 1
+			api.addRoute(api.tree.Routes[tpIndex], label, keys[1])
+			vIndex = len(api.tree.Routes[tpIndex].Children) - 1
 		}
 		if len(keys) <= 2 {
 			for _, method := range desc.Methods {
-				api.addMethod(api.routes.Routes[tpIndex].Children[vIndex], method)
+				api.addMethod(api.tree.Routes[tpIndex].Children[vIndex], method)
 			}
 			continue
 		}
 		// 服务
-		sName := strings.Join(keys[2:], ".")
-		sIndex := api.routeIndex(sName, api.routes.Routes[tpIndex].Children[vIndex].Children)
+		sName := strings.ReplaceAll(strings.Join(keys[2:], "."), ".", "_")
+		sIndex := api.routeIndex(sName, api.tree.Routes[tpIndex].Children[vIndex].Children)
 		if sIndex < 0 {
-			api.addRoute(api.routes.Routes[tpIndex].Children[vIndex], desc.Name, sName)
-			sIndex = len(api.routes.Routes[tpIndex].Children[vIndex].Children) - 1
+			api.addRoute(api.tree.Routes[tpIndex].Children[vIndex], desc.Name, sName)
+			sIndex = len(api.tree.Routes[tpIndex].Children[vIndex].Children) - 1
 		}
 
 		// 方法
 		for _, method := range desc.Methods {
-			api.addMethod(api.routes.Routes[tpIndex].Children[vIndex].Children[sIndex], method)
+			api.addMethod(api.tree.Routes[tpIndex].Children[vIndex].Children[sIndex], method)
+			api.list = append(api.list, desc.ServiceName+"."+method.MethodName)
 		}
 
 	}
