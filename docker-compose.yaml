@@ -88,7 +88,7 @@ services:
     external_links:
       - asjard-pushgateway-1:pushgateway
   pushgateway:
-    image: bitnami/pushgateway:latest
+    image: prom/pushgateway:master
     restart: always
     logging:
       driver: json-file
