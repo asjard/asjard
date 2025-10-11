@@ -17,7 +17,9 @@ import (
 
 func TestFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	assert.Nil(t, os.Setenv(utils.CONF_DIR_ENV_NAME, tmpDir))
+	tmpDir1 := t.TempDir()
+	tmpDir2 := t.TempDir()
+	assert.Nil(t, os.Setenv(utils.CONF_DIR_ENV_NAME, fmt.Sprintf("%s %s   %s", tmpDir, tmpDir1, tmpDir2)))
 	testFile := "test_file.yaml"
 	testKey := "test_key"
 	testValue := "test_value"
@@ -56,5 +58,18 @@ func TestFile(t *testing.T) {
 		defer m.RUnlock()
 		assert.Equal(t, testKey, eventKey)
 		assert.Equal(t, testValue, eventValue)
+	})
+	t.Run("MultiPaths", func(t *testing.T) {
+		testFile := "test_file1.yaml"
+		testKey := "test_key_multi_path"
+		testValue := "test_value_multi_path"
+		assert.Nil(t, os.WriteFile(filepath.Join(tmpDir1, testFile),
+			[]byte(fmt.Sprintf("%s: %s", testKey, testValue)), 0640))
+		time.Sleep(50 * time.Millisecond)
+		m.RLock()
+		defer m.RUnlock()
+		assert.Equal(t, testKey, eventKey)
+		assert.Equal(t, testValue, eventValue)
+
 	})
 }

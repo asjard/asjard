@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
@@ -58,7 +59,7 @@ func GetHomeDir() string {
 // GetConfDir 获取配置目录
 func GetConfDir() string {
 	cdonce.Do(func() {
-		confDir = os.Getenv(CONF_DIR_ENV_NAME)
+		confDir = strings.TrimSpace(os.Getenv(CONF_DIR_ENV_NAME))
 		if confDir == "" {
 			confDir = filepath.Join(GetHomeDir(), CONF_DIR)
 		}
