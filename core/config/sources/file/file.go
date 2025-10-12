@@ -45,8 +45,6 @@ type File struct {
 	// 用来处理回调事件中的事件类型
 	// 如果没有此处记录，无法在回调事件中处理删除事件
 	configs map[string]map[string]any
-	// 配置目录
-	confDir string
 	// configs的锁
 	cm sync.RWMutex
 	// 文件监听
@@ -67,12 +65,18 @@ func New(options *config.SourceOptions) (config.Sourcer, error) {
 		options: options,
 	}
 
-	fsource.confDir = utils.GetConfDir()
-	if !utils.IsPathExists(fsource.confDir) {
-		return fsource, nil
-	}
-	if err := fsource.walk(fsource.confDir); err != nil {
-		return fsource, err
+	// multi conf paths, split by space
+	for _, fd := range strings.Split(utils.GetConfDir(), " ") {
+		fd = strings.TrimSpace(fd)
+		if fd == "" {
+			continue
+		}
+		if !utils.IsPathExists(fd) {
+			continue
+		}
+		if err := fsource.walk(fd); err != nil {
+			return fsource, err
+		}
 	}
 	if err := fsource.watch(); err != nil {
 		return fsource, err
