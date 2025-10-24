@@ -17,7 +17,7 @@ const (
 	LocalityRoundRobinName = "localityRoundRobin"
 )
 
-// LocalityRoundRobinPicker 就近权重负载均衡
+// LocalityRoundRobinPicker locality round robin loadbalance
 type LocalityRoundRobinPicker struct {
 	*PickerBase
 	scs  []*SubConn
@@ -29,7 +29,7 @@ func init() {
 	AddBalancer(LocalityRoundRobinName, NewLocalityRoundRobinPicker)
 }
 
-// NewLocalityWeightPicker 就近权重负载均衡初始化
+// NewLocalityRoundRobinPicker create a new locality round robind balance
 func NewLocalityRoundRobinPicker(scs map[balancer.SubConn]base.SubConnInfo) Picker {
 	subConns := make([]*SubConn, 0, len(scs))
 	for conn, info := range scs {
@@ -45,8 +45,7 @@ func NewLocalityRoundRobinPicker(scs map[balancer.SubConn]base.SubConnInfo) Pick
 	}
 }
 
-// Pick 负载均衡选择
-// 同region,az优先
+// Pick a result with policy locality round robin.
 func (l *LocalityRoundRobinPicker) Pick(info balancer.PickInfo) (*PickResult, error) {
 	var requestRegion, requestAz string
 	md, ok := metadata.FromIncomingContext(info.Ctx)
@@ -77,8 +76,6 @@ func (l *LocalityRoundRobinPicker) Name() string {
 	return LocalityRoundRobinName
 }
 
-// 优先选择request下的
-// 如果request下为空，则选择current下共享的
 func (l LocalityRoundRobinPicker) pick(request, current string, isEqual func(request string, sc *SubConn) bool, scs []*SubConn) []*SubConn {
 	if len(scs) == 0 {
 		return []*SubConn{}
@@ -93,8 +90,8 @@ func (l LocalityRoundRobinPicker) pick(request, current string, isEqual func(req
 		}
 	}
 	if len(picks) == 0 && request != current {
-		logger.Debug("no conns in request", "request", request)
-		// 获取current下共享的
+		logger.Debug("no conns in request", "request", request, "current", current)
+		// pick an shareable instance from current
 		return l.pick(current, current, l.isShareable, scs)
 	}
 	return picks
