@@ -37,6 +37,7 @@ var defaultRest2RpcContextConfig = rest2RpcContextConfig{
 		"x-request-instance",
 		"x-forward-for",
 		"traceparent",
+		"authorization",
 	},
 }
 
