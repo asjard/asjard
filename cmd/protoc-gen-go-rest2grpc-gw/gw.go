@@ -22,9 +22,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/asjard/asjard/pkg/protobuf/httppb"
 	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -122,9 +120,9 @@ func (g *GwGenerator) genService(service *protogen.Service) {
 }
 
 func (g *GwGenerator) genServiceMethod(service *protogen.Service, method *protogen.Method) {
-	if httpOptions, ok := proto.GetExtension(method.Desc.Options(), httppb.E_Http).([]*httppb.Http); !ok || len(httpOptions) == 0 {
-		return
-	}
+	// if httpOptions, ok := proto.GetExtension(method.Desc.Options(), httppb.E_Http).([]*httppb.Http); !ok || len(httpOptions) == 0 {
+	// 	return
+	// }
 	g.genComment(method.Comments)
 	g.gen.P("func(api *", service.GoName, "API)", method.GoName, "(ctx ", contextPackage.Ident("Context"), ",in *", method.Input.GoIdent, ") (*", method.Output.GoIdent, ",error) {")
 	g.gen.P("return api.client.", method.GoName, "(ctx, in)")

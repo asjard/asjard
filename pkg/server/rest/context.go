@@ -223,8 +223,11 @@ func (c *Context) ReadPathParamsToEntity(entity proto.Message) error {
 }
 
 func (c *Context) ReadBodyParamsToEntity(entity proto.Message) error {
-	if err := protojson.Unmarshal(c.JSONBodyParams(), entity); err != nil {
-		return status.Errorf(codes.InvalidArgument, "read body params to entity fail: %v", err)
+	body := c.JSONBodyParams()
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, entity); err != nil {
+			return status.Errorf(codes.InvalidArgument, "read body params to entity fail: %v", err)
+		}
 	}
 	return nil
 }
