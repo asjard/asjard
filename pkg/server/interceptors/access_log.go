@@ -70,9 +70,6 @@ func (*AccessLog) Name() string {
 // 垮协议拦截器
 func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
-		if !al.cfg.Enabled {
-			return handler(ctx, req)
-		}
 		if al.skipped(info.Protocol, info.FullMethod) {
 			return handler(ctx, req)
 		}
@@ -109,6 +106,9 @@ func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 func (al *AccessLog) skipped(protocol, method string) bool {
 	al.m.RLock()
 	defer al.m.RUnlock()
+	if !al.cfg.Enabled {
+		return true
+	}
 	// 是否拦截协议
 	if _, ok := al.cfg.skipMethodsMap[protocol]; ok {
 		return true
