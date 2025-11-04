@@ -2,6 +2,8 @@ package interceptors
 
 import (
 	"context"
+	"slices"
+	"sync"
 
 	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/config"
@@ -20,6 +22,7 @@ const (
 // 放在拦截器的最前面
 type Rest2RpcContext struct {
 	cfg rest2RpcContextConfig
+	cm  sync.RWMutex
 }
 
 // Rest2RpcContextConfig 拦截器配置
@@ -66,7 +69,7 @@ func NewRest2RpcContext() (client.ClientInterceptor, error) {
 }
 
 // Name 拦截器名称
-func (Rest2RpcContext) Name() string {
+func (*Rest2RpcContext) Name() string {
 	return Rest2RpcContextInterceptorName
 }
 
@@ -79,18 +82,22 @@ func (r *Rest2RpcContext) Interceptor() client.UnaryClientInterceptor {
 			return invoker(ctx, method, req, reply, cc)
 		}
 		md := make(metadata.MD)
+		r.cm.RLock()
+		defer r.cm.RUnlock()
 		for k, v := range rtx.ReadHeaderParams() {
 			if r.cfg.allowAllHeaders {
 				md[k] = v
 				continue
 			}
-			for _, alk := range r.cfg.AllowHeaders {
-				if k == alk {
-					md[k] = v
-					break
-				}
+			if slices.Contains(r.cfg.AllowHeaders, k) {
+				md[k] = v
 			}
 		}
+		rtx.VisitUserValuesAll(func(k, v any) {
+			if ks, ok := k.(string); ok && slices.Contains(r.cfg.AllowHeaders, ks) {
+				md[ks] = []string{v.(string)}
+			}
+		})
 		return invoker(metadata.NewIncomingContext(ctx, md),
 			method, req, reply, cc)
 	}
@@ -99,6 +106,8 @@ func (r *Rest2RpcContext) Interceptor() client.UnaryClientInterceptor {
 func (r *Rest2RpcContext) watch(event *config.Event) {
 	conf := defaultRest2RpcContextConfig
 	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientRest2RpcContextPrefix, &conf); err == nil {
+		r.cm.Lock()
 		r.cfg = conf.complete()
+		r.cm.Unlock()
 	}
 }
