@@ -1,14 +1,14 @@
 package rest
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 
-	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/status"
-	"github.com/spf13/cast"
+	"github.com/asjard/asjard/utils"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -34,19 +34,23 @@ type Context struct {
 	write   Writer
 }
 
-var contextPool = sync.Pool{
-	New: func() any {
-		return &Context{
-			errPage: config.GetString("asjard.service.website", ""),
-		}
-	},
-}
+var (
+	contextPool = sync.Pool{
+		New: func() any {
+			return &Context{
+				// errPage: config.GetString("asjard.service.website", ""),
+			}
+		},
+	}
+)
 
 // NewContext .
 func NewContext(ctx *fasthttp.RequestCtx, options ...Option) *Context {
-	c := &Context{
-		RequestCtx: ctx,
-	}
+	// c := &Context{
+	// 	RequestCtx: ctx,
+	// }
+	c := contextPool.Get().(*Context)
+	c.RequestCtx = ctx
 	for _, opt := range options {
 		opt(c)
 	}
@@ -78,18 +82,41 @@ func (c *Context) ReadEntityWithReaders(entity proto.Message, readers []*EntityR
 }
 
 // GetPathParam 获取路径参数
-func (c *Context) GetPathParam(key string) []string {
-	return c.ReadPathParams()[strings.ToLower(key)]
+func (c *Context) GetUserParam(key string) []string {
+	value := c.UserValueBytes(utils.UnsafeString2Byte(key))
+	if value == nil {
+		return []string{}
+	}
+	var v string
+	switch val := value.(type) {
+	case string:
+		v = val
+	case []byte:
+		v = utils.SafeByte2String(val)
+	default:
+		v = fmt.Sprintf("%v", val)
+	}
+	return []string{v}
 }
 
 // GetHeaderParam 获取请求头参数
 func (c *Context) GetHeaderParam(key string) []string {
-	return c.ReadHeaderParams()[strings.ToLower(key)]
+	v := c.Request.Header.PeekAll(key)
+	s := make([]string, len(v))
+	for idx, b := range v {
+		s[idx] = utils.SafeByte2String(b)
+	}
+	return s
 }
 
 // GetQueryParam 获取query参数
 func (c *Context) GetQueryParam(key string) []string {
-	return c.ReadQueryParams()[strings.ToLower(key)]
+	v := c.QueryArgs().PeekMulti(key)
+	s := make([]string, len(v))
+	for idx, b := range v {
+		s[idx] = utils.SafeByte2String(b)
+	}
+	return s
 }
 
 // WriteData 请求返回
@@ -99,7 +126,7 @@ func (c *Context) WriteData(data any, err error) {
 	} else {
 		c.write(c, data, err)
 	}
-	// c.Close()
+	c.Close()
 }
 
 // NewOutgoingContext .
@@ -120,12 +147,13 @@ func (c *Context) SetWriter(writer Writer) {
 // Close .
 func (c *Context) Close() {
 	c.write = nil
+	c.RequestCtx = nil
 	contextPool.Put(c)
 }
 
 // JSONBodyParams 读取请求体
 func (c *Context) JSONBodyParams() []byte {
-	if string(c.Request.Header.ContentType()) == MIME_JSON {
+	if bytes.Equal(c.Request.Header.ContentType(), []byte(MIME_JSON)) {
 		return c.Request.Body()
 	}
 	return []byte{}
@@ -133,47 +161,42 @@ func (c *Context) JSONBodyParams() []byte {
 
 // ReadQueryParams 获取query参数
 func (c *Context) ReadQueryParams() map[string][]string {
-	params := make(map[string][]string)
+	queries := make(map[string][]string)
 	c.QueryArgs().All()(func(key, value []byte) bool {
-		k := string(key)
-		v := string(value)
-		if _, ok := params[k]; !ok {
-			params[k] = []string{v}
-		} else {
-			params[k] = append(params[k], v)
-		}
+		k := utils.SafeByte2String(key)
+		queries[k] = append(queries[k], utils.SafeByte2String(value))
 		return true
 	})
-	return params
+	return queries
 }
 
 // ReadHeaderParams 读取header请求参数
 func (c *Context) ReadHeaderParams() map[string][]string {
-	params := make(map[string][]string)
+	headers := make(map[string][]string)
 	c.Request.Header.All()(func(key, value []byte) bool {
-		k := strings.ToLower(string(key))
-		v := string(value)
-		if _, ok := params[k]; !ok {
-			params[k] = []string{v}
-		} else {
-			params[k] = append(params[k], v)
-		}
+		k := utils.SafeByte2String(key)
+		headers[k] = append(headers[k], utils.SafeByte2String(value))
 		return true
 	})
-	return params
+	return headers
 }
 
 // ReadPathParams 读取path请求参数
 func (c *Context) ReadPathParams() map[string][]string {
 	params := make(map[string][]string)
 	c.VisitUserValues(func(key []byte, value any) {
-		keyStr := string(key)
-		valueStr := cast.ToString(value)
-		if _, ok := params[keyStr]; ok {
-			params[keyStr] = append(params[keyStr], valueStr)
-		} else {
-			params[keyStr] = []string{valueStr}
+		k := utils.SafeByte2String(key)
+		var v string
+		switch val := value.(type) {
+		case string:
+			v = val
+		case []byte:
+			v = utils.SafeByte2String(val)
+		default:
+			v = fmt.Sprintf("%v", val)
 		}
+
+		params[k] = append(params[k], v)
 	})
 	return params
 }

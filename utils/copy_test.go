@@ -10,13 +10,13 @@ import (
 func TestZeroCopy(t *testing.T) {
 	t.Run("String2Byte", func(t *testing.T) {
 		str := "123"
-		b := String2Byte(str)
+		b := UnsafeString2Byte(str)
 		assert.Equal(t, unsafe.StringData(str), unsafe.SliceData(b))
 		t.Logf("%v,%v, %s", unsafe.StringData(str), unsafe.SliceData(b), string(b))
 	})
 	t.Run("Byte2String", func(t *testing.T) {
 		b := []byte("123")
-		str := Byte2String(b)
+		str := UnsafeByte2String(b)
 		assert.Equal(t, unsafe.SliceData(b), unsafe.StringData(str))
 	})
 }
@@ -26,7 +26,7 @@ func BenchmarkZeroCopy(b *testing.B) {
 	bt := []byte("helloByte")
 	b.Run("String2Byte", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			String2Byte(str)
+			UnsafeString2Byte(str)
 		}
 	})
 	b.Run("String2Byte-Normal", func(b *testing.B) {
@@ -36,7 +36,7 @@ func BenchmarkZeroCopy(b *testing.B) {
 	})
 	b.Run("Byte2String", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			Byte2String(bt)
+			UnsafeByte2String(bt)
 		}
 	})
 	b.Run("Byte2String-Normal", func(b *testing.B) {

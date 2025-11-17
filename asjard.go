@@ -101,17 +101,18 @@ func (asd *Asjard) Start() error {
 	if err := asd.Init(); err != nil {
 		return err
 	}
+	// discover other servers
+	if err := registry.Discover(); err != nil {
+		return err
+	}
 
+	// start all registe servers
 	if err := asd.startServers(); err != nil {
 		return err
 	}
 
-	// 注册服务
+	// registe current server in registry
 	if err := registry.Registe(); err != nil {
-		return err
-	}
-	// 服务发现
-	if err := registry.Discover(); err != nil {
 		return err
 	}
 	logger.Info("System Started")

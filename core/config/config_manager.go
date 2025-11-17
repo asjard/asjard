@@ -16,7 +16,6 @@ import (
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/security"
-	"github.com/asjard/asjard/utils"
 	ccast "github.com/asjard/asjard/utils/cast"
 
 	"github.com/spf13/cast"
@@ -648,7 +647,7 @@ func GetByte(key string, defaultValue []byte, opts ...Option) []byte {
 	if err != nil {
 		return defaultValue
 	}
-	return utils.String2Byte(value)
+	return []byte(value)
 }
 
 // GetBool 获取配置并转化为bool类型

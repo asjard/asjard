@@ -2,7 +2,6 @@ package interceptors
 
 import (
 	"context"
-	"slices"
 	"sync"
 
 	"github.com/asjard/asjard/core/client"
@@ -11,6 +10,7 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/asjard/asjard/utils"
+	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -38,9 +38,9 @@ var defaultRest2RpcContextConfig = rest2RpcContextConfig{
 		"x-request-az",
 		"x-request-id",
 		"x-request-instance",
-		"x-forward-for",
-		"traceparent",
-		"authorization",
+		"Traceparent",
+		fasthttp.HeaderXForwardedFor,
+		fasthttp.HeaderAuthorization,
 	},
 }
 
@@ -84,21 +84,14 @@ func (r *Rest2RpcContext) Interceptor() client.UnaryClientInterceptor {
 		md := make(metadata.MD)
 		r.cm.RLock()
 		defer r.cm.RUnlock()
-		for k, v := range rtx.ReadHeaderParams() {
-			if r.cfg.allowAllHeaders {
-				md[k] = v
-				continue
-			}
-			if slices.Contains(r.cfg.AllowHeaders, k) {
+		for _, k := range r.cfg.AllowHeaders {
+			md[k] = rtx.GetHeaderParam(k)
+			v := rtx.GetUserParam(k)
+			if len(v) != 0 {
 				md[k] = v
 			}
 		}
-		rtx.VisitUserValuesAll(func(k, v any) {
-			if ks, ok := k.(string); ok && slices.Contains(r.cfg.AllowHeaders, ks) {
-				md[ks] = []string{v.(string)}
-			}
-		})
-		return invoker(metadata.NewIncomingContext(ctx, md),
+		return invoker(metadata.NewOutgoingContext(context.Background(), md),
 			method, req, reply, cc)
 	}
 }

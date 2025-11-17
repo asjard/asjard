@@ -7,7 +7,6 @@ import (
 	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/pkg/client/grpc"
-	"github.com/asjard/asjard/pkg/server/rest"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 )
@@ -50,15 +49,8 @@ func (s CycleChainInterceptor) Interceptor() client.UnaryClientInterceptor {
 		if _, ok := cc.(*grpc.ClientConn); !ok {
 			return invoker(ctx, method, req, reply, cc)
 		}
-		md := make(metadata.MD)
-		if rctx, ok := ctx.(*rest.Context); ok {
-			// 来源为rest
-			md[HeaderRequestChain] = rctx.GetHeaderParam(HeaderRequestChain)
-			md[HeaderRequestApp] = rctx.GetHeaderParam(HeaderRequestApp)
-			md[HeaderRequestDest] = rctx.GetHeaderParam(HeaderRequestDest)
-		} else {
-			md, _ = metadata.FromIncomingContext(ctx)
-		}
+
+		md, _ := metadata.FromOutgoingContext(ctx)
 		currentRequestMethod := "grpc://" + strings.ReplaceAll(strings.Trim(method, "/"), "/", ".")
 		// 目的地当前只支持grpc
 		if requestChains, ok := md[HeaderRequestChain]; ok {
@@ -68,8 +60,8 @@ func (s CycleChainInterceptor) Interceptor() client.UnaryClientInterceptor {
 					return status.Errorf(codes.Canceled, "cycle call, chains: %s", strings.Join(requestChains, " -> "))
 				}
 			}
-			md[HeaderRequestChain] = append(md[HeaderRequestChain], currentRequestMethod)
 		}
+		md[HeaderRequestChain] = append(md[HeaderRequestChain], currentRequestMethod)
 		return invoker(metadata.NewOutgoingContext(ctx, md), method, req, reply, cc)
 	}
 }

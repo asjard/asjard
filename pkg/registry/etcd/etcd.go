@@ -153,11 +153,11 @@ func (e *Etcd) Registe(instance *server.Service) error {
 				if resp == nil {
 					logger.Error("keepalive fail")
 					for {
-						logger.Debug("reregiste instance")
+						logger.Debug("start keepalive instance")
 						if err := e.Registe(instance); err != nil {
-							logger.Error("register instance fail", "err", err)
+							logger.Error("keepalive instance fail", "err", err)
 						} else {
-							logger.Debug("reregiste instance success")
+							logger.Debug("rekeepalive instance success")
 							return
 						}
 						time.Sleep(3 * time.Second)
