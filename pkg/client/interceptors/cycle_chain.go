@@ -27,7 +27,7 @@ type CycleChainInterceptor struct {
 }
 
 func init() {
-	client.AddInterceptor(CycleChainInterceptorName, NewCycleChainInterceptor)
+	client.AddInterceptor(CycleChainInterceptorName, NewCycleChainInterceptor, grpc.Protocol)
 }
 
 // CycleChainInterceptor 初始化来源拦截器
@@ -49,10 +49,11 @@ func (s CycleChainInterceptor) Interceptor() client.UnaryClientInterceptor {
 		if _, ok := cc.(*grpc.ClientConn); !ok {
 			return invoker(ctx, method, req, reply, cc)
 		}
-
-		md, _ := metadata.FromOutgoingContext(ctx)
+		md, ok := metadata.FromOutgoingContext(ctx)
+		if !ok {
+			md, _ = metadata.FromIncomingContext(ctx)
+		}
 		currentRequestMethod := "grpc://" + strings.ReplaceAll(strings.Trim(method, "/"), "/", ".")
-		// 目的地当前只支持grpc
 		if requestChains, ok := md[HeaderRequestChain]; ok {
 			for _, requestMethod := range requestChains {
 				if requestMethod == currentRequestMethod {
@@ -63,5 +64,6 @@ func (s CycleChainInterceptor) Interceptor() client.UnaryClientInterceptor {
 		}
 		md[HeaderRequestChain] = append(md[HeaderRequestChain], currentRequestMethod)
 		return invoker(metadata.NewOutgoingContext(ctx, md), method, req, reply, cc)
+
 	}
 }

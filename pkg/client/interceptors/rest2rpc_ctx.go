@@ -8,6 +8,7 @@ import (
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/pkg/client/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/asjard/asjard/utils"
 	"github.com/valyala/fasthttp"
@@ -50,7 +51,7 @@ func (r rest2RpcContextConfig) complete() rest2RpcContextConfig {
 }
 
 func init() {
-	client.AddInterceptor(Rest2RpcContextInterceptorName, NewRest2RpcContext)
+	client.AddInterceptor(Rest2RpcContextInterceptorName, NewRest2RpcContext, grpc.Protocol)
 }
 
 // NewRest2RpcContext context转换初始化
@@ -78,7 +79,7 @@ func (*Rest2RpcContext) Name() string {
 func (r *Rest2RpcContext) Interceptor() client.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
 		rtx, ok := ctx.(*rest.Context)
-		if !ok || cc.Protocol() == rest.Protocol {
+		if !ok {
 			return invoker(ctx, method, req, reply, cc)
 		}
 		md := make(metadata.MD)

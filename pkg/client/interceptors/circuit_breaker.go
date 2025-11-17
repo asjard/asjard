@@ -12,6 +12,7 @@ import (
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
+	"github.com/asjard/asjard/pkg/client/grpc"
 	"google.golang.org/grpc/codes"
 )
 
@@ -74,7 +75,7 @@ func (CircuitBreakerLogger) Printf(format string, items ...interface{}) {
 }
 
 func init() {
-	client.AddInterceptor(CircuitBreakerInterceptorName, NewCircuitBreaker)
+	client.AddInterceptor(CircuitBreakerInterceptorName, NewCircuitBreaker, grpc.Protocol)
 	hystrix.SetLogger(&CircuitBreakerLogger{})
 }
 
