@@ -4,8 +4,8 @@ Package runtime 系统运行时一些参数，系统启动时初始化，后续�
 package runtime
 
 import (
+	"bytes"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/asjard/asjard/core/config"
@@ -95,6 +95,14 @@ func GetAPP() APP {
 	return app
 }
 
+var bufPool = sync.Pool{
+	New: func() any {
+		b := bytes.NewBuffer(make([]byte, 0, 128))
+		b.Reset()
+		return b
+	},
+}
+
 // ResourceKey 资源key
 // 比如缓存中的key
 // {app}:{resource}:{env}:{service}:{version}:{region}:{az}:{key}
@@ -105,43 +113,53 @@ func (app APP) ResourceKey(resource, key string, opts ...Option) string {
 	for _, opt := range opts {
 		opt(options)
 	}
-	keys := make([]string, 0, 8)
-	if options.startWithDelimiter {
-		keys = append(keys, "")
-	}
 	if resource == "" {
 		resource = "resource"
 	}
-	if !options.withoutApp {
-		keys = append(keys, app.App)
-	}
-	keys = append(keys, resource)
-	if !options.withoutEnv {
-		keys = append(keys, app.Environment)
+
+	buf := bufPool.Get().(*bytes.Buffer)
+	buf.Reset()
+
+	write := func(s string) {
+		if buf.Len() == 0 && options.startWithDelimiter {
+			buf.WriteString(options.delimiter)
+		}
+		buf.WriteString(s)
+		buf.WriteString(options.delimiter)
 	}
 
+	if !options.withoutApp {
+		write(app.App)
+	}
+	write(resource)
+	if !options.withoutEnv {
+		write(app.Environment)
+	}
 	if !options.withoutService {
 		if options.withServiceId {
-			keys = append(keys, app.Instance.ID)
+			write(app.Instance.ID)
 		} else {
-			keys = append(keys, app.Instance.Name)
+			write(app.Instance.Name)
 		}
 	}
 	if !options.withoutVersion {
-		keys = append(keys, app.Instance.Version)
+		write(app.Instance.Version)
 	}
-
 	if !options.withoutRegion {
-		keys = append(keys, app.Region)
+		write(app.Region)
 	}
 	if !options.withoutAz {
-		keys = append(keys, app.AZ)
+		write(app.AZ)
 	}
 	if key != "" {
-		keys = append(keys, key)
+		write(key)
 	}
-	if options.endWithDelimiter {
-		keys = append(keys, "")
+
+	if !options.endWithDelimiter {
+		buf.Truncate(buf.Len() - len(options.delimiter))
 	}
-	return strings.Join(keys, options.delimiter)
+
+	s := buf.String()
+	bufPool.Put(buf)
+	return s
 }

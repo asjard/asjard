@@ -217,3 +217,24 @@ func TestResourceKey(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkResourceKey(b *testing.B) {
+	var benchAPP = APP{
+		App:         "usercenter",
+		Environment: "prod",
+		Region:      "cn-hangzhou",
+		AZ:          "cn-hangzhou-h",
+		Instance: Instance{
+			ID:      "i-1234567890abcdef0",
+			Name:    "usercenter-v2",
+			Version: "20241118.1",
+		},
+	}
+
+	var fullOpts = []Option{}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			_ = benchAPP.ResourceKey("cache", "user:12345", fullOpts...)
+		}
+	})
+}
