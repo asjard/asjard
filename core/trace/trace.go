@@ -2,15 +2,15 @@ package trace
 
 import (
 	"context"
-	"fmt"
+	"io"
 	"net/url"
 
 	"github.com/asjard/asjard/core/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -27,7 +27,8 @@ func Init() error {
 	if err != nil {
 		return err
 	}
-	var exporter *otlptrace.Exporter
+	// var exporter *otlptrace.Exporter
+	var exporter sdktrace.SpanExporter
 	switch u.Scheme {
 	case "http", "https":
 		var options []otlptracehttp.Option
@@ -53,7 +54,8 @@ func Init() error {
 		}
 		exporter, err = otlptracegrpc.New(context.Background(), options...)
 	default:
-		return fmt.Errorf("trace new export unsupport schema %s", u.Scheme)
+		exporter, err = stdouttrace.New(stdouttrace.WithWriter(io.Discard))
+		// return fmt.Errorf("trace new export unsupport schema %s", u.Scheme)
 	}
 	if err != nil {
 		return err

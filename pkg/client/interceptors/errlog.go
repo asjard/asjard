@@ -79,11 +79,12 @@ func (e *ErrLogInterceptor) skip(method string) bool {
 func (e *ErrLogInterceptor) watch(event *config.Event) {
 	conf := defaultErrLogInterceptorConfig
 	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientErrLogPrefix, &conf); err == nil {
-		e.cfgMutex.Lock()
 		for _, item := range conf.SkipMethods {
 			conf.methodMap[item] = true
 		}
-		e.cfg = conf
-		e.cfgMutex.Unlock()
 	}
+	e.cfgMutex.Lock()
+	e.cfg = conf
+	e.cfgMutex.Unlock()
+
 }

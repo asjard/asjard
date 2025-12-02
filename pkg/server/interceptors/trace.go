@@ -62,6 +62,7 @@ func (t *Trace) Interceptor() server.UnaryServerInterceptor {
 		t.propagator.Inject(tx, carrier)
 		if rtx, ok := ctx.(*rest.Context); ok {
 			rtx.SetUserValue(rest.HeaderResponseRequestID, span.SpanContext().TraceID().String())
+			rtx.SetUserValue(rest.HeaderResponseRequestMethod, info.FullMethod)
 			return handler(rtx, req)
 		}
 		return handler(trace.ContextWithRemoteSpanContext(tx, trace.SpanContextFromContext(tx)), req)

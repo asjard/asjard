@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/afex/hystrix-go/hystrix"
@@ -11,6 +12,7 @@ import (
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
+	"github.com/asjard/asjard/pkg/client/grpc"
 	"google.golang.org/grpc/codes"
 )
 
@@ -46,10 +48,22 @@ type CircuitBreakerMethodConfig struct {
 var (
 	defaultConfig = hystrix.CommandConfig{
 		Timeout:                hystrix.DefaultTimeout,
-		MaxConcurrentRequests:  1000,
+		MaxConcurrentRequests:  10_0000,
 		RequestVolumeThreshold: hystrix.DefaultVolumeThreshold,
 		SleepWindow:            hystrix.DefaultSleepWindow,
 		ErrorPercentThreshold:  hystrix.DefaultErrorPercentThreshold,
+	}
+	builderPool = sync.Pool{
+		New: func() any {
+			var b strings.Builder
+			b.Grow(128)
+			return &b
+		},
+	}
+	prioritiesPool = sync.Pool{
+		New: func() any {
+			return make([]string, 0, 7)
+		},
 	}
 )
 
@@ -61,7 +75,7 @@ func (CircuitBreakerLogger) Printf(format string, items ...interface{}) {
 }
 
 func init() {
-	client.AddInterceptor(CircuitBreakerInterceptorName, NewCircuitBreaker)
+	client.AddInterceptor(CircuitBreakerInterceptorName, NewCircuitBreaker, grpc.Protocol)
 	hystrix.SetLogger(&CircuitBreakerLogger{})
 }
 
@@ -110,7 +124,7 @@ func (ccb *CircuitBreaker) do(ctx context.Context, commandConfigName, method str
 }
 
 func (ccb *CircuitBreaker) match(protocol, service, method string) string {
-	fullName := protocol + "://" + service + method
+	fullName := ccb.buildKey(protocol, "//", service, "/", method)
 	if name, ok := ccb.cache.Load(fullName); ok {
 		logger.Debug("circuit breaker matched cache", "fullname", fullName, "command", name)
 		return name.(string)
@@ -124,15 +138,18 @@ func (ccb *CircuitBreaker) match(protocol, service, method string) string {
 	// //service/method
 	// ///method
 	// //service
-	priorities := []string{
+	priorities := prioritiesPool.Get().([]string)
+	priorities = priorities[:0]
+	priorities = append(priorities,
 		fullName,
-		protocol + "://" + service,
-		protocol + "://" + method,
-		protocol,
-		"//" + service + method,
-		"//" + method,
-		"//" + service,
-	}
+		ccb.buildKey(protocol, "//", service),
+		ccb.buildKey(protocol, "//", method),
+		ccb.buildKey(protocol),
+		ccb.buildKey("//", service, "/", method),
+		ccb.buildKey("///", method),
+		ccb.buildKey("//", service),
+	)
+	defer prioritiesPool.Put(priorities)
 	ccb.cm.RLock()
 	defer ccb.cm.RUnlock()
 	for _, name := range priorities {
@@ -145,6 +162,17 @@ func (ccb *CircuitBreaker) match(protocol, service, method string) string {
 	}
 	logger.Debug("circuit breaker matched default", "fullname", fullName)
 	return DefaultCommandConfigName
+}
+
+func (ccb *CircuitBreaker) buildKey(parts ...string) string {
+	b := builderPool.Get().(*strings.Builder)
+	b.Reset()
+	for _, p := range parts {
+		b.WriteString(p)
+	}
+	s := b.String()
+	builderPool.Put(b)
+	return s
 }
 
 func (ccb *CircuitBreaker) loadAndWatch() error {

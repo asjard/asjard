@@ -19,7 +19,7 @@ func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
 	}
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
-			origin := string(ctx.Request.Header.Peek("Origin"))
+			origin := string(append([]byte(nil), ctx.Request.Header.Peek("Origin")...))
 			if len(origin) == 0 {
 				next(ctx)
 				return

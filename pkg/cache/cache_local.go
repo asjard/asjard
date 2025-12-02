@@ -92,7 +92,7 @@ func (c *CacheLocal) Get(ctx context.Context, key string, out any) (bool, error)
 	if key == "" {
 		return true, nil
 	}
-	value, err := c.cache.Get(utils.String2Byte(key))
+	value, err := c.cache.Get(utils.UnsafeString2Byte(key))
 	if err != nil {
 		return true, err
 	}
@@ -113,7 +113,7 @@ func (c *CacheLocal) Del(ctx context.Context, keys ...string) error {
 
 func (c *CacheLocal) del(keys ...string) error {
 	for _, key := range keys {
-		c.cache.Del(utils.String2Byte(key))
+		c.cache.Del(utils.UnsafeString2Byte(key))
 	}
 	return nil
 }
@@ -128,12 +128,12 @@ func (c *CacheLocal) Set(ctx context.Context, key string, in any, expiresIn time
 		return err
 	}
 	logger.Debug("set local", "key", key)
-	return c.cache.Set(utils.String2Byte(key), value, int(expiresIn.Seconds()))
+	return c.cache.Set(utils.UnsafeString2Byte(key), value, int(expiresIn.Seconds()))
 }
 
 // Refresh local cache expire time.
 func (c *CacheLocal) Refresh(ctx context.Context, key string, in any, expiresIn time.Duration) error {
-	return c.cache.Touch(utils.String2Byte(key), int(expiresIn.Seconds()))
+	return c.cache.Touch(utils.UnsafeString2Byte(key), int(expiresIn.Seconds()))
 }
 
 // Key return local cache key.
@@ -194,7 +194,7 @@ func (c *CacheLocal) delSubscribe() {
 		case msg := <-c.pubsub.Channel():
 			logger.Debug("local cache del subscribe recive", "msg", msg.Payload)
 			var delMsg cacheLocalDelPublishMessage
-			if err := json.Unmarshal(utils.String2Byte(msg.Payload), &delMsg); err != nil {
+			if err := json.Unmarshal(utils.UnsafeString2Byte(msg.Payload), &delMsg); err != nil {
 				logger.Error("local cache pubsub unmarshal fail", "payload", msg.Payload, "err", err)
 			}
 			if delMsg.InstanceId != c.instanceId {

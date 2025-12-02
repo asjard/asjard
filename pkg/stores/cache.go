@@ -84,7 +84,8 @@ type Cache struct {
 var (
 	// DefaultCacheConfig default cache config
 	DefaultCacheConfig = CacheConfig{
-		ExpiresIn: utils.JSONDuration{Duration: 10 * time.Minute},
+		ExpiresIn:         utils.JSONDuration{Duration: 10 * time.Minute},
+		IgnoreVersionDiff: true,
 	}
 )
 

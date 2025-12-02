@@ -2,13 +2,16 @@ package interceptors
 
 import (
 	"context"
+	"sync"
 
 	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/pkg/client/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/asjard/asjard/utils"
+	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -20,6 +23,7 @@ const (
 // 放在拦截器的最前面
 type Rest2RpcContext struct {
 	cfg rest2RpcContextConfig
+	cm  sync.RWMutex
 }
 
 // Rest2RpcContextConfig 拦截器配置
@@ -35,9 +39,9 @@ var defaultRest2RpcContextConfig = rest2RpcContextConfig{
 		"x-request-az",
 		"x-request-id",
 		"x-request-instance",
-		"x-forward-for",
-		"traceparent",
-		"authorization",
+		"Traceparent",
+		fasthttp.HeaderXForwardedFor,
+		fasthttp.HeaderAuthorization,
 	},
 }
 
@@ -47,7 +51,7 @@ func (r rest2RpcContextConfig) complete() rest2RpcContextConfig {
 }
 
 func init() {
-	client.AddInterceptor(Rest2RpcContextInterceptorName, NewRest2RpcContext)
+	client.AddInterceptor(Rest2RpcContextInterceptorName, NewRest2RpcContext, grpc.Protocol)
 }
 
 // NewRest2RpcContext context转换初始化
@@ -66,7 +70,7 @@ func NewRest2RpcContext() (client.ClientInterceptor, error) {
 }
 
 // Name 拦截器名称
-func (Rest2RpcContext) Name() string {
+func (*Rest2RpcContext) Name() string {
 	return Rest2RpcContextInterceptorName
 }
 
@@ -75,23 +79,20 @@ func (Rest2RpcContext) Name() string {
 func (r *Rest2RpcContext) Interceptor() client.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
 		rtx, ok := ctx.(*rest.Context)
-		if !ok || cc.Protocol() == rest.Protocol {
+		if !ok {
 			return invoker(ctx, method, req, reply, cc)
 		}
 		md := make(metadata.MD)
-		for k, v := range rtx.ReadHeaderParams() {
-			if r.cfg.allowAllHeaders {
+		r.cm.RLock()
+		defer r.cm.RUnlock()
+		for _, k := range r.cfg.AllowHeaders {
+			md[k] = rtx.GetHeaderParam(k)
+			v := rtx.GetUserParam(k)
+			if len(v) != 0 {
 				md[k] = v
-				continue
-			}
-			for _, alk := range r.cfg.AllowHeaders {
-				if k == alk {
-					md[k] = v
-					break
-				}
 			}
 		}
-		return invoker(metadata.NewIncomingContext(ctx, md),
+		return invoker(metadata.NewOutgoingContext(context.Background(), md),
 			method, req, reply, cc)
 	}
 }
@@ -99,6 +100,8 @@ func (r *Rest2RpcContext) Interceptor() client.UnaryClientInterceptor {
 func (r *Rest2RpcContext) watch(event *config.Event) {
 	conf := defaultRest2RpcContextConfig
 	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientRest2RpcContextPrefix, &conf); err == nil {
+		r.cm.Lock()
 		r.cfg = conf.complete()
+		r.cm.Unlock()
 	}
 }

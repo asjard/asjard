@@ -70,23 +70,16 @@ func (*AccessLog) Name() string {
 // 垮协议拦截器
 func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
-		if !al.cfg.Enabled {
-			return handler(ctx, req)
-		}
 		if al.skipped(info.Protocol, info.FullMethod) {
 			return handler(ctx, req)
 		}
 		now := time.Now()
 		var fields []any
-		// requestId := uuid.New().String()
-		// fields = append(fields, []any{"trace", requestId}...)
 		fields = append(fields, []any{"protocol", info.Protocol}...)
 		fields = append(fields, []any{"full_method", info.FullMethod}...)
 		switch info.Protocol {
 		case rest.Protocol:
 			if rc, ok := ctx.(*rest.Context); ok {
-				// rc.Response.Header.Set(rest.HeaderResponseRequestID, requestId)
-				// rc.Request.Header.Set(rest.HeaderResponseRequestID, requestId)
 				fields = append(fields, []any{"header", rc.ReadHeaderParams()}...)
 				fields = append(fields, []any{"method", string(rc.Method())}...)
 				fields = append(fields, []any{"path", string(rc.Path())}...)
@@ -109,6 +102,9 @@ func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 func (al *AccessLog) skipped(protocol, method string) bool {
 	al.m.RLock()
 	defer al.m.RUnlock()
+	if !al.cfg.Enabled {
+		return true
+	}
 	// 是否拦截协议
 	if _, ok := al.cfg.skipMethodsMap[protocol]; ok {
 		return true

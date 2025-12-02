@@ -27,11 +27,13 @@ import (
 )
 
 const (
-	contextPackage = protogen.GoImportPath("context")
-	restPackage    = protogen.GoImportPath("github.com/asjard/asjard/pkg/server/rest")
-	configPackage  = protogen.GoImportPath("github.com/asjard/asjard/core/config")
-	clientPackage  = protogen.GoImportPath("github.com/asjard/asjard/core/client")
-	grpcPackage    = protogen.GoImportPath("github.com/asjard/asjard/pkg/client/grpc")
+	contextPackage   = protogen.GoImportPath("context")
+	restPackage      = protogen.GoImportPath("github.com/asjard/asjard/pkg/server/rest")
+	configPackage    = protogen.GoImportPath("github.com/asjard/asjard/core/config")
+	clientPackage    = protogen.GoImportPath("github.com/asjard/asjard/core/client")
+	grpcPackage      = protogen.GoImportPath("github.com/asjard/asjard/pkg/client/grpc")
+	bootstrapPackage = protogen.GoImportPath("github.com/asjard/asjard/core/bootstrap")
+	syncPackage      = protogen.GoImportPath("sync")
 	// FileDescriptorProto.package field number
 	fileDescriptorProtoPackageFieldNumber = 2
 	// FileDescriptorProto.syntax field number
@@ -89,6 +91,20 @@ func (g *GwGenerator) genFileContent() {
 		if len(serviceFullName) < 4 {
 			panic("invalid package name, must be {group}.{version}.{service}")
 		}
+		lowSeviceName := strings.ToLower(service.GoName[:1]) + service.GoName[1:] + "API"
+		g.gen.P("var (")
+		g.gen.P(lowSeviceName, " *", service.GoName, "API")
+		g.gen.P(lowSeviceName, "Once ", syncPackage.Ident("Once"))
+		g.gen.P(")")
+
+		g.gen.P("func New", service.GoName, "API() *", service.GoName, "API{")
+		g.gen.P(lowSeviceName, "Once.Do(func() {")
+		g.gen.P(lowSeviceName, "=&", service.GoName, "API{}")
+		g.gen.P(bootstrapPackage.Ident("AddBootstrap"), "(", lowSeviceName, ")")
+		g.gen.P("})")
+		g.gen.P("return ", strings.ToLower(service.GoName[:1])+service.GoName[1:]+"API ")
+		g.gen.P("}")
+
 		g.gen.P("func (api *", service.GoName, "API)Start() error {")
 		g.gen.P("conn, err := ", clientPackage.Ident("NewClient"), "(", grpcPackage.Ident("Protocol"),
 			",",
