@@ -46,7 +46,7 @@ func init() {
 // New 服务初始化
 func New(options *server.ServerOptions) (server.Server, error) {
 	conf := defaultConfig()
-	if err := config.GetWithUnmarshal("asjard.servers.anqp", &conf); err != nil {
+	if err := config.GetWithUnmarshal("asjard.servers.amqp", &conf); err != nil {
 		return nil, err
 	}
 	return MustNew(conf, options)

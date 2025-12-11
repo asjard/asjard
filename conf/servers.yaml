@@ -24,6 +24,7 @@ asjard:
 
     ## amqp server
     amqp:
+      enabled: false
       ## asjard.stores.amqp.client.{name}
       clientName: default
       ## channel qos
