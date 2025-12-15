@@ -274,11 +274,12 @@ func (g *amqpGenerator) genServiceClient(service *protogen.Service, clientType s
 
 	g.gen.P("for _, method := range ", service.GoName+"AmqpServiceDesc.Methods{")
 
-	g.gen.P("if method.Queue == \"\" {")
-	g.gen.P("continue")
-	g.gen.P("}")
+	// g.gen.P("if method.Queue == \"\" {")
+	// g.gen.P("continue")
+	// g.gen.P("}")
 
-	g.gen.P("if _, err := ch.QueueDeclare(method.Queue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, method.Table); err != nil {")
+	g.gen.P("queue, err := ch.QueueDeclare(method.Queue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, method.Table)")
+	g.gen.P("if err != nil {")
 	g.gen.P("return err")
 	g.gen.P("}")
 
@@ -287,7 +288,7 @@ func (g *amqpGenerator) genServiceClient(service *protogen.Service, clientType s
 	g.gen.P("return err")
 	g.gen.P("}")
 
-	g.gen.P("if err := ch.QueueBind(method.Queue, method.Route, method.Exchange, method.NoWait, method.Table); err != nil {")
+	g.gen.P("if err := ch.QueueBind(queue.Name, method.Route, method.Exchange, method.NoWait, method.Table); err != nil {")
 	g.gen.P("return err")
 	g.gen.P("}")
 
