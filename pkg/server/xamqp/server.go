@@ -176,7 +176,7 @@ func (s *AmqpServer) start() error {
 			continue
 		}
 		for _, method := range desc.Methods {
-			if method.Queue == "" || method.Handler == nil {
+			if method.Handler == nil {
 				continue
 			}
 			if _, err := ch.QueueDeclare(method.Queue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, method.Table); err != nil {

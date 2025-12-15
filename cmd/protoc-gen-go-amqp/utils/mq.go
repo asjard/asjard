@@ -11,6 +11,7 @@ type MQOption struct {
 	Kind     string
 
 	Route      string
+	Queue      *string
 	Consumer   string
 	Table      map[string]any
 	DataFormat string
@@ -35,6 +36,7 @@ func parseMethodMqOption(h *mqpb.MQ, serviceOption *MQOption) *MQOption {
 	}
 	option := &MQOption{
 		Route:      h.GetRoute(),
+		Queue:      h.Queue,
 		Consumer:   h.GetConsumer(),
 		Table:      table,
 		DataFormat: h.DataFormat,
