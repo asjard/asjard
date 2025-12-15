@@ -327,7 +327,12 @@ func (g *amqpGenerator) genServiceMethodClient(service *protogen.Service, client
 	g.gen.P("defer ch.Close()")
 	// c.Publish(exchange string, key string, mandatory bool, immediate bool, msg amqp.Publishing)
 	g.gen.P("return ch.Publish(", `options.Exchange,`, "options.Key,", "options.Mandatory,", "options.Immediate,", amqpPackage.Ident("Publishing"), "{")
-	g.gen.P("ContentType:\"application/protobuf\",")
+	switch dataFormat {
+	case "json":
+		g.gen.P("ContentType:\"application/json\",")
+	default:
+		g.gen.P("ContentType:\"application/protobuf\",")
+	}
 	g.gen.P("Body:payload,")
 	g.gen.P("})")
 	g.gen.P("}")
