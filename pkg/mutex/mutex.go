@@ -46,11 +46,13 @@ type Mutex struct {
 
 // Lock 加锁
 func (m *Mutex) Lock(ctx context.Context, key, threadId string, expiresIn time.Duration) bool {
+	key = m.resourceKey(key)
 	return m.Locker.Lock(ctx, key, threadId, expiresIn)
 }
 
 // Unlock 解锁
 func (m *Mutex) Unlock(ctx context.Context, key, threadId string) bool {
+	key = m.resourceKey(key)
 	return m.Locker.Unlock(ctx, key, threadId)
 }
 
@@ -63,7 +65,7 @@ func (m *Mutex) TryLock(ctx context.Context, key string, do func() error, opts .
 	for _, opt := range opts {
 		opt(options)
 	}
-	key = runtime.GetAPP().ResourceKey("lock", key, runtime.WithoutRegion(true))
+	key = m.resourceKey(key)
 	for i := 0; i < options.maxRetries; i++ {
 		if m.Locker.Lock(ctx, key, options.threadId, options.expiresIn.Duration) {
 			defer m.Locker.Unlock(ctx, key, options.threadId)
@@ -88,6 +90,13 @@ func (m *Mutex) TryLock(ctx context.Context, key string, do func() error, opts .
 		time.Sleep(time.Duration(rand.Int63n(int64(options.maxRetryDelayDuration-options.minRetryDelayDuration))) + options.minRetryDelayDuration)
 	}
 	return status.Errorf(status.GetLockFailCode, "get lock after %d retries not success", options.maxRetries)
+}
+
+func (m *Mutex) resourceKey(key string) string {
+	return runtime.GetAPP().ResourceKey("lock", key,
+		runtime.WithoutAz(true),
+		runtime.WithoutVersion(true),
+		runtime.WithDelimiter(":"))
 }
 
 func (m *Mutex) defaultLockOptions() *LockOptions {

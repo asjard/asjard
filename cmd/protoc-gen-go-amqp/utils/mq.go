@@ -10,9 +10,11 @@ type MQOption struct {
 	Exchange string
 	Kind     string
 
-	Route    string
-	Consumer string
-	Table    map[string]any
+	Route      string
+	Queue      *string
+	Consumer   string
+	Table      map[string]any
+	DataFormat string
 
 	AutoAck    *bool
 	Durable    *bool
@@ -34,8 +36,10 @@ func parseMethodMqOption(h *mqpb.MQ, serviceOption *MQOption) *MQOption {
 	}
 	option := &MQOption{
 		Route:      h.GetRoute(),
+		Queue:      h.Queue,
 		Consumer:   h.GetConsumer(),
 		Table:      table,
+		DataFormat: h.DataFormat,
 		AutoAck:    h.AutoAck,
 		Durable:    h.Durable,
 		AutoDelete: h.AutoDelete,

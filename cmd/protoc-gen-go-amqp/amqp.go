@@ -101,10 +101,20 @@ func (g *amqpGenerator) genService(service *protogen.Service) {
 	clientType := service.GoName + "AmqpClient"
 	g.genServiceClient(service, clientType)
 	for _, method := range service.Methods {
-		g.genServiceMethodClient(service, clientType, method)
+		var dataFormat string
+		mqOptions, ok := proto.GetExtension(method.Desc.Options(), mqpb.E_Mq).([]*mqpb.MQ)
+		if ok && len(mqOptions) > 0 {
+			dataFormat = mqOptions[0].DataFormat
+		}
+		g.genServiceMethodClient(service, clientType, method, dataFormat)
 	}
 	for _, method := range service.Methods {
-		hname := g.genServiceMethod(service, serverType, method)
+		var dataFormat string
+		mqOptions, ok := proto.GetExtension(method.Desc.Options(), mqpb.E_Mq).([]*mqpb.MQ)
+		if ok && len(mqOptions) > 0 {
+			dataFormat = mqOptions[0].DataFormat
+		}
+		hname := g.genServiceMethod(service, serverType, method, dataFormat)
 		handlerNames = append(handlerNames, hname)
 	}
 	g.genServiceDesc(service, serverType, handlerNames)
@@ -141,7 +151,11 @@ func (g *amqpGenerator) genServiceDesc(service *protogen.Service, serverType str
 		if ok {
 			for _, mqOption := range mqOptions {
 				g.gen.P("{")
-				g.gen.P("Queue: ", fmt.Sprintf("%s_%s_FullMethodName", service.GoName, method.GoName), ",")
+				if mqOption.Queue == nil {
+					g.gen.P("Queue: ", fmt.Sprintf("%s_%s_FullMethodName", service.GoName, method.GoName), ",")
+				} else {
+					g.gen.P("Queue: ", strconv.Quote(*mqOption.Queue), ",")
+				}
 				g.gen.P("Handler: ", handlerNames[i], ",")
 				option := utils.ParseMethodMqOption(service, mqOption)
 				if option.Exchange != "" {
@@ -260,11 +274,12 @@ func (g *amqpGenerator) genServiceClient(service *protogen.Service, clientType s
 
 	g.gen.P("for _, method := range ", service.GoName+"AmqpServiceDesc.Methods{")
 
-	g.gen.P("if method.Queue == \"\" {")
-	g.gen.P("continue")
-	g.gen.P("}")
+	// g.gen.P("if method.Queue == \"\" {")
+	// g.gen.P("continue")
+	// g.gen.P("}")
 
-	g.gen.P("if _, err := ch.QueueDeclare(method.Queue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, method.Table); err != nil {")
+	g.gen.P("queue, err := ch.QueueDeclare(method.Queue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, method.Table)")
+	g.gen.P("if err != nil {")
 	g.gen.P("return err")
 	g.gen.P("}")
 
@@ -273,7 +288,7 @@ func (g *amqpGenerator) genServiceClient(service *protogen.Service, clientType s
 	g.gen.P("return err")
 	g.gen.P("}")
 
-	g.gen.P("if err := ch.QueueBind(method.Queue, method.Route, method.Exchange, method.NoWait, method.Table); err != nil {")
+	g.gen.P("if err := ch.QueueBind(queue.Name, method.Route, method.Exchange, method.NoWait, method.Table); err != nil {")
 	g.gen.P("return err")
 	g.gen.P("}")
 
@@ -290,7 +305,7 @@ func (g *amqpGenerator) genServiceClient(service *protogen.Service, clientType s
 	g.gen.P("}")
 }
 
-func (g *amqpGenerator) genServiceMethodClient(service *protogen.Service, clientType string, method *protogen.Method) {
+func (g *amqpGenerator) genServiceMethodClient(service *protogen.Service, clientType string, method *protogen.Method, dataFormat string) {
 	g.genComment(method.Comments)
 	g.gen.P("func(c *", clientType, ")", method.GoName, "(ctx ", contextPackage.Ident("Context"), ",in *", method.Input.GoIdent, ",",
 		"opts ...", xamqpPackage.Ident("PublishOption"), ")", "error{")
@@ -300,7 +315,13 @@ func (g *amqpGenerator) genServiceMethodClient(service *protogen.Service, client
 	g.gen.P("for _, opt := range opts {")
 	g.gen.P("opt(options)")
 	g.gen.P("}")
-	g.gen.P("payload, err := ", protoPackage.Ident("Marshal"), "(in)")
+	switch dataFormat {
+	case "json":
+		g.gen.P("payload, err := ", jsonPackage.Ident("Marshal"), "(in)")
+	default:
+		g.gen.P("payload, err := ", protoPackage.Ident("Marshal"), "(in)")
+
+	}
 	g.gen.P("if err != nil {")
 	g.gen.P("return err")
 	g.gen.P("}")
@@ -311,17 +332,27 @@ func (g *amqpGenerator) genServiceMethodClient(service *protogen.Service, client
 	g.gen.P("defer ch.Close()")
 	// c.Publish(exchange string, key string, mandatory bool, immediate bool, msg amqp.Publishing)
 	g.gen.P("return ch.Publish(", `options.Exchange,`, "options.Key,", "options.Mandatory,", "options.Immediate,", amqpPackage.Ident("Publishing"), "{")
-	g.gen.P("ContentType:\"application/protobuf\",")
+	switch dataFormat {
+	case "json":
+		g.gen.P("ContentType:\"application/json\",")
+	default:
+		g.gen.P("ContentType:\"application/protobuf\",")
+	}
 	g.gen.P("Body:payload,")
 	g.gen.P("})")
 	g.gen.P("}")
 }
-func (g *amqpGenerator) genServiceMethod(service *protogen.Service, serverType string, method *protogen.Method) string {
+func (g *amqpGenerator) genServiceMethod(service *protogen.Service, serverType string, method *protogen.Method, dataFormat string) string {
 	hname := fmt.Sprintf("_%s_%s_AmqpHandler", service.GoName, method.GoName)
 	g.genComment(method.Comments)
 	g.gen.P("func ", hname, "(ctx *", xamqpPackage.Ident("Context"), ", srv any, interceptor ", serverPackage.Ident("UnaryServerInterceptor"), ") (any, error) {")
 	g.gen.P("in := new(", method.Input.GoIdent, ")")
-	g.gen.P("if err := ", protoPackage.Ident("Unmarshal"), "(ctx.Body(), in); err != nil {")
+	switch dataFormat {
+	case "json":
+		g.gen.P("if err := ", jsonPackage.Ident("Unmarshal"), "(ctx.Body(), in); err != nil {")
+	default:
+		g.gen.P("if err := ", protoPackage.Ident("Unmarshal"), "(ctx.Body(), in); err != nil {")
+	}
 	g.gen.P("return nil, err")
 	g.gen.P("}")
 	g.gen.P("if interceptor == nil {")
