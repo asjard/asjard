@@ -51,7 +51,10 @@ func (s CycleChainInterceptor) Interceptor() client.UnaryClientInterceptor {
 		}
 		md, ok := metadata.FromOutgoingContext(ctx)
 		if !ok {
-			md, _ = metadata.FromIncomingContext(ctx)
+			md, ok = metadata.FromIncomingContext(ctx)
+			if !ok {
+				md = metadata.New(map[string]string{})
+			}
 		}
 		currentRequestMethod := "grpc://" + strings.ReplaceAll(strings.Trim(method, "/"), "/", ".")
 		if requestChains, ok := md[HeaderRequestChain]; ok {
