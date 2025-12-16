@@ -116,7 +116,7 @@ func (asd *Asjard) Start() error {
 		return err
 	}
 	logger.Info("System Started")
-	if config.GetBool(constant.ConfigLoggerBannerEnabled, true) {
+	if !config.GetBool(constant.ConfigLoggerBannerDisable, false) {
 		asd.printBanner()
 	}
 	// 优雅退出

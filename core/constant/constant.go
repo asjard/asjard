@@ -75,7 +75,7 @@ const (
 	// 监控配置前缀
 	ConfigMetricsPrefix = Framework + ".metrics"
 
-	ConfigLoggerBannerEnabled = "asjard.logger.banner.enabled"
+	ConfigLoggerBannerDisable = "asjard.logger.banner.disable"
 
 	ConfigRegistryFailureThreshold    = "asjard.registry.failureThreshold"
 	ConfigRegistryHealthCheck         = "asjard.registry.healthCheck"

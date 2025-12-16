@@ -56,7 +56,7 @@ type MQ struct {
 	// 数据格式,json,protobuf
 	// 默认protobuf
 	DataFormat string `protobuf:"bytes,20,opt,name=data_format,json=dataFormat,proto3" json:"data_format,omitempty"`
-	// 队列名称
+	// 队列名称,默认{serviceName}_{methodName}FullMethodName
 	Queue *string `protobuf:"bytes,21,opt,name=queue,proto3,oneof" json:"queue,omitempty"`
 }
 

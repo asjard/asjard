@@ -274,13 +274,10 @@ func (g *amqpGenerator) genServiceClient(service *protogen.Service, clientType s
 
 	g.gen.P("for _, method := range ", service.GoName+"AmqpServiceDesc.Methods{")
 
-	// g.gen.P("if method.Queue == \"\" {")
-	// g.gen.P("continue")
-	// g.gen.P("}")
-
-	g.gen.P("queue, err := ch.QueueDeclare(method.Queue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, method.Table)")
-	g.gen.P("if err != nil {")
+	g.gen.P("if method.Queue != \"\" {")
+	g.gen.P("if _, err := ch.QueueDeclare(method.Queue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, method.Table);err != nil {")
 	g.gen.P("return err")
+	g.gen.P("}")
 	g.gen.P("}")
 
 	g.gen.P("if method.Exchange != \"\" {")
@@ -288,8 +285,10 @@ func (g *amqpGenerator) genServiceClient(service *protogen.Service, clientType s
 	g.gen.P("return err")
 	g.gen.P("}")
 
-	g.gen.P("if err := ch.QueueBind(queue.Name, method.Route, method.Exchange, method.NoWait, method.Table); err != nil {")
+	g.gen.P("if method.Queue != \"\" {")
+	g.gen.P("if err := ch.QueueBind(method.Queue, method.Route, method.Exchange, method.NoWait, method.Table); err != nil {")
 	g.gen.P("return err")
+	g.gen.P("}")
 	g.gen.P("}")
 
 	g.gen.P("}")
@@ -310,7 +309,7 @@ func (g *amqpGenerator) genServiceMethodClient(service *protogen.Service, client
 	g.gen.P("func(c *", clientType, ")", method.GoName, "(ctx ", contextPackage.Ident("Context"), ",in *", method.Input.GoIdent, ",",
 		"opts ...", xamqpPackage.Ident("PublishOption"), ")", "error{")
 	g.gen.P("options := &", xamqpPackage.Ident("PublishOptions"), "{")
-	g.gen.P("Key: ", fmt.Sprintf("%s_%s_FullMethodName", service.GoName, method.GoName), ",")
+	// g.gen.P("Key: ", fmt.Sprintf("%s_%s_FullMethodName", service.GoName, method.GoName), ",")
 	g.gen.P("}")
 	g.gen.P("for _, opt := range opts {")
 	g.gen.P("opt(options)")
