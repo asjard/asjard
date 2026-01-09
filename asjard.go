@@ -119,7 +119,7 @@ func (asd *Asjard) Start() error {
 	if !config.GetBool(constant.ConfigLoggerBannerDisable, false) {
 		asd.printBanner()
 	}
-	// 优雅退出
+	// gracefull shutdown
 	quit := make(chan os.Signal, 1)
 	defer close(quit)
 	signal.Notify(quit, syscall.SIGKILL, syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP, syscall.SIGABRT)
@@ -131,8 +131,10 @@ func (asd *Asjard) Start() error {
 		logger.Error("start error:",
 			"error", err)
 	}
+	// in rollingupdate need wait new instance start up
+	time.Sleep(5 * time.Second)
 	close(runtime.Exit)
-	// 系统停止
+	// stop all servers
 	asd.stop()
 	return nil
 }
