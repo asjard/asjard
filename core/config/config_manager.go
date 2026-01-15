@@ -1,5 +1,7 @@
 /*
-Package config 维护各个配置源上报的配置，提供读取配置的方法和通知配置发生变更的事件
+Package config manages configuration reporting from multiple sources.
+It provides unified methods for reading configurations, automatic type casting,
+and an event-driven notification system for configuration changes.
 */
 package config
 
@@ -23,98 +25,81 @@ import (
 )
 
 var (
+	// Regex to identify ${variable} patterns for dynamic parameter injection.
 	configParamCompile = regexp.MustCompile("\\${(.*?)}")
-	loadedFlag         atomic.Bool
+	// Atomic flag to ensure the configuration system is initialized only once.
+	loadedFlag atomic.Bool
 )
 
 const (
-	// value值加密标志
+	// Prefix identifying a value that needs decryption.
 	ValueEncryptFlag = "encrypted_"
-	// value值加密加密名称分隔符
-	// 用来解析加密组件名称
+	// Delimiter used to separate the flag from the cipher component name.
 	ValueEncryptCipherNameSplitSymbol = "_"
-	// value值加密分隔符
-	// 用来解析加密组件名称和value值
+	// Delimiter used to separate the cipher metadata from the encrypted payload.
 	ValueEncryptSplitSymbol = ":"
 )
 
-// Sourcer 配置源需要实现的方法
+// Sourcer defines the interface for external configuration providers (e.g., Apollo, ETCD, Local Files).
 type Sourcer interface {
-	// 获取所有配置,首次初始化完毕后会去配置源获取一次所有配置,
-	// 维护在config_manager的本地内存中,
-	// 返回的配置应该为properties格式的，并区分大小写。
-	// 返回值可以通过ConvertToProperties方法获取
+	// GetAll retrieves a full snapshot of configurations in property format (case-sensitive).
 	GetAll() map[string]*Value
-	// 添加配置到配置源中,
-	// 慎用,存在安全隐患和配置源实现复杂问题
-	// 理论只应该在mem配置源中使用,非必要不要使用
+	// Set persists a configuration to the source. Primarily intended for memory-based sources.
 	Set(key string, value any) error
-	// 监听配置变化,当配置源中的配置发生变化时,
-	// 通过此回调方法通知config_manager进行配置变更
-	// Watch(func(event *Event)) error
-	// 和配置中心断开连接
+	// Disconnect safely closes the connection to the configuration center.
 	Disconnect()
-	// 配置中心的优先级
+	// Priority returns the precedence level of the source; higher values override lower ones.
 	Priority() int
-	// 配置源名称
+	// Name returns the unique identifier for the configuration source.
 	Name() string
 }
 
-// NewSourceFunc 初始化配置源的方法，
-// 无需携带任何参数，配置源的加载顺序是从低到高加载的，
-// 高优先级的配置源在初始化的时候可以读取到低优先级的配置。
-//
-//	@return Sourcer 配置源
-//	@return error
+// NewSourceFunc is a factory type for initializing a Sourcer.
+// Sources are loaded in ascending order of priority, allowing high-priority
+// sources to read values from low-priority ones during initialization.
 type NewSourceFunc func(options *SourceOptions) (Sourcer, error)
 
-// Source 配置源结构，添加的配置源保存成如下结构，
-// 后续加载配置源时从此结构中读取配置源信息
+// Source represents a registered provider waiting to be instantiated.
 type Source struct {
 	name          string
 	priority      int
 	newSourceFunc NewSourceFunc
-	// 是否已加载
+	// Tracks if the source has been initialized.
 	loaded bool
 }
 
-// ConfigManager 全局配置管理，
-// 维护全局配置和配置源配置，
-// 后续读取全局配置或者配置源配置从此结构中读取
+// ConfigManager is the central controller managing global and source-specific state.
 type ConfigManager struct {
-	// 配置源列表
+	// Active configuration source instances.
 	sourcers map[string]Sourcer
 	sm       sync.RWMutex
-	// 配置列表，从不同数据源的配置将key保存在此处
-	// 获取配置也是从此配置中获取
+	// The final flattened configuration map used for read operations.
 	globalCfgs Configer
-	// 配置源的配置维护在此处，这样就不需要每个配置源维护自己配置了
-	// 使用此配置是因为当一个配置删除后，需要找到一个高优先级的配置来更新configs字段
-	// 如果不维护在此处，需要新增一个GetByKey方法去配置源获取
+	// Raw values from every source, used to determine the next-best value when a key is deleted.
 	sourceCfgs SourcesConfiger
-	// 监听配置变化
+	// Management of configuration change subscribers.
 	listener *Listener
 }
 
-// CallbackFunc 配置更新回调方法
+// CallbackFunc is the handler signature for configuration update events.
 type CallbackFunc func(event *Event)
 
-// SourcerOptions 配置源初始化参数列表
+// SourceOptions provides context for Sourcer initialization.
 type SourceOptions struct {
 	Callback CallbackFunc
 }
 
-// SourceOption 设置配置源参数的别名
+// SourceOption is a functional argument for configuring SourceOptions.
 type SourceOption func(options *SourceOptions)
 
-// WithCallback 设置回调函数
+// WithCallback attaches an event listener to the configuration source.
 func WithCallback(callback CallbackFunc) func(options *SourceOptions) {
 	return func(options *SourceOptions) {
 		options.Callback = callback
 	}
 }
 
-// NewSourceOptions 配置源参数初始化
+// NewSourceOptions initializes SourceOptions with functional arguments.
 func NewSourceOptions(opts ...SourceOption) *SourceOptions {
 	options := &SourceOptions{}
 	for _, opt := range opts {
@@ -124,46 +109,34 @@ func NewSourceOptions(opts ...SourceOption) *SourceOptions {
 }
 
 var (
+	// Global registry of all available configuration sources.
 	sources       []*Source
 	configmanager *ConfigManager
 )
 
-// 初始化configmanager全局变量
+// Initialize the global ConfigManager instance.
 func init() {
 	configmanager = &ConfigManager{
-		sourcers: make(map[string]Sourcer),
-		// globalCfgs: &Configs{
-		// 	cfgs: make(map[string]*Value),
-		// },
-		// sourceCfgs: &SourcesConfig{
-		// 	sources: make(map[string]SourceConfiger),
-		// },
+		sourcers:   make(map[string]Sourcer),
 		globalCfgs: &ConfigsWithSyncMap{},
 		sourceCfgs: &SourcesConfigWithSyncMap{},
 		listener:   newListener(),
 	}
 }
 
-// Load 根据配置优先级加载配置
-//
-//	@param priority 优先级
-//	@return error
+// Load triggers the loading of sources up to the specified priority.
+// If priority < 0, all registered sources are loaded.
 func Load(priority int) error {
 	defer loadedFlag.CompareAndSwap(false, true)
 	return configmanager.load(priority)
 }
 
-// IsLoaded 配置是否已经加载
+// IsLoaded returns true if the initial configuration load has completed.
 func IsLoaded() bool {
 	return loadedFlag.Load()
 }
 
-// AddSource 添加配置源
-//
-//	@param name 配置源名称
-//	@param priority 配置源优先级
-//	@param newSourceFunc 初始化配置源的方法
-//	@return error
+// AddSource registers a new provider. Prevents duplicate names or priority levels.
 func AddSource(name string, priority int, newSourceFunc NewSourceFunc) error {
 	for _, source := range sources {
 		if name == source.name {
@@ -179,24 +152,19 @@ func AddSource(name string, priority int, newSourceFunc NewSourceFunc) error {
 		newSourceFunc: newSourceFunc,
 		loaded:        false,
 	})
-	// 排序
+	// Sort sources to ensure strictly deterministic override behavior.
 	sort.Slice(sources, func(i, j int) bool {
 		return sources[i].priority < sources[j].priority
 	})
 	return nil
 }
 
-// Disconnect 和配置中心断开连接
+// Disconnect terminates all active configuration source connections.
 func Disconnect() {
 	configmanager.disconnect()
 }
 
-// load 加载所选优先级及以下所有配置
-// 优先级<0代表加载所有配置
-//
-//	@receiver m
-//	@param priority 优先级
-//	@return error
+// load executes the initialization of Sourcers based on the priority threshold.
 func (m *ConfigManager) load(priority int) error {
 	for _, source := range sources {
 		if source.loaded {
@@ -212,6 +180,7 @@ func (m *ConfigManager) load(priority int) error {
 			return err
 		}
 		m.addSourcer(newSourcer)
+		// Seed global config with initial snapshot from the source.
 		for key, value := range newSourcer.GetAll() {
 			m.watch(&Event{
 				Type:  EventTypeCreate,
@@ -224,9 +193,8 @@ func (m *ConfigManager) load(priority int) error {
 	return nil
 }
 
-// 监听配置变化
+// watch handles configuration lifecycle events from sources.
 func (m *ConfigManager) watch(event *Event) {
-	// logger.Debug("config changed", "event", event)
 	switch event.Type {
 	case EventTypeCreate, EventTypeUpdate:
 		m.update(event)
@@ -235,22 +203,16 @@ func (m *ConfigManager) watch(event *Event) {
 	}
 }
 
-// 查询key是否已存在
-// 如果不存在则添加
-// 存在, 相同的源更新，不同的源判断是否大于当前优先级
-// 如果优先级高于当前值则更新
+// update implements the priority-based "winner-take-all" logic.
+// A new value replaces the current global value if it comes from a higher-priority source.
 func (m *ConfigManager) update(event *Event) {
-	// 配置是否存在
 	value, ok := m.getConfig(event.Key)
 	if !ok || value.Sourcer.Name() == event.Value.Sourcer.Name() || event.Value.Sourcer.Priority() > value.Sourcer.Priority() {
 		m.setConfig(event.Value.Sourcer.Name(), event.Key, event.Value)
 	}
 }
 
-// 删除, 如果没有配置则返回
-// 存在则判断当前配置的优先级是否大于删除的优先级
-// 如果小于则删除
-// 优先级排序查找第一个
+// delete removes a value and triggers a fallback search for the next highest priority value.
 func (m *ConfigManager) delete(event *Event) {
 	m.sourceCfgs.Del(event.Value.Sourcer.Name(), event.Key, event.Value.Ref, event.Value.Priority)
 	if event.Value.Ref != "" {
@@ -262,7 +224,7 @@ func (m *ConfigManager) delete(event *Event) {
 	}
 }
 
-// 根据key删除
+// deleteByKey handles explicit key deletions.
 func (m *ConfigManager) deleteByKey(event *Event) {
 	value, ok := m.getConfig(event.Key)
 	if !ok || value.Sourcer.Priority() > event.Value.Sourcer.Priority() {
@@ -271,10 +233,9 @@ func (m *ConfigManager) deleteByKey(event *Event) {
 	m.deleteAndFindNext(event.Key)
 }
 
-// 根据引用删除
+// deleteByRef handles deletions of all keys associated with a specific reference (e.g., a file).
 func (m *ConfigManager) deleteByRef(event *Event) {
-	logger.Debug("delete by ref",
-		"ref", event.Value.Ref)
+	logger.Debug("delete by ref", "ref", event.Value.Ref)
 	for key, value := range m.globalCfgs.GetAll() {
 		if value.Sourcer.Name() == event.Value.Sourcer.Name() &&
 			value.Ref == event.Value.Ref {
@@ -283,33 +244,27 @@ func (m *ConfigManager) deleteByRef(event *Event) {
 	}
 }
 
-// 删除key并且找到一个最高优先级的
-// 先找到一个高优先级的，找到更新，没找到删除
+// deleteAndFindNext performs a reverse-priority search to find a replacement for a deleted key.
 func (m *ConfigManager) deleteAndFindNext(key string) {
 	for i := len(sources) - 1; i >= 0; i-- {
 		value, ok := m.sourceCfgs.Get(sources[i].name, key)
 		if !ok {
-			logger.Debug("find key from source not found",
-				"key", key,
-				"source", sources[i].name)
 			continue
 		}
-		logger.Debug("delete key and find next from sourcer",
-			"key", key,
-			"source", sources[i].name)
 		m.setConfig(sources[i].name, key, value)
 		return
 	}
-	logger.Debug("delete key", "key", key)
 	m.delConfig(key)
 }
 
+// addSourcer registers an active sourcer instance.
 func (m *ConfigManager) addSourcer(sourcer Sourcer) {
 	m.sm.Lock()
 	m.sourcers[sourcer.Name()] = sourcer
 	m.sm.Unlock()
 }
 
+// getSourcer retrieves an active sourcer by name.
 func (m *ConfigManager) getSourcer(name string) (Sourcer, bool) {
 	m.sm.RLock()
 	source, ok := m.sourcers[name]
@@ -317,18 +272,19 @@ func (m *ConfigManager) getSourcer(name string) (Sourcer, bool) {
 	return source, ok
 }
 
+// delSourcer removes an active sourcer.
 func (m *ConfigManager) delSourcer(name string) {
 	m.sm.Lock()
 	delete(m.sourcers, name)
 	m.sm.Unlock()
 }
 
+// getConfig gets the currently active value for a key.
 func (m *ConfigManager) getConfig(key string) (*Value, bool) {
 	return m.globalCfgs.Get(key)
 }
 
-// 倒序第一个有值的值
-// 相当于依次向后覆盖，找到最终值
+// getConfigByChain checks a slice of keys and returns the first one found.
 func (m *ConfigManager) getConfigByChain(keys []string) (value *Value, ok bool) {
 	for i := len(keys) - 1; i >= 0; i-- {
 		value, ok = m.getConfig(keys[i])
@@ -339,33 +295,31 @@ func (m *ConfigManager) getConfigByChain(keys []string) (value *Value, ok bool) 
 	return
 }
 
-// 获取所有的配置
+// getConfigs returns all currently active configurations.
 func (m *ConfigManager) getConfigs() map[string]*Value {
 	return m.globalCfgs.GetAll()
 }
 
-// 根据前缀列表获取配置,获取到的配置key是移除前缀的
+// getConfigsWithPrefixs returns configurations matching prefixes with the prefix trimmed from the key.
 func (m *ConfigManager) getConfigsWithPrefixs(prefixs ...string) map[string]*Value {
 	return m.globalCfgs.GetAllWithPrefixs(prefixs...)
 }
 
+// setConfig updates the global configuration and notifies listeners asynchronously.
 func (m *ConfigManager) setConfig(sourceName, key string, value *Value) {
-	// 更新配置源配置
 	if m.sourceCfgs.Set(sourceName, key, value) {
-		// 更新全局配置
 		m.globalCfgs.Set(key, value)
-		// 异步返回事件
 		go m.listener.notify(&Event{Type: EventTypeUpdate, Key: key, Value: value})
 	}
 }
 
+// delConfig removes a key globally and notifies listeners asynchronously.
 func (m *ConfigManager) delConfig(key string) {
 	m.globalCfgs.Del(key)
-	// 异步返回事件
 	go m.listener.notify(&Event{Type: EventTypeDelete, Key: key})
 }
 
-// 获取配置
+// getValue retrieves a value with support for fallback keys and dynamic type casting.
 func (m *ConfigManager) getValue(key string, opts *Options) any {
 	if opts != nil && opts.watch != nil {
 		m.listener.watch(key, opts.watch)
@@ -377,21 +331,20 @@ func (m *ConfigManager) getValue(key string, opts *Options) any {
 	return m.getValueWithOptions(value.Value, opts)
 }
 
-// 添加配置监听
+// addListener registers a callback for configuration changes.
 func (m *ConfigManager) addListener(key string, opts *Options) {
 	if opts != nil && opts.watch != nil {
 		m.listener.watch(key, opts.watch)
 	}
 }
 
-// 移除监听器
+// removeListener unregisters all callbacks for a specific key.
 func (m *ConfigManager) removeListener(key string) {
 	m.listener.remove(key)
 }
 
-// 根据前缀获取配置
+// getValueByPrefix supports resolving keys where the prefix itself might be a dynamic parameter.
 func (m *ConfigManager) getValueByPrefix(prefix string, opts *Options) map[string]any {
-	// 如果前缀的值是个变量
 	valuePrefix := ""
 	if ok, value := m.valueIsParam(GetString(prefix, "")); ok {
 		valuePrefix = value
@@ -412,7 +365,7 @@ func (m *ConfigManager) getValueByPrefix(prefix string, opts *Options) map[strin
 
 }
 
-// 根据前缀获取值
+// getValueWithPrefix recursively resolves values matching a prefix, including parameter redirection.
 func (m *ConfigManager) getValueWithPrefix(prefix string, opts *Options) map[string]any {
 	out := make(map[string]any)
 	for key, value := range m.getConfigsWithPrefixs(append([]string{prefix}, opts.keys...)...) {
@@ -427,7 +380,7 @@ func (m *ConfigManager) getValueWithPrefix(prefix string, opts *Options) map[str
 	return out
 }
 
-// 值是否是参数
+// valueIsParam checks if a string is a variable placeholder like ${key}.
 func (m *ConfigManager) valueIsParam(value string) (bool, string) {
 	if strings.HasPrefix(value, "${") && strings.HasSuffix(value, "}") {
 		return true, strings.TrimSuffix(strings.TrimPrefix(value, "${"), "}")
@@ -435,22 +388,20 @@ func (m *ConfigManager) valueIsParam(value string) (bool, string) {
 	return false, value
 }
 
-// 解密数据
+// getValueWithOptions handles post-retrieval processing: manual decryption, parameter rendering, and auto-decryption.
 func (m *ConfigManager) getValueWithOptions(value any, opts *Options) any {
+	// 1. Manual Decryption: Triggered if Options specify a cipher.
 	if opts.cipher {
 		decryptedValue, err := security.Decrypt(cast.ToString(value), security.WithCipherName(opts.cipherName))
 		if err != nil {
-			logger.Error("decrypt fail",
-				"value", value,
-				"cipher", opts.cipherName,
-				"err", err.Error())
+			logger.Error("decrypt fail", "value", value, "cipher", opts.cipherName, "err", err.Error())
 		} else {
 			value = decryptedValue
 		}
 	}
 	valueStr, ok := value.(string)
 	if ok {
-		// 支持参数渲染
+		// 2. Dynamic Parameter Rendering: Recursively resolves ${placeholder} within values.
 		if configParamCompile.MatchString(valueStr) {
 			for _, matchKey := range configParamCompile.FindAllString(valueStr, -1) {
 				k1 := strings.Split(matchKey, "${")
@@ -462,7 +413,7 @@ func (m *ConfigManager) getValueWithOptions(value any, opts *Options) any {
 				}
 			}
 		}
-		// 数据解密
+		// 3. Auto-Decryption: Identifies 'encrypted_' prefix and resolves automatically using the internal security module.
 		if !opts.disableAutoDecryptValue && strings.HasPrefix(valueStr, ValueEncryptFlag) {
 			kv := strings.Split(valueStr, ValueEncryptSplitSymbol)
 			cn := ""
@@ -476,10 +427,7 @@ func (m *ConfigManager) getValueWithOptions(value any, opts *Options) any {
 				ev := strings.Join(kv[1:], ValueEncryptSplitSymbol)
 				dv, err := security.Decrypt(ev, security.WithCipherName(cn))
 				if err != nil {
-					logger.Error("decrypt fail",
-						value, ev,
-						"cipher", cn,
-						"err", err)
+					logger.Error("decrypt fail", value, ev, "cipher", cn, "err", err)
 				} else {
 					valueStr = dv
 				}
@@ -491,10 +439,7 @@ func (m *ConfigManager) getValueWithOptions(value any, opts *Options) any {
 	return value
 }
 
-// 添加配置到配置源中
-// 如果没有指定配置源，判断是否设置了默认配置源，
-// 如果设置了默认配置源则设置到默认配置源，
-// 否则设置到所有配置源
+// setValue processes a value (including encryption) and pushes it to target sources.
 func (m *ConfigManager) setValue(key string, value any, ops *Options) error {
 	setValue := value
 	if ops.cipher {
@@ -515,15 +460,12 @@ func (m *ConfigManager) setValue(key string, value any, ops *Options) error {
 	return nil
 }
 
-// 如果sourceName为空则表示设置所有数据源
+// setValueToSource pushes configuration to a specific source or all sources if sourceName is empty.
 func (m *ConfigManager) setValueToSource(key, sourceName string, value any) error {
 	if sourceName == "" {
 		m.sm.RLock()
 		for _, sourcer := range m.sourcers {
-			logger.Debug("set key to source",
-				"key", key,
-				"source", sourcer.Name(),
-				"value", value)
+			logger.Debug("set key to source", "key", key, "source", sourcer.Name(), "value", value)
 			if err := sourcer.Set(key, value); err != nil {
 				return err
 			}
@@ -541,63 +483,32 @@ func (m *ConfigManager) setValueToSource(key, sourceName string, value any) erro
 	return nil
 }
 
+// disconnect triggers shutdown for all registered configuration sources.
 func (m *ConfigManager) disconnect() {
 	m.sm.RLock()
 	defer m.sm.RUnlock()
 	for name, sourcer := range m.sourcers {
-		logger.Debug("stop config source",
-			"source", name)
+		logger.Debug("stop config source", "source", name)
 		sourcer.Disconnect()
 	}
 }
 
-// Set 添加配置，添加在本地内存或者远程的配置中心
+// Set adds or updates a configuration in local memory or a remote config center.
 func Set(key string, value any, opts ...Option) error {
 	return configmanager.setValue(key, value, GetOptions(opts...))
 }
 
-// Get 获取配置
-// 可以从指定源获取配置
-// 自动加密或解密
-//
-//	@param key 需要获取的配置的key
-//	@param opts 获取配置的可选参数
-//	@return any
+// Get retrieves a configuration with automatic decryption and parameter resolution.
 func Get(key string, options *Options) any {
 	return configmanager.getValue(key, options)
 }
 
-// GetWithPrefix 根据前缀获取配置
-//
-//	@param prefixKey 前缀key
-//	@param opts 获取配置的可选参数
-//	@return map 返回的值的key为properties格式的
+// GetWithPrefix retrieves configurations by prefix. Keys in the resulting map are properties-formatted.
 func GetWithPrefix(prefixKey string, opts ...Option) map[string]any {
 	return configmanager.getValueByPrefix(prefixKey, GetOptions(opts...))
 }
 
-// GetString 获取配置并转化为字符串类型
-//
-//	@param key 配置的key
-//	@param defaultValue 默认值
-//	@param opts 获取配置的可选参数
-//	@return string
-// 可通过字符串或者列表方式配置
-// 例如yaml文件中:
-
-// ```yaml
-// key: a,b,c
-// ```
-// 字符串方式分隔符可通过config.WithDelimiter指定，默认为','
-
-// 或者
-
-// ```yaml
-// key:
-// - a
-// - b
-// - c
-// ```
+// GetString retrieves a string value with a fallback default. Supports case transformation via Options.
 func GetString(key string, defaultValue string, opts ...Option) string {
 	options := GetOptions(opts...)
 	v := Get(key, options)
@@ -617,12 +528,7 @@ func GetString(key string, defaultValue string, opts ...Option) string {
 	return value
 }
 
-// GetStrings 获取配置并返回字符串列表
-//
-//	@param key
-//	@param defaultValue
-//	@param opts
-//	@return []string
+// GetStrings retrieves a slice of strings using a configurable delimiter (default is ',').
 func GetStrings(key string, defaultValue []string, opts ...Option) []string {
 	options := GetOptions(opts...)
 	v := Get(key, options)
@@ -636,7 +542,7 @@ func GetStrings(key string, defaultValue []string, opts ...Option) []string {
 	return value
 }
 
-// GetByte 获取配置并返回[]byte类型
+// GetByte retrieves a value as a byte slice.
 func GetByte(key string, defaultValue []byte, opts ...Option) []byte {
 	options := GetOptions(opts...)
 	v := Get(key, options)
@@ -650,33 +556,17 @@ func GetByte(key string, defaultValue []byte, opts ...Option) []byte {
 	return []byte(value)
 }
 
-// GetBool 获取配置并转化为bool类型
-// 除了true, false 布尔类型外
-// 如果为字符串，转换为小写字符后,
-// 非 "0", "f", "false", "n", "no", "off" 均为true
-// 如果为整形，不等于零均为true
-//
-//	@param key
-//	@param defaultValue
-//	@param opts
-//	@return bool
+// GetBool converts various representations (true, 1, yes, on) to a boolean.
 func GetBool(key string, defaultValue bool, opts ...Option) bool {
 	v := Get(key, GetOptions(opts...))
 	if v == nil {
 		return defaultValue
 	}
-	// 如果判断错误字符串转bool类型会出现错误
-	// 比如不在true和false列表中的会返回false,并返回错误
 	value, _ := ccast.ToBoolE(v)
 	return value
 }
 
-// GetBools TODO 获取配置并转化为[]bool类型
-//
-//	@param key
-//	@param defaultValue
-//	@param opts 可选参数WithDelimiter, 默认分隔符空格
-//	@return []bool
+// GetBools retrieves a slice of booleans from a delimited string.
 func GetBools(key string, defaultValue []bool, opts ...Option) []bool {
 	options := GetOptions(opts...)
 	v := Get(key, options)
@@ -695,12 +585,7 @@ func GetBools(key string, defaultValue []bool, opts ...Option) []bool {
 	return value
 }
 
-// GetInt 获取配置并转化为int类型
-//
-//	@param key
-//	@param defaultValue
-//	@param opts
-//	@return int
+// GetInt retrieves a value and casts it to an integer.
 func GetInt(key string, defaultValue int, opts ...Option) int {
 	v := Get(key, GetOptions(opts...))
 	if v == nil {
@@ -713,12 +598,7 @@ func GetInt(key string, defaultValue int, opts ...Option) int {
 	return value
 }
 
-// GetInts TODO 获取配置并转化为[]int类型
-//
-//	@param key
-//	@param defaultValue
-//	@param opts 可选参数 WithDelimiter
-//	@return []int
+// GetInts retrieves a slice of integers from a delimited string.
 func GetInts(key string, defaultValue []int, opts ...Option) []int {
 	options := GetOptions(opts...)
 	v := Get(key, options)
@@ -740,12 +620,7 @@ func GetInts(key string, defaultValue []int, opts ...Option) []int {
 	return value
 }
 
-// GetInt64 获取配置并转化为int64类型
-//
-//	@param key
-//	@param defaultValue
-//	@param opts
-//	@return int64
+// GetInt64 retrieves a value as an int64.
 func GetInt64(key string, defaultValue int64, opts ...Option) int64 {
 	v := Get(key, GetOptions(opts...))
 	if v == nil {
@@ -758,7 +633,7 @@ func GetInt64(key string, defaultValue int64, opts ...Option) int64 {
 	return value
 }
 
-// GetInt64s TODO 获取配置并转化为[]int64类型
+// GetInt64s retrieves a slice of int64s.
 func GetInt64s(key string, defaultValue []int64, opts ...Option) []int64 {
 	options := GetOptions(opts...)
 	v := Get(key, options)
@@ -780,7 +655,7 @@ func GetInt64s(key string, defaultValue []int64, opts ...Option) []int64 {
 	return value
 }
 
-// GetInt32 获取配置并转化为int32类型
+// GetInt32 retrieves a value as an int32.
 func GetInt32(key string, defaultValue int32, opts ...Option) int32 {
 	v := Get(key, GetOptions(opts...))
 	if v == nil {
@@ -793,7 +668,7 @@ func GetInt32(key string, defaultValue int32, opts ...Option) int32 {
 	return value
 }
 
-// GetInt32s TODO 获取配置并转化为[]int32类型
+// GetInt32s retrieves a slice of int32s.
 func GetInt32s(key string, defaultValue []int32, opts ...Option) []int32 {
 	options := GetOptions(opts...)
 	v := Get(key, options)
@@ -815,7 +690,7 @@ func GetInt32s(key string, defaultValue []int32, opts ...Option) []int32 {
 	return value
 }
 
-// GetFloat64 获取配置并转化为float64
+// GetFloat64 retrieves a value as a float64.
 func GetFloat64(key string, defaultValue float64, opts ...Option) float64 {
 	v := Get(key, GetOptions(opts...))
 	if v == nil {
@@ -828,7 +703,7 @@ func GetFloat64(key string, defaultValue float64, opts ...Option) float64 {
 	return value
 }
 
-// GetFloat64s 获取配置并转化为[]float64类型
+// GetFloat64s retrieves a slice of float64s.
 func GetFloat64s(key string, defaultValue []float64, opts ...Option) []float64 {
 	options := GetOptions(opts...)
 	v := Get(key, options)
@@ -850,7 +725,7 @@ func GetFloat64s(key string, defaultValue []float64, opts ...Option) []float64 {
 	return value
 }
 
-// GetFloat32 获取配置并转化为float32
+// GetFloat32 retrieves a value as a float32.
 func GetFloat32(key string, defaultValue float32, opts ...Option) float32 {
 	v := Get(key, GetOptions(opts...))
 	if v == nil {
@@ -863,7 +738,7 @@ func GetFloat32(key string, defaultValue float32, opts ...Option) float32 {
 	return value
 }
 
-// GetFloat32s 获取配置并转化为[]float32类型
+// GetFloat32s retrieves a slice of float32s.
 func GetFloat32s(key string, defaultValue []float32, opts ...Option) []float32 {
 	options := GetOptions(opts...)
 	v := Get(key, options)
@@ -885,7 +760,7 @@ func GetFloat32s(key string, defaultValue []float32, opts ...Option) []float32 {
 	return value
 }
 
-// GetDuration 获取配置并转化为time.Duration类型
+// GetDuration parses a string representation of time (e.g., "1h", "30s") into a time.Duration.
 func GetDuration(key string, defaultValue time.Duration, opts ...Option) time.Duration {
 	v := Get(key, GetOptions(opts...))
 	if v == nil {
@@ -899,7 +774,7 @@ func GetDuration(key string, defaultValue time.Duration, opts ...Option) time.Du
 	return value
 }
 
-// GetTime 获取并转化为time.Time类型
+// GetTime parses a value into time.Time using the specified location in Options.
 func GetTime(key string, defaultValue time.Time, opts ...Option) time.Time {
 	options := GetOptions(opts...)
 	v := Get(key, options)
@@ -913,13 +788,13 @@ func GetTime(key string, defaultValue time.Time, opts ...Option) time.Time {
 	return value
 }
 
-// Exist 配置是否存在
+// Exist checks if a configuration key exists in the global store.
 func Exist(key string) bool {
 	options := GetOptions()
 	return Get(key, options) != nil
 }
 
-// GetAndUnmarshal 获取结果并序列化
+// GetAndUnmarshal retrieves a configuration string and deserializes it into the target pointer.
 func GetAndUnmarshal(key string, outPtr any, opts ...Option) error {
 	options := GetOptions(opts...)
 	if options.unmarshaler != nil {
@@ -928,23 +803,17 @@ func GetAndUnmarshal(key string, outPtr any, opts ...Option) error {
 	return GetAndJsonUnmarshal(key, outPtr, opts...)
 }
 
-// GetAndJsonUnmarshal 获取配置并JSON反序列化
+// GetAndJsonUnmarshal retrieves a value and deserializes it using standard JSON rules.
 func GetAndJsonUnmarshal(key string, outPtr any, opts ...Option) error {
 	return json.Unmarshal([]byte(GetString(key, "", opts...)), outPtr)
 }
 
-// GetAndYamlUnmarshal 获取配置并YAML反序列化
+// GetAndYamlUnmarshal retrieves a value and deserializes it using standard YAML rules.
 func GetAndYamlUnmarshal(key string, outPtr any, opts ...Option) error {
 	return yaml.Unmarshal([]byte(GetString(key, "", opts...)), outPtr)
 }
 
-/*
-GetWithUnmarshal 根据前缀序列化
-@param prefix
-@param outPtr
-@param opts
-@return error
-*/
+// GetWithUnmarshal retrieves configurations by prefix and unmarshals the resulting object.
 func GetWithUnmarshal(prefix string, outPtr any, opts ...Option) error {
 	options := GetOptions(opts...)
 	if options.unmarshaler != nil {
@@ -957,7 +826,7 @@ func GetWithUnmarshal(prefix string, outPtr any, opts ...Option) error {
 	return GetWithJsonUnmarshal(prefix, outPtr, opts...)
 }
 
-// GetWithJsonUnmarshal 获取key并序列化
+// GetWithJsonUnmarshal retrieves configurations by prefix and unmarshals using JSON.
 func GetWithJsonUnmarshal(prefix string, outPtr any, opts ...Option) error {
 	configMap := getConfigMap(GetWithPrefix(prefix, opts...))
 	outBytes, err := json.Marshal(&configMap)
@@ -967,7 +836,7 @@ func GetWithJsonUnmarshal(prefix string, outPtr any, opts ...Option) error {
 	return json.Unmarshal(outBytes, outPtr)
 }
 
-// GetWithYamlUnmarshal 获取key并序列化
+// GetWithYamlUnmarshal retrieves configurations by prefix and unmarshals using YAML.
 func GetWithYamlUnmarshal(prefix string, outPtr any, opts ...Option) error {
 	configMap := getConfigMap(GetWithPrefix(prefix, opts...))
 	outBytes, err := yaml.Marshal(&configMap)
@@ -977,39 +846,37 @@ func GetWithYamlUnmarshal(prefix string, outPtr any, opts ...Option) error {
 	return yaml.Unmarshal(outBytes, outPtr)
 }
 
-// GetKeyValueToMap 解析配置到map中
-// key=a[0]  value=1
-// {"a":[1]}
+// GetKeyValueToMap parses a single key-value pair into a structured map, supporting array notation.
 func GetKeyValueToMap(key string, value any) map[string]any {
 	return getConfigMap(map[string]any{
 		key: value,
 	})
 }
 
-// AddListener 添加配置监听
+// AddListener attaches a callback for updates to a specific direct key.
 func AddListener(key string, callback func(*Event)) {
 	options := GetOptions(WithWatch(callback))
 	configmanager.addListener(key, options)
 }
 
-// AddPatternListener 添加匹配监听
+// AddPatternListener attaches a callback using regex pattern matching for keys.
 func AddPatternListener(pattern string, callback func(*Event)) {
 	options := GetOptions(WithMatchWatch(pattern, callback))
 	configmanager.addListener("", options)
 }
 
-// AddPrefixListener 添加前缀监听
+// AddPrefixListener attaches a callback for updates to any key starting with a specific prefix.
 func AddPrefixListener(prefix string, callback func(*Event)) {
 	options := GetOptions(WithPrefixWatch(prefix, callback))
 	configmanager.addListener("", options)
 }
 
-// RemoveListener 移除监听器
+// RemoveListener unregisters all callbacks for the specified key.
 func RemoveListener(key string) {
 	configmanager.removeListener(key)
 }
 
-// 将props格式的map展开
+// getConfigMap expands a flattened properties-style map (e.g., "a.b.c") into a nested map structure.
 func getConfigMap(configs map[string]any) map[string]any {
 	result := make(map[string]any)
 	skipKeys := make(map[string]struct{})
@@ -1023,6 +890,7 @@ func getConfigMap(configs map[string]any) map[string]any {
 	return result
 }
 
+// mergeConfigMap deeply merges source map data into a destination map.
 func mergeConfigMap(from, to map[string]any) {
 	for key, value := range from {
 		if _, ok := to[key]; ok {
@@ -1041,14 +909,17 @@ func mergeConfigMap(from, to map[string]any) {
 	}
 }
 
+// getConfigValue recursively generates nested map structures, including special handling for list notation like key[0].
 func getConfigValue(index int, keyList []string, value any, keyValue map[string]any, skipKeys map[string]struct{}) map[string]any {
 	key := keyList[index]
+	// Base case: reaching the leaf node of the key path.
 	if index == len(keyList)-1 {
 		if !strings.HasSuffix(key, "]") {
 			return map[string]any{
 				key: value,
 			}
 		}
+		// List handling: collect all items with matching index notation.
 		key = strings.Split(key, "[")[0]
 		listKey := key
 		preKey := strings.Join(keyList[:index], constant.ConfigDelimiter)
@@ -1071,7 +942,7 @@ func getConfigValue(index int, keyList []string, value any, keyValue map[string]
 			key: listValues,
 		}
 	}
-	// 列表
+	// Middle case: handle nested objects within lists.
 	if strings.HasSuffix(key, "]") {
 		key = strings.Split(key, "[")[0]
 		preKey := strings.Join(keyList[:index], constant.ConfigDelimiter)
@@ -1102,6 +973,7 @@ func getConfigValue(index int, keyList []string, value any, keyValue map[string]
 			key: listValues,
 		}
 	}
+	// Recursive case: step deeper into the key path.
 	return map[string]any{
 		key: getConfigValue(index+1, keyList, value, keyValue, skipKeys),
 	}

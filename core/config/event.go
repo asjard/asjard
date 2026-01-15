@@ -1,30 +1,33 @@
 package config
 
-// EventType 事件类型
+// EventType defines the nature of the change that occurred to a configuration entry.
 type EventType int
 
 const (
-	// EventTypeCreate 创建事件
+	// EventTypeCreate indicates a new configuration key has been added to a source.
 	EventTypeCreate EventType = iota
-	// EventTypeUpdate 更新事件
+	// EventTypeUpdate indicates an existing configuration value has been modified.
 	EventTypeUpdate
-	// EventTypeDelete 删除事件
+	// EventTypeDelete indicates a configuration key has been removed from a source.
 	EventTypeDelete
 )
 
-// Event 配置事件
+// Event encapsulates the details of a configuration change.
+// It is used as the payload for internal communication between the ConfigManager and Listeners.
 type Event struct {
-	// 事件类型
+	// Type specifies whether the configuration was created, updated, or deleted.
 	Type EventType
-	// 事件源
-	// Source string
-	// 配置key
+
+	// Key is the unique identifier (property name) for the configuration setting.
 	Key string
-	// 配置的值
+
+	// Value contains the actual data, metadata, and origin information for the event.
+	// For Delete events, this may represent the state of the value prior to removal.
 	Value *Value
 }
 
-// String 返回字符串
+// String provides a human-readable representation of the EventType.
+// This is useful for logging and debugging configuration state transitions.
 func (e EventType) String() string {
 	switch e {
 	case EventTypeCreate:
