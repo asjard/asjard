@@ -7,23 +7,27 @@ import (
 	"github.com/asjard/asjard/core/constant"
 )
 
-// ClientInterceptor 客户端拦截器需要实现的方法
+// ClientInterceptor defines the interface for a client-side interceptor.
+// Implementing this allows a module to provide metadata and the actual interceptor logic.
 type ClientInterceptor interface {
-	// 拦截器名称
+	// Name returns the unique identifier of the interceptor.
 	Name() string
-	// 拦截器
+	// Interceptor returns the functional UnaryClientInterceptor.
 	Interceptor() UnaryClientInterceptor
 }
 
-// NewClientInterceptor 客户端拦截器初始化方法
+// NewClientInterceptor is a factory function type that initializes a ClientInterceptor.
 type NewClientInterceptor func() (ClientInterceptor, error)
 
 var (
+	// newClientInterceptors stores interceptor factories mapped by protocol and then by name.
 	newClientInterceptors = make(map[string]map[string]NewClientInterceptor)
-	ncm                   sync.RWMutex
+	// ncm protects access to the interceptor registry.
+	ncm sync.RWMutex
 )
 
-// AddInterceptor 添加客户端拦截器
+// AddInterceptor registers a client interceptor.
+// If supportProtocols is empty, the interceptor is registered for all protocols.
 func AddInterceptor(name string, newInterceptor NewClientInterceptor, supportProtocols ...string) {
 	ncm.Lock()
 	defer ncm.Unlock()
@@ -41,26 +45,15 @@ func AddInterceptor(name string, newInterceptor NewClientInterceptor, supportPro
 	}
 }
 
-// UnaryInvoker is called by UnaryClientInterceptor to complete RPCs.
+// UnaryInvoker is the completion function called by interceptors to proceed with the RPC.
 type UnaryInvoker func(ctx context.Context, method string, req, reply any, cc ClientConnInterface) error
 
-// UnaryClientInterceptor intercepts the execution of a unary RPC on the client.
-// Unary interceptors can be specified as a DialOption, using
-// WithUnaryInterceptor() or WithChainUnaryInterceptor(), when creating a
-// ClientConn. When a unary interceptor(s) is set on a ClientConn, gRPC
-// delegates all unary RPC invocations to the interceptor, and it is the
-// responsibility of the interceptor to call invoker to complete the processing
-// of the RPC.
-//
-// method is the RPC name. req and reply are the corresponding request and
-// response messages. cc is the ClientConn on which the RPC was invoked. invoker
-// is the handler to complete the RPC and it is the responsibility of the
-// interceptor to call it. opts contain all applicable call options, including
-// defaults from the ClientConn as well as per-call options.
-//
-// The returned error must be compatible with the status package.
+// UnaryClientInterceptor is a function that intercepts a unary RPC call.
+// It can perform logic before and after the invoker is called, such as logging,
+// tracing, or modifying request metadata.
 type UnaryClientInterceptor func(ctx context.Context, method string, req, reply any, cc ClientConnInterface, invoker UnaryInvoker) error
 
+// getChainUnaryInterceptors retrieves and chains interceptors based on protocol and configuration.
 func getChainUnaryInterceptors(protocol string, conf Config) (UnaryClientInterceptor, error) {
 	interceptors, err := getClientInterceptors(protocol, conf)
 	if err != nil {
@@ -72,16 +65,19 @@ func getChainUnaryInterceptors(protocol string, conf Config) (UnaryClientInterce
 	} else if len(interceptors) == 1 {
 		chainedInt = interceptors[0]
 	} else {
+		// Create a single functional chain from the slice of interceptors.
 		chainedInt = chainUnaryInterceptors(interceptors)
 	}
 	return chainedInt, nil
 }
 
-// 添加默认拦截器
+// getClientInterceptors builds an ordered slice of interceptors based on the Config.Interceptors list.
 func getClientInterceptors(protocol string, conf Config) ([]UnaryClientInterceptor, error) {
 	var interceptors []UnaryClientInterceptor
 	ncm.RLock()
 	defer ncm.RUnlock()
+
+	// Merge protocol-specific and global interceptor factories.
 	newInterceptors := make(map[string]NewClientInterceptor)
 	for name, newInterceptor := range newClientInterceptors[protocol] {
 		newInterceptors[name] = newInterceptor
@@ -89,7 +85,8 @@ func getClientInterceptors(protocol string, conf Config) ([]UnaryClientIntercept
 	for name, newInterceptor := range newClientInterceptors[constant.AllProtocol] {
 		newInterceptors[name] = newInterceptor
 	}
-	// 顺序需要按照配置执行
+
+	// Instantiate interceptors in the order specified in the configuration.
 	for _, interceptorName := range conf.Interceptors {
 		if newInterceptor, ok := newInterceptors[interceptorName]; ok {
 			interceptor, err := newInterceptor()
@@ -102,17 +99,22 @@ func getClientInterceptors(protocol string, conf Config) ([]UnaryClientIntercept
 	return interceptors, nil
 }
 
+// chainUnaryInterceptors creates a single interceptor out of a chain of many interceptors.
+// This implements the recursive onion model for middleware execution.
 func chainUnaryInterceptors(interceptors []UnaryClientInterceptor) UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc ClientConnInterface, invoker UnaryInvoker) error {
+		// Start the execution at index 0.
 		return interceptors[0](ctx, method, req, reply, cc, getChainUnaryInvoker(interceptors, 0, invoker))
 	}
 }
 
+// getChainUnaryInvoker recursively wraps the final invoker with the next interceptor in the chain.
 func getChainUnaryInvoker(interceptors []UnaryClientInterceptor, curr int, finalInvoker UnaryInvoker) UnaryInvoker {
 	if curr == len(interceptors)-1 {
 		return finalInvoker
 	}
 	return func(ctx context.Context, method string, req, reply any, cc ClientConnInterface) error {
+		// Point to the next interceptor in the slice.
 		return interceptors[curr+1](ctx, method, req, reply, cc, getChainUnaryInvoker(interceptors, curr+1, finalInvoker))
 	}
 }

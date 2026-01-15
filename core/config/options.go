@@ -6,55 +6,56 @@ import (
 	"github.com/asjard/asjard/core/constant"
 )
 
-// Unmarshaler 反序列化需要实现的方法
+// Unmarshaler defines the interface for custom deserialization.
+// This allows converting configuration data into complex Go structs using JSON, YAML, or Proto.
 type Unmarshaler interface {
 	Unmarshal(data []byte, v any) error
 }
 
-// Options 定义了配置读取过程中的一些参数
+// Options defines the behavior parameters for reading or writing configurations.
 type Options struct {
-	// 是否监听配置变化
+	// watch specifies if and how the application should be notified of changes to this config.
 	watch *watchOptions
-	// 可以添加多个配置源
-	// 在添加配置时将会根据指定的配置源更新到远程配置中心
-	// 如果为空则添加配置到所有的配置源中
+	// sourceNames defines specific configuration providers (e.g., "apollo", "etcd") to target.
+	// If empty, operations usually default to all registered sources or the default source.
 	sourceNames []string
-	// 加解密组件名称
-	// 从配置源获取到配置后加密或解密
-	// 向配置源添加加密或者解密后的数据
-	// 依赖security包中的加解密组件
+	// cipherName identifies the security component used for manual encryption/decryption.
 	cipherName string
-	// 是否加解密
+	// cipher indicates whether the manual encryption/decryption pipeline is active.
 	cipher bool
-	// 禁用自动解密
-	// 如果value值前缀包含'encrypted_cipherName:encryptedValue'则自动解密
+	// disableAutoDecryptValue prevents the system from automatically decrypting values
+	// that start with the 'encrypted_' prefix.
 	disableAutoDecryptValue bool
-	// 时区, 转化为time.Time时有用
+	// location is used when casting string values to time.Time objects.
 	location *time.Location
-	// 分隔符, 字符串转换为列表时有用, 默认空白符
-	delimiter   string
+	// delimiter is used when splitting strings into slices (e.g., "a,b,c" -> []string).
+	delimiter string
+	// unmarshaler provides a custom strategy for struct mapping.
 	unmarshaler Unmarshaler
-	// 忽略大小写
+	// ignoreCase specifies if key lookups should treat 'Key' and 'key' as identical.
 	ignoreCase bool
-	// value转换为大写
+	// toUpper forces the retrieved string value to uppercase.
 	toUpper bool
-	// value转换为小写
+	// toLower forces the retrieved string value to lowercase.
 	toLower bool
-	// key列表，按顺序获取,如果获取不到则获取下一个
+	// keys provides an ordered list of fallback keys to check if the primary key is missing.
 	keys []string
 }
 
-// ListenFunc 监听方法，如果返回true则调用回调函数
+// ListenFunc is a filter function used to determine if a callback should be triggered based on event details.
 type ListenFunc func(*Event) bool
 
+// watchOptions contains the configuration for the Observer/Listener logic.
 type watchOptions struct {
-	// 正则匹配
+	// pattern is a regex string for matching keys.
 	pattern string
-	// 回调方法，当配置发生变化后通过此回调方法回调
+	// callback is the user-defined function to execute when a change occurs.
 	callback CallbackFunc
-	f        ListenFunc
+	// f is an optional filter function to refine notification triggers.
+	f ListenFunc
 }
 
+// clone creates a deep copy of watchOptions to prevent side effects during dynamic prefix resolution.
 func (w *watchOptions) clone() *watchOptions {
 	return &watchOptions{
 		pattern:  w.pattern,
@@ -63,10 +64,10 @@ func (w *watchOptions) clone() *watchOptions {
 	}
 }
 
-// Option .
+// Option is the functional argument type used by Get and Set methods.
 type Option func(*Options)
 
-// WithWatch 监听配置
+// WithWatch attaches a simple direct-key listener.
 func WithWatch(callback CallbackFunc) func(opts *Options) {
 	return func(opts *Options) {
 		opts.watch = &watchOptions{
@@ -75,7 +76,7 @@ func WithWatch(callback CallbackFunc) func(opts *Options) {
 	}
 }
 
-// WithMatchWatch 匹配监听
+// WithMatchWatch attaches a regex-based listener to the configuration request.
 func WithMatchWatch(pattern string, callback CallbackFunc) func(opts *Options) {
 	return func(opts *Options) {
 		if pattern == "" {
@@ -88,7 +89,7 @@ func WithMatchWatch(pattern string, callback CallbackFunc) func(opts *Options) {
 	}
 }
 
-// WithPrefixWatch 前缀监听
+// WithPrefixWatch attaches a listener that triggers for any key under a specific namespace.
 func WithPrefixWatch(prefix string, callback CallbackFunc) Option {
 	return func(opts *Options) {
 		opts.watch = &watchOptions{
@@ -98,20 +99,10 @@ func WithPrefixWatch(prefix string, callback CallbackFunc) Option {
 	}
 }
 
-// WithFuncWatch 方法监听
-// func WithFuncWatch(f WatchFunc, callback func(*Event)) func(opts *Options) {
-// 	return func(opts *Options) {
-// 		opts.watch = &watchOptions{
-// 			f:        f,
-// 			callback: callback,
-// 		}
-// 	}
-// }
-
-// WithSource 添加多个配置源
+// WithSource specifies a particular configuration source to interact with.
 func WithSource(sourceName string) func(opts *Options) {
 	return func(opts *Options) {
-		// 去重
+		// Ensure unique source names.
 		for _, name := range opts.sourceNames {
 			if name == sourceName {
 				return
@@ -121,14 +112,14 @@ func WithSource(sourceName string) func(opts *Options) {
 	}
 }
 
-// 禁用自动解密value值
+// WithDisableAutoDecryptValue turns off the 'encrypted_' prefix detection logic.
 func WithDisableAutoDecryptValue() func(opts *Options) {
 	return func(opts *Options) {
 		opts.disableAutoDecryptValue = true
 	}
 }
 
-// WithCipher 加解密
+// WithCipher enables security processing with a specific named cipher.
 func WithCipher(cipherName string) func(opts *Options) {
 	return func(opts *Options) {
 		opts.cipher = true
@@ -136,56 +127,57 @@ func WithCipher(cipherName string) func(opts *Options) {
 	}
 }
 
-// WithLocation 设置时区
+// WithLocation sets the timezone for time-based configuration values.
 func WithLocation(location *time.Location) func(opts *Options) {
 	return func(opts *Options) {
 		opts.location = location
 	}
 }
 
-// WithUnmarshaler 设置反序列化
+// WithUnmarshaler sets the custom deserializer for complex objects.
 func WithUnmarshaler(unmarshaler Unmarshaler) func(opts *Options) {
 	return func(opts *Options) {
 		opts.unmarshaler = unmarshaler
 	}
 }
 
-// WithDelimiter 设置分隔符
+// WithDelimiter sets a custom character for splitting slice configurations.
 func WithDelimiter(delimiter string) func(opts *Options) {
 	return func(opts *Options) {
 		opts.delimiter = delimiter
 	}
 }
 
-// WithIgnoreCase 设置大小写敏感
+// WithIgnoreCase enables case-insensitive key searching.
 func WithIgnoreCase() func(opts *Options) {
 	return func(opts *Options) {
 		opts.ignoreCase = true
 	}
 }
 
-// WithToUpper 设置转换为大写
+// WithToUpper transforms retrieved strings to uppercase.
 func WithToUpper() func(opts *Options) {
 	return func(opts *Options) {
 		opts.toUpper = true
 	}
 }
 
-// WithToLower 设置转换为小写
+// WithToLower transforms retrieved strings to lowercase.
 func WithToLower() func(opts *Options) {
 	return func(opts *Options) {
 		opts.toLower = true
 	}
 }
 
-// WithChain 链式获取
+// WithChain defines a priority-ordered sequence of keys to find a value.
 func WithChain(keys []string) func(opts *Options) {
 	return func(opts *Options) {
 		opts.keys = keys
 	}
 }
 
-// GetOptions 获取参数
+// GetOptions processes a slice of Option functions and returns the final populated Options struct.
+// It initializes defaults like the system-wide delimiter.
 func GetOptions(opts ...Option) *Options {
 	options := &Options{}
 	for _, opt := range opts {

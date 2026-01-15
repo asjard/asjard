@@ -1,4 +1,3 @@
-> 对github.com/spf13/cast库的扩展
-
-- bool类型字符串支持, y/n, yes/no, on/off, 忽略大小写
-- strings类型支持自定义分隔符
+- Extensions to the github.com/spf13/cast library
+- Enhanced Boolean String Support: Now supports y/n, yes/no, and on/off (case-insensitive).
+- String Slice Support: Added support for custom delimiters when casting to string slices.

@@ -10,79 +10,86 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// 对grpc的status和code外面再包装一层，添加系统码和错误码的概念
-// 	其中<=200为框架保留错误码
+// The status package wraps gRPC status and codes to introduce the concept of
+// System Codes and custom Error Codes.
+// Error codes <= 200 are reserved for framework internal use.
 
 const (
-	// InternalServerErrorStr 系统内部错误统一返回字符串
+	// InternalServerErrorStr is the generic message returned for hidden internal failures.
 	InternalServerErrorStr = "internal server error"
 
-	// SetCacheFailCode 设置缓存失败错误码
+	// --- Business Error Codes (Format: HTTP_BusinessCode) ---
+
+	// SetCacheFailCode error when writing to cache.
 	SetCacheFailCode = 500_20
-	// RefreshCacheFailCode 刷新缓存失败错误码
+	// RefreshCacheFailCode error when updating existing cache entries.
 	RefreshCacheFailCode = 500_21
-	// DeleteCacheFailCode 删除缓存失败错误码
+	// DeleteCacheFailCode error when removing cache entries.
 	DeleteCacheFailCode = 500_22
-	// DatabaseNotFoundCode 数据库不存在错误
+	// DatabaseNotFoundCode error when a database connection or resource is missing.
 	DatabaseNotFoundCode = 500_23
-	// GetLockFailCode 获取锁失败错误
+	// GetLockFailCode error when a distributed lock cannot be acquired.
 	GetLockFailCode = 500_24
 
-	// UnsupportProtocolCode 暂不支持的协议
+	// UnsupportProtocolCode error when the requested protocol is not handled.
 	UnsupportProtocolCode = 404_30
-	// MethodNotAllowedCode 请求方法不匹配错误码
+	// MethodNotAllowedCode error for mismatched HTTP methods (e.g., POST instead of GET).
 	MethodNotAllowedCode = 400_31
 )
 
 var (
-	// InternalServerError 系统内部错误
-	// 这里的error不能直接用变量的方式定义，因为里面包含了系统码的概念
-	// 如果是变量在import的时候就执行了，那个时候配置文件还没有加载
+	// Standard Errors are defined as functions because they rely on the 'SystemCode'
+	// which is only available after configuration is loaded at runtime.
+
+	// InternalServerError generic 500 error.
 	InternalServerError = func() error { return Error(codes.Internal, InternalServerErrorStr) }
-	// PageNotFoundError 页面找不到
+	// PageNotFoundError generic 404 error.
 	PageNotFoundError = func() error { return Error(codes.NotFound, "page not found") }
-	// MethodNotAllowedError 请求方法不匹配
+	// MethodNotAllowedError generic 405 error.
 	MethodNotAllowedError = func() error { return Error(MethodNotAllowedCode, "method not allowed") }
-	// UnsupportProtocol 暂不支持的协议
+	// UnsupportProtocol error for invalid protocol requests.
 	UnsupportProtocol = func() error { return Error(UnsupportProtocolCode, "unsupport protocol") }
-	// TooManyRequest 请求过多
+	// TooManyRequest generic 429 rate limit error.
 	TooManyRequest = func() error { return Error(codes.ResourceExhausted, "too may request") }
 
-	// SetCacheFailError 设置缓存失败错误
+	// SetCacheFailError specific error for cache write failures.
 	SetCacheFailError = func() error { return Error(SetCacheFailCode, InternalServerErrorStr) }
-	// RefreCacheFailError 刷新缓存失败错误
+	// RefreCacheFailError specific error for cache refresh failures.
 	RefreCacheFailError = func() error { return Error(RefreshCacheFailCode, InternalServerErrorStr) }
-	// DeleteCacheFailError 删除缓存失败错误
+	// DeleteCacheFailError specific error for cache deletion failures.
 	DeleteCacheFailError = func() error { return Error(DeleteCacheFailCode, InternalServerErrorStr) }
-	// DatabaseNotFoundError 数据库不存在
+	// DatabaseNotFoundError specific error for database resource missing.
 	DatabaseNotFoundError = func() error { return Error(DatabaseNotFoundCode, InternalServerErrorStr) }
 )
 
-// Error 添加系统码
-// XXX_YYY_Z
-// XXX 为系统码，固定三位
-// YYY HTTP状态码,固定三位
-// Z 错误码位数不固定
+// Error creates a gRPC status error with an asjard structured code.
+// Logic: Generates a code in the format XXXYYYZZ...
+// XXX: System Code (3 digits)
+// YYY: HTTP Status Code (3 digits)
+// ZZ...: Business Error Code (variable length)
 func Error(c codes.Code, msg string) error {
 	return status.Error(newCode(c), msg)
 }
 
+// Errorf creates a formatted gRPC status error with a structured code.
 func Errorf(c codes.Code, format string, a ...any) error {
 	return status.Errorf(newCode(c), format, a...)
 }
 
-// https://datatracker.ietf.org/doc/html/rfc7231#section-6
+// newCode encodes the gRPC code/business code into the asjard unified format.
 func newCode(c codes.Code) codes.Code {
 	var httpCode, errCode uint32
-	// 没有定义http状态码，从codes.Code中推断
+
 	if c < 100 {
+		// Standard gRPC codes (0-16): infer HTTP mapping.
 		httpCode = httpStatusCode(c)
 		errCode = uint32(c)
 	} else if c < 1000 {
-		// http状态码1xx - 5xx
+		// Bare HTTP status codes (1xx-5xx).
 		httpCode = http.StatusInternalServerError
 		errCode = uint32(c)
 	} else {
+		// Custom composite codes: extract the embedded HTTP code part.
 		n := int(utils.Uint32Len(uint32(c)) - 3)
 		httpCode = uint32(c) / uint32(math.Pow10(n))
 		if http.StatusText(int(httpCode)) == "" {
@@ -90,10 +97,13 @@ func newCode(c codes.Code) codes.Code {
 		}
 		errCode = uint32(c) % uint32(math.Pow10(n))
 	}
+
+	// Combine: [SystemCode][HTTPCode][BusinessCode]
 	errCode = httpCode*uint32(math.Pow10(int(utils.Uint32Len(errCode)))) + errCode
 	return codes.Code(runtime.GetAPP().Instance.SystemCode*uint32(math.Pow10(int(utils.Uint32Len(errCode)))) + errCode)
 }
 
+// parseCode decomposes a structured code back into its constituent parts.
 func parseCode(c codes.Code) (systemCode, httpCode, errCode uint32) {
 	if c < 10 {
 		httpCode = httpStatusCode(c)
@@ -103,28 +113,24 @@ func parseCode(c codes.Code) (systemCode, httpCode, errCode uint32) {
 		httpCode = http.StatusInternalServerError
 		errCode = uint32(c)
 	} else {
+		// Complex parsing for 7+ digit codes.
 		n := int(utils.Uint32Len(uint32(c)))
 		errCode = uint32(c) % uint32(math.Pow10(n-6))
 		sysHttpCode := uint32(c) / uint32(math.Pow10(n-6))
 		httpCode = sysHttpCode % uint32(math.Pow10(3))
 		systemCode = sysHttpCode / uint32(math.Pow10(3))
-		// errCodeLen := utils.Uint32Len(errCode)
-		// if errCodeLen == 1 {
-		// 	errCodeLen += 1
-		// }
-		// errCode = systemCode*uint32(math.Pow10(int(errCodeLen))) + errCode
 	}
 	return
 }
 
-// 从code解析到http状态码
-// https://chromium.googlesource.com/external/github.com/grpc/grpc/+/refs/tags/v1.21.4-pre1/doc/statuscodes.md
+// httpStatusCode maps gRPC codes to standard HTTP status codes based on
+// official gRPC-HTTP mapping documentation.
 func httpStatusCode(code codes.Code) uint32 {
 	switch code {
 	case codes.OK:
 		return http.StatusOK
 	case codes.Canceled:
-		return 499
+		return 499 // Client Closed Request
 	case codes.Unknown, codes.Internal, codes.DataLoss:
 		return http.StatusInternalServerError
 	case codes.InvalidArgument, codes.FailedPrecondition, codes.OutOfRange:

@@ -14,39 +14,39 @@ const (
 	defaultWriteBufferSize = 4096
 )
 
-// Config 服务配置
+// Config represents the complete set of configuration options for the REST server.
 type Config struct {
-	server.Config
-	Routes  RoutesConfig  `json:"routes"`
-	Doc     DocConfig     `json:"doc"`
-	Openapi OpenapiConfig `json:"openapi"`
-	Cors    CorsConfig    `json:"cors"`
-	Options OptionsConfig `json:"options"`
+	server.Config               // Base server configuration (enabled, address, etc.)
+	Routes        RoutesConfig  `json:"routes"`  // Custom route management settings
+	Doc           DocConfig     `json:"doc"`     // Documentation and error page settings
+	Openapi       OpenapiConfig `json:"openapi"` // OpenAPI/Swagger generation and UI settings
+	Cors          CorsConfig    `json:"cors"`    // Cross-Origin Resource Sharing settings
+	Options       OptionsConfig `json:"options"` // Low-level fasthttp server tuning options
 }
 
+// RoutesConfig determines if route-related features are enabled.
 type RoutesConfig struct {
 	Enabled bool `json:"enabled"`
 }
 
+// DocConfig manages the high-level documentation links and error landing pages.
 type DocConfig struct {
 	ErrPage string `json:"errPage"`
 }
 
+// OpenapiConfig manages the automatic generation of OpenAPI specifications (YAML/JSON).
 type OpenapiConfig struct {
 	Enabled bool `json:"enabled"`
-	// https://petstore.swagger.io/?url=%s/openapi.yml
-	// https://petstore.swagger.io/?url=http://127.0.0.1:7030/openapi.yml
-	// https://authress-engineering.github.io/openapi-explorer/?url=%s/openapi.yml
-	// https://authress-engineering.github.io/openapi-explorer/?url=http://127.0.0.1:7030/openapi.yml
+	// Page template for the Swagger UI (e.g., Swagger Petstore or Scalar).
 	Page           string               `json:"page"`
 	TermsOfService string               `json:"termsOfService"`
 	License        OpenapiLicenseConfig `json:"license"`
-	Scalar         ScalarOpenapiConfig  `json:"scalar"`
-	// openapi访问域名
-	// 如果为空则使用listenAddress
+	Scalar         ScalarOpenapiConfig  `json:"scalar"` // Configuration for Scalar API reference
+	// Endpoint specifies the domain used in the OpenAPI spec; defaults to listenAddress.
 	Endpoint string `json:"endpoint"`
 }
 
+// ScalarOpenapiConfig defines UI customization for the Scalar API documentation tool.
 type ScalarOpenapiConfig struct {
 	Theme              string            `json:"theme"`
 	CDN                string            `json:"cdn"`
@@ -54,7 +54,7 @@ type ScalarOpenapiConfig struct {
 	HideModels         bool              `json:"hideModels"`
 	HideDownloadButton bool              `json:"hideDownloadButton"`
 	DarkMode           bool              `json:"darkMode"`
-	HideClients        utils.JSONStrings `json:"hideClients"`
+	HideClients        utils.JSONStrings `json:"hideClients"` // List of languages to hide in code snippets
 	Authentication     string            `json:"authentication"`
 }
 
@@ -63,18 +63,20 @@ type OpenapiLicenseConfig struct {
 	Url  string `json:"url"`
 }
 
+// CorsConfig defines the security policy for browsers accessing the API from different origins.
 type CorsConfig struct {
-	allowAllOrigins  bool
+	allowAllOrigins  bool               // Internal flag for "*"
 	AllowOrigins     []string           `json:"allowOrigins"`
 	AllowMethods     []string           `json:"allowMethods"`
 	AllowHeaders     []string           `json:"allowHeaders"`
 	ExposeHeaders    []string           `json:"exposeHeaders"`
 	AllowCredentials bool               `json:"allowCredentials"`
-	MaxAge           utils.JSONDuration `json:"maxAge"`
+	MaxAge           utils.JSONDuration `json:"maxAge"` // How long the browser caches the preflight response
 }
 
+// OptionsConfig contains low-level performance and timeout settings for the fasthttp server.
 type OptionsConfig struct {
-	Concurrency                        int                `json:"concurrency"`
+	Concurrency                        int                `json:"concurrency"` // Max simultaneous requests
 	ReadBufferSize                     int                `json:"readBufferSize"`
 	WriteBufferSize                    int                `json:"writeBufferSize"`
 	ReadTimeout                        utils.JSONDuration `json:"readTimeout"`
@@ -84,7 +86,7 @@ type OptionsConfig struct {
 	MaxRequestsPerConn                 int                `json:"maxRequestsPerConn"`
 	MaxIdleWorkerDuration              utils.JSONDuration `json:"maxIdleWorkerDuration"`
 	TCPKeepalivePeriod                 utils.JSONDuration `json:"tCPKeepalivePeriod"`
-	MaxRequestBodySize                 int                `json:"maxRequestBodySize"`
+	MaxRequestBodySize                 int                `json:"maxRequestBodySize"` // Max size of POST body (e.g., 20MB)
 	DisableKeepalive                   bool               `json:"disableKeepalive"`
 	TCPKeepalive                       bool               `json:"tcpKeepalive"`
 	ReduceMemoryUsage                  bool               `json:"reduceMemoryUsage"`
@@ -102,6 +104,7 @@ type OptionsConfig struct {
 	StreamRequestBody                  bool               `json:"streamRequestBody"`
 }
 
+// defaultConfig initializes the REST server with safe, production-ready default values.
 func defaultConfig() Config {
 	return Config{
 		Config: server.GetConfigWithProtocol(Protocol),
@@ -126,6 +129,7 @@ func defaultConfig() Config {
 			MaxAge:           utils.JSONDuration{Duration: 12 * time.Hour},
 		},
 		Options: OptionsConfig{
+			// Default maximum request body size is 20MB.
 			MaxRequestBodySize: 20 * 1024 * 1024,
 		},
 	}

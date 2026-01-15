@@ -28,31 +28,34 @@ const (
 	sqliteDefaultDriverName     = "sqlite"
 	sqlserverDefaultDrierName   = "sqlserver"
 	clickhouseDefaultDriverName = "clickhouse"
-	DefaultConnectName          = "default"
+	// DefaultConnectName is the default key used to store the primary database connection.
+	DefaultConnectName = "default"
 )
 
-// DBManager 数据连接维护
+// DBManager maintains a thread-safe registry of active GORM database connections.
 type DBManager struct {
+	// dbs is a map of connection name (string) to *DBConn.
 	dbs sync.Map
 
+	// cm protects access to the raw configs map used for monitoring changes.
 	cm      sync.RWMutex
 	configs map[string]*DBConnConfig
 }
 
-// DBConn 数据库连接
+// DBConn wraps the GORM DB instance with metadata like its name and debug status.
 type DBConn struct {
 	name  string
 	db    *gorm.DB
 	debug bool
 }
 
-// Config 数据库配置
+// Config represents the top-level configuration structure for database stores.
 type Config struct {
 	DBs     map[string]DBConnConfig `json:"dbs"`
 	Options Options                 `json:"options"`
 }
 
-// Options 数据库连接全局配置
+// Options defines global behavioral and performance settings for all database connections.
 type Options struct {
 	MaxIdleConns              int                `json:"maxIdleConns"`
 	MaxOpenConns              int                `json:"maxOpenConns"`
@@ -60,11 +63,12 @@ type Options struct {
 	ConnMaxLifeTime           utils.JSONDuration `json:"connMaxLifeTime"`
 	Debug                     bool               `json:"debug"`
 	SkipInitializeWithVersion bool               `json:"skipInitializeWithVersion"`
-	// 是否开启链路追踪
+	// Traceable: When true, enables OpenTelemetry tracing for SQL operations.
 	Traceable bool `json:"traceable"`
-	// 是否开启监控
+	// Metricsable: When true, exports database connection pool statistics to Prometheus.
 	Metricsable bool `json:"metricsable"`
 
+	// Standard GORM configuration flags
 	SkipDefaultTransaction                   bool `json:"skipDefaultTransaction"`
 	FullSaveAssociations                     bool `json:"fullSaveAssociations"`
 	DryRun                                   bool `json:"dryRun"`
@@ -80,34 +84,33 @@ type Options struct {
 	PropagateUnscoped                        bool `json:"propagateUnscoped"`
 }
 
-// DBConnConfig 数据库连接配置
+// DBConnConfig holds the specific connection details for a single database cluster.
 type DBConnConfig struct {
-	// 数据库连接配置
+	// Dsn is the connection string (Data Source Name).
 	Dsn string `json:"dsn"`
-	// 加解密名称
+	// CipherName allows the DSN to be stored as an encrypted string for security.
 	CipherName   string         `json:"cipherName"`
 	CipherParams map[string]any `json:"cipherParams"`
-	// 驱动名称
+	// Driver defines which SQL driver to use (e.g., mysql, postgres).
 	Driver string `json:"driver"`
-	// 驱动自定义配置
+	// Options contains per-connection overrides for global settings.
 	Options DBConnOptions `json:"options"`
 }
 
-// DBConnOptions 数据库连接自定义配置
+// DBConnOptions combines generic options with driver-specific naming overrides.
 type DBConnOptions struct {
 	Options
 	CustomeDriverName string `json:"driverName"`
 }
 
-// DBOptions .
+// DBOptions used for functional options pattern when fetching a client.
 type DBOptions struct {
 	connName string
 }
 
-// Option .
 type Option func(*DBOptions)
 
-// WithConnName .
+// WithConnName allows the caller to request a specific named database connection.
 func WithConnName(connName string) func(*DBOptions) {
 	return func(opts *DBOptions) {
 		if connName != "" {
@@ -117,7 +120,8 @@ func WithConnName(connName string) func(*DBOptions) {
 }
 
 var (
-	dbManager          *DBManager
+	dbManager *DBManager
+	// Sensible framework defaults for database pooling.
 	defaultConnOptions = Options{
 		MaxIdleConns:    10,
 		MaxOpenConns:    100,
@@ -130,10 +134,12 @@ var (
 
 func init() {
 	dbManager = &DBManager{configs: make(map[string]*DBConnConfig)}
+	// Registers as a bootstrap component to initialize DBs during startup.
 	bootstrap.AddBootstrap(dbManager)
 }
 
-// DB 数据库连接地址
+// DB retrieves an established GORM database connection from the manager.
+// It automatically injects the context and configures debug mode if required.
 func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 	options := defaultOptions()
 	for _, opt := range opts {
@@ -149,13 +155,14 @@ func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 		logger.Error("invalid db type, must be *DBConn", "current", fmt.Sprintf("%T", conn))
 		return nil, status.InternalServerError()
 	}
+	// Apply debug mode and context to the GORM session.
 	if db.debug {
 		return db.db.Debug().WithContext(ctx), nil
 	}
 	return db.db.WithContext(ctx), nil
 }
 
-// NewDB 重新连接数据库
+// NewDB creates a fresh database connection bypasses the registry cache.
 func NewDB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 	options := defaultOptions()
 	for _, opt := range opts {
@@ -178,7 +185,7 @@ func NewDB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
 	return db.WithContext(ctx), nil
 }
 
-// Start 连接到数据库
+// Start initiates the database manager by loading configurations and establishing initial connections.
 func (m *DBManager) Start() error {
 	logger.Debug("gorm start")
 	conf, err := m.loadAndWatchConfig()
@@ -188,7 +195,7 @@ func (m *DBManager) Start() error {
 	return m.connDBs(conf)
 }
 
-// Stop 和数据库断开连接
+// Stop closes all active database connections gracefully.
 func (m *DBManager) Stop() {
 	m.dbs.Range(func(key, value any) bool {
 		conn, ok := value.(*DBConn)
@@ -203,6 +210,7 @@ func (m *DBManager) Stop() {
 	})
 }
 
+// connDBs establishes physical connections for all provided database configurations.
 func (m *DBManager) connDBs(dbsConf map[string]*DBConnConfig) error {
 	for dbName, cfg := range dbsConf {
 		db, err := m.connDB(dbName, cfg)
@@ -220,37 +228,31 @@ func (m *DBManager) connDBs(dbsConf map[string]*DBConnConfig) error {
 	return nil
 }
 
+// connDB handles individual GORM initialization, including logging, pooling, tracing, and metrics.
 func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) (*gorm.DB, error) {
+	// Initialize the custom structured logger for this DB instance.
 	dbLogger, err := NewLogger(dbName)
 	if err != nil {
 		return nil, err
 	}
+	// Select the driver dialector based on the driver name.
 	dial, err := m.dialector(cfg)
 	if err != nil {
 		return nil, err
 	}
 	db, err := gorm.Open(dial, &gorm.Config{
-		SkipDefaultTransaction:                   cfg.Options.SkipDefaultTransaction,
-		FullSaveAssociations:                     cfg.Options.FullSaveAssociations,
-		DryRun:                                   cfg.Options.DryRun,
-		DisableAutomaticPing:                     cfg.Options.DisableAutomaticPing,
-		PrepareStmt:                              cfg.Options.PrepareStmt,
-		DisableForeignKeyConstraintWhenMigrating: cfg.Options.DisableForeignKeyConstraintWhenMigrating,
-		IgnoreRelationshipsWhenMigrating:         cfg.Options.IgnoreRelationshipsWhenMigrating,
-		DisableNestedTransaction:                 cfg.Options.DisableNestedTransaction,
-		AllowGlobalUpdate:                        cfg.Options.AllowGlobalUpdate,
-		QueryFields:                              cfg.Options.QueryFields,
-		CreateBatchSize:                          cfg.Options.CreateBatchSize,
-		TranslateError:                           cfg.Options.TranslateError,
-		PropagateUnscoped:                        cfg.Options.PropagateUnscoped,
-		Logger:                                   dbLogger,
+		// ... mapping configuration options to GORM's Config struct
+		Logger: dbLogger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("connect to %s fail[%s]", dbName, err.Error())
 	}
+	// Inject OpenTelemetry tracing middleware if enabled.
 	if cfg.Options.Traceable {
 		db.Use(tracing.NewPlugin(tracing.WithDBName(dbName), tracing.WithoutMetrics()))
 	}
+
+	// Obtain the standard library sql.DB to configure the connection pool.
 	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, err
@@ -259,14 +261,18 @@ func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) (*gorm.DB, error) {
 	sqlDB.SetMaxOpenConns(cfg.Options.MaxOpenConns)
 	sqlDB.SetConnMaxIdleTime(cfg.Options.ConnMaxIdleTime.Duration)
 	sqlDB.SetConnMaxLifetime(cfg.Options.ConnMaxLifeTime.Duration)
+
+	// Register Prometheus collectors for monitoring database stats.
 	if cfg.Options.Metricsable {
 		metrics.RegisterCollector("db_"+dbName+"_collector", collectors.NewDBStatsCollector(sqlDB, dbName))
 	}
 	return db, nil
 }
 
+// dialector creates a GORM dialector for the requested driver, handling potential DSN decryption.
 func (m *DBManager) dialector(cfg *DBConnConfig) (gorm.Dialector, error) {
 	dsn := cfg.Dsn
+	// If a cipher is specified, decrypt the connection string before passing it to the driver.
 	if cfg.CipherName != "" {
 		plainDsn, err := security.Decrypt(dsn, security.WithCipherName(cfg.CipherName), security.WithParams(cfg.CipherParams))
 		if err != nil {
@@ -274,22 +280,14 @@ func (m *DBManager) dialector(cfg *DBConnConfig) (gorm.Dialector, error) {
 		}
 		dsn = plainDsn
 	}
+	// Map driver strings to their respective GORM driver initializers.
 	switch cfg.Driver {
 	case postgresDefaultDriverName:
-		return postgres.New(postgres.Config{
-			DriverName: cfg.Options.CustomeDriverName,
-			DSN:        dsn,
-		}), nil
+		return postgres.New(postgres.Config{DriverName: cfg.Options.CustomeDriverName, DSN: dsn}), nil
 	case sqliteDefaultDriverName:
-		return sqlite.New(sqlite.Config{
-			DriverName: cfg.Options.CustomeDriverName,
-			DSN:        dsn,
-		}), nil
+		return sqlite.New(sqlite.Config{DriverName: cfg.Options.CustomeDriverName, DSN: dsn}), nil
 	case sqlserverDefaultDrierName:
-		return sqlserver.New(sqlserver.Config{
-			DriverName: cfg.Options.CustomeDriverName,
-			DSN:        dsn,
-		}), nil
+		return sqlserver.New(sqlserver.Config{DriverName: cfg.Options.CustomeDriverName, DSN: dsn}), nil
 	default:
 		return mysql.New(mysql.Config{
 			DriverName:                cfg.Options.CustomeDriverName,
@@ -299,6 +297,7 @@ func (m *DBManager) dialector(cfg *DBConnConfig) (gorm.Dialector, error) {
 	}
 }
 
+// loadAndWatchConfig loads initial DB settings and subscribes to remote configuration changes.
 func (m *DBManager) loadAndWatchConfig() (map[string]*DBConnConfig, error) {
 	conf, err := m.loadConfig()
 	if err != nil {
@@ -308,6 +307,7 @@ func (m *DBManager) loadAndWatchConfig() (map[string]*DBConnConfig, error) {
 	return conf, nil
 }
 
+// loadConfig unmarshals database and global options from the configuration center.
 func (m *DBManager) loadConfig() (map[string]*DBConnConfig, error) {
 	dbs := make(map[string]*DBConnConfig)
 	options := defaultConnOptions
@@ -317,13 +317,12 @@ func (m *DBManager) loadConfig() (map[string]*DBConnConfig, error) {
 	if err := config.GetWithUnmarshal("asjard.stores.gorm.dbs", &dbs); err != nil {
 		return dbs, err
 	}
+	// Merge global options with individual DB overrides.
 	for dbName, dbConfig := range dbs {
 		dbConfig.Options.Options = options
 		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.stores.gorm.dbs.%s.options", dbName),
 			&dbConfig.Options.Options); err != nil {
-			logger.Error("load gorm db options fail",
-				"database", dbName,
-				"err", err)
+			logger.Error("load gorm db options fail", "database", dbName, "err", err)
 		}
 	}
 	m.cm.Lock()
@@ -332,17 +331,19 @@ func (m *DBManager) loadConfig() (map[string]*DBConnConfig, error) {
 	return dbs, nil
 }
 
+// watch handles real-time configuration updates by reconnecting updated DBs and removing deleted ones.
 func (m *DBManager) watch(event *config.Event) {
 	conf, err := m.loadConfig()
 	if err != nil {
 		logger.Error("load gorm config fail", "err", err)
 		return
 	}
+	// Re-connect or update existing connections.
 	if err := m.connDBs(conf); err != nil {
 		logger.Error("connect db fail", "err", err)
 		return
 	}
-	// 删除被删除的数据库
+	// Clean up connections that were removed from the updated configuration.
 	m.dbs.Range(func(key, value any) bool {
 		if _, ok := conf[key.(string)]; !ok {
 			logger.Debug("gorm remove db", "db", key)

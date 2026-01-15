@@ -16,40 +16,41 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// CacheLocal implement local cache
+// CacheLocal implements a thread-safe local in-memory cache.
 type CacheLocal struct {
 	*stores.Cache
 
 	key        string
 	keyFunc    func() string
-	instanceId string
+	instanceId string // Unique ID of this application instance
 
 	modelName string
 	redis     *redis.Client
-	// publish and subcribe other instance delete cache event
+	// pubsub handles cross-instance cache invalidation via Redis.
 	pubsub  *redis.PubSub
-	cache   *freecache.Cache
+	cache   *freecache.Cache // Underlying high-performance memory cache
 	maxSize int
 }
 
-// CacheLocalConfig define local cache config
+// CacheLocalConfig defines settings for the local cache.
 type CacheLocalConfig struct {
 	stores.CacheConfig
-	// redis client name
+	// RedisClient name used for synchronization.
 	RedisClient string `json:"redisClient"`
-	// max memory used by local cache
+	// MaxSize is the maximum memory allocated for the local cache.
 	MaxSize int `json:"maxSize"`
 }
 
 var (
+	// Compile-time check to ensure CacheLocal implements the Cacher interface.
 	_                       stores.Cacher = &CacheLocal{}
 	defaultCacheLocalConfig               = CacheLocalConfig{
 		CacheConfig: stores.DefaultCacheConfig,
-		MaxSize:     100 * 1024 * 1024,
+		MaxSize:     100 * 1024 * 1024, // Default 100MB
 	}
 )
 
-// NewLocalCache create local cache
+// NewLocalCache initializes the local cache for a specific data model.
 func NewLocalCache(model stores.Modeler) (*CacheLocal, error) {
 	cache := &CacheLocal{
 		Cache:      stores.NewCache(model),
@@ -59,7 +60,7 @@ func NewLocalCache(model stores.Modeler) (*CacheLocal, error) {
 	return cache.loadAndWatch()
 }
 
-// WithKey set cache key.
+// WithKey creates a copy of the cache handler for a specific key.
 func (c *CacheLocal) WithKey(key string) *CacheLocal {
 	return &CacheLocal{
 		Cache:      c.Cache,
@@ -72,9 +73,7 @@ func (c *CacheLocal) WithKey(key string) *CacheLocal {
 	}
 }
 
-// WithKeyFunc set cache key use function.
-// if keyFunc was settled, it will be first to use.
-// it is only called when used.
+// WithKeyFunc creates a copy using a dynamic key generator function.
 func (c *CacheLocal) WithKeyFunc(keyFunc func() string) *CacheLocal {
 	return &CacheLocal{
 		Cache:      c.Cache,
@@ -87,27 +86,30 @@ func (c *CacheLocal) WithKeyFunc(keyFunc func() string) *CacheLocal {
 	}
 }
 
-// Get cache from local and set into out params.
+// Get retrieves an item from the local memory.
 func (c *CacheLocal) Get(ctx context.Context, key string, out any) (bool, error) {
 	if key == "" {
 		return true, nil
 	}
+	// Fetch bytes from freecache.
 	value, err := c.cache.Get(utils.UnsafeString2Byte(key))
 	if err != nil {
-		return true, err
+		return true, err // Key not found (or actual error)
 	}
 	logger.Debug("get value from local cache", "key", key, "value", value)
 	return true, json.Unmarshal(value, out)
 }
 
-// Del delete cache from local and publish delete event to other instance if redis.client was setted.
+// Del removes keys locally AND informs other instances to do the same.
 func (c *CacheLocal) Del(ctx context.Context, keys ...string) error {
 	if len(keys) == 0 {
 		return nil
 	}
+	// 1. Delete locally first.
 	if err := c.del(keys...); err != nil {
 		return err
 	}
+	// 2. Broadcast deletion to other instances.
 	return c.delPublish(ctx, keys...)
 }
 
@@ -118,7 +120,7 @@ func (c *CacheLocal) del(keys ...string) error {
 	return nil
 }
 
-// Set data into local cache.
+// Set stores data in the local memory with an expiration time.
 func (c *CacheLocal) Set(ctx context.Context, key string, in any, expiresIn time.Duration) error {
 	if key == "" {
 		return nil
@@ -131,12 +133,12 @@ func (c *CacheLocal) Set(ctx context.Context, key string, in any, expiresIn time
 	return c.cache.Set(utils.UnsafeString2Byte(key), value, int(expiresIn.Seconds()))
 }
 
-// Refresh local cache expire time.
+// Refresh updates the TTL (Time to Live) for a local cache entry.
 func (c *CacheLocal) Refresh(ctx context.Context, key string, in any, expiresIn time.Duration) error {
 	return c.cache.Touch(utils.UnsafeString2Byte(key), int(expiresIn.Seconds()))
 }
 
-// Key return local cache key.
+// Key resolves the current cache key.
 func (c *CacheLocal) Key() string {
 	if c.keyFunc != nil {
 		return c.NewKey(c.keyFunc())
@@ -144,22 +146,24 @@ func (c *CacheLocal) Key() string {
 	return c.key
 }
 
+// loadAndWatch initializes configuration and listens for dynamic config updates.
 func (c *CacheLocal) loadAndWatch() (*CacheLocal, error) {
 	if err := c.load(); err != nil {
 		logger.Error("local cache load config fail", "err", err)
 		return nil, err
 	}
+	// Watch for runtime configuration changes (e.g., resizing cache).
 	config.AddPatternListener("asjard.cache.local.*", c.watch)
 	return c, nil
 }
 
+// cacheLocalDelPublishMessage is the DTO for the Redis invalidation channel.
 type cacheLocalDelPublishMessage struct {
-	// 实例ID
-	InstanceId string
-	// key列表
-	Keys []string
+	InstanceId string   // Who triggered the delete
+	Keys       []string // Which keys to invalidate
 }
 
+// delPublish sends the invalidation message to the Redis channel.
 func (c *CacheLocal) delPublish(ctx context.Context, keys ...string) error {
 	if c.redis == nil {
 		return nil
@@ -176,6 +180,7 @@ func (c *CacheLocal) delPublish(ctx context.Context, keys ...string) error {
 	return c.redis.Publish(ctx, c.delChannel(), string(v)).Err()
 }
 
+// delSubscribe listens for invalidation messages from other instances.
 func (c *CacheLocal) delSubscribe() {
 	if c.redis == nil {
 		return
@@ -183,20 +188,23 @@ func (c *CacheLocal) delSubscribe() {
 	if c.pubsub != nil {
 		c.pubsub.Close()
 	}
+
 	logger.Debug("local cache del subscribe")
 	c.pubsub = c.redis.Subscribe(context.Background(), c.delChannel())
+
 	for {
 		select {
-		case <-runtime.Exit:
+		case <-runtime.Exit: // Framework graceful shutdown
 			logger.Debug("local cache del subscribe exit")
 			c.pubsub.Close()
 			return
 		case msg := <-c.pubsub.Channel():
-			logger.Debug("local cache del subscribe recive", "msg", msg.Payload)
 			var delMsg cacheLocalDelPublishMessage
 			if err := json.Unmarshal(utils.UnsafeString2Byte(msg.Payload), &delMsg); err != nil {
 				logger.Error("local cache pubsub unmarshal fail", "payload", msg.Payload, "err", err)
+				continue
 			}
+			// Only delete if the message came from a DIFFERENT instance.
 			if delMsg.InstanceId != c.instanceId {
 				if err := c.del(delMsg.Keys...); err != nil {
 					logger.Error("local cache del keys fail", "keys", delMsg.Keys, "err", err)
@@ -206,12 +214,14 @@ func (c *CacheLocal) delSubscribe() {
 	}
 }
 
+// delChannel generates a unique Redis channel name for invalidation events.
 func (c *CacheLocal) delChannel() string {
 	return c.App().ResourceKey("caches_local_channel",
 		"delete",
 		runtime.WithDelimiter(":"))
 }
 
+// load merges multiple configuration levels (Global -> Local -> Model-specific).
 func (c *CacheLocal) load() error {
 	conf := defaultCacheLocalConfig
 	if err := config.GetWithUnmarshal("asjard.cache",
@@ -223,16 +233,20 @@ func (c *CacheLocal) load() error {
 		})); err != nil {
 		return err
 	}
-	logger.Debug("load local cache", "conf", conf)
+
 	c.Cache.WithConf(&conf.CacheConfig)
+
+	// Initialize Redis client if a name is provided.
 	if conf.RedisClient != "" {
 		client, err := xredis.Client(xredis.WithClientName(conf.RedisClient))
 		if err != nil {
 			return err
 		}
 		c.redis = client
-		go c.delSubscribe()
+		go c.delSubscribe() // Start listening for remote invalidations.
 	}
+
+	// Handle dynamic cache resizing.
 	if c.maxSize != conf.MaxSize {
 		c.cache = freecache.NewCache(conf.MaxSize)
 		c.maxSize = conf.MaxSize

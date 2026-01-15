@@ -1,5 +1,6 @@
 /*
-Package constant 框架定义的一些常量信息
+Package constant defines shared framework constants and global configuration keys.
+Centralizing these ensures consistency across the core, listeners, and external plugins.
 */
 package constant
 
@@ -8,75 +9,71 @@ import (
 )
 
 const (
-	// Framework 框架名称
-	Framework = "asjard"
-	// FrameworkVersion 框架版本号
-	FrameworkVersion = "0.8.7"
+	// Framework identity and versioning.
+	Framework        = "asjard"
+	FrameworkVersion = "0.8.8"
 	FrameworkGithub  = "https://github.com/asjard/asjard"
-	// DefaultDelimiter 默认分隔符
+
+	// Delimiters for data processing.
+	// DefaultDelimiter is used when splitting strings into slices (e.g., CSV).
 	DefaultDelimiter = ","
-	// ConfigDelimiter 配置分隔符
+	// ConfigDelimiter defines the hierarchy separator for configuration keys.
 	ConfigDelimiter = "."
-	// DefaultCipherName 默认加解密名称
-	// DefaultCipherName = "default"
-	// 全部协议
+
+	// AllProtocol represents a wildcard for all communication protocols (gRPC, REST, etc.).
 	AllProtocol = "*"
 )
 
+// TraceContextKeyType defines a custom type for context keys to avoid collisions.
 type TraceContextKeyType int
 
 const (
+	// CurrentSpanKey is used to store/retrieve the current tracing span from a context.
 	CurrentSpanKey TraceContextKeyType = iota
 )
 
 var (
-	APP         atomic.Value
-	Region      atomic.Value
-	AZ          atomic.Value
-	Env         atomic.Value
-	ServiceName atomic.Value
+	// Global atomic variables representing the deployment environment.
+	// These are stored as atomic.Value to allow safe concurrent updates during bootstrap.
+	APP         atomic.Value // Application Name
+	Region      atomic.Value // Physical Region (e.g., us-east-1)
+	AZ          atomic.Value // Availability Zone (e.g., az-1)
+	Env         atomic.Value // Deployment Environment (e.g., prod, dev, staging)
+	ServiceName atomic.Value // Specific Microservice Name
 )
 
 const (
-	// ConfigServerRestPrefix rest服务配置前缀
-	ConfigServerRestPrefix = "asjard.servers.rest"
-	// ConfigServerGrpcPrefix grpc服务配置前缀
+	// Server Configuration Namespaces
+	ConfigServerRestPrefix  = "asjard.servers.rest"
 	ConfigServerGrpcPrefix  = "asjard.servers.grpc"
 	ConfigServerPporfPrefix = "asjard.servers.pprof"
+	ConfigServicePrefix     = "asjard.service"
 
-	ConfigServicePrefix = "asjard.service"
-
-	// 服务配置前缀
-	ConfigServerPrefix = Framework + ".servers"
-	// 协议配置前缀
+	// Dynamic Server/Protocol Key Generators
+	ConfigServerPrefix             = Framework + ".servers"
 	ConfigServerWithProtocolPrefix = ConfigServerPrefix + ".%s"
 
-	// 客户端配置前缀
-	ConfigClientPrefix = Framework + ".clients"
-	// 客户端协议配置前缀
+	// Client Configuration Namespaces
+	ConfigClientPrefix             = Framework + ".clients"
 	ConfigClientWithProtocolPrefix = ConfigClientPrefix + ".%s"
-	// 客户端服务配置前缀
-	ConfigClientWithSevicePrefix = ConfigClientWithProtocolPrefix + ".%s"
+	ConfigClientWithSevicePrefix   = ConfigClientWithProtocolPrefix + ".%s"
 
-	// 拦截器配置前缀
-	ConfigInterceptorPrefix = Framework + ".interceptors"
-	// 服务端拦截器配置前缀
+	// Interceptor (Middleware) Configuration
+	ConfigInterceptorPrefix               = Framework + ".interceptors"
 	ConfigInterceptorServerPrefix         = ConfigInterceptorPrefix + ".server"
 	ConfigInterceptorServerWithNamePrefix = ConfigInterceptorServerPrefix + ".%s"
-	// 客户端拦截器配置前缀
 	ConfigInterceptorClientPrefix         = ConfigInterceptorPrefix + ".client"
 	ConfigInterceptorClientWithNamePrefix = ConfigInterceptorClientPrefix + ".%s"
 
-	// ConfigLoggerPrefix 日志配置前缀
-	ConfigLoggerPrefix = Framework + ".logger"
-	// 是否开启access_log
+	// Logging and Banner settings
+	ConfigLoggerPrefix        = Framework + ".logger"
 	ConfigLoggerAccessEnabled = ConfigLoggerPrefix + ".accessEnabled"
+	ConfigLoggerBannerDisable = "asjard.logger.banner.disable"
 
-	// 监控配置前缀
+	// Metrics and Monitoring
 	ConfigMetricsPrefix = Framework + ".metrics"
 
-	ConfigLoggerBannerEnabled = "asjard.logger.banner.enabled"
-
+	// Service Registry and Discovery parameters
 	ConfigRegistryFailureThreshold    = "asjard.registry.failureThreshold"
 	ConfigRegistryHealthCheck         = "asjard.registry.healthCheck"
 	ConfigRegistryHealthCheckInterval = "asjard.registry.healthCheckInterval"
@@ -86,6 +83,7 @@ const (
 	ConfigRegistryDelayRegiste        = "asjard.registry.delayRegiste"
 	ConfigRegistryHeartbeatInterval   = "asjard.registry.heartbeatInterval"
 
+	// Resilience (Circuit Breaker) and Observability Interceptors
 	ConfigInterceptorClientCircuitBreakerPrefix            = "asjard.interceptors.client.circuitBreaker"
 	ConfigInterceptorClientCircuitBreakerServicePrefix     = "asjard.interceptors.client.circuitBreaker.services"
 	ConfigInterceptorClientCircuitBreakerMethodPrefix      = "asjard.interceptors.client.circuitBreaker.methods"
@@ -96,6 +94,8 @@ const (
 	ConfigInterceptorClientErrLogPrefix                    = "asjard.interceptors.client.errLog"
 	ConfigInterceptorServerAccessLogPrefix                 = "asjard.interceptors.server.accessLog"
 
+	// Security/Cryptography Keys
+	// %s represents the cipher instance name (e.g., 'default').
 	ConfigCipherAESKey = "asjard.cipher.%s.base64Key"
 	ConfigCipherAESIV  = "asjard.cipher.%s.base64Iv"
 )

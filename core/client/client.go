@@ -1,6 +1,3 @@
-/*
-Package client 不同协议的客户端维护，通过配置提供统一连接，拦截器的加载，负载均衡策略的选择
-*/
 package client
 
 import (
@@ -11,44 +8,53 @@ import (
 	"google.golang.org/grpc"
 )
 
+// ClientInterface defines the factory interface for creating protocol-specific connections.
 type ClientInterface interface {
-	// target format asjard://grpc/serviceName
+	// NewConn creates a new client connection.
+	// Target format follows: asjard://protocol/serviceName
 	NewConn(target string, options *ClientOptions) (ClientConnInterface, error)
 }
 
-// ClientConnInterface 客户端需要实现的接口
-// 对grpc.ClientConnInterface扩展
+// ClientConnInterface extends gRPC's ClientConnInterface to provide
+// additional metadata about the connection.
 type ClientConnInterface interface {
 	grpc.ClientConnInterface
-	// 客户端连接的服务名称
+	// ServiceName returns the name of the remote service being called.
 	ServiceName() string
-	// 客户端连接的协议
+	// Protocol returns the communication protocol (e.g., grpc, http).
 	Protocol() string
+	// Conn returns the underlying gRPC client connection.
 	Conn() grpc.ClientConnInterface
 }
 
-// ConnOptions 连接参数
+// ConnOptions defines parameters for individual connection requests.
 type ConnOptions struct {
-	// 实例ID
+	// InstanceID identifies a specific instance to connect to, bypassing load balancing.
 	InstanceID string
-	// 注册发现中心名称
+	// RegistryName specifies which service discovery registry to use.
 	RegistryName string
 }
 
+// ConnOption is a functional option pattern for configuring ConnOptions.
 type ConnOption func(opts *ConnOptions)
 
-// NewClientFunc 初始化客户端的方法
+// NewClientFunc is a factory function type that initializes a protocol-specific client.
 type NewClientFunc func(*ClientOptions) ClientInterface
 
-var newClients = make(map[string]NewClientFunc)
-var clients = make(map[string]ClientInterface)
+var (
+	// newClients stores registered client constructors indexed by protocol.
+	newClients = make(map[string]NewClientFunc)
+	// clients stores initialized client instances.
+	clients = make(map[string]ClientInterface)
+)
 
-// AddClient 添加客户端
+// AddClient registers a new protocol client implementation to the global registry.
 func AddClient(protocol string, newClient NewClientFunc) {
 	newClients[protocol] = newClient
 }
 
-// Init 客户端初始化
+// Init initializes all registered protocol clients.
+// It loads configurations, assembles interceptor chains, and builds resolvers/balancers.
 func Init() error {
 	for protocol, newClient := range newClients {
 		conf := GetConfigWithProtocol(protocol)
@@ -56,6 +62,7 @@ func Init() error {
 		if err != nil {
 			return err
 		}
+		// Each protocol client is initialized with its own resolver and balancer builders.
 		clients[protocol] = newClient(&ClientOptions{
 			Resolver:    &ClientBuilder{},
 			Balancer:    NewBalanceBuilder(conf.Loadbalance),
@@ -65,14 +72,14 @@ func Init() error {
 	return nil
 }
 
-// Client 客户端
+// Client represents a high-level handle to a remote service.
 type Client struct {
 	protocol   string
 	serverName string
 	conf       Config
 }
 
-// NewClient 新客户端
+// NewClient creates a new Client handle for a specific service and protocol.
 func NewClient(protocol, serverName string) *Client {
 	return &Client{
 		protocol:   protocol,
@@ -80,27 +87,35 @@ func NewClient(protocol, serverName string) *Client {
 	}
 }
 
-// Conn 链接地址
+// Conn establishes or returns a connection to the target service.
+// It dynamically applies service-specific interceptors and load balancing strategies.
 func (c Client) Conn(ops ...ConnOption) (grpc.ClientConnInterface, error) {
 	cc, ok := clients[c.protocol]
 	if !ok {
 		return nil, fmt.Errorf("protocol %s client not found", c.protocol)
 	}
+
+	// Fetch specific configuration for the target service to override defaults.
 	conf := serviceConfig(c.protocol, c.serverName)
 	interceptor, err := getChainUnaryInterceptors(c.protocol, conf)
 	if err != nil {
 		return nil, err
 	}
-	// 设置置指定服务的负载均衡
+
+	// Prepare options with service-specific balancer and interceptor chains.
 	options := &ClientOptions{
 		Balancer:    NewBalanceBuilder(conf.Loadbalance),
 		Interceptor: interceptor,
 	}
-	return cc.NewConn(fmt.Sprintf("%s://%s/%s?%s",
-		constant.Framework, c.protocol, c.serverName, c.connOptions(ops...).queryString()),
-		options)
+
+	// Construct the target URI: asjard://protocol/serviceName?instanceID=xxx
+	target := fmt.Sprintf("%s://%s/%s?%s",
+		constant.Framework, c.protocol, c.serverName, c.connOptions(ops...).queryString())
+
+	return cc.NewConn(target, options)
 }
 
+// connOptions merges multiple functional options into a single ConnOptions struct.
 func (c Client) connOptions(ops ...ConnOption) *ConnOptions {
 	options := &ConnOptions{}
 	for _, op := range ops {
@@ -109,21 +124,22 @@ func (c Client) connOptions(ops ...ConnOption) *ConnOptions {
 	return options
 }
 
+// queryString converts connection options into a URL-encoded query string for the resolver.
 func (o ConnOptions) queryString() string {
 	v := make(url.Values)
 	v.Set("instanceID", o.InstanceID)
+	// Note: RegistryName is handled by the resolver but can be added here if needed.
 	return v.Encode()
-
 }
 
-// WithInstanceID 客户端连接设置实例ID
+// WithInstanceID sets a specific instance ID to target for the connection.
 func WithInstanceID(instanceID string) func(opts *ConnOptions) {
 	return func(opts *ConnOptions) {
 		opts.InstanceID = instanceID
 	}
 }
 
-// WithRegistryName 客户端连接设置服务发现中心名称
+// WithRegistryName specifies a custom registry for service discovery.
 func WithRegistryName(registryName string) func(opts *ConnOptions) {
 	return func(opts *ConnOptions) {
 		opts.RegistryName = registryName

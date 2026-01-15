@@ -18,21 +18,22 @@ import (
 )
 
 var (
+	// Cached paths with sync.Once to ensure thread-safe, single initialization.
 	homeDir = ""
 	hdonce  sync.Once
 	confDir = ""
 	cdonce  sync.Once
-	// HOME_DIR_ENV_NAME 家目录环境变量名称
+
+	// Environmental variable keys for overriding default paths.
 	HOME_DIR_ENV_NAME = "ASJARD_HOME_DIR"
-	// CONF_DIR_ENV_NAME 配置目录环境变量名称
 	CONF_DIR_ENV_NAME = "ASJARD_CONF_DIR"
-	// CONF_DIR 配置文件目录名称
+
+	// Default sub-directory names within the Home directory.
 	CONF_DIR = "conf"
-	// CERT_DIR 证书存放路径
 	CERT_DIR = "certs"
 )
 
-// GetWorkDir 获取当前工作目录
+// GetWorkDir returns the absolute path of the directory containing the running executable.
 func GetWorkDir() (string, error) {
 	wd, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
@@ -41,14 +42,15 @@ func GetWorkDir() (string, error) {
 	return wd, nil
 }
 
-// GetHomeDir 获取家目录
+// GetHomeDir determines the root directory of the application.
+// Priority: Environment Variable > Executable Work Directory.
 func GetHomeDir() string {
 	hdonce.Do(func() {
 		homeDir = os.Getenv(HOME_DIR_ENV_NAME)
 		if homeDir == "" {
 			wd, err := GetWorkDir()
 			if err != nil {
-				panic(err)
+				panic(err) // Critical failure if work dir cannot be resolved.
 			}
 			homeDir = wd
 		}
@@ -56,7 +58,8 @@ func GetHomeDir() string {
 	return homeDir
 }
 
-// GetConfDir 获取配置目录
+// GetConfDir returns the configuration directory path.
+// Priority: Environment Variable > {HomeDir}/conf.
 func GetConfDir() string {
 	cdonce.Do(func() {
 		confDir = strings.TrimSpace(os.Getenv(CONF_DIR_ENV_NAME))
@@ -67,25 +70,21 @@ func GetConfDir() string {
 	return confDir
 }
 
-// GetCertDir 获取证书存放路径
+// GetCertDir returns the directory where security certificates are stored.
 func GetCertDir() string {
 	return filepath.Join(GetConfDir(), CERT_DIR)
 }
 
-// IsPathExists 目录或文件是否存在
+// IsPathExists checks if a file or directory exists at the given path.
 func IsPathExists(path string) bool {
 	_, err := os.Stat(path)
 	if err != nil {
-		if os.IsExist(err) {
-			return true
-		}
-		return false
+		return os.IsExist(err)
 	}
 	return true
 }
 
-// IsDir 是否为目录
-// 不存在的目录会返回false
+// IsDir returns true if the path exists and is a directory.
 func IsDir(dir string) bool {
 	s, err := os.Stat(dir)
 	if err != nil {
@@ -94,13 +93,12 @@ func IsDir(dir string) bool {
 	return s.IsDir()
 }
 
-// IsFile 是否为文件
-// 不存在的文件会返回true
+// IsFile returns true if the path exists and is not a directory.
 func IsFile(file string) bool {
 	return !IsDir(file)
 }
 
-// CopyFile 拷贝文件
+// CopyFile copies a single file from src to dest with standard permissions.
 func CopyFile(srcPath, destPath string) error {
 	s, err := os.Open(srcPath)
 	if err != nil {
@@ -113,13 +111,15 @@ func CopyFile(srcPath, destPath string) error {
 		return err
 	}
 	defer d.Close()
+
+	// Efficiently stream the file content.
 	if _, err := io.Copy(d, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-// CopyDir 拷贝目录
+// CopyDir recursively copies a directory and all its contents.
 func CopyDir(srcDir, destDir string) error {
 	if srcDir == destDir {
 		return nil
@@ -128,32 +128,34 @@ func CopyDir(srcDir, destDir string) error {
 	if err != nil {
 		return err
 	}
+	// Create destination with restrictive permissions (0750).
 	if err := os.MkdirAll(destDir, 0750); err != nil {
 		return err
 	}
 	for _, item := range items {
+		src := filepath.Join(srcDir, item.Name())
+		dst := filepath.Join(destDir, item.Name())
 		if !item.IsDir() {
-			if err := CopyFile(filepath.Join(srcDir, item.Name()), filepath.Join(destDir, item.Name())); err != nil {
+			if err := CopyFile(src, dst); err != nil {
 				return err
 			}
 			continue
 		}
-		if err := os.MkdirAll(filepath.Join(destDir, item.Name()), os.ModePerm); err != nil {
-			return err
-		}
-		if err := CopyDir(filepath.Join(srcDir, item.Name()), filepath.Join(destDir, item.Name())); err != nil {
+		// Recursive call for sub-directories.
+		if err := CopyDir(src, dst); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// FileMD5 计算文件MD5
+// FileMD5 calculates the MD5 checksum of a file to verify integrity.
 func FileMD5(path string) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return "", err
 	}
+	defer f.Close()
 	h := md5.New()
 	if _, err := io.Copy(h, f); err != nil {
 		return "", err
@@ -161,31 +163,35 @@ func FileMD5(path string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// MergeFile 多个小文件合并为一个大文件
+// MergeFile is a wrapper that merges multiple input files into one output file.
 func MergeFile(ctx context.Context, inputFiles []string, outputFile string, concurrency int) error {
 	return MergeFiles(ctx, append([]string{outputFile}, inputFiles...), concurrency)
 }
 
-// MergeFiles 所有文件都会合并到列表的第一个文件中
+// MergeFiles implements a recursive binary merge.
+// It merges pairs of files in parallel to optimize I/O and CPU usage.
 func MergeFiles(ctx context.Context, files []string, concurrency int) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	if concurrency == 0 {
 		concurrency = runtime.NumCPU()
 	}
 	eg.SetLimit(concurrency)
+
 	n := len(files)
-	if n == 1 {
+	if n <= 1 {
 		return nil
 	}
-	newFiles := make([]string, 0, n)
-	for j := 0; j < n; j = j + 2 {
+
+	newFiles := make([]string, 0, (n+1)/2)
+	for j := 0; j < n; j += 2 {
 		i := j
 		eg.Go(func() error {
 			select {
 			case <-ctx.Done():
-				return nil
+				return ctx.Err()
 			default:
 				if i+1 >= n {
+					// Single file left, nothing to merge it with.
 					return mergefile(files[i], "")
 				}
 				return mergefile(files[i], files[i+1])
@@ -193,12 +199,15 @@ func MergeFiles(ctx context.Context, files []string, concurrency int) error {
 		})
 		newFiles = append(newFiles, files[i])
 	}
+
 	if err := eg.Wait(); err != nil {
 		return err
 	}
+	// Recursively merge the newly merged files until only one remains.
 	return MergeFiles(ctx, newFiles, concurrency)
 }
 
+// mergefile appends the content of src to dst.
 func mergefile(dst, src string) error {
 	if src != "" {
 		df, err := os.OpenFile(dst, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0640)
@@ -218,33 +227,37 @@ func mergefile(dst, src string) error {
 	return nil
 }
 
-// SplitFile 分隔文件，一个大文件切分为多个小文件
+// SplitFile divides a large file into multiple smaller chunks (parts).
+// Useful for multi-part uploads or distributed processing.
 func SplitFile(srcFile, dstDir string, chunkSize int64) ([]string, error) {
 	var parts []string
-	// 打开原始文件
 	f, err := os.Open(srcFile)
 	if err != nil {
 		return parts, err
 	}
 	defer f.Close()
 
-	// 获取原始文件信息
 	fi, err := f.Stat()
 	if err != nil {
 		return parts, err
 	}
+
 	totalPartsNum := int64(math.Ceil(float64(fi.Size()) / float64(chunkSize)))
 	for i := int64(0); i < totalPartsNum; i++ {
+		// Calculate precise size for the current chunk.
 		partSize := int(math.Min(float64(chunkSize), float64(fi.Size()-i*chunkSize)))
 		partBuffer := make([]byte, partSize)
-		f.Read(partBuffer)
-		fileName := filepath.Join(dstDir, "part_"+strconv.Itoa(int(i)))
-		parts = append(parts, fileName)
-		_, err := os.Create(fileName)
-		if err != nil {
+
+		_, err := f.Read(partBuffer)
+		if err != nil && err != io.EOF {
 			return parts, err
 		}
-		if err := os.WriteFile(fileName, partBuffer, os.ModeAppend); err != nil {
+
+		fileName := filepath.Join(dstDir, "part_"+strconv.Itoa(int(i)))
+		parts = append(parts, fileName)
+
+		// Write the chunk to a new file.
+		if err := os.WriteFile(fileName, partBuffer, 0640); err != nil {
 			return parts, err
 		}
 	}

@@ -1,4 +1,5 @@
 /*
-服务注册发现实现
+Package registry provides the built-in implementation for the framework's
+service registration and discover.
 */
 package registry

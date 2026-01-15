@@ -16,23 +16,23 @@ import (
 )
 
 const (
+	// Protocol defines the server type for the framework registry.
 	Protocol = "amqp"
 )
 
-// AmqpServer amqp服务定义
-// 相当于就是amqp的消费者
+// AmqpServer defines the AMQP consumer server.
+// It manages the underlying connection and maps RabbitMQ messages to service handlers.
 type AmqpServer struct {
 	conf    Config
 	options *server.ServerOptions
 	app     runtime.APP
 
-	conn *xamqp.ClientConn
-	ch   *amqp.Channel
-	// 通道是否已关闭
-	closed chan *amqp.Error
+	conn   *xamqp.ClientConn // Wrapped AMQP connection
+	ch     *amqp.Channel     // Active AMQP channel
+	closed chan *amqp.Error  // Listener for channel closure events
 
-	svcs  []Handler
-	tasks atomic.Int32
+	svcs  []Handler    // Registered business logic handlers
+	tasks atomic.Int32 // Counter for active processing tasks (for graceful shutdown)
 }
 
 var (
@@ -40,10 +40,11 @@ var (
 )
 
 func init() {
+	// Register the AMQP server factory with the core framework.
 	server.AddServer(Protocol, New)
 }
 
-// New 服务初始化
+// New initializes the server by loading configuration from "asjard.servers.amqp".
 func New(options *server.ServerOptions) (server.Server, error) {
 	conf := defaultConfig()
 	if err := config.GetWithUnmarshal("asjard.servers.amqp", &conf); err != nil {
@@ -52,7 +53,7 @@ func New(options *server.ServerOptions) (server.Server, error) {
 	return MustNew(conf, options)
 }
 
-// MustNew 根据配置初始化
+// MustNew establishes the initial connection and prepares the server struct.
 func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) {
 	if !conf.Enabled {
 		return &AmqpServer{}, nil
@@ -69,6 +70,7 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 	}, nil
 }
 
+// AddHandler validates and registers a service handler to the server.
 func (s *AmqpServer) AddHandler(handler any) error {
 	h, ok := handler.(Handler)
 	if !ok {
@@ -77,6 +79,7 @@ func (s *AmqpServer) AddHandler(handler any) error {
 	return s.addHandler(h)
 }
 
+// Start opens the channel and starts the keepalive monitor.
 func (s *AmqpServer) Start(startErr chan error) error {
 	if err := s.start(); err != nil {
 		return err
@@ -84,6 +87,7 @@ func (s *AmqpServer) Start(startErr chan error) error {
 	return s.keepalive()
 }
 
+// Stop closes the channel and waits for active tasks to complete (graceful shutdown).
 func (s *AmqpServer) Stop() {
 	if s.ch != nil {
 		select {
@@ -92,6 +96,7 @@ func (s *AmqpServer) Stop() {
 			s.ch.Close()
 		}
 	}
+	// Block until all in-flight messages are processed.
 	for {
 		if s.tasks.Load() <= 0 {
 			return
@@ -109,6 +114,7 @@ func (s *AmqpServer) Enabled() bool {
 	return s.conf.Enabled
 }
 
+// addHandler stores the service and validates it against the generated descriptor.
 func (s *AmqpServer) addHandler(handler Handler) error {
 	desc := handler.AmqpServiceDesc()
 	if desc == nil {
@@ -123,6 +129,7 @@ func (s *AmqpServer) addHandler(handler Handler) error {
 	return nil
 }
 
+// keepalive listens for unexpected channel closures and triggers reconnection.
 func (s *AmqpServer) keepalive() error {
 	go func() {
 		for {
@@ -141,6 +148,7 @@ func (s *AmqpServer) keepalive() error {
 	return nil
 }
 
+// reconnect implements an exponential backoff strategy to restore the connection.
 func (s *AmqpServer) reconnect() {
 	duration := time.Second
 	for {
@@ -158,14 +166,17 @@ func (s *AmqpServer) reconnect() {
 	}
 }
 
+// start performs the heavy lifting: declaring queues, exchanges, and bindings.
 func (s *AmqpServer) start() error {
 	ch, err := s.conn.Channel()
 	if err != nil {
 		return err
 	}
 	s.ch = ch
+	// Register a listener for channel closure.
 	ch.NotifyClose(s.closed)
 
+	// Apply Quality of Service (QoS) settings like PrefetchCount.
 	if err := ch.Qos(s.conf.PrefetchCount, s.conf.PrefetchSize, s.conf.Global); err != nil {
 		return err
 	}
@@ -179,10 +190,12 @@ func (s *AmqpServer) start() error {
 			if method.Handler == nil {
 				continue
 			}
+			// Idempotently declare the queue.
 			queue, err := ch.QueueDeclare(method.Queue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, method.Table)
 			if err != nil {
 				return err
 			}
+			// If an exchange is specified, declare it and bind the queue.
 			if method.Exchange != "" {
 				if err := ch.ExchangeDeclare(method.Exchange,
 					method.Kind, method.Durable, method.AutoDelete, method.Internal, method.NoWait, method.Table); err != nil {
@@ -192,8 +205,7 @@ func (s *AmqpServer) start() error {
 					return err
 				}
 			}
-			// ch.ExchangeDeclare(name string, kind string, durable bool, autoDelete bool, internal bool, noWait bool, args amqp.Table)
-			// ch.QueueBind(name string, key string, exchange string, noWait bool, args amqp.Table)
+			// Start the actual consumption process.
 			msgs, err := ch.Consume(queue.Name, method.Consumer, method.AutoAck, method.Exclusive, method.NoLocal, method.NoWait, method.Table)
 			if err != nil {
 				return err
@@ -204,6 +216,7 @@ func (s *AmqpServer) start() error {
 	return nil
 }
 
+// run processes the message delivery stream for a specific queue.
 func (s *AmqpServer) run(msgs <-chan amqp.Delivery, svc Handler, method MethodDesc) {
 	for {
 		select {
@@ -213,6 +226,8 @@ func (s *AmqpServer) run(msgs <-chan amqp.Delivery, svc Handler, method MethodDe
 				return
 			}
 			s.tasks.Add(1)
+			// Execute business logic via the descriptor's handler.
+			// Success results in an Ack, failure results in a Reject (with requeue).
 			if _, err := method.Handler(&Context{Context: context.Background(), task: msg}, svc, s.options.Interceptor); err == nil {
 				msg.Ack(false)
 			} else {

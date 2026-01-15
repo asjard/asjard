@@ -1,57 +1,57 @@
-> 客户端管理实现, 当前只实现了grpc客户端， 其他协议请按照grpc客户端实现
-
-### 客户端功能列表
-
-- 负载均衡
-- 拦截器
-
-### 自定义负载均衡实现
+### Custom Load Balancer Implementation
 
 ```go
 func init() {
-	AddBalancer("roundRobin", NewRoundRobinPicker)
+    // Registers the custom balancer with the global registry.
+    AddBalancer("roundRobin", NewRoundRobinPicker)
 }
 
-/ NewRoundRobinPicker .
+// NewRoundRobinPicker initializes a new Round Robin picker instance.
 func NewRoundRobinPicker(scs map[balancer.SubConn]base.SubConnInfo) balancer.Picker {
-	var subConns []*subConn
-	for conn, info := range scs {
-		subConns = append(subConns, &subConn{
-			address: info.Address,
-			conn:    conn,
-		})
-	}
-	return &RoundRobinPicker{
-		scs: subConns,
-	}
+    var subConns []*subConn
+    for conn, info := range scs {
+        subConns = append(subConns, &subConn{
+            address: info.Address,
+            conn:    conn,
+        })
+    }
+    return &RoundRobinPicker{
+        scs: subConns,
+    }
 }
 
+// subConn wraps the gRPC SubConn with its resolved address metadata.
 type subConn struct {
-	address resolver.Address
-	conn    balancer.SubConn
+    address resolver.Address
+    conn    balancer.SubConn
 }
 
-// RoundRobinPicker 轮询负载均衡
+// RoundRobinPicker implements the Round Robin load balancing strategy.
 type RoundRobinPicker struct {
-	scs  []*subConn
-	next uint32
+    scs  []*subConn
+    next uint32
 }
 
-// Pick 负载选择
+// Pick selects a sub-connection from the available pool using a Round Robin algorithm.
 func (r *RoundRobinPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
-	n := uint32(len(r.scs))
-	if n == 0 {
-		return balancer.PickResult{}, balancer.ErrNoSubConnAvailable
-	}
-	next := atomic.AddUint32(&r.next, 1) - 1
-	sc := r.scs[next%n]
-	return balancer.PickResult{
-		SubConn: sc.conn,
-		Done:    func(info balancer.DoneInfo) {},
-	}, nil
+    n := uint32(len(r.scs))
+    if n == 0 {
+        return balancer.PickResult{}, balancer.ErrNoSubConnAvailable
+    }
+
+    // Atomically increment the counter to ensure thread-safe selection.
+    next := atomic.AddUint32(&r.next, 1) - 1
+    sc := r.scs[next%n]
+
+    return balancer.PickResult{
+        SubConn: sc.conn,
+        // Done is called when the RPC is completed.
+        Done:    func(info balancer.DoneInfo) {},
+    }, nil
 }
 
-func (r *RoundRobinPicker) Name() string{
-	return "roundRobin"
+// Name returns the unique identifier for this load balancing strategy.
+func (r *RoundRobinPicker) Name() string {
+    return "roundRobin"
 }
 ```

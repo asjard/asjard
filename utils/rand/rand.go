@@ -95,17 +95,21 @@ const (
 	maxAlphanumsPerInt = 63 / alphanumsIdxBits
 )
 
-// 随机模式
+// Mode represents the character set categories used for random generation.
+// It is implemented as a bitmask to allow multiple modes to be combined.
 type Mode uint
 
 const (
-	// 数字
+	// Number includes digits
 	Number Mode = 1 << iota
-	// 大写字符
+
+	// AlphaUpper includes uppercase letters
 	AlphaUpper
-	// 小写字符
+
+	// AlphaLower includes lowercase letters
 	AlphaLower
-	// 特殊字符
+
+	// AlphaSpecial includes symbols
 	AlphaSpecial
 )
 

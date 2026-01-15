@@ -9,21 +9,32 @@ import (
 	"time"
 )
 
+// mapForm maps a map of strings (form/query) to a pointer to a struct.
+// It uses reflection to match map keys with struct field tags (JSON) or field names.
+//
 //gocyclo:ignore
 func mapForm(ptr any, form map[string][]string) error {
 	if len(form) == 0 {
 		return nil
 	}
+
+	// Get the type and value of the struct being pointed to.
 	typ := reflect.TypeOf(ptr).Elem()
 	val := reflect.ValueOf(ptr).Elem()
+
 	for i := 0; i < typ.NumField(); i++ {
 		typeField := typ.Field(i)
 		structField := val.Field(i)
+
+		// Skip fields that cannot be modified.
 		if !structField.CanSet() {
 			continue
 		}
 
 		structFieldKind := structField.Kind()
+
+		// 1. Determine the input field name to look for in the map.
+		// Priority: `json` tag value -> Struct Field Name.
 		inputFieldName := typeField.Tag.Get("json")
 		if inputFieldName != "" {
 			fieldNameList := strings.Split(inputFieldName, ",")
@@ -31,12 +42,12 @@ func mapForm(ptr any, form map[string][]string) error {
 				inputFieldName = strings.TrimSpace(fieldNameList[0])
 			}
 		}
+
 		if inputFieldName == "" {
 			inputFieldName = typeField.Name
 
-			// if "form" tag is nil, we inspect if the field is a struct.
-			// this would not make sense for JSON parsing but it does for a form
-			// since data is flatten
+			// Recursively handle nested structs if the current field is a struct
+			// and no specific tag was found. Useful for flattened form data.
 			if structFieldKind == reflect.Struct {
 				err := mapForm(structField.Addr().Interface(), form)
 				if err != nil {
@@ -45,12 +56,16 @@ func mapForm(ptr any, form map[string][]string) error {
 				continue
 			}
 		}
+
+		// 2. Extract value from the form map.
 		inputValue, exists := form[inputFieldName]
 		if !exists {
 			continue
 		}
 
 		numElems := len(inputValue)
+
+		// 3. Handle Slices (multiple values for the same key).
 		if structFieldKind == reflect.Slice && numElems > 0 {
 			sliceOf := structField.Type().Elem().Kind()
 			slice := reflect.MakeSlice(structField.Type(), numElems, numElems)
@@ -61,15 +76,19 @@ func mapForm(ptr any, form map[string][]string) error {
 			}
 			val.Field(i).Set(slice)
 		} else {
+			// 4. Handle Special Types: time.Time.
 			if _, isTime := structField.Interface().(time.Time); isTime {
 				if err := setTimeField(inputValue[0], typeField, structField); err != nil {
 					return err
 				}
 				continue
 			}
+
+			// 5. Handle Pointers.
 			if typeField.Type.Kind() == reflect.Ptr {
 				instance := reflect.New(typeField.Type.Elem())
 				ptr := instance.Interface()
+				// Hack for string pointers to ensure valid JSON unmarshaling if quotes are missing.
 				if typeField.Type == reflect.TypeOf((*string)(nil)) && !strings.HasPrefix(inputValue[0], `"`) {
 					inputValue[0] = fmt.Sprintf(`"%s"`, inputValue[0])
 				}
@@ -79,6 +98,8 @@ func mapForm(ptr any, form map[string][]string) error {
 				structField.Set(reflect.ValueOf(ptr))
 				continue
 			}
+
+			// 6. Handle Primitive Types (int, string, bool, etc.).
 			if err := setWithProperType(typeField.Type.Kind(), inputValue[0], structField); err != nil {
 				return err
 			}
@@ -87,28 +108,15 @@ func mapForm(ptr any, form map[string][]string) error {
 	return nil
 }
 
+// setWithProperType dispatches the string value to the correct setter based on the target Kind.
 func setWithProperType(valueKind reflect.Kind, val string, structField reflect.Value) error {
 	switch valueKind {
-	case reflect.Int:
-		return setIntField(val, 0, structField)
-	case reflect.Int8:
-		return setIntField(val, 8, structField)
-	case reflect.Int16:
-		return setIntField(val, 16, structField)
-	case reflect.Int32:
-		return setIntField(val, 32, structField)
-	case reflect.Int64:
-		return setIntField(val, 64, structField)
-	case reflect.Uint:
-		return setUintField(val, 0, structField)
-	case reflect.Uint8:
-		return setUintField(val, 8, structField)
-	case reflect.Uint16:
-		return setUintField(val, 16, structField)
-	case reflect.Uint32:
-		return setUintField(val, 32, structField)
-	case reflect.Uint64:
-		return setUintField(val, 64, structField)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		bitSizes := map[reflect.Kind]int{reflect.Int: 0, reflect.Int8: 8, reflect.Int16: 16, reflect.Int32: 32, reflect.Int64: 64}
+		return setIntField(val, bitSizes[valueKind], structField)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		bitSizes := map[reflect.Kind]int{reflect.Uint: 0, reflect.Uint8: 8, reflect.Uint16: 16, reflect.Uint32: 32, reflect.Uint64: 64}
+		return setUintField(val, bitSizes[valueKind], structField)
 	case reflect.Bool:
 		return setBoolField(val, structField)
 	case reflect.Float32:
@@ -122,6 +130,8 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 	}
 	return nil
 }
+
+// Specific setter functions handle string parsing with bit-size awareness.
 
 func setIntField(val string, bitSize int, field reflect.Value) error {
 	if val == "" {
@@ -167,6 +177,7 @@ func setFloatField(val string, bitSize int, field reflect.Value) error {
 	return err
 }
 
+// setTimeField parses time strings using struct tags: `time_format`, `time_utc`, and `time_location`.
 func setTimeField(val string, structField reflect.StructField, value reflect.Value) error {
 	timeFormat := structField.Tag.Get("time_format")
 	if timeFormat == "" {

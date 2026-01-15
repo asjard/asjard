@@ -1,5 +1,6 @@
 /*
-Package env 环境变量参数解析,对core/config/Source的实现
+Package env implements the environment variable configuration source,
+fulfilling the core/config/Source interface.
 */
 package env
 
@@ -12,34 +13,41 @@ import (
 )
 
 const (
-	// Name 名称
+	// Name is the unique identifier for the environment variable source.
 	Name = "env"
-	// Priority 优先级
+	// Priority defines the precedence of this source.
+	// A value of 0 indicates the absolute highest priority,
+	// meaning environment variables will override CLI flags, files, and remote configs.
 	Priority = 0
 )
 
-// Env 环境变量配置
+// Env handles reading and writing configuration via OS environment variables.
 type Env struct {
 	options *config.SourceOptions
 }
 
 func init() {
+	// Automatically register this source into the framework's configuration manager.
 	config.AddSource(Name, Priority, New)
 }
 
-// New .
+// New initializes the environment variable configuration source.
 func New(options *config.SourceOptions) (config.Sourcer, error) {
 	return &Env{
 		options: options,
 	}, nil
 }
 
-// GetAll get all environment
+// GetAll scans all OS environment variables and converts them into framework-compatible keys.
+// It converts underscores (_) to dots (.) to match the internal configuration hierarchy.
+// Example: "ASJARD_SERVER_PORT=8080" becomes the key "asjard.server.port".
 func (s *Env) GetAll() map[string]*config.Value {
 	configmap := make(map[string]*config.Value)
 	for _, value := range os.Environ() {
+		// Environment variables are stored as "KEY=VALUE"
 		keyValue := strings.SplitN(value, "=", 2)
 		if len(keyValue) >= 2 {
+			// Normalize the key: replace underscores with dots for internal use.
 			envKey := strings.Trim(strings.ReplaceAll(keyValue[0], "_", "."), ".")
 			if envKey != "" {
 				envValue := strings.Join(keyValue[1:], "")
@@ -53,12 +61,16 @@ func (s *Env) GetAll() map[string]*config.Value {
 	return configmap
 }
 
-// Set .
+// Set updates an environment variable and triggers a configuration change event.
+// It converts internal dot-notation keys back to underscore-notation.
 func (s *Env) Set(key string, value any) error {
+	// Map internal "app.port" back to "APP_PORT" for the OS.
 	envKey := strings.ReplaceAll(key, ".", "_")
 	if err := os.Setenv(envKey, cast.ToString(value)); err != nil {
 		return err
 	}
+
+	// Notify the framework that a configuration value has changed.
 	s.options.Callback(&config.Event{
 		Type: config.EventTypeCreate,
 		Key:  key,
@@ -70,15 +82,15 @@ func (s *Env) Set(key string, value any) error {
 	return nil
 }
 
-// DisConnect 停止监听
+// Disconnect is a no-op for environment variables as they don't require active connections.
 func (s *Env) Disconnect() {}
 
-// Priority 返回优先级
+// Priority returns the precedence level (0 = Highest).
 func (s *Env) Priority() int {
 	return Priority
 }
 
-// Name 配置源名称
+// Name returns "env".
 func (s *Env) Name() string {
 	return Name
 }

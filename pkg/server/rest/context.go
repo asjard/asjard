@@ -17,38 +17,31 @@ import (
 )
 
 const (
-	// MIME_XML .
-	MIME_XML = "application/xml"
-	// MIME_JSON .
-	MIME_JSON = "application/json"
-	// MIME_ZIP .
-	MIME_ZIP = "application/zip"
-	// MIME_OCTET .
+	MIME_XML   = "application/xml"
+	MIME_JSON  = "application/json"
+	MIME_ZIP   = "application/zip"
 	MIME_OCTET = "application/octet-stream"
 )
 
-// Context fasthttp.RequestCtx的封装
+// Context wraps fasthttp.RequestCtx to provide helper methods for parameter
+// extraction, data binding, and response writing.
 type Context struct {
 	*fasthttp.RequestCtx
 	errPage string
 	write   Writer
 }
 
+// contextPool implements Object Pooling to reduce GC overhead by reusing Context objects.
 var (
 	contextPool = sync.Pool{
 		New: func() any {
-			return &Context{
-				// errPage: config.GetString("asjard.service.website", ""),
-			}
+			return &Context{}
 		},
 	}
 )
 
-// NewContext .
+// NewContext acquires a Context from the pool and initializes it with the given options.
 func NewContext(ctx *fasthttp.RequestCtx, options ...Option) *Context {
-	// c := &Context{
-	// 	RequestCtx: ctx,
-	// }
 	c := contextPool.Get().(*Context)
 	c.RequestCtx = ctx
 	for _, opt := range options {
@@ -57,10 +50,9 @@ func NewContext(ctx *fasthttp.RequestCtx, options ...Option) *Context {
 	return c
 }
 
-// ReadEntity 解析请求参数并序列化到entity中
-// 解析顺序 query -> header -> body -> path
-// 后解析的同名参数会覆盖前解析的同名参数
-// post,put,patch解析body体,其余不解析
+// ReadEntity parses request parameters and serializes them into a Protobuf message.
+// The default order is: Query -> Header -> Body -> Path.
+// Later parameters override earlier ones if keys collide.
 func (c *Context) ReadEntity(entity proto.Message) error {
 	if entity == nil {
 		return nil
@@ -68,9 +60,11 @@ func (c *Context) ReadEntity(entity proto.Message) error {
 	return c.ReadEntityWithReaders(entity, c.DefaultEntityReaders())
 }
 
+// ReadEntityWithReaders executes a specific list of entity readers (sources).
 func (c *Context) ReadEntityWithReaders(entity proto.Message, readers []*EntityReader) error {
 	requestMethod := string(c.Method())
 	for _, source := range readers {
+		// Skip specific readers (like Body reader) for methods like GET or DELETE.
 		if _, ok := source.SkipMethods[requestMethod]; ok {
 			continue
 		}
@@ -81,7 +75,7 @@ func (c *Context) ReadEntityWithReaders(entity proto.Message, readers []*EntityR
 	return nil
 }
 
-// GetPathParam 获取路径参数
+// GetUserParam retrieves parameters stored in the context by middleware (Path/User values).
 func (c *Context) GetUserParam(key string) []string {
 	value := c.UserValueBytes(utils.UnsafeString2Byte(key))
 	if value == nil {
@@ -99,7 +93,7 @@ func (c *Context) GetUserParam(key string) []string {
 	return []string{v}
 }
 
-// GetHeaderParam 获取请求头参数
+// GetHeaderParam retrieves values for a specific HTTP header key.
 func (c *Context) GetHeaderParam(key string) []string {
 	v := c.Request.Header.PeekAll(key)
 	s := make([]string, len(v))
@@ -109,7 +103,7 @@ func (c *Context) GetHeaderParam(key string) []string {
 	return s
 }
 
-// GetQueryParam 获取query参数
+// GetQueryParam retrieves values for a specific URL query parameter.
 func (c *Context) GetQueryParam(key string) []string {
 	v := c.QueryArgs().PeekMulti(key)
 	s := make([]string, len(v))
@@ -119,7 +113,7 @@ func (c *Context) GetQueryParam(key string) []string {
 	return s
 }
 
-// WriteData 请求返回
+// WriteData finalizes the request by sending data or an error back to the client.
 func (c *Context) WriteData(data any, err error) {
 	if c.write == nil {
 		DefaultWriter(c, data, err)
@@ -129,29 +123,19 @@ func (c *Context) WriteData(data any, err error) {
 	c.Close()
 }
 
-// NewOutgoingContext .
+// NewOutgoingContext converts the HTTP headers into gRPC-compatible outgoing metadata.
 func (c *Context) NewOutgoingContext() context.Context {
 	return metadata.NewOutgoingContext(c, c.ReadHeaderParams())
 }
 
-// FromIncomingContext .
-func (c *Context) FromIncomingContext() map[string][]string {
-	return c.ReadHeaderParams()
-}
-
-// SetWriter 设置writer方法
-func (c *Context) SetWriter(writer Writer) {
-	c.write = writer
-}
-
-// Close .
+// Close cleans up the context and returns it to the pool for reuse.
 func (c *Context) Close() {
 	c.write = nil
 	c.RequestCtx = nil
 	contextPool.Put(c)
 }
 
-// JSONBodyParams 读取请求体
+// JSONBodyParams returns the raw body if the Content-Type is application/json.
 func (c *Context) JSONBodyParams() []byte {
 	if bytes.Equal(c.Request.Header.ContentType(), []byte(MIME_JSON)) {
 		return c.Request.Body()
@@ -159,7 +143,7 @@ func (c *Context) JSONBodyParams() []byte {
 	return []byte{}
 }
 
-// ReadQueryParams 获取query参数
+// ReadQueryParams extracts all query string arguments.
 func (c *Context) ReadQueryParams() map[string][]string {
 	queries := make(map[string][]string)
 	c.QueryArgs().All()(func(key, value []byte) bool {
@@ -170,7 +154,7 @@ func (c *Context) ReadQueryParams() map[string][]string {
 	return queries
 }
 
-// ReadHeaderParams 读取header请求参数
+// ReadHeaderParams extracts all HTTP request headers.
 func (c *Context) ReadHeaderParams() map[string][]string {
 	headers := make(map[string][]string)
 	c.Request.Header.All()(func(key, value []byte) bool {
@@ -181,7 +165,7 @@ func (c *Context) ReadHeaderParams() map[string][]string {
 	return headers
 }
 
-// ReadPathParams 读取path请求参数
+// ReadPathParams extracts all variable path segments (e.g., /user/{id}).
 func (c *Context) ReadPathParams() map[string][]string {
 	params := make(map[string][]string)
 	c.VisitUserValues(func(key []byte, value any) {
@@ -195,17 +179,18 @@ func (c *Context) ReadPathParams() map[string][]string {
 		default:
 			v = fmt.Sprintf("%v", val)
 		}
-
 		params[k] = append(params[k], v)
 	})
 	return params
 }
 
+// EntityReader defines a function to read data into a message and its applicable constraints.
 type EntityReader struct {
 	Reader      func(entity proto.Message) error
 	SkipMethods map[string]struct{}
 }
 
+// DefaultEntityReaders defines the standard pipeline for populating a request object.
 func (c *Context) DefaultEntityReaders() []*EntityReader {
 	return []*EntityReader{
 		{Reader: c.ReadQueryParamsToEntity},
@@ -213,18 +198,19 @@ func (c *Context) DefaultEntityReaders() []*EntityReader {
 		{
 			Reader: c.ReadBodyParamsToEntity,
 			SkipMethods: map[string]struct{}{
-				http.MethodDelete:  struct{}{},
-				http.MethodGet:     struct{}{},
-				http.MethodConnect: struct{}{},
-				http.MethodOptions: struct{}{},
-				http.MethodHead:    struct{}{},
-				http.MethodTrace:   struct{}{},
+				http.MethodDelete:  {},
+				http.MethodGet:     {},
+				http.MethodConnect: {},
+				http.MethodOptions: {},
+				http.MethodHead:    {},
+				http.MethodTrace:   {},
 			},
 		},
 		{Reader: c.ReadPathParamsToEntity},
 	}
 }
 
+// ReadQueryParamsToEntity parses URL queries into the Protobuf struct.
 func (c *Context) ReadQueryParamsToEntity(entity proto.Message) error {
 	if err := protoForm(entity, c.ReadQueryParams()); err != nil {
 		return status.Errorf(codes.InvalidArgument, "read query params to entity fail: %v", err)
@@ -232,12 +218,15 @@ func (c *Context) ReadQueryParamsToEntity(entity proto.Message) error {
 	return nil
 }
 
+// ReadHeaderParamsToEntity parses HTTP headers into the Protobuf struct.
 func (c *Context) ReadHeaderParamsToEntity(entity proto.Message) error {
 	if err := protoForm(entity, c.ReadHeaderParams()); err != nil {
 		return status.Errorf(codes.InvalidArgument, "read header params to entity fail: %v", err)
 	}
 	return nil
 }
+
+// ReadPathParamsToEntity parses path variables into the Protobuf struct.
 func (c *Context) ReadPathParamsToEntity(entity proto.Message) error {
 	if err := protoForm(entity, c.ReadPathParams()); err != nil {
 		return status.Errorf(codes.InvalidArgument, "read path params to entity fail: %v", err)
@@ -245,6 +234,7 @@ func (c *Context) ReadPathParamsToEntity(entity proto.Message) error {
 	return nil
 }
 
+// ReadBodyParamsToEntity unmarshals the JSON body into the Protobuf struct.
 func (c *Context) ReadBodyParamsToEntity(entity proto.Message) error {
 	body := c.JSONBodyParams()
 	if len(body) > 0 {

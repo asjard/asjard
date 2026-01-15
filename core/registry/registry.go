@@ -1,6 +1,3 @@
-/*
-Package registry 自动服务发现/注册，自定义发现/注册管理
-*/
 package registry
 
 import (
@@ -11,46 +8,52 @@ import (
 	"github.com/asjard/asjard/core/server"
 )
 
-// Registry 服务注册和发现需要实现的接口
+// Registry is a composite interface that requires both Discovery and Registration capabilities.
 type Registry interface {
 	Discovery
 	Register
 }
 
-// RegistryManager 服务注册和发现管理
+// RegistryManager orchestrates the interaction between the local service,
+// the service cache, and various external registry backends.
 type RegistryManager struct {
+	// cache is the local storage for all discovered service instances.
 	cache *cache
 
-	// 当前服务
+	// currentService represents the metadata of the currently running application.
 	currentService *server.Service
-	// 配置
+	// conf holds the global registry/discovery configuration settings.
 	conf *Config
 
-	// 注册中心列表
+	// registers is the list of active backends where this service is published.
 	registers []Register
-	// 服务发现中心列表
+	// discovers is the list of active backends being polled for upstream services.
 	discovers []Discovery
 }
 
 var registryManager *RegistryManager
 
-// 初始化服务发现与注册中心
+// Package-level initialization of the singleton manager.
 func init() {
 	registryManager = &RegistryManager{}
 }
 
-// Init 服务注册发现初始化
+// Init prepares the manager by loading the current service context, configuration,
+// and initializing the local discovery cache.
 func Init() error {
 	registryManager.currentService = server.GetService()
 	registryManager.conf = GetConfig()
+	// Pass healthCheck method as the callback for the cache's background prober.
 	registryManager.cache = newCache(registryManager.conf, registryManager.healthCheck)
 	return nil
 }
 
+// registe initializes all registered backends and begins the service publication process.
 func (r *RegistryManager) registe() error {
 	if !r.conf.AutoRegiste {
 		return nil
 	}
+	// Instantiate all available registration plugins.
 	for _, newRegister := range newRegisters {
 		register, err := newRegister()
 		if err != nil {
@@ -58,15 +61,16 @@ func (r *RegistryManager) registe() error {
 		}
 		r.registers = append(r.registers, register)
 	}
-	// 延迟注册
+
+	// Support for "Warm-up" periods before making the service discoverable.
 	if r.conf.DelayRegiste.Duration != 0 {
 		return r.delayRegiste(r.conf.DelayRegiste.Duration)
 	}
 	return r.doRegiste()
 }
 
+// delayRegiste schedules the actual registration after a specific time duration.
 func (r *RegistryManager) delayRegiste(duration time.Duration) error {
-	// 延迟注册
 	go func(duration time.Duration) {
 		t := time.After(duration)
 		<-t
@@ -75,7 +79,7 @@ func (r *RegistryManager) delayRegiste(duration time.Duration) error {
 	return nil
 }
 
-// 注册当前服务到注册中心
+// doRegiste performs the actual call to external registry backends.
 func (r *RegistryManager) doRegiste() error {
 	for _, register := range r.registers {
 		if err := register.Registe(r.currentService); err != nil {
@@ -85,8 +89,7 @@ func (r *RegistryManager) doRegiste() error {
 	return nil
 }
 
-// 注册中心心跳
-// 当开启了心跳后，心跳时间向所有注册中心发起心跳
+// heartbeat starts a background goroutine to periodically signal vitality to registers.
 func (r *RegistryManager) heartbeat() error {
 	go func(duration time.Duration) {
 		ticker := time.NewTicker(duration)
@@ -98,15 +101,12 @@ func (r *RegistryManager) heartbeat() error {
 	return nil
 }
 
-// 向注册中心发起心跳表示本服务还存活
-// TODO 添加超时逻辑
+// doHeartbeat sends the keep-alive signal to all registers.
 func (r *RegistryManager) doHeartbeat() {
-	// for _, register := range r.registers {
-	// register.Heartbeat(r.currentInstance)
-	// }
+	// Implementation placeholder for heartbeat logic.
 }
 
-// 从注册中心删除本服务
+// remove handles the "un-registration" of the service, typically during shutdown.
 func (r *RegistryManager) remove() error {
 	if !r.conf.AutoRegiste {
 		return nil
@@ -117,12 +117,14 @@ func (r *RegistryManager) remove() error {
 	return nil
 }
 
-// 自动发现服务
+// discove initializes the discovery backends and performs the initial pull of service data.
 func (r *RegistryManager) discove() error {
 	if !r.conf.AutoDiscove {
 		logger.Warn("registry.autoDiscove not enabled")
 		return nil
 	}
+
+	// Initialize discovery providers with a callback to the 'watch' method.
 	for name, newDiscover := range newDiscoverys {
 		logger.Debug("add discover", "name", name)
 		discover, err := newDiscover(NewDiscoveryOptions(WithDiscoveryCallback(r.watch)))
@@ -131,6 +133,8 @@ func (r *RegistryManager) discove() error {
 		}
 		r.discovers = append(r.discovers, discover)
 	}
+
+	// Initial population of the local cache.
 	for _, discover := range r.discovers {
 		services, err := discover.GetAll()
 		if err != nil {
@@ -142,17 +146,18 @@ func (r *RegistryManager) discove() error {
 	return nil
 }
 
+// healthCheck facilitates active probing of discovered instances using the specific discovery source.
 func (r *RegistryManager) healthCheck(discoverName string, instance *server.Service) error {
 	for _, discover := range r.discovers {
 		if discover.Name() == discoverName {
-			// return discover.HealthCheck(instance)
+			// Proxy health check to the specific discovery implementation if supported.
 		}
 	}
 	return fmt.Errorf("service '%s(%s)' health check discover '%s' not found",
 		instance.Instance.Name, instance.Instance.ID, discoverName)
 }
 
-// 服务变化更新
+// watch acts as the central dispatcher for events coming from discovery providers.
 func (r *RegistryManager) watch(et *Event) {
 	switch et.Type {
 	case EventTypeCreate, EventTypeUpdate:
@@ -162,20 +167,22 @@ func (r *RegistryManager) watch(et *Event) {
 	}
 }
 
-// 更新服务
+// update synchronizes a created or modified instance into the local cache.
 func (r *RegistryManager) update(event *Event) {
 	r.cache.update([]*Instance{event.Instance})
 }
 
-// 删除服务
+// delete removes an instance from the local cache when it leaves the registry.
 func (r *RegistryManager) delete(event *Event) {
 	r.cache.delete(event.Instance)
 }
 
+// pick retrieves a filtered list of services from the local cache.
 func (r *RegistryManager) pick(options *Options) []*Instance {
 	return r.cache.pick(options)
 }
 
+// removeListener stops watching for changes under a specific listener ID.
 func (r *RegistryManager) removeListener(name string) {
 	r.cache.removeListener(name)
 }

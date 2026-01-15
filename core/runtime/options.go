@@ -1,100 +1,105 @@
 package runtime
 
+// Options defines how a structured string (like a path or key) should be constructed
+// from the application's runtime metadata.
 type Options struct {
-	// 以分隔符开头
+	// startWithDelimiter if true, the resulting string will begin with the delimiter (e.g., "/app/...")
 	startWithDelimiter bool
-	// 以分隔符结束
+	// endWithDelimiter if true, the resulting string will end with the delimiter (e.g., ".../service/")
 	endWithDelimiter bool
-	// 分隔符
+	// delimiter is the character used to join different metadata components (default is "/")
 	delimiter string
-	// 不包含APP信息
+	// withoutApp if true, the APP name will be omitted from the output
 	withoutApp bool
-	// 不包含region信息
+	// withoutRegion if true, the geographical region will be omitted
 	withoutRegion bool
-	// 不包含az信息
+	// withoutAz if true, the Availability Zone (AZ) will be omitted
 	withoutAz bool
-	// 不包含环境信息
+	// withoutEnv if true, the environment (prod/dev) will be omitted
 	withoutEnv bool
-	// 不包含service信息
+	// withoutService if true, the service name will be omitted
 	withoutService bool
-	// 不包含版本信息
+	// withoutVersion if true, the service version will be omitted
 	withoutVersion bool
-	// 包含serviceID
+	// withServiceId if true, the unique Service ID will be included (usually replacing or following the name)
 	withServiceId bool
 }
 
+// Option is a function type used to modify the Options struct.
 type Option func(options *Options)
 
-// WithStartWithDelimiter 以分隔符开头
+// WithStartWithDelimiter sets whether the generated string starts with a delimiter.
 func WithStartWithDelimiter(value bool) Option {
 	return func(options *Options) {
 		options.startWithDelimiter = value
 	}
 }
 
-// WithEndWithDelimiter 以分隔符结尾
+// WithEndWithDelimiter sets whether the generated string ends with a delimiter.
 func WithEndWithDelimiter(value bool) Option {
 	return func(options *Options) {
 		options.endWithDelimiter = value
 	}
 }
 
-// WithDelimiter 设置分隔符
+// WithDelimiter specifies the separator character (e.g., ".", "/", or ":").
 func WithDelimiter(delimiter string) Option {
 	return func(options *Options) {
 		options.delimiter = delimiter
 	}
 }
 
-// WithoutApp 不包含app信息
+// WithoutApp toggles the inclusion of the Application name.
 func WithoutApp(value bool) Option {
 	return func(options *Options) {
 		options.withoutApp = value
 	}
 }
 
-// WithoutRegion 不包含region信息
+// WithoutRegion toggles the inclusion of the Region information.
 func WithoutRegion(value bool) Option {
 	return func(options *Options) {
 		options.withoutRegion = value
 	}
 }
 
-// WithoutAz 不包含Az信息
+// WithoutAz toggles the inclusion of the Availability Zone.
 func WithoutAz(value bool) Option {
 	return func(options *Options) {
 		options.withoutAz = value
 	}
 }
 
-// WithoutEnv 不包含环境信息
+// WithoutEnv toggles the inclusion of the Environment name.
 func WithoutEnv(value bool) Option {
 	return func(options *Options) {
 		options.withoutEnv = value
 	}
 }
 
-// WithoutService 不包含service信息
+// WithoutService toggles the inclusion of the Service name.
 func WithoutService(value bool) Option {
 	return func(options *Options) {
 		options.withoutService = value
 	}
 }
 
-// WithoutVersion 不包含版本信息
+// WithoutVersion toggles the inclusion of the Service version.
 func WithoutVersion(value bool) Option {
 	return func(options *Options) {
 		options.withoutVersion = value
 	}
 }
 
-// WithServiceId 用serviceId替换serviceName
+// WithServiceId determines if the unique Service Instance ID should be used.
 func WithServiceId(value bool) Option {
 	return func(options *Options) {
 		options.withServiceId = value
 	}
 }
 
+// defaultOptions provides the initial state for string construction,
+// defaulting to a "/" delimiter (standard for URL paths or Unix file paths).
 func defaultOptions() *Options {
 	return &Options{
 		delimiter: "/",

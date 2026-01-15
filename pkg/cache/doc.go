@@ -1,4 +1,7 @@
 /*
-Package cache 对pkg/stores/cache.go缓存的实现,例如本地缓存,redis缓存等
+Package cache provides concrete implementations of the caching specifications
+
+By using this package, developers can easily switch between or combine caching
+providers through simple configuration changes without modifying business logic.
 */
 package cache

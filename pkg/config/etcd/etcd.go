@@ -1,5 +1,6 @@
 /*
-Package env etcd配置中心对接,对core/config/Source的实现
+Package etcd implements the etcd configuration center integration,
+fulfilling the core/config/Source interface.
 */
 package etcd
 
@@ -20,32 +21,29 @@ import (
 )
 
 const (
-	// Name 名称
+	// Name of the source.
 	Name = "etcd"
-	// Priority 优先级
+	// Priority is 10, typically higher than local files but lower than CLI/ENV.
 	Priority = 10
 
 	defaultDelimiter = "/"
 )
 
-// Etcd etcd配置
+// Etcd manages the connection to etcd and the local cache of file-based configs.
 type Etcd struct {
-	options     *config.SourceOptions
-	app         runtime.APP
-	conf        *Config
-	client      *clientv3.Client
+	options *config.SourceOptions
+	app     runtime.APP
+	conf    *Config
+	client  *clientv3.Client
+	// fileConfigs caches flattened properties from keys that are files (e.g., .yaml).
 	fileConfigs map[string]map[string]any
 	fcm         sync.RWMutex
 }
 
-type Value struct {
-	priority int
-	value    any
-}
-
+// Config defines settings for the etcd source.
 type Config struct {
-	Client string `json:"client"`
-	// 分隔符
+	Client string `json:"client"` // Named etcd client from the stores package.
+	// Delimiter for keys in etcd, defaults to "/".
 	Delimiter string `json:"delimiter"`
 }
 
@@ -57,10 +55,11 @@ var (
 )
 
 func init() {
+	// Register the etcd source with the global config manager.
 	config.AddSource(Name, Priority, New)
 }
 
-// New 配置源初始化
+// New initializes the etcd sourcer and starts the watch goroutines.
 func New(options *config.SourceOptions) (config.Sourcer, error) {
 	sourcer := &Etcd{
 		app:         runtime.GetAPP(),
@@ -73,7 +72,7 @@ func New(options *config.SourceOptions) (config.Sourcer, error) {
 	return sourcer, nil
 }
 
-// GetAll 获取etcd中的所有配置
+// GetAll performs an initial fetch of all keys under all relevant prefixes.
 func (s *Etcd) GetAll() map[string]*config.Value {
 	result := make(map[string]*config.Value)
 	for priority, prefix := range s.prefixs() {
@@ -87,19 +86,20 @@ func (s *Etcd) GetAll() map[string]*config.Value {
 		for _, kv := range resp.Kvs {
 			key := s.configKey(prefix, kv.Key)
 			ref := string(kv.Key)
+			// Process the KV; if it's a file, it returns multiple flattened values.
 			for k, v := range s.getSetFileConfig(ref, key, priority, kv.Value) {
 				result[k] = v
 			}
 		}
 	}
 	return result
-
 }
 
-// GetByKey 根据key获取配置
+// GetByKey fetches a single key directly from etcd.
 func (s *Etcd) GetByKey(key string) any {
 	for _, prefix := range s.prefixs() {
 		ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
+		// Convert internal dot key (a.b) to etcd path (a/b).
 		resp, err := s.client.Get(ctx, prefix+strings.ReplaceAll(key, constant.ConfigDelimiter, s.conf.Delimiter))
 		cancel()
 		if err == nil && len(resp.Kvs) > 0 {
@@ -109,28 +109,20 @@ func (s *Etcd) GetByKey(key string) any {
 	return nil
 }
 
-// Set 添加配置到etcd中
-// TODO 添加在runtime命名空间下, 需要带过期时间参数
+// Set is currently a placeholder for programmatic config updates.
 func (s *Etcd) Set(key string, value any) error {
 	return nil
 }
 
-// Priority 配置中心优先级
-func (s *Etcd) Priority() int {
-	return Priority
-}
+func (s *Etcd) Priority() int { return Priority }
+func (s *Etcd) Name() string  { return Name }
+func (s *Etcd) Disconnect()   {}
 
-// Name 配置源名称
-func (s *Etcd) Name() string {
-	return Name
-}
-
-// DisConnect 断开连接
-func (s *Etcd) Disconnect() {
-}
-
+// getSetFileConfig handles keys that represent files (e.g. "config.yaml").
+// If the key has a supported extension, it parses the body and returns the properties.
 func (s *Etcd) getSetFileConfig(file, key string, priority int, value []byte) map[string]*config.Value {
 	ext := filepath.Ext(file)
+	// If no extension, treat as a single literal value.
 	if ext == "" || !config.IsExtSupport(ext) {
 		return map[string]*config.Value{
 			key: {
@@ -146,6 +138,7 @@ func (s *Etcd) getSetFileConfig(file, key string, priority int, value []byte) ma
 	if _, ok := s.fileConfigs[file]; !ok {
 		s.fileConfigs[file] = make(map[string]any)
 	}
+	// Flatten file content (YAML/JSON) into key-value pairs.
 	propsMap, err := config.ConvertToProperties(ext, value)
 	if err == nil {
 		configMap := make(map[string]*config.Value, len(propsMap))
@@ -164,6 +157,8 @@ func (s *Etcd) getSetFileConfig(file, key string, priority int, value []byte) ma
 	return map[string]*config.Value{}
 }
 
+// getUpdateEvents determines what changed when an etcd key is updated.
+// This is critical for keys containing entire files to detect which specific property changed.
 func (s *Etcd) getUpdateEvents(file, key string, priority int, value []byte) []*config.Event {
 	var events []*config.Event
 	ext := filepath.Ext(file)
@@ -190,6 +185,7 @@ func (s *Etcd) getUpdateEvents(file, key string, priority int, value []byte) []*
 		logger.Error("convert to props map fail", "file", file, "err", err)
 		return events
 	}
+	// Detect deleted properties within the file.
 	for key := range s.fileConfigs[file] {
 		if _, ok := propsMap[key]; !ok {
 			events = append(events, &config.Event{
@@ -203,6 +199,7 @@ func (s *Etcd) getUpdateEvents(file, key string, priority int, value []byte) []*
 			delete(s.fileConfigs[file], key)
 		}
 	}
+	// Detect created or updated properties within the file.
 	for k, v := range propsMap {
 		if oldValue, ok := s.fileConfigs[file][k]; !ok || oldValue != v {
 			events = append(events, &config.Event{
@@ -221,10 +218,12 @@ func (s *Etcd) getUpdateEvents(file, key string, priority int, value []byte) []*
 	return events
 }
 
+// loadAndWatchConfig sets up the etcd client and starts listening for changes.
 func (s *Etcd) loadAndWatchConfig() error {
 	if err := s.loadConfig(); err != nil {
 		return err
 	}
+	// Allow the etcd client settings themselves to be updated dynamically.
 	config.AddListener("asjard.config.etcd.*", s.watchConfig)
 	return s.watch()
 }
@@ -249,6 +248,7 @@ func (s *Etcd) watchConfig(event *config.Event) {
 	s.loadConfig()
 }
 
+// watch starts a background watch for every hierarchical prefix.
 func (s *Etcd) watch() error {
 	for priority, prefix := range s.prefixs() {
 		go s.watchPrefix(prefix, priority)
@@ -256,15 +256,16 @@ func (s *Etcd) watch() error {
 	return nil
 }
 
+// watchPrefix performs a long-running etcd Watch on a specific directory.
 func (s *Etcd) watchPrefix(prefix string, priority int) {
 	watchChan := s.client.Watch(context.Background(), prefix, clientv3.WithPrefix())
 	for resp := range watchChan {
 		for _, event := range resp.Events {
 			key := s.configKey(prefix, event.Kv.Key)
 			ref := string(event.Kv.Key)
-			logger.Debug("etcd config event", "event", event.Type.String(), "key", key, "prefix", prefix)
 			switch event.Type {
 			case mvccpb.PUT:
+				// Push events to the framework for updates/creates.
 				for _, event := range s.getUpdateEvents(ref, key, priority, event.Kv.Value) {
 					s.options.Callback(event)
 				}
@@ -283,19 +284,8 @@ func (s *Etcd) watchPrefix(prefix string, priority int) {
 	}
 }
 
-// /{app}/configs/
-// /{app}/configs/{env}/
-//
-// /{app}/configs/service/{service}/
-// /{app}/configs/service/{service}/{region}/
-// /{app}/configs/service/{service}/{region}/{az}/
-
-// /{app}/configs/{env}/service/{service}/
-// /{app}/configs/{env}/service/{service}/{region}/
-// /{app}/configs/{env}/service/{service}/{region}/{az}/
-//
-// /{app}/configs/runtime/{instance.ID}/
-// 以文件名后缀结尾的展开
+// prefixs defines the search order for configs in etcd.
+// Order: App-Global -> Env -> Service -> Region -> AZ -> Runtime(Instance)
 func (s *Etcd) prefixs() []string {
 	return []string{
 		strings.Join([]string{s.prefix(), ""}, s.conf.Delimiter),
@@ -313,10 +303,12 @@ func (s *Etcd) prefixs() []string {
 	}
 }
 
+// prefix returns the base path: /{appName}/configs
 func (s *Etcd) prefix() string {
 	return strings.Join([]string{"", s.app.App, "configs"}, s.conf.Delimiter)
 }
 
+// configKey cleans the etcd key by removing the prefix and normalizing the delimiter.
 func (s *Etcd) configKey(prefix string, key []byte) string {
 	return strings.ReplaceAll(strings.TrimPrefix(string(key), prefix), s.conf.Delimiter, constant.ConfigDelimiter)
 }

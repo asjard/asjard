@@ -5,11 +5,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// APIRequestCounter 请求数量
+// APIRequestCounter tracks the volume of incoming or outgoing requests.
 type APIRequestCounter struct {
 	counter *prometheus.CounterVec
 }
 
+// NewAPIRequestCounter initializes the 'api_requests_total' metric.
+// It tracks requests partitioned by HTTP/gRPC status code, endpoint name, and protocol.
 func NewAPIRequestCounter() *APIRequestCounter {
 	return &APIRequestCounter{
 		counter: metrics.RegisterCounter("api_requests_total",
@@ -18,6 +20,7 @@ func NewAPIRequestCounter() *APIRequestCounter {
 	}
 }
 
+// Inc increments the request counter for the specified labels.
 func (a APIRequestCounter) Inc(code, api, protocol string) {
 	if a.counter != nil {
 		a.counter.With(map[string]string{
@@ -28,12 +31,13 @@ func (a APIRequestCounter) Inc(code, api, protocol string) {
 	}
 }
 
-// APIRequestLatenccy 请求耗时
+// APIRequestLatency measures how long requests take to process.
 type APIRequestLatency struct {
 	latency *prometheus.HistogramVec
 }
 
-// Ref: http://dimacs.rutgers.edu/~graham/pubs/papers/bquant-icde.pdf
+// NewAPIRequestLatency initializes the 'api_requests_latency_seconds' metric.
+// It uses default Prometheus buckets to categorize request durations.
 func NewAPIRequestLatency() *APIRequestLatency {
 	return &APIRequestLatency{
 		latency: metrics.RegisterHistogram("api_requests_latency_seconds",
@@ -43,6 +47,7 @@ func NewAPIRequestLatency() *APIRequestLatency {
 	}
 }
 
+// Observe records a new latency measurement for the specified API and protocol.
 func (a APIRequestLatency) Observe(api, protocol string, value float64) {
 	if a.latency != nil {
 		a.latency.With(map[string]string{
@@ -53,14 +58,17 @@ func (a APIRequestLatency) Observe(api, protocol string, value float64) {
 }
 
 const (
-	_           = iota // ignore first value by assigning to blank identifier
-	bKB float64 = 1 << (10 * iota)
-	bMB
+	// Binary unit constants for byte calculations.
+	_           = iota
+	bKB float64 = 1 << (10 * iota) // 1024 bytes
+	bMB                            // 1048576 bytes
 )
 
+// sizeBuckets defines the distribution ranges for measuring request/response sizes.
+// Ranging from 1KB up to 10MB.
 var sizeBuckets = []float64{1.0 * bKB, 2.0 * bKB, 5.0 * bKB, 10.0 * bKB, 100 * bKB, 500 * bKB, 1.0 * bMB, 2.5 * bMB, 5.0 * bMB, 10.0 * bMB}
 
-// APIResponseSize 返回大小
+// APIResponseSize monitors the size of the data being sent back to clients.
 type APIResponseSize struct {
 	size *prometheus.HistogramVec
 }
@@ -74,6 +82,7 @@ func NewAPIResponseSize() *APIResponseSize {
 	}
 }
 
+// Observe records the response size in bytes.
 func (a APIResponseSize) Observe(api, protocol string, value float64) {
 	if a.size != nil {
 		a.size.With(map[string]string{
@@ -83,7 +92,7 @@ func (a APIResponseSize) Observe(api, protocol string, value float64) {
 	}
 }
 
-// APIRequestSize 请求大小
+// APIRequestSize monitors the size of the data being received from clients.
 type APIRequestSize struct {
 	size *prometheus.HistogramVec
 }
@@ -97,6 +106,7 @@ func NewAPIRequestSize() *APIRequestSize {
 	}
 }
 
+// Observe records the request size in bytes.
 func (a APIRequestSize) Observe(api, protocol string, value float64) {
 	if a.size != nil {
 		a.size.With(map[string]string{

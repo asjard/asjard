@@ -17,35 +17,38 @@ import (
 )
 
 const (
-	// DefaultCommandConfigName 默认配置名称
-	DefaultCommandConfigName      = "default"
+	// DefaultCommandConfigName is the fallback Hystrix command key.
+	DefaultCommandConfigName = "default"
+	// CircuitBreakerInterceptorName is the unique identifier for this interceptor.
 	CircuitBreakerInterceptorName = "circuitBreaker"
 
-	// 配置前缀
+	// ConfigPrefix is the configuration path in the framework settings.
 	ConfigPrefix = "asjard.interceptors.client.circuitBreaker"
 )
 
-// CircuitBreaker 断路器
-// 依赖loadbalance注入x-request-dest
+// CircuitBreaker manages fault tolerance for outgoing client calls.
+// It uses a command map to store various Hystrix configurations and a cache
+// for fast method-to-command resolution.
 type CircuitBreaker struct {
 	commandConfig map[string]hystrix.CommandConfig
 	cm            sync.RWMutex
-	cache         sync.Map
+	cache         sync.Map // Caches matching results for high-performance lookups
 }
 
-// 熔断配置
+// CircuitBreakerConfig represents the global and method-specific configuration.
 type CircuitBreakerConfig struct {
 	hystrix.CommandConfig
 	Methods []CircuitBreakerMethodConfig
 }
 
-// 熔断方法配置
+// CircuitBreakerMethodConfig defines Hystrix settings for a specific method/service.
 type CircuitBreakerMethodConfig struct {
-	Name string `json:"name"`
+	Name string `json:"name"` // Key used for matching (e.g., "grpc://UserService/GetUser")
 	hystrix.CommandConfig
 }
 
 var (
+	// baseline settings for the circuit breaker.
 	defaultConfig = hystrix.CommandConfig{
 		Timeout:                hystrix.DefaultTimeout,
 		MaxConcurrentRequests:  10_0000,
@@ -53,6 +56,7 @@ var (
 		SleepWindow:            hystrix.DefaultSleepWindow,
 		ErrorPercentThreshold:  hystrix.DefaultErrorPercentThreshold,
 	}
+	// builderPool reduces allocations during string concatenation for keys.
 	builderPool = sync.Pool{
 		New: func() any {
 			var b strings.Builder
@@ -60,6 +64,7 @@ var (
 			return &b
 		},
 	}
+	// prioritiesPool reuse slices for priority matching logic.
 	prioritiesPool = sync.Pool{
 		New: func() any {
 			return make([]string, 0, 7)
@@ -67,7 +72,7 @@ var (
 	}
 )
 
-// 日志
+// CircuitBreakerLogger redirects Hystrix internal logs to the framework logger.
 type CircuitBreakerLogger struct{}
 
 func (CircuitBreakerLogger) Printf(format string, items ...interface{}) {
@@ -75,11 +80,12 @@ func (CircuitBreakerLogger) Printf(format string, items ...interface{}) {
 }
 
 func init() {
+	// Register the interceptor specifically for the gRPC protocol.
 	client.AddInterceptor(CircuitBreakerInterceptorName, NewCircuitBreaker, grpc.Protocol)
 	hystrix.SetLogger(&CircuitBreakerLogger{})
 }
 
-// NewCircuitBreaker 拦截器初始化
+// NewCircuitBreaker initializes the interceptor and starts watching for config changes.
 func NewCircuitBreaker() (client.ClientInterceptor, error) {
 	circuitBreaker := &CircuitBreaker{}
 	if err := circuitBreaker.loadAndWatch(); err != nil {
@@ -88,22 +94,25 @@ func NewCircuitBreaker() (client.ClientInterceptor, error) {
 	return circuitBreaker, nil
 }
 
-// Name 拦截器名称
+// Name returns the interceptor's registration name.
 func (ccb *CircuitBreaker) Name() string {
 	return CircuitBreakerInterceptorName
 }
 
-// Interceptor 拦截器实现
+// Interceptor returns the actual middleware function for client requests.
 func (ccb *CircuitBreaker) Interceptor() client.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
+		// Match the call to a specific Hystrix command based on protocol/service/method.
 		return ccb.do(ctx, ccb.match(cc.Protocol(), cc.ServiceName(), method), method, req, reply, cc, invoker)
 	}
 }
 
+// do executes the request within a Hystrix context.
 func (ccb *CircuitBreaker) do(ctx context.Context, commandConfigName, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) (invokeErr error) {
 	if err := hystrix.DoC(ctx, commandConfigName, func(ctx context.Context) error {
 		if invokeErr = invoker(ctx, method, req, reply, cc); invokeErr != nil {
-			// 只熔断5xx的错误
+			// Only count 5xx (Server Errors) towards the circuit breaker failure rate.
+			// Client errors (4xx) usually don't indicate an unhealthy downstream service.
 			es := status.FromError(invokeErr)
 			if es.Status%100 != 5 {
 				return nil
@@ -112,6 +121,7 @@ func (ccb *CircuitBreaker) do(ctx context.Context, commandConfigName, method str
 		}
 		return nil
 	}, nil); err != nil {
+		// Handle Hystrix-specific errors like "Circuit Open" or "Max Concurrency Reached".
 		if cerr, ok := err.(hystrix.CircuitError); ok {
 			if errors.Is(cerr, hystrix.ErrMaxConcurrency) {
 				return status.Error(codes.ResourceExhausted, cerr.Error())
@@ -123,21 +133,22 @@ func (ccb *CircuitBreaker) do(ctx context.Context, commandConfigName, method str
 	return invokeErr
 }
 
+// match identifies which Hystrix command configuration should be applied to the request.
+// It follows a specific priority order from most specific to most general.
 func (ccb *CircuitBreaker) match(protocol, service, method string) string {
 	fullName := ccb.buildKey(protocol, "//", service, "/", method)
 	if name, ok := ccb.cache.Load(fullName); ok {
-		logger.Debug("circuit breaker matched cache", "fullname", fullName, "command", name)
 		return name.(string)
 	}
 
-	// 依次按照如下优先级查询
-	// protocol://service/method
-	// protocol://service
-	// protocol:///method
-	// protocol
-	// //service/method
-	// ///method
-	// //service
+	// Priority Matching Order:
+	// 1. protocol://service/method
+	// 2. protocol://service
+	// 3. protocol:///method
+	// 4. protocol
+	// 5. //service/method
+	// 6. ///method
+	// 7. //service
 	priorities := prioritiesPool.Get().([]string)
 	priorities = priorities[:0]
 	priorities = append(priorities,
@@ -150,20 +161,19 @@ func (ccb *CircuitBreaker) match(protocol, service, method string) string {
 		ccb.buildKey("//", service),
 	)
 	defer prioritiesPool.Put(priorities)
+
 	ccb.cm.RLock()
 	defer ccb.cm.RUnlock()
 	for _, name := range priorities {
-		// logger.Debug("circuit breaker match priority", "fullname", fullName, "priority", name)
 		if _, ok := ccb.commandConfig[name]; ok {
-			logger.Debug("circuit breaker matched command", "fullname", fullName, "command", name)
 			ccb.cache.Store(fullName, name)
 			return name
 		}
 	}
-	logger.Debug("circuit breaker matched default", "fullname", fullName)
 	return DefaultCommandConfigName
 }
 
+// buildKey efficiently joins string parts using a pool.
 func (ccb *CircuitBreaker) buildKey(parts ...string) string {
 	b := builderPool.Get().(*strings.Builder)
 	b.Reset()
@@ -175,6 +185,7 @@ func (ccb *CircuitBreaker) buildKey(parts ...string) string {
 	return s
 }
 
+// loadAndWatch initializes the config and attaches a prefix listener for dynamic updates.
 func (ccb *CircuitBreaker) loadAndWatch() error {
 	if err := ccb.load(); err != nil {
 		return err
@@ -183,6 +194,7 @@ func (ccb *CircuitBreaker) loadAndWatch() error {
 	return nil
 }
 
+// load fetches current configuration and registers it with the Hystrix engine.
 func (ccb *CircuitBreaker) load() error {
 	conf := CircuitBreakerConfig{
 		CommandConfig: defaultConfig,
@@ -198,11 +210,14 @@ func (ccb *CircuitBreaker) load() error {
 			Name:          method.Name,
 			CommandConfig: conf.CommandConfig,
 		}
+		// Merge global settings with method-specific overrides.
 		if err := config.GetWithUnmarshal(fmt.Sprintf("%s.methods[%d]", ConfigPrefix, idx), &mc); err != nil {
 			return err
 		}
 		confMap[method.Name] = mc.CommandConfig
 	}
+
+	// Reset Hystrix states and local caches upon config reload.
 	hystrix.Flush()
 	ccb.cache.Clear()
 

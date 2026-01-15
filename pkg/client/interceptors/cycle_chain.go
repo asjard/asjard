@@ -12,58 +12,76 @@ import (
 )
 
 const (
-	// HeaderRequestChain 调用链 {protocol}://{app}/{serviceName}/{method}
+	// HeaderRequestChain stores the call path. Format: {protocol}://{app}/{serviceName}/{method}
 	HeaderRequestChain = "x-request-chain"
-	// HeaderRequestDest 请求目的地
+	// HeaderRequestDest represents the request destination identifier.
 	HeaderRequestDest = "x-request-dest"
-	// HeaderRequestApp 请求应用
-	HeaderRequestApp          = "x-request-app"
+	// HeaderRequestApp represents the requesting application name.
+	HeaderRequestApp = "x-request-app"
+	// CycleChainInterceptorName is the unique identifier for this interceptor.
 	CycleChainInterceptorName = "cycleChainInterceptor"
 )
 
-// CycleChainInterceptor 循环调用拦截器
-// 依赖loadbalance在上下文注入x-request-dest和x-request-app
+// CycleChainInterceptor detects circular dependencies in the service call graph.
+// It relies on metadata being injected into the context by the load balancer
+// or previous interceptors.
 type CycleChainInterceptor struct {
 }
 
 func init() {
+	// Register the interceptor specifically for gRPC client protocols.
 	client.AddInterceptor(CycleChainInterceptorName, NewCycleChainInterceptor, grpc.Protocol)
 }
 
-// CycleChainInterceptor 初始化来源拦截器
+// NewCycleChainInterceptor creates a new instance of the cycle detection interceptor.
 func NewCycleChainInterceptor() (client.ClientInterceptor, error) {
 	return &CycleChainInterceptor{}, nil
 }
 
-// Name 拦截器名称
+// Name returns the interceptor's registration name.
 func (CycleChainInterceptor) Name() string {
 	return CycleChainInterceptorName
 }
 
-// Interceptor 拦截器
-// 上下文中添加当前服务
-// 如果出现循环服务则拦截
-// 当前只支持目的地为grpc的 rest -> grpc -> grpc
+// Interceptor provides the logic to track the call chain and prevent loops.
+// It currently focuses on gRPC-to-gRPC hops within a distributed trace.
 func (s CycleChainInterceptor) Interceptor() client.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
+		// Only apply logic to gRPC client connections.
 		if _, ok := cc.(*grpc.ClientConn); !ok {
 			return invoker(ctx, method, req, reply, cc)
 		}
+
+		// Extract metadata from the context to check the existing call chain.
 		md, ok := metadata.FromOutgoingContext(ctx)
 		if !ok {
-			md, _ = metadata.FromIncomingContext(ctx)
+			// Fallback to incoming context if outgoing is empty (start of a new hop).
+			md, ok = metadata.FromIncomingContext(ctx)
+			if !ok {
+				md = metadata.New(map[string]string{})
+			}
 		}
+
+		// Format the current method into a standardized string: grpc://Service.Method
 		currentRequestMethod := "grpc://" + strings.ReplaceAll(strings.Trim(method, "/"), "/", ".")
+
+		// 1. Detect Cycles:
+		// Check if the current method has already appeared in the upstream chain.
 		if requestChains, ok := md[HeaderRequestChain]; ok {
 			for _, requestMethod := range requestChains {
 				if requestMethod == currentRequestMethod {
+					// Found a match! Append it one last time for visibility and return an error.
 					requestChains = append(requestChains, currentRequestMethod)
 					return status.Errorf(codes.Canceled, "cycle call, chains: %s", strings.Join(requestChains, " -> "))
 				}
 			}
 		}
-		md[HeaderRequestChain] = append(md[HeaderRequestChain], currentRequestMethod)
-		return invoker(metadata.NewOutgoingContext(ctx, md), method, req, reply, cc)
 
+		// 2. Propagate Chain:
+		// Append the current method to the chain and pass it down to the next service.
+		md[HeaderRequestChain] = append(md[HeaderRequestChain], currentRequestMethod)
+
+		// Create a new context containing the updated outgoing metadata.
+		return invoker(metadata.NewOutgoingContext(ctx, md), method, req, reply, cc)
 	}
 }
