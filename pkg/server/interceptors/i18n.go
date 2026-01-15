@@ -24,54 +24,65 @@ import (
 )
 
 const (
+	// I18nInterceptorName is the unique identifier for this interceptor.
 	I18nInterceptorName = "i18n"
-	// 配置存放路径
+	// localsConfDirName is the default directory name for translation files.
 	localsConfDirName = "locals"
-	// I18N_DIR_ENV_NAME i18配置存放路径环境变量名称
+	// I18N_DIR_ENV_NAME is the environment variable to override the config path.
 	I18N_DIR_ENV_NAME = "ASJARD_I18N_DIR"
-	HeaderLang        = "lang"
+	// HeaderLang is the HTTP header key used to detect client language (e.g., "lang: en-US").
+	HeaderLang = "lang"
 )
 
-// I18n i18n拦截器
+// I18n handles the translation of error responses.
 type I18n struct {
 	enabled bool
 	watcher *fsnotify.Watcher
-	locals  map[string]map[uint32]*I18nConfig
-	lm      sync.RWMutex
+	// locals stores mapping: [language_code][error_code] -> TranslationConfig
+	locals map[string]map[uint32]*I18nConfig
+	lm     sync.RWMutex
 }
 
-// I18nConfig i18n配置
+// I18nConfig represents the structure of a translation entry.
 type I18nConfig struct {
-	Prompt string `json:"prompt"`
-	Doc    string `json:"doc"`
+	Prompt string `json:"prompt"` // Human-readable message for end-users.
+	Doc    string `json:"doc"`    // Link or detailed technical documentation.
 }
 
 func init() {
-	// 支持rest协议
+	// Register i18n support specifically for the REST protocol.
 	server.AddInterceptor(I18nInterceptorName, NewI18nInterceptor, rest.Protocol)
 }
 
-// I18n拦截器初始化
+// NewI18nInterceptor initializes the translation engine and starts the file watcher.
 func NewI18nInterceptor() (server.ServerInterceptor, error) {
 	logger.Debug("new i18 interceptor")
+	// Only initialize if enabled in the configuration.
 	if !config.GetBool("asjard.servers.rest.i18n.enabled", false) {
 		return &I18n{}, nil
 	}
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
 	}
+
 	i18n := &I18n{
 		enabled: true,
 		watcher: watcher,
 		locals:  make(map[string]map[uint32]*I18nConfig),
 	}
+
 	confDir := getI18nDir()
 	if !utils.IsPathExists(confDir) {
 		return nil, fmt.Errorf("path %s not exist", confDir)
 	}
+
+	// Start background watcher for hot-reloading JSON files.
 	go i18n.watch()
 	i18n.watcher.Add(confDir)
+
+	// Initial load of all translation files in the directory.
 	if err := filepath.Walk(confDir, func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
 			i18n.load(path)
@@ -87,36 +98,45 @@ func (*I18n) Name() string {
 	return I18nInterceptorName
 }
 
+// Interceptor returns the middleware that translates error responses.
 func (m *I18n) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
+		// 1. Execute the handler logic first.
 		resp, err = handler(ctx, req)
 		if err == nil {
-			return resp, err
+			return resp, err // No error, no translation needed.
 		}
+
 		if !m.enabled {
-			logger.L(ctx).Debug("i18n interceptor not enabled")
 			return resp, err
 		}
-		logger.L(ctx).Debug("i18n interceptor is enabled")
+
+		// 2. Identify the protocol. Currently only REST supports this i18n flow.
 		rtx, ok := ctx.(*rest.Context)
 		if !ok {
-			logger.L(ctx).Debug("i18n interceptor only support rest protocol")
 			return resp, err
 		}
+
+		// 3. Extract the 'lang' header from the request.
 		lang := string(rtx.Request.Header.Peek(HeaderLang))
 		if lang == "" {
 			return resp, err
 		}
+
+		// 4. Convert the error to an Asjard Status to get the internal Error Code.
 		stts := status.FromError(err)
 		conf, ok := m.getConf(lang, stts.ErrCode)
 		if !ok {
-			logger.L(ctx).Debug("i18n get lang config not found", "lang", lang, "code", stts.ErrCode)
 			return resp, err
 		}
+
+		// 5. Wrap the localized prompt and doc into a protobuf Any detail.
 		detail, _ := anypb.New(&statuspb.Status{
 			Doc:    conf.Doc,
 			Prompt: conf.Prompt,
 		})
+
+		// 6. Return a new gRPC-compatible status with the localized details attached.
 		return resp, grpcstatus.ErrorProto(&spb.Status{
 			Code:    int32(stts.Code),
 			Message: stts.Message,
@@ -125,20 +145,22 @@ func (m *I18n) Interceptor() server.UnaryServerInterceptor {
 	}
 }
 
+// setConf thread-safely updates the translation map for a language.
 func (m *I18n) setConf(lang string, conf map[uint32]*I18nConfig) {
 	m.lm.Lock()
 	m.locals[lang] = conf
 	m.lm.Unlock()
 }
 
+// removeConf removes a language's translations (used when a file is deleted).
 func (m *I18n) removeConf(lang string) {
 	m.lm.Lock()
 	delete(m.locals, lang)
 	m.lm.Unlock()
 }
 
+// getConf retrieves a specific translation based on language and error code.
 func (m *I18n) getConf(lang string, code uint32) (*I18nConfig, bool) {
-	logger.Debug("get i18nconfig", "lang", lang, "code", code)
 	m.lm.RLock()
 	defer m.lm.RUnlock()
 	langConf, ok := m.locals[lang]
@@ -149,17 +171,21 @@ func (m *I18n) getConf(lang string, code uint32) (*I18nConfig, bool) {
 	return conf, ok
 }
 
+// load reads a JSON file and parses it into the translation map.
+// The filename (without extension) is treated as the language identifier (e.g., en-US.json).
 func (m *I18n) load(path string) {
 	logger.Debug("load i18n", "path", path)
 	fileName := filepath.Base(path)
 	ext := filepath.Ext(fileName)
 	lang := strings.TrimSuffix(fileName, ext)
+
 	conf := make(map[uint32]*I18nConfig)
 	content, err := os.ReadFile(path)
 	if err != nil {
 		logger.Error("read file fail", "file", path, "err", err)
 		return
 	}
+
 	switch ext {
 	case ".json":
 		if err := json.Unmarshal(content, &conf); err != nil {
@@ -170,14 +196,15 @@ func (m *I18n) load(path string) {
 	}
 }
 
+// remove handles the cleanup when a translation file is deleted from the disk.
 func (m *I18n) remove(path string) {
-	logger.Debug("remove i18n", "path", path)
 	fileName := filepath.Base(path)
 	ext := filepath.Ext(fileName)
 	lang := strings.TrimSuffix(fileName, ext)
 	m.removeConf(lang)
 }
 
+// watch listens for file system events (Create, Write, Delete) to enable hot-reloading.
 func (m *I18n) watch() {
 	for {
 		select {
@@ -200,6 +227,7 @@ func (m *I18n) watch() {
 	}
 }
 
+// getI18nDir determines where translation files are stored.
 func getI18nDir() string {
 	dir := os.Getenv(I18N_DIR_ENV_NAME)
 	if dir != "" {

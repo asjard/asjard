@@ -14,45 +14,56 @@ import (
 )
 
 const (
+	// DefaultClientName is used when no specific client name is provided in the options.
 	DefaultClientName = "default"
 )
 
+// ClientManager maintains a thread-safe registry of initialized Consul clients
+// and their associated configurations.
 type ClientManager struct {
-	clients sync.Map
+	clients sync.Map // Map of name -> *ClientConn (active connections)
 
 	cm      sync.RWMutex
-	configs map[string]*ClientConnConfig
+	configs map[string]*ClientConnConfig // Original configurations for dynamic updates
 }
 
+// ClientConn wraps the official Consul API client with its registration name.
 type ClientConn struct {
 	name   string
 	client *api.Client
 }
 
+// Config represents the root structure for Consul configuration in YAML/JSON.
 type Config struct {
 	Clients map[string]ClientConnConfig `json:"clients"`
 	Options Options                     `json:"options"`
 }
 
+// ClientConnConfig contains all parameters needed to establish a connection to Consul,
+// including security settings for encrypted credentials.
 type ClientConnConfig struct {
 	Address    string `json:"address"`
-	Scheme     string `json:"scheme"`
-	PathPrefix string `json:"pathPrefix"`
+	Scheme     string `json:"scheme"`     // http or https
+	PathPrefix string `json:"pathPrefix"` // API path prefix
 	Datacenter string `json:"datacenter"`
 	Username   string `json:"username"`
 	Password   string `json:"password"`
-	// 加解密名称
-	CipherName   string             `json:"cipherName"`
-	CipherParams map[string]any     `json:"cipherParams"`
-	WaitTime     utils.JSONDuration `json:"waitTime"`
-	Token        string             `json:"token"`
-	Namespace    string             `json:"namespace"`
-	Partition    string             `json:"partition"`
-	Options      Options            `json:"options"`
+
+	// CipherName and CipherParams allow for sensitive info (like passwords or tokens)
+	// to be stored encrypted in the config files and decrypted at runtime.
+	CipherName   string         `json:"cipherName"`
+	CipherParams map[string]any `json:"cipherParams"`
+
+	WaitTime  utils.JSONDuration `json:"waitTime"`
+	Token     string             `json:"token"`     // ACL Token
+	Namespace string             `json:"namespace"` // Enterprise feature
+	Partition string             `json:"partition"` // Enterprise feature
+	Options   Options            `json:"options"`
 }
 
 type Options struct{}
 
+// ClientOptions used for the functional options pattern when requesting a client.
 type ClientOptions struct {
 	clientName string
 }
@@ -66,9 +77,11 @@ var (
 
 func init() {
 	clientManager = &ClientManager{configs: make(map[string]*ClientConnConfig)}
+	// Register with bootstrap to ensure Consul is ready before servers start.
 	bootstrap.AddInitiator(clientManager)
 }
 
+// WithClientName specifies which named consul instance to retrieve.
 func WithClientName(clientName string) Option {
 	return func(opt *ClientOptions) {
 		if clientName != "" {
@@ -77,6 +90,7 @@ func WithClientName(clientName string) Option {
 	}
 }
 
+// Client retrieves an existing, cached Consul client from the manager.
 func Client(opts ...Option) (*api.Client, error) {
 	options := defaultClientOptions()
 	for _, opt := range opts {
@@ -95,6 +109,7 @@ func Client(opts ...Option) (*api.Client, error) {
 	return client.client, nil
 }
 
+// NewClient creates a fresh Consul client instance based on the current configuration.
 func NewClient(opts ...Option) (*api.Client, error) {
 	options := defaultClientOptions()
 	for _, opt := range opts {
@@ -110,6 +125,7 @@ func NewClient(opts ...Option) (*api.Client, error) {
 	return clientManager.newClient(options.clientName, connConf)
 }
 
+// Start triggers the initial configuration load and starts watching for config changes.
 func (m *ClientManager) Start() error {
 	clients, err := m.loadAndWatch()
 	if err != nil {
@@ -120,6 +136,7 @@ func (m *ClientManager) Start() error {
 
 func (m *ClientManager) Stop() {}
 
+// newClients initializes multiple clients and stores them in the registry.
 func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	for name, conf := range clients {
 		logger.Debug("connect to consul", "name", name, "conf", conf)
@@ -135,6 +152,8 @@ func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	return nil
 }
 
+// newApiConfig converts the Asjard internal config to the official HashiCorp api.Config.
+// It automatically handles decryption for Address, Username, and Password if a Cipher is provided.
 func (m *ClientManager) newApiConfig(conf *ClientConnConfig) (*api.Config, error) {
 	apiConf := &api.Config{
 		Address:    conf.Address,
@@ -152,9 +171,12 @@ func (m *ClientManager) newApiConfig(conf *ClientConnConfig) (*api.Config, error
 			Password: conf.Password,
 		}
 	}
+
+	// Handle secure decryption of sensitive fields.
 	if conf.CipherName != "" {
 		var err error
 		cipherOptions := []security.Option{security.WithCipherName(conf.CipherName), security.WithParams(conf.CipherParams)}
+
 		apiConf.Address, err = security.Decrypt(conf.Address, cipherOptions...)
 		if err != nil {
 			return nil, err
@@ -171,11 +193,11 @@ func (m *ClientManager) newApiConfig(conf *ClientConnConfig) (*api.Config, error
 			}
 			apiConf.HttpAuth = &api.HttpBasicAuth{Username: username, Password: password}
 		}
-
 	}
 	return apiConf, nil
 }
 
+// newClient creates the official API client and validates connectivity by checking for a Leader.
 func (m *ClientManager) newClient(name string, conf *ClientConnConfig) (*api.Client, error) {
 	apiConf, err := m.newApiConfig(conf)
 	if err != nil {
@@ -185,6 +207,7 @@ func (m *ClientManager) newClient(name string, conf *ClientConnConfig) (*api.Cli
 	if err != nil {
 		return nil, err
 	}
+	// Connectivity check: ensure the cluster is alive.
 	if _, err := client.Status().Leader(); err != nil {
 		return nil, err
 	}
@@ -192,15 +215,18 @@ func (m *ClientManager) newClient(name string, conf *ClientConnConfig) (*api.Cli
 	return client, nil
 }
 
+// loadAndWatch loads initial settings and registers a listener for real-time config updates.
 func (m *ClientManager) loadAndWatch() (map[string]*ClientConnConfig, error) {
 	clients, err := m.loadConfig()
 	if err != nil {
 		return nil, err
 	}
+	// Watch the specific consul configuration path for changes (e.g., address updates).
 	config.AddPatternListener("asjard.stores.consul", m.watch)
 	return clients, nil
 }
 
+// loadConfig fetches settings from the core configuration system and merges global options with client-specific ones.
 func (m *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 	clients := make(map[string]*ClientConnConfig)
 	options := defaultOptions
@@ -210,24 +236,29 @@ func (m *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 	if err := config.GetWithUnmarshal("asjard.stores.consul.clients", &clients); err != nil {
 		return nil, err
 	}
+
+	// Merge global options into individual client configs if not overridden locally.
 	for name, client := range clients {
 		client.Options = options
 		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.stores.consul.clients.%s.options", name), &client.Options); err != nil {
 			return nil, err
 		}
 	}
+
 	m.cm.Lock()
 	m.configs = clients
 	m.cm.Unlock()
 	return clients, nil
 }
 
+// watch is the callback for configuration change events.
 func (m *ClientManager) watch(event *config.Event) {
 	clients, err := m.loadConfig()
 	if err != nil {
 		logger.Error("load consul config fail", "err", err)
 		return
 	}
+	// Re-initialize clients with new settings.
 	if err := m.newClients(clients); err != nil {
 		logger.Error("new consul clients fail", "err", err)
 	}

@@ -1,14 +1,15 @@
 package utils
 
-// Uint32Len 获取整数长度
-func Uint32Len(x uint32) uint32 {
-	if x == 0 {
+import "math"
+
+// Uint32Len calculates the number of digits (length) in a uint32 integer.
+// For example:
+//   - Input: 0     => Output: 1
+//   - Input: 100   => Output: 3
+//   - Input: 42949 => Output: 5
+func Uint32Len(n uint32) uint32 {
+	if n == 0 {
 		return 1
 	}
-	var count uint32 = 0
-	for x > 0 {
-		x = x / 10
-		count++
-	}
-	return count
+	return uint32(math.Log10(float64(n))) + 1
 }

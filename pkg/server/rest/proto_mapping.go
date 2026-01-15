@@ -10,18 +10,25 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// protoForm maps a map of string slices (e.g., URL queries or form data)
+// to a Protobuf message using reflection.
 func protoForm(ptr proto.Message, form map[string][]string) error {
+	// Use Protobuf reflection to access the message's internal structure.
 	msg := ptr.ProtoReflect()
 	fields := msg.Descriptor().Fields()
 
+	// Iterate through each field defined in the .proto file.
 	for i := 0; i < fields.Len(); i++ {
 		field := fields.Get(i)
 		kd := field.Kind()
-		// 只解析基础类型
+
+		// Skip complex types like nested messages or groups.
+		// These are typically handled via JSON body parsing rather than form/query params.
 		if kd == protoreflect.MessageKind || kd == protoreflect.GroupKind {
 			continue
 		}
 
+		// Use the field's text name (usually snake_case) as the lookup key in the form map.
 		key := field.TextName()
 
 		values, exists := form[key]
@@ -30,7 +37,8 @@ func protoForm(ptr proto.Message, form map[string][]string) error {
 		}
 
 		switch {
-		case field.IsList(): // 重复字段
+		// Handle 'repeated' fields in Protobuf.
+		case field.IsList():
 			list := msg.Mutable(field).List()
 			for _, s := range values {
 				val, err := stringToValue(s, field)
@@ -39,7 +47,8 @@ func protoForm(ptr proto.Message, form map[string][]string) error {
 				}
 				list.Append(val)
 			}
-		default: // 单值字段
+		// Handle standard single-value fields.
+		default:
 			if len(values) > 0 {
 				val, err := stringToValue(values[0], field)
 				if err != nil {
@@ -52,12 +61,15 @@ func protoForm(ptr proto.Message, form map[string][]string) error {
 	return nil
 }
 
+// stringToValue converts a string input into a type-safe protoreflect.Value
+// based on the field's underlying Protobuf kind.
 func stringToValue(s string, field protoreflect.FieldDescriptor) (protoreflect.Value, error) {
 	switch field.Kind() {
 	case protoreflect.StringKind:
 		return protoreflect.ValueOfString(s), nil
 
 	case protoreflect.BytesKind:
+		// Expects a Base64 encoded string for binary data.
 		return strToProtoBytesValue(s)
 
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
@@ -76,12 +88,14 @@ func stringToValue(s string, field protoreflect.FieldDescriptor) (protoreflect.V
 		return strToProtoFloat32Value(s)
 
 	case protoreflect.DoubleKind:
+		// Map double (float64) to float32 value helper.
 		return strToProtoFloat32Value(s)
 
 	case protoreflect.BoolKind:
 		return strToProtoBoolValue(s)
 
 	case protoreflect.EnumKind:
+		// Resolves enums by name or numeric value.
 		return strToProtoEnumValue(s, field)
 
 	default:
@@ -89,6 +103,7 @@ func stringToValue(s string, field protoreflect.FieldDescriptor) (protoreflect.V
 	}
 }
 
+// strToProtoBytesValue handles base64 decoding for Protobuf 'bytes' fields.
 func strToProtoBytesValue(s string) (protoreflect.Value, error) {
 	data, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
@@ -96,6 +111,9 @@ func strToProtoBytesValue(s string) (protoreflect.Value, error) {
 	}
 	return protoreflect.ValueOfBytes(data), nil
 }
+
+// Numeric conversion helpers ensure the string input fits the specific bit-size of the field.
+
 func strToProtoInt32Value(s string) (protoreflect.Value, error) {
 	v, err := strconv.ParseInt(s, 10, 32)
 	if err != nil {
@@ -145,6 +163,7 @@ func strToProtoFloat64Value(s string) (protoreflect.Value, error) {
 }
 
 func strToProtoBoolValue(s string) (protoreflect.Value, error) {
+	// Uses asjard/utils/cast to handle multiple boolean formats (1, true, t, etc).
 	v, err := cast.ToBoolE(s)
 	if err != nil {
 		return protoreflect.Value{}, fmt.Errorf("invalid bool: %w", err)
@@ -152,12 +171,13 @@ func strToProtoBoolValue(s string) (protoreflect.Value, error) {
 	return protoreflect.ValueOfBool(v), nil
 }
 
+// strToProtoEnumValue handles Enum resolution.
 func strToProtoEnumValue(s string, field protoreflect.FieldDescriptor) (protoreflect.Value, error) {
-	// 尝试按名称解析
+	// 1. Try to find the enum value by its string name (e.g., "ACTIVE").
 	if enumVal := field.Enum().Values().ByName(protoreflect.Name(s)); enumVal != nil {
 		return protoreflect.ValueOfEnum(enumVal.Number()), nil
 	}
-	// 尝试按数值解析
+	// 2. Fallback: try to parse the string as a numeric enum ID (e.g., "1").
 	if v, err := strconv.ParseInt(s, 10, 32); err == nil {
 		return protoreflect.ValueOfEnum(protoreflect.EnumNumber(v)), nil
 	}

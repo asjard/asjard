@@ -21,38 +21,45 @@ import (
 )
 
 const (
-	// DefaultClientName 默认客户端名称
+	// DefaultClientName is the alias used for the primary Redis connection if none specified.
 	DefaultClientName = "default"
 )
 
+// ClientManager handles the registration, initialization, and hot-reloading of Redis clients.
 type ClientManager struct {
+	// clients stores active *ClientConn instances, indexed by name.
 	clients sync.Map
 
-	cm      sync.RWMutex
+	cm sync.RWMutex
+	// configs caches the raw configuration for change detection during watching.
 	configs map[string]*ClientConnConfig
 }
 
+// ClientConn wraps the redis.Client with its identification name.
 type ClientConn struct {
 	name   string
 	client *redis.Client
 }
 
+// Config represents the schema for Redis settings in the configuration center.
 type Config struct {
 	Clients map[string]ClientConnConfig `json:"clients"`
 	Options Options                     `json:"options"`
 }
 
+// ClientConnConfig defines connection parameters and security settings for a specific Redis instance.
 type ClientConnConfig struct {
 	Address  string `json:"address"`
 	UserName string `json:"username"`
 	Password string `json:"password"`
-	// 加解密名称
+	// CipherName allows Address/User/Pass to be stored as encrypted strings.
 	CipherName   string         `json:"cipherName"`
 	CipherParams map[string]any `json:"cipherParams"`
 	DB           int            `json:"db"`
 	Options      Options        `json:"options"`
 }
 
+// Options contains connection pool tuning, timeouts, and security certificate paths.
 type Options struct {
 	ClientName            string             `json:"clientName"`
 	Protocol              int                `json:"protocol"`
@@ -71,14 +78,15 @@ type Options struct {
 	MaxActiveConns        int                `json:"maxActiveConns"`
 	ConnMaxIdleTime       utils.JSONDuration `json:"connMaxIdleTime"`
 	ConnMaxLifeTime       utils.JSONDuration `json:"connMaxLifeTime"`
-	CAFile                string             `json:"caFile"`
-	CertFile              string             `json:"certFile"`
-	KeyFile               string             `json:"keyFile"`
-	DisableIndentity      bool               `json:"disableIndentity"`
-	IndentitySuffix       string             `json:"indentitySuffix"`
-	// 关闭连接检查,如果不关闭则在连接到redis后会发起ping请求
+	// TLS/SSL Configuration files
+	CAFile           string `json:"caFile"`
+	CertFile         string `json:"certFile"`
+	KeyFile          string `json:"keyFile"`
+	DisableIndentity bool   `json:"disableIndentity"`
+	IndentitySuffix  string `json:"indentitySuffix"`
+	// DisableCheckStatus: If false, the manager pings Redis immediately after connecting.
 	DisableCheckStatus bool `json:"disableConnectCheck"`
-	// 是否开启链路追踪
+	// Traceable: When true, enables OpenTelemetry instrumentation for Redis commands.
 	Traceable bool `json:"Traceable"`
 }
 
@@ -97,9 +105,11 @@ var (
 
 func init() {
 	clientManager = &ClientManager{configs: make(map[string]*ClientConnConfig)}
+	// Register with bootstrap to ensure Redis is ready before business logic starts.
 	bootstrap.AddBootstrap(clientManager)
 }
 
+// WithClientName functional option to specify which Redis instance to retrieve.
 func WithClientName(clientName string) func(*ClientOptions) {
 	return func(opt *ClientOptions) {
 		if clientName != "" {
@@ -108,6 +118,7 @@ func WithClientName(clientName string) func(*ClientOptions) {
 	}
 }
 
+// Client retrieves a shared Redis client instance from the manager.
 func Client(opts ...Option) (*redis.Client, error) {
 	options := defaultClientOptions()
 	for _, opt := range opts {
@@ -126,6 +137,7 @@ func Client(opts ...Option) (*redis.Client, error) {
 	return client.client, nil
 }
 
+// NewClient creates a fresh Redis client based on the current configuration registry.
 func NewClient(opts ...Option) (*redis.Client, error) {
 	options := defaultClientOptions()
 	for _, opt := range opts {
@@ -141,6 +153,7 @@ func NewClient(opts ...Option) (*redis.Client, error) {
 	return clientManager.newClient(options.clientName, connConfig)
 }
 
+// Start loads the initial configuration and establishes all connections.
 func (m *ClientManager) Start() error {
 	clients, err := m.loadAndWatch()
 	if err != nil {
@@ -149,6 +162,7 @@ func (m *ClientManager) Start() error {
 	return m.newClients(clients)
 }
 
+// Stop gracefully closes all active Redis connections.
 func (m *ClientManager) Stop() {
 	m.clients.Range(func(key, value any) bool {
 		conn, ok := value.(*ClientConn)
@@ -163,6 +177,7 @@ func (m *ClientManager) Stop() {
 	})
 }
 
+// newClients populates the client registry from a map of configurations.
 func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	logger.Debug("new clients", "clients", clients)
 	for name, conf := range clients {
@@ -180,6 +195,8 @@ func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	return nil
 }
 
+// newClientOptions transforms framework config into native go-redis options.
+// Handles decryption of credentials and TLS certificate loading.
 func (m *ClientManager) newClientOptions(conf *ClientConnConfig) (*redis.Options, error) {
 	clientOptions := &redis.Options{
 		Addr:                  conf.Address,
@@ -206,6 +223,8 @@ func (m *ClientManager) newClientOptions(conf *ClientConnConfig) (*redis.Options
 		DisableIndentity:      conf.Options.DisableIndentity,
 		IdentitySuffix:        conf.Options.IndentitySuffix,
 	}
+
+	// Decrypt sensitive connection details if a cipher is specified.
 	if conf.CipherName != "" {
 		var err error
 		cipherOptions := []security.Option{security.WithCipherName(conf.CipherName), security.WithParams(conf.CipherParams)}
@@ -222,6 +241,8 @@ func (m *ClientManager) newClientOptions(conf *ClientConnConfig) (*redis.Options
 			return nil, err
 		}
 	}
+
+	// Load TLS certificates for encrypted connections (mTLS support).
 	if conf.Options.CAFile != "" && conf.Options.CertFile != "" && conf.Options.KeyFile != "" {
 		conf.Options.CAFile = filepath.Join(utils.GetCertDir(), conf.Options.CAFile)
 		if !utils.IsPathExists(conf.Options.CAFile) {
@@ -253,12 +274,15 @@ func (m *ClientManager) newClientOptions(conf *ClientConnConfig) (*redis.Options
 	return clientOptions, nil
 }
 
+// newClient creates the Redis client and applies tracing instrumentation.
 func (m *ClientManager) newClient(name string, conf *ClientConnConfig) (*redis.Client, error) {
 	clientOptions, err := m.newClientOptions(conf)
 	if err != nil {
 		return nil, err
 	}
 	client := redis.NewClient(clientOptions)
+
+	// Perform connectivity check if not explicitly disabled.
 	if !conf.Options.DisableCheckStatus {
 		ctx, cancel := context.WithTimeout(context.Background(), conf.Options.DialTimeout.Duration)
 		defer cancel()
@@ -266,6 +290,8 @@ func (m *ClientManager) newClient(name string, conf *ClientConnConfig) (*redis.C
 			return nil, status.Err()
 		}
 	}
+
+	// Inject OpenTelemetry tracing to monitor Redis command performance.
 	if conf.Options.Traceable {
 		if err := redisotel.InstrumentTracing(client, redisotel.WithDBSystem(name)); err != nil {
 			return nil, err
@@ -275,6 +301,7 @@ func (m *ClientManager) newClient(name string, conf *ClientConnConfig) (*redis.C
 	return client, nil
 }
 
+// loadAndWatch reads the configuration and registers a listener for hot-reloading.
 func (m *ClientManager) loadAndWatch() (map[string]*ClientConnConfig, error) {
 	clients, err := m.loadConfig()
 	if err != nil {
@@ -284,6 +311,7 @@ func (m *ClientManager) loadAndWatch() (map[string]*ClientConnConfig, error) {
 	return clients, nil
 }
 
+// loadConfig unmarshals global and per-client Redis settings from the config core.
 func (m *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 	clients := make(map[string]*ClientConnConfig)
 	options := defaultOptions
@@ -305,6 +333,7 @@ func (m *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 	return clients, nil
 }
 
+// watch handles configuration change events by updating active connections or removing stale ones.
 func (m *ClientManager) watch(event *config.Event) {
 	clients, err := m.loadConfig()
 	if err != nil {
@@ -315,6 +344,7 @@ func (m *ClientManager) watch(event *config.Event) {
 		logger.Error("new clients fail", "err", err)
 		return
 	}
+	// Clean up connections that are no longer present in the updated configuration.
 	m.clients.Range(func(key, value any) bool {
 		exist := false
 		for clientName := range clients {

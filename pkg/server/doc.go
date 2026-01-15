@@ -1,4 +1,5 @@
 /*
-不同协议服务端实现,对core/server/Server的实现
+Package server provides a standard interface and registry for different protocol
+server implementations (REST, gRPC, AMQP, etc.).
 */
 package server

@@ -4,33 +4,39 @@ import (
 	"github.com/asjard/asjard/core/server"
 )
 
+// methodHandler defines the standard signature for a REST request handler.
+// It wraps the business logic with an Asjard Context and supports Unary Interceptors
+// for cross-cutting concerns like logging, tracing, or authentication.
 type methodHandler func(ctx *Context, srv any, interceptor server.UnaryServerInterceptor) (any, error)
 
-// ServiceDesc represents an RPC service's specification.
+// ServiceDesc represents an RPC service's specification in the REST world.
+// It contains the metadata necessary to register a full service (e.g., "UserService").
 type ServiceDesc struct {
-	ServiceName string
-	Name        string
-	Desc        string
-	HandlerType any
-	ErrPage     string
-	Writer      Writer
-	OpenAPI     []byte
-	Methods     []MethodDesc
+	ServiceName string       // The unique identifier for the service (e.g., "api.v1.user").
+	Name        string       // Human-readable display name for the service.
+	Desc        string       // Brief description of the service's purpose.
+	HandlerType any          // A pointer to the interface type, used for reflection validation.
+	ErrPage     string       // Optional custom error page URL for this specific service.
+	Writer      Writer       // Custom response writer (e.g., for specialized XML or binary outputs).
+	OpenAPI     []byte       // Marshaled OpenAPI v3 specification data for this service.
+	Methods     []MethodDesc // The list of individual endpoints (methods) within this service.
 }
 
-// MethodDesc represents an RPC service's method specification.
+// MethodDesc represents the detailed specification for a single RPC method.
+// This is used by the router to map physical HTTP requests to Go logic.
 type MethodDesc struct {
-	// 接口名称
+	// MethodName is the internal name of the function (e.g., "GetUser").
 	MethodName string
-	// 接口请求方法列表
+	// Method is the HTTP Verb (e.g., "GET", "POST", "PUT").
 	Method string
-	// 接口路径
+	// Path is the URL pattern for the endpoint (e.g., "/api/v1/user/:id").
 	Path string
-	// 接口处理方法
+	// Handler is the actual function that executes the request logic.
 	Handler methodHandler
-	// 接口名称
+	// Name is a human-friendly name for this specific endpoint.
 	Name string
-	// 接口描述
-	Desc       string
+	// Desc provides a detailed description of what this endpoint does.
+	Desc string
+	// WriterName specifies a registered response writer to use (e.g., "json", "proto").
 	WriterName string
 }

@@ -10,86 +10,81 @@ import (
 	"github.com/asjard/asjard/utils"
 )
 
-// Cacher defines the functions cache need to perform
+// Cacher defines the standard interface that all cache implementations (Redis, Memcached, Local, etc.) must satisfy.
+// It separates the logic of data retrieval from the logic of cache management.
 type Cacher interface {
-	// get data from cache.
-	// if current cache dependence on other cache
-	// need return if not data from current cache flag
-	// if get data from current cache it will excute refresh cache logic.
+	// Get retrieves data from the cache.
+	// out: the pointer where the result will be unmarshaled.
+	// fromCurrent: indicates if the data was found in the primary cache layer.
 	Get(ctx context.Context, key string, out any) (fromCurrent bool, err error)
-	// remove data from cache.
+
+	// Del removes one or more keys from the cache.
 	Del(ctx context.Context, keys ...string) error
-	// set data in cache.
+
+	// Set stores data in the cache with a specific expiration duration.
 	Set(ctx context.Context, key string, in any, expiresIn time.Duration) error
-	// refresh cache expire time.
+
+	// Refresh extends the expiration time of an existing cache entry.
 	Refresh(ctx context.Context, key string, in any, expiresIn time.Duration) error
-	// return cache key.
+
+	// Key returns the identifier for this cache instance.
 	Key() string
 
-	// this functions at blow will be implement in default cache.
-	// is cache enabled.
+	// Standard metadata functions for the cache instance.
 	Enabled() bool
-	// whether refresh cache expire time.
 	AutoRefresh() bool
-	// return cache expire time.
 	ExpiresIn() time.Duration
-	// return empty cache expire time.
-	// if get from database is empty, it will set an empty data in cache.
 	EmptyExpiresIn() time.Duration
 }
 
-// CacheConfig defines the cache config.
+// CacheConfig defines the behavioral settings for a specific cache instance.
+// It includes granular controls for how keys are namespaced across different environments and versions.
 type CacheConfig struct {
-	// enable or disable cache
+	// Enabled toggles the cache layer on or off.
 	Enabled bool `json:"enabled"`
-	// whether refresh cache
+
+	// AutoRefresh determines if the system should automatically extend TTL on access.
 	AutoRefresh bool `json:"autoRefresh"`
-	// ignore version different in cache key.
-	// default will take version tag in cache key.
-	// in some scence, cache no need to change in different service version.
-	IgnoreVersionDiff bool `json:"ignoreVersionDiff"`
-	// ignore service different in cache key.
-	// default will take app tag in cache key.
-	// if set true, you can share cache in different product.
-	IgnoreAppDiff bool `json:"ignoreAppDiff"`
-	// ignore environment different in cache key.
-	// default will take env tag in cache key.
-	// if set true, you can share cache in different environment.
-	IgnoreEnvDiff bool `json:"ignoreEnvDiff"`
-	// ignore service different in cache key.
-	// default will take service tag in cache key.
-	// if set true, you can share cache in different service.
-	IgnoreServiceDiff bool `json:"ignoreServiceDiff"`
-	// ignore region different in cache key.
-	IgnoreRegionDiff bool `json:"ignoreRegionDiff"`
-	// ignore az different in cache key
-	IgnoreAzDiff bool `json:"ignoreAzDiff"`
-	// cache expire time
+
+	// Key Namespace Overrides:
+	// These flags allow sharing cache data across different deployment dimensions.
+	IgnoreVersionDiff bool `json:"ignoreVersionDiff"` // Share cache across different app versions
+	IgnoreAppDiff     bool `json:"ignoreAppDiff"`     // Share cache across different applications
+	IgnoreEnvDiff     bool `json:"ignoreEnvDiff"`     // Share cache across Dev/Staging/Prod
+	IgnoreServiceDiff bool `json:"ignoreServiceDiff"` // Share cache across different microservices
+	IgnoreRegionDiff  bool `json:"ignoreRegionDiff"`  // Share cache across geographic regions
+	IgnoreAzDiff      bool `json:"ignoreAzDiff"`      // Share cache across Availability Zones
+
+	// ExpiresIn is the standard TTL for successful data lookups.
 	ExpiresIn utils.JSONDuration `json:"expiresIn"`
-	// empty cache expire time
-	// if empty it will set to half of ExpiresIn
+
+	// EmptyExpiresIn is the TTL for "Negative Caching" (caching the absence of data).
+	// Prevents "Cache Penetration" by caching null results from the DB.
 	EmptyExpiresIn utils.JSONDuration `json:"emptyExpiresIn"`
 }
 
-// Cache defines some common functions on this struct, embed on other cache.
+// Cache is the base implementation struct intended to be embedded in specific cache providers.
+// It provides helper methods for key generation and configuration management.
 type Cache struct {
-	// config read write lock, protect conf field
-	cm sync.RWMutex
-	// cache config
-	conf  *CacheConfig
+	// cm protects access to the conf field for thread-safe runtime configuration updates.
+	cm   sync.RWMutex
+	conf *CacheConfig
+
+	// model provides metadata about the data being cached (e.g., Table Name).
 	model Modeler
-	app   runtime.APP
+	// app provides runtime context about the current service instance.
+	app runtime.APP
 }
 
 var (
-	// DefaultCacheConfig default cache config
+	// DefaultCacheConfig provides a safe baseline: 10-minute TTL and version independence.
 	DefaultCacheConfig = CacheConfig{
 		ExpiresIn:         utils.JSONDuration{Duration: 10 * time.Minute},
 		IgnoreVersionDiff: true,
 	}
 )
 
-// NewCache create a new cache.
+// NewCache initializes a basic cache structure with a reference to the data model.
 func NewCache(model Modeler) *Cache {
 	return &Cache{
 		model: model,
@@ -98,7 +93,7 @@ func NewCache(model Modeler) *Cache {
 	}
 }
 
-// WithConf set cache config.
+// WithConf allows for fluent-style configuration of the cache instance.
 func (c *Cache) WithConf(conf *CacheConfig) *Cache {
 	c.cm.Lock()
 	defer c.cm.Unlock()
@@ -106,24 +101,26 @@ func (c *Cache) WithConf(conf *CacheConfig) *Cache {
 	return c
 }
 
-// Enabled return is cache enabled.
+// Enabled checks if caching is currently active.
 func (c *Cache) Enabled() bool {
 	c.cm.RLock()
 	defer c.cm.RUnlock()
 	return c.conf.Enabled
 }
 
-// AutoRefresh return whether refresh cache.
+// AutoRefresh checks if the TTL should be renewed on every Get.
 func (c *Cache) AutoRefresh() bool {
 	c.cm.RLock()
 	defer c.cm.RUnlock()
 	return c.conf.AutoRefresh
 }
 
-// NewKey return cache key.
+// NewKey generates a fully qualified, namespaced cache key.
+// It combines the application identity (App, Env, Region) with the model key.
 func (c *Cache) NewKey(key string) string {
 	c.cm.RLock()
 	defer c.cm.RUnlock()
+	// Uses the runtime ResourceKey builder to ensure consistent naming conventions.
 	return c.app.ResourceKey("caches", c.ModelKey(key),
 		runtime.WithDelimiter(":"),
 		runtime.WithoutVersion(c.conf.IgnoreVersionDiff),
@@ -134,26 +131,28 @@ func (c *Cache) NewKey(key string) string {
 		runtime.WithoutApp(c.conf.IgnoreAzDiff))
 }
 
-// App return service info.
+// App returns the runtime application information.
 func (c *Cache) App() runtime.APP {
 	return c.app
 }
 
-// ModelKey return model cache key.
+// ModelKey creates a model-specific suffix for the cache key (e.g., "users:123").
 func (c *Cache) ModelKey(key string) string {
 	return c.model.ModelName() + ":" + key
 }
 
-// ExpiresIn return cache expire time
-// it will add any random time in confined expire time.
+// ExpiresIn calculates the TTL for a cache entry.
+// JITTER: It adds a random duration up to 100% of the config value to prevent "Cache Avalanche"
+// (where many keys expire at the exact same time, overwhelming the database).
 func (c *Cache) ExpiresIn() time.Duration {
 	c.cm.RLock()
 	defer c.cm.RUnlock()
+	// Total TTL = Configured TTL + Random(0, Configured TTL)
 	return c.conf.ExpiresIn.Duration + time.Duration(rand.Int63n(int64(c.conf.ExpiresIn.Duration)))
 }
 
-// EmptyExpiresIn return empty cache expire time
-// if not config it will be setted to half of ExpiresIn
+// EmptyExpiresIn calculates the TTL for null/empty results.
+// If not explicitly set, it defaults to 50% of the standard ExpiresIn.
 func (c *Cache) EmptyExpiresIn() time.Duration {
 	c.cm.RLock()
 	defer c.cm.RUnlock()
@@ -161,5 +160,6 @@ func (c *Cache) EmptyExpiresIn() time.Duration {
 	if expiresIn == 0 {
 		expiresIn = c.conf.ExpiresIn.Duration / 2
 	}
+	// Also includes jitter for the same reasons as ExpiresIn.
 	return expiresIn + time.Duration(rand.Int63n(int64(expiresIn)))
 }

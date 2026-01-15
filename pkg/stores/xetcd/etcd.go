@@ -21,31 +21,36 @@ import (
 )
 
 const (
-	// DefaultClientName 默认客户端名称
+	// DefaultClientName is the identifier for the primary etcd connection.
 	DefaultClientName = "default"
 )
 
-// ClientManager 客户端连接维护
+// ClientManager maintains a thread-safe registry of active etcd clients.
+// It also caches configurations to support real-time hot-reloading.
 type ClientManager struct {
+	// clients stores a map of string (name) -> *ClientConn.
 	clients sync.Map
 
-	cm      sync.RWMutex
+	// cm protects access to the configs map.
+	cm sync.RWMutex
+	// configs stores the raw connection definitions for watching changes.
 	configs map[string]*ClientConnConfig
 }
 
-// ClientConn 客户端连接
+// ClientConn wraps the official etcd v3 client with its framework registration name.
 type ClientConn struct {
 	name   string
 	client *clientv3.Client
 }
 
-// Config 客户端连接配置
+// Config represents the top-level structure for etcd settings in the application configuration.
 type Config struct {
 	Clients map[string]ClientConnConfig `json:"clients"`
 	Options Options                     `json:"options"`
 }
 
-// Options 客户端连接参数
+// Options provides low-level tuning for the etcd gRPC connection,
+// including timeouts, keep-alive settings, and TLS file paths.
 type Options struct {
 	AutoSyncInterval      utils.JSONDuration `json:"autoSyncInterval"`
 	DialTimeout           utils.JSONDuration `json:"dialTimeout"`
@@ -63,25 +68,28 @@ type Options struct {
 	KeyFile               string             `json:"keyFile"`
 }
 
-// 客户端连接配置
+// ClientConnConfig defines the connection parameters for a specific etcd cluster.
 type ClientConnConfig struct {
-	Endpoints utils.JSONStrings `json:"endpoints"`
+	Endpoints utils.JSONStrings `json:"endpoints"` // Cluster node addresses
 	Username  string            `json:"username"`
 	Password  string            `json:"password"`
-	// 加解密名称
+	// CipherName allows the endpoints and credentials to be stored as encrypted strings.
 	CipherName   string         `json:"cipherName"`
 	CipherParams map[string]any `json:"cipherParams"`
 	Options      Options        `json:"options"`
 }
 
+// ClientOptions used for the functional options pattern when requesting a client.
 type ClientOptions struct {
 	clientName string
 }
 
+// Option defines the signature for configuring client requests.
 type Option func(*ClientOptions)
 
 var (
-	clientManager  *ClientManager
+	clientManager *ClientManager
+	// defaultOptions provides sensible framework defaults for etcd clusters.
 	defaultOptions = Options{
 		AutoSyncInterval:     utils.JSONDuration{},
 		DialTimeout:          utils.JSONDuration{Duration: 3 * time.Second},
@@ -94,10 +102,11 @@ var (
 
 func init() {
 	clientManager = &ClientManager{configs: make(map[string]*ClientConnConfig)}
+	// Register the manager as a bootstrap initiator to ensure etcd is ready before the server starts.
 	bootstrap.AddInitiator(clientManager)
 }
 
-// WithClientName 设置客户端名称
+// WithClientName sets the specific named client to be retrieved.
 func WithClientName(clientName string) func(*ClientOptions) {
 	return func(opt *ClientOptions) {
 		if clientName != "" {
@@ -106,6 +115,7 @@ func WithClientName(clientName string) func(*ClientOptions) {
 	}
 }
 
+// Client retrieves an already established etcd client from the registry.
 func Client(opts ...Option) (*clientv3.Client, error) {
 	options := defaultClientOptions()
 	for _, opt := range opts {
@@ -124,6 +134,7 @@ func Client(opts ...Option) (*clientv3.Client, error) {
 	return client.client, nil
 }
 
+// NewClient creates a one-off etcd client based on the current configuration name.
 func NewClient(opts ...Option) (*clientv3.Client, error) {
 	options := defaultClientOptions()
 	for _, opt := range opts {
@@ -139,6 +150,7 @@ func NewClient(opts ...Option) (*clientv3.Client, error) {
 	return clientManager.newClient(options.clientName, connConf)
 }
 
+// Start initiates the configuration loading and watching process.
 func (m *ClientManager) Start() error {
 	clients, err := m.loadAndWatchConfig()
 	if err != nil {
@@ -147,6 +159,7 @@ func (m *ClientManager) Start() error {
 	return m.newClients(clients)
 }
 
+// Stop gracefully closes all active etcd clients.
 func (m *ClientManager) Stop() {
 	m.clients.Range(func(key, value any) bool {
 		conn, ok := value.(*ClientConn)
@@ -160,6 +173,7 @@ func (m *ClientManager) Stop() {
 	})
 }
 
+// newClients establishes new physical connections for each configuration provided.
 func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	for name, cfg := range clients {
 		logger.Debug("connect to etcd", "name", name, "cfg", cfg)
@@ -176,6 +190,8 @@ func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	return nil
 }
 
+// newClientConfig converts the framework config into the official etcd client configuration.
+// It handles secure decryption of credentials and TLS certificate loading.
 func (m *ClientManager) newClientConfig(cfg *ClientConnConfig) (clientv3.Config, error) {
 	clientConfig := clientv3.Config{
 		Endpoints:             cfg.Endpoints,
@@ -191,6 +207,7 @@ func (m *ClientManager) newClientConfig(cfg *ClientConnConfig) (clientv3.Config,
 		BackoffWaitBetween:    cfg.Options.BackoffWaitBetween.Duration,
 		BackoffJitterFraction: cfg.Options.BackoffJitterFraction,
 	}
+	// Decrypt sensitive information if a cipher is provided.
 	if cfg.CipherName != "" {
 		var err error
 		cipherOptions := []security.Option{security.WithCipherName(cfg.CipherName), security.WithParams(cfg.CipherParams)}
@@ -212,6 +229,7 @@ func (m *ClientManager) newClientConfig(cfg *ClientConnConfig) (clientv3.Config,
 		}
 		clientConfig.Endpoints = endpoints
 	}
+	// Configure TLS/SSL if certificate files are specified.
 	if cfg.Options.CAFile != "" && cfg.Options.CertFile != "" && cfg.Options.KeyFile != "" {
 		cfg.Options.CAFile = filepath.Join(utils.GetCertDir(), cfg.Options.CAFile)
 		if !utils.IsPathExists(cfg.Options.CAFile) {
@@ -243,6 +261,7 @@ func (m *ClientManager) newClientConfig(cfg *ClientConnConfig) (clientv3.Config,
 	return clientConfig, nil
 }
 
+// newClient creates an etcd client and verifies connectivity to all endpoints immediately.
 func (m *ClientManager) newClient(name string, cfg *ClientConnConfig) (*clientv3.Client, error) {
 	clientConfig, err := m.newClientConfig(cfg)
 	if err != nil {
@@ -252,6 +271,7 @@ func (m *ClientManager) newClient(name string, cfg *ClientConnConfig) (*clientv3
 	if err != nil {
 		return nil, err
 	}
+	// Fail-fast health check: verify the status of each node in the cluster.
 	for _, endpoint := range clientConfig.Endpoints {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Options.DialTimeout.Duration)
 		_, err = client.Status(ctx, endpoint)
@@ -264,6 +284,7 @@ func (m *ClientManager) newClient(name string, cfg *ClientConnConfig) (*clientv3
 	return client, nil
 }
 
+// loadAndWatchConfig loads initial settings and registers a callback for live updates.
 func (m *ClientManager) loadAndWatchConfig() (map[string]*ClientConnConfig, error) {
 	clients, err := m.loadConfig()
 	if err != nil {
@@ -273,6 +294,7 @@ func (m *ClientManager) loadAndWatchConfig() (map[string]*ClientConnConfig, erro
 	return clients, nil
 }
 
+// loadConfig retrieves settings from the core configuration system and handles defaults.
 func (m *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 	clients := make(map[string]*ClientConnConfig)
 	options := defaultOptions
@@ -294,16 +316,19 @@ func (m *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 	return clients, nil
 }
 
+// watch is the event handler for real-time configuration changes.
 func (m *ClientManager) watch(event *config.Event) {
 	clients, err := m.loadConfig()
 	if err != nil {
 		logger.Error("load etcd config fail", "err", err)
 		return
 	}
+	// Update or create new clients.
 	if err := m.newClients(clients); err != nil {
 		logger.Error("new clients fail", "err", err)
 		return
 	}
+	// Remove clients that are no longer present in the updated configuration.
 	m.clients.Range(func(key, value any) bool {
 		if _, ok := clients[key.(string)]; !ok {
 			logger.Debug("delete etcd client", "client", key)

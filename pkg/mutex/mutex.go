@@ -1,6 +1,3 @@
-/*
-Package mutex 分布式锁
-*/
 package mutex
 
 import (
@@ -15,61 +12,64 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-// Locker 互斥锁需要实现的方法
+// Locker defines the interface that underlying distributed storage
+// (Redis, ETCD, etc.) must implement.
 type Locker interface {
-	// Lock 加锁
+	// Lock attempts to acquire the lock. Returns true if successful.
 	Lock(ctx context.Context, key, threadId string, expiresIn time.Duration) bool
-	// Unlock 解锁
+	// Unlock releases the lock held by the specific threadId.
 	Unlock(ctx context.Context, key, threadId string) bool
-	// 续期
+	// KeepAlive extends the lock's expiration time to prevent accidental release.
 	KeepAlive(ctx context.Context, key, threadId string, expiresIn time.Duration) bool
 }
 
-// noCopy may be added to structs which must not be copied
-// after the first use.
-//
-// See https://golang.org/issues/8005#issuecomment-190753527
-// for details.
-//
-// Note that it must not be embedded, due to the Lock and Unlock methods.
+// noCopy is a sentinel used to prevent the Mutex struct from being copied by value.
+// Copying a mutex can lead to logical errors where two different instances
+// think they are controlling the same lock state.
 type noCopy struct{}
 
-// Lock is a no-op used by -copylocks checker from `go vet`.
+// Lock/Unlock on noCopy allows `go vet` to trigger a warning if the struct is copied.
 func (*noCopy) Lock()   {}
 func (*noCopy) Unlock() {}
 
-// Mutex 互斥锁
+// Mutex is the high-level distributed lock controller.
 type Mutex struct {
 	noCopy noCopy
-	Locker Locker
+	Locker Locker // The implementation (e.g., RedisLocker or EtcdLocker)
 }
 
-// Lock 加锁
+// Lock manually acquires a lock for a specific duration.
 func (m *Mutex) Lock(ctx context.Context, key, threadId string, expiresIn time.Duration) bool {
 	key = m.resourceKey(key)
 	return m.Locker.Lock(ctx, key, threadId, expiresIn)
 }
 
-// Unlock 解锁
+// Unlock manually releases a lock.
 func (m *Mutex) Unlock(ctx context.Context, key, threadId string) bool {
 	key = m.resourceKey(key)
 	return m.Locker.Unlock(ctx, key, threadId)
 }
 
-// TryLock
+// TryLock executes the 'do' function if the lock is successfully acquired.
+// It handles retries and includes a "Watchdog" goroutine to automatically
+// extend the lock's life while 'do' is still running.
 func (m *Mutex) TryLock(ctx context.Context, key string, do func() error, opts ...LockOption) error {
 	if m.Locker == nil {
-		return status.Error(codes.Internal, "locker is must")
+		return status.Error(codes.Internal, "locker is required")
 	}
+
 	options := m.defaultLockOptions()
 	for _, opt := range opts {
 		opt(options)
 	}
+
 	key = m.resourceKey(key)
 	for i := 0; i < options.maxRetries; i++ {
 		if m.Locker.Lock(ctx, key, options.threadId, options.expiresIn.Duration) {
+			// Ensure the lock is released when 'do' completes or the function exits.
 			defer m.Locker.Unlock(ctx, key, options.threadId)
-			// 续期,防止do时间过长导致锁被自动释放了
+
+			// Watchdog: Start a goroutine to keep the lock alive.
 			exit := make(chan struct{})
 			defer close(exit)
 			go func() {
@@ -77,21 +77,29 @@ func (m *Mutex) TryLock(ctx context.Context, key string, do func() error, opts .
 					select {
 					case <-exit:
 						return
+					// Renew the lock when 2/3 of its TTL has elapsed.
 					case <-time.After(options.expiresIn.Duration - (options.expiresIn.Duration / 3)):
 						m.Locker.KeepAlive(ctx, key, options.threadId, options.expiresIn.Duration)
 					}
 				}
 			}()
+
+			// Execute the protected business logic.
 			return do()
 		}
+
 		if i == options.maxRetries-1 {
 			break
 		}
+
+		// Backoff with jitter to prevent "thundering herd" effect on the locker storage.
 		time.Sleep(time.Duration(rand.Int63n(int64(options.maxRetryDelayDuration-options.minRetryDelayDuration))) + options.minRetryDelayDuration)
 	}
-	return status.Errorf(status.GetLockFailCode, "get lock after %d retries not success", options.maxRetries)
+
+	return status.Errorf(status.GetLockFailCode, "failed to acquire lock after %d retries", options.maxRetries)
 }
 
+// resourceKey generates a standardized, namespaced key (e.g., app:lock:my_key).
 func (m *Mutex) resourceKey(key string) string {
 	return runtime.GetAPP().ResourceKey("lock", key,
 		runtime.WithoutAz(true),
@@ -99,6 +107,7 @@ func (m *Mutex) resourceKey(key string) string {
 		runtime.WithDelimiter(":"))
 }
 
+// defaultLockOptions provides sensible defaults for lock behavior.
 func (m *Mutex) defaultLockOptions() *LockOptions {
 	return &LockOptions{
 		expiresIn:             utils.JSONDuration{Duration: 5 * time.Minute},

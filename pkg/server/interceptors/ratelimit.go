@@ -12,39 +12,42 @@ import (
 )
 
 const (
-	// RateLimiterInterceptorName 限速器名称
+	// RateLimiterInterceptorName is the unique identifier for this interceptor.
 	RateLimiterInterceptorName = "ratelimiter"
-	// AllMethods 所有方法
+	// AllMethods is the wildcard key used for global rate limiting.
 	AllMethods = "*"
 )
 
-// RateLimiter 服务端限速拦截器
-// 无需实现redis版本的限速器
-// 限速的目的是为了保护服务,以免服务过载
-// 如需精确限制访问速度，请参考quota拦截器
+// RateLimiter provides local traffic control to protect the service from overload.
+// It is designed for high performance and does not require external dependencies like Redis.
+// For precise distributed quotas, the 'quota' interceptor should be used instead.
 type RateLimiter struct {
+	// limiters stores instances mapped by protocol, method, or wildcard.
 	limiters map[string]*rate.Limiter
 	lm       sync.RWMutex
 
 	conf *RateLimiterConfig
 }
 
-// RateLimiterConfig 限速器配置
+// RateLimiterConfig defines the thresholds and scope for rate limiting.
 type RateLimiterConfig struct {
 	Enabled bool `json:"enabled"`
-	// 每秒生成多少个Token
+	// Limit is the number of tokens generated per second (RPS).
 	Limit int `json:"limit"`
-	// 桶大小
-	Burst   int                        `json:"burst"`
+	// Burst is the maximum number of tokens the bucket can hold at once.
+	Burst int `json:"burst"`
+	// Methods allows for overriding global limits for specific endpoints.
 	Methods []*MethodRateLimiterConfig `json:"methods"`
 }
 
+// MethodRateLimiterConfig specifies limits for a specific gRPC or REST endpoint.
 type MethodRateLimiterConfig struct {
-	Name string `json:"name"`
+	Name string `json:"name"` // e.g., "grpc://pkg.Service/Method" or "*"
 	*RateLimiterConfig
 }
 
 var (
+	// defaultRateLimiteConfig provides "infinite" capacity by default.
 	defaultRateLimiteConfig = RateLimiterConfig{
 		Limit: -1,
 		Burst: -1,
@@ -52,10 +55,11 @@ var (
 )
 
 func init() {
+	// Register the rate limiter for all server instances.
 	server.AddInterceptor(RateLimiterInterceptorName, NewRateLimiterInterceptor)
 }
 
-// NewRateLimiterInterceptor 限速器初始化
+// NewRateLimiterInterceptor initializes the component and starts the configuration watcher.
 func NewRateLimiterInterceptor() (server.ServerInterceptor, error) {
 	ratelimiter := &RateLimiter{
 		limiters: make(map[string]*rate.Limiter),
@@ -66,29 +70,37 @@ func NewRateLimiterInterceptor() (server.ServerInterceptor, error) {
 	return ratelimiter, nil
 }
 
-// Interceptor 拦截器实现
+// Interceptor returns the middleware that enforces rate limits.
 func (rl *RateLimiter) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
 		if !rl.conf.Enabled {
 			return handler(ctx, req)
 		}
+
+		// 1. Identify the most specific limiter available for this request.
 		limiter := rl.getLimiter(info.Protocol, info.FullMethod)
+
 		logger.L(ctx).Debug("start ratelimiter interceptor",
 			"protocol", info.Protocol,
 			"limit", limiter.Limit(),
 			"burst", limiter.Burst())
+
+		// 2. Check if the bucket has available tokens.
 		if limiter.Allow() {
 			return handler(ctx, req)
 		}
+
+		// 3. Drop the request and return 429 (REST) or ResourceExhausted (gRPC).
 		return nil, status.TooManyRequest()
 	}
 }
 
-// Name 拦截器名称
+// Name returns the interceptor's unique name.
 func (*RateLimiter) Name() string {
 	return RateLimiterInterceptorName
 }
 
+// loadAndWatch handles initial loading and dynamic hot-reloads of configuration.
 func (rl *RateLimiter) loadAndWatch() error {
 	if err := rl.load(); err != nil {
 		return err
@@ -97,13 +109,18 @@ func (rl *RateLimiter) loadAndWatch() error {
 	return nil
 }
 
+// load parses the configuration and updates internal limiter instances.
 func (rl *RateLimiter) load() error {
 	conf := defaultRateLimiteConfig
 	if err := config.GetWithUnmarshal("asjard.interceptors.server.rateLimiter", &conf); err != nil {
 		return err
 	}
+
+	// Update or create limiters based on new config.
 	rl.setLimiters(&conf)
+	// Remove limiters that are no longer present in the configuration.
 	rl.cleanLimiters(&conf)
+
 	rl.conf = &conf
 	return nil
 }
@@ -114,24 +131,28 @@ func (rl *RateLimiter) watch(event *config.Event) {
 	}
 }
 
+// getLimiter performs a hierarchical lookup:
+// 1. protocol://method (most specific)
+// 2. method
+// 3. protocol
+// 4. * (global default)
 func (rl *RateLimiter) getLimiter(protocol, method string) *rate.Limiter {
 	rl.lm.RLock()
 	defer rl.lm.RUnlock()
+
 	if limiter, ok := rl.limiters[protocol+"://"+method]; ok {
 		return limiter
 	}
-
 	if limiter, ok := rl.limiters[method]; ok {
 		return limiter
 	}
-
 	if limiter, ok := rl.limiters[protocol]; ok {
 		return limiter
 	}
-
 	return rl.limiters[AllMethods]
 }
 
+// setLimiters initializes the global and method-specific token buckets.
 func (rl *RateLimiter) setLimiters(conf *RateLimiterConfig) {
 	rl.setLimiter(AllMethods, rate.Limit(conf.Limit), conf.Burst)
 	for _, method := range conf.Methods {
@@ -139,6 +160,7 @@ func (rl *RateLimiter) setLimiters(conf *RateLimiterConfig) {
 	}
 }
 
+// setLimiter creates a new bucket or updates an existing one without losing current state.
 func (rl *RateLimiter) setLimiter(method string, limit rate.Limit, burst int) {
 	if limit < 0 {
 		limit = rate.Inf
@@ -146,16 +168,19 @@ func (rl *RateLimiter) setLimiter(method string, limit rate.Limit, burst int) {
 	if burst < 0 {
 		burst = int(limit)
 	}
+
 	rl.lm.Lock()
+	defer rl.lm.Unlock()
+
 	if limiter, ok := rl.limiters[method]; ok {
 		limiter.SetLimit(limit)
 		limiter.SetBurst(burst)
 	} else {
 		rl.limiters[method] = rate.NewLimiter(limit, burst)
 	}
-	rl.lm.Unlock()
 }
 
+// cleanLimiters ensures that the memory map doesn't leak limiters for removed configs.
 func (rl *RateLimiter) cleanLimiters(conf *RateLimiterConfig) {
 	var deleteMethods []string
 	rl.lm.RLock()

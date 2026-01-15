@@ -1,5 +1,6 @@
 /*
-Package grpc 内建grpc客户端, 对core/client/ClientInterface的实现
+Package grpc implements the built-in gRPC client, fulfilling the core/client/ClientInterface.
+It handles connection management, service name resolution, and load balancing for gRPC traffic.
 */
 package grpc
 
@@ -21,18 +22,19 @@ import (
 )
 
 const (
-	// Protocol 协议名称
+	// Protocol defines the identifier for this client implementation.
 	Protocol = "grpc"
 )
 
-// Client .
+// Client handles the creation of gRPC connections and maintains global settings
+// like the default balancer and interceptors.
 type Client struct {
 	balanceName string
-	// 全局拦截器
+	// Global interceptor for all connections created by this client.
 	interceptor client.UnaryClientInterceptor
 }
 
-// ClientConn 客户端连接
+// ClientConn wraps a standard grpc.ClientConn to satisfy the framework's ClientConnInterface.
 type ClientConn struct {
 	*grpc.ClientConn
 	serviceName string
@@ -40,15 +42,18 @@ type ClientConn struct {
 }
 
 func init() {
+	// Automatically register the gRPC client factory into the framework's client manager.
 	client.AddClient(Protocol, NewClient)
 }
 
-// NewClient .
+// NewClient initializes a Client instance and registers any custom resolvers or balancers provided.
 func NewClient(options *client.ClientOptions) client.ClientInterface {
 	c := &Client{}
+	// Register custom naming resolver (e.g., ETCD, Consul) if provided.
 	if options.Resolver != nil {
 		resolver.Register(options.Resolver)
 	}
+	// Register custom load balancing strategy if provided.
 	if options.Balancer != nil {
 		balancer.Register(options.Balancer)
 		c.balanceName = options.Balancer.Name()
@@ -59,23 +64,23 @@ func NewClient(options *client.ClientOptions) client.ClientInterface {
 	return c
 }
 
-// ServiceName 客户端连接的服务名称
+// ServiceName returns the name of the target service for this connection.
 func (c ClientConn) ServiceName() string {
 	return c.serviceName
 }
 
-// Protocol 客户端连接的协议
+// Protocol returns "grpc".
 func (c ClientConn) Protocol() string {
 	return c.protocol
 }
 
-// Conn .
+// Conn returns the underlying gRPC connection interface.
 func (c ClientConn) Conn() grpc.ClientConnInterface {
 	return c.ClientConn
 }
 
-// NewConn 获取服务连接
-// targe: ajard://grpc/{ServerName}
+// NewConn establishes a new gRPC client connection to a target.
+// target format: asjard://grpc/{ServerName}
 func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (client.ClientConnInterface, error) {
 	u, err := url.Parse(target)
 	if err != nil {
@@ -83,17 +88,21 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (client
 	}
 	serviceName := strings.Trim(u.Path, "/")
 	var options []grpc.DialOption
+
+	// 1. Configure Load Balancing
 	balanceName := c.balanceName
 	if clientOpts.Balancer != nil && balancer.Get(clientOpts.Balancer.Name()) == nil {
 		balancer.Register(clientOpts.Balancer)
 		balanceName = clientOpts.Balancer.Name()
 	}
 	options = append(options, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}]}`, balanceName)))
+
+	// 2. Load gRPC specific configuration (Keepalive, TLS, etc.)
 	conf := serviceConfig(serviceName)
+
+	// 3. Configure Security (TLS vs Insecure)
 	if conf.CertFile != "" {
 		conf.CertFile = filepath.Join(utils.GetCertDir(), conf.CertFile)
-	}
-	if conf.CertFile != "" {
 		creds, err := credentials.NewClientTLSFromFile(conf.CertFile, serviceName)
 		if err != nil {
 			return nil, err
@@ -102,11 +111,16 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (client
 	} else {
 		options = append(options, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
+
+	// 4. Configure Keepalive parameters to maintain healthy long-lived connections.
 	options = append(options, grpc.WithKeepaliveParams(keepalive.ClientParameters{
 		Time:                conf.Options.Keepalive.Time.Duration,
 		Timeout:             conf.Options.Keepalive.Timeout.Duration,
 		PermitWithoutStream: conf.Options.Keepalive.PermitWithoutStream,
 	}))
+
+	// 5. Setup Interceptor (Middleware) pipeline.
+	// This wraps the framework's generic interceptor into gRPC's specific UnaryClientInterceptor format.
 	interceptor := c.interceptor
 	if clientOpts.Interceptor != nil {
 		interceptor = clientOpts.Interceptor
@@ -119,6 +133,8 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (client
 				})
 			}))
 	}
+
+	// 6. Create the underlying gRPC client.
 	conn, err := grpc.NewClient(target, options...)
 	if err != nil {
 		return nil, err

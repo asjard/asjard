@@ -1,4 +1,5 @@
 /*
-Pakcage logger 日志扩展实现
+Package logger provides the core logging abstractions and driver implementations
+for the Asjard framework.
 */
 package logger
