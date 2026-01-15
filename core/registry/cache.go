@@ -8,45 +8,48 @@ import (
 	"github.com/asjard/asjard/core/server"
 )
 
-// 服务健康方法
+// healthCheckFunc defines the signature for verifying if a specific service instance is healthy.
 type healthCheckFunc func(discoverName string, instance *server.Service) error
 
-// Instance 带发现者的服务实例详情
+// Instance wraps a discovered service with the name of the discovery source (e.g., "etcd", "nacos").
 type Instance struct {
-	// 服务发现者
+	// DiscoverName is the name of the discovery component that found this instance.
 	DiscoverName string
-	// 实例详情
+	// Service contains the actual connection details (IP, Port, Metadata).
 	Service *server.Service
 }
 
-// 服务发现缓存
+// cache maintains a local, thread-safe snapshot of all available services in the cluster.
 type cache struct {
-	// 服务列表
+	// services stores map[instanceID]*Instance for fast O(1) lookups.
 	services map[string]*Instance
-	sm       sync.RWMutex
+	sm       sync.RWMutex // Protects the services map.
 
 	conf *Config
 
-	// 健康检查方法
+	// healthCheckFunc is the logic used to ping/probe instances.
 	healthCheckFunc healthCheckFunc
-	// 连续失败次数
-	// 当一个服务健康检查失败次数超过此阈值时从本地缓存列表中删除此服务
+
+	// failureThreshold is the limit for consecutive failed health checks before removal.
 	failureThreshold int
-	// 健康检查失败记录
+
+	// failureThresholds tracks the current failure count for specific instances.
 	// key: discoverName + serviceName + serviceID
-	// value: 失败次数
 	failureThresholds map[string]int
-	fm                sync.RWMutex
-	listeners         map[string][]*listener
-	lm                sync.RWMutex
+	fm                sync.RWMutex // Protects failure count records.
+
+	// listeners stores registered watchers interested in service changes.
+	listeners map[string][]*listener
+	lm        sync.RWMutex // Protects listener registration.
 }
 
+// listener wraps a watch callback with specific filtering options.
 type listener struct {
 	options  *Options
 	callback func(*Event)
 }
 
-// 初始化一个本地缓存用以维护发现的服务实例
+// newCache initializes the local discovery cache and starts background health checking if enabled.
 func newCache(conf *Config, hf healthCheckFunc) *cache {
 	c := &cache{
 		services:          make(map[string]*Instance),
@@ -56,12 +59,14 @@ func newCache(conf *Config, hf healthCheckFunc) *cache {
 		listeners:         map[string][]*listener{},
 		conf:              conf,
 	}
+	// Start the background health check loop if configured.
 	if conf.HealthCheck {
 		go c.healthCheck()
 	}
 	return c
 }
 
+// canPick evaluates if an instance satisfies the filtering criteria (e.g., version match, tag match).
 func (instance *Instance) canPick(options *Options) bool {
 	for _, pickFunc := range options.getPickFuncs() {
 		if !pickFunc(instance) {
@@ -71,7 +76,7 @@ func (instance *Instance) canPick(options *Options) bool {
 	return true
 }
 
-// 获取服务实例
+// pick filters the cache for instances matching the provided options and registers a listener if requested.
 func (c *cache) pick(options *Options) []*Instance {
 	var instances []*Instance
 	c.sm.RLock()
@@ -81,10 +86,12 @@ func (c *cache) pick(options *Options) []*Instance {
 			instances = append(instances, instance)
 		}
 	}
+	// Automatically register a watcher if the user provided watch criteria.
 	c.addListener(options)
 	return instances
 }
 
+// addListener registers a callback to be notified when services matching the criteria are added/removed.
 func (c *cache) addListener(options *Options) {
 	if options.watchName != "" && options.watch != nil {
 		c.lm.Lock()
@@ -96,6 +103,7 @@ func (c *cache) addListener(options *Options) {
 	}
 }
 
+// removeListener unregisters a watcher by its unique name.
 func (c *cache) removeListener(listenerName string) {
 	c.lm.Lock()
 	for name := range c.listeners {
@@ -106,7 +114,7 @@ func (c *cache) removeListener(listenerName string) {
 	c.lm.Unlock()
 }
 
-// 更新本地缓存中的服务实例
+// update adds or refreshes service instances in the local cache and triggers notifications.
 func (c *cache) update(instances []*Instance) {
 	c.sm.Lock()
 	defer c.sm.Unlock()
@@ -116,11 +124,12 @@ func (c *cache) update(instances []*Instance) {
 			"instance_name", instance.Service.Instance.Name,
 			"registry", instance.DiscoverName)
 		c.services[instance.Service.Instance.ID] = instance
+		// Notify interested watchers about the update.
 		c.notify(EventTypeUpdate, instance)
 	}
 }
 
-// 从本地缓存中删除服务实例
+// delete removes a service instance from the local cache and notifies watchers.
 func (c *cache) delete(instance *Instance) {
 	logger.Debug("delete instance",
 		"instance", instance.Service.Instance.ID,
@@ -133,6 +142,7 @@ func (c *cache) delete(instance *Instance) {
 	c.sm.Unlock()
 }
 
+// notify iterates through all relevant listeners and executes their callbacks if the instance matches their filters.
 func (c *cache) notify(eventType EventType, instance *Instance) {
 	c.lm.RLock()
 	for _, listeners := range c.listeners {
@@ -148,7 +158,7 @@ func (c *cache) notify(eventType EventType, instance *Instance) {
 	c.lm.RUnlock()
 }
 
-// 服务健康检查
+// healthCheck is a loop that periodically triggers the health probe mechanism.
 func (c *cache) healthCheck() {
 	ticker := time.NewTicker(c.conf.HealthCheckInterval.Duration)
 	for {
@@ -159,26 +169,13 @@ func (c *cache) healthCheck() {
 	}
 }
 
+// doHealthCheck executes the probing logic (placeholder implementation commented out).
 func (c *cache) doHealthCheck() {
-	// c.sm.RLock()
-	// for discoverName, service := range c.discoverServices {
-	// 	notHealthInstances := service.healthCheck(discoverName, c.healthCheckFunc)
-	// 	for _, instance := range notHealthInstances {
-	// 		failKey := fmt.Sprintf("%s:%s:%s", discoverName, instance.Name, instance.ID)
-	// 		threshold := c.getFailureThreshold(failKey)
-	// 		if threshold >= c.failureThreshold {
-	// 			// 移除该服务实例
-	// 			service.delete(instance)
-	// 			// 移除失败次数记录
-	// 			delete(c.failureThresholds, failKey)
-	// 		} else {
-	// 			c.setFailureThreshold(failKey, threshold+1)
-	// 		}
-	// 	}
-	// }
-	// c.sm.RUnlock()
+	// Logic: Iterate through services, call healthCheckFunc,
+	// update failure thresholds, and delete instances that exceed the threshold.
 }
 
+// getFailureThreshold retrieves the current number of consecutive failures for a key.
 func (c *cache) getFailureThreshold(failKey string) int {
 	c.fm.RLock()
 	threshold, ok := c.failureThresholds[failKey]
@@ -189,6 +186,7 @@ func (c *cache) getFailureThreshold(failKey string) int {
 	return 1
 }
 
+// setFailureThreshold updates the failure count for an instance.
 func (c *cache) setFailureThreshold(failKey string, threshold int) {
 	c.fm.Lock()
 	c.failureThresholds[failKey] = threshold

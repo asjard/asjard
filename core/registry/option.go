@@ -6,30 +6,30 @@ import (
 	"github.com/asjard/asjard/core/runtime"
 )
 
-// Options 服务注册发现相关参数
+// Options holds the criteria used to filter service instances from the cache.
+// It also contains data for setting up real-time watches on those instances.
 type Options struct {
-	// 自定义服务选择key
-	// 主要用来缓存
-	// customePickFuncKeys []string
+	// pickFuncs is a slice of predicates. An instance must satisfy ALL of them to be selected.
 	pickFuncs []PickFunc
-	watch     func(*Event)
+	// watch is the callback executed when an instance matching these criteria changes.
+	watch func(*Event)
+	// watchName is a unique identifier for this specific listener.
 	watchName string
 }
 
-// PickFunc 服务选择过滤方法
-// 如果返回true则表示该实例满足要求
+// PickFunc is a predicate function. Returns true if the instance meets the requirement.
 type PickFunc func(instance *Instance) bool
 
-// Option .
+// Option defines the function signature for modifying the Options struct.
 type Option func(opts *Options)
 
 var (
-	// 默认参数
+	// global singleton for default filtering behavior.
 	defaultOptions     *Options
 	defaultOptionsOnce sync.Once
 )
 
-// NewOptions .
+// NewOptions creates a new Options struct by applying all provided functional options.
 func NewOptions(opts []Option) *Options {
 	options := &Options{}
 	for _, opt := range opts {
@@ -38,15 +38,18 @@ func NewOptions(opts []Option) *Options {
 	return options
 }
 
-// DefaultOptions 默认参数
-// 相同的区域
-// 相同的应用
-// 相同的环境
+// DefaultOptions provides a "Safe Default" filter.
+// By default, it only selects services that share the same App, Region, and Environment
+// as the current running process to ensure traffic stays within logical boundaries.
 func DefaultOptions() *Options {
 	defaultOptionsOnce.Do(func() {
 		app := runtime.GetAPP()
 		defaultOptions = &Options{}
-		opts := []Option{WithApp(app.App), WithRegion(app.Region), WithEnvironment(app.Environment)}
+		opts := []Option{
+			WithApp(app.App),
+			WithRegion(app.Region),
+			WithEnvironment(app.Environment),
+		}
 		for _, opt := range opts {
 			opt(defaultOptions)
 		}
@@ -54,24 +57,25 @@ func DefaultOptions() *Options {
 	return defaultOptions
 }
 
-// WithApp 设置APP名称
+// --- Filter Functions (Predicate Builders) ---
+
+// WithApp filters instances by Application name.
 func WithApp(app string) func(opts *Options) {
 	return func(opts *Options) {
-		// opts.App = app
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
 			return instance.Service.App == app
 		})
 	}
 }
 
-// WithPickFunc 自定义服务选择方法
+// WithPickFunc allows users to inject arbitrary custom filtering logic.
 func WithPickFunc(pickFuns []PickFunc) func(opts *Options) {
 	return func(opts *Options) {
 		opts.pickFuncs = append(opts.pickFuncs, pickFuns...)
 	}
 }
 
-// WithRegion 设置区域
+// WithRegion filters instances by physical region (e.g., "us-east-1").
 func WithRegion(region string) func(opts *Options) {
 	return func(opts *Options) {
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
@@ -80,7 +84,7 @@ func WithRegion(region string) func(opts *Options) {
 	}
 }
 
-// WithEnvironment 设置环境
+// WithEnvironment filters instances by lifecycle stage (e.g., "prod", "dev").
 func WithEnvironment(environment string) func(opts *Options) {
 	return func(opts *Options) {
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
@@ -89,7 +93,7 @@ func WithEnvironment(environment string) func(opts *Options) {
 	}
 }
 
-// WithServiceName 设置服务名称
+// WithServiceName filters instances by their specific service name (e.g., "order-api").
 func WithServiceName(serviceName string) func(opts *Options) {
 	return func(opts *Options) {
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
@@ -98,6 +102,7 @@ func WithServiceName(serviceName string) func(opts *Options) {
 	}
 }
 
+// WithInstanceID filters for one specific unique instance.
 func WithInstanceID(instanceID string) func(opts *Options) {
 	return func(opts *Options) {
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
@@ -106,7 +111,7 @@ func WithInstanceID(instanceID string) func(opts *Options) {
 	}
 }
 
-// WithRegistryName 设置注册/发现中心名称
+// WithRegistryName filters based on which discovery source found the service (e.g., "etcd").
 func WithRegistryName(registryName string) func(opts *Options) {
 	return func(opts *Options) {
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
@@ -115,12 +120,12 @@ func WithRegistryName(registryName string) func(opts *Options) {
 	}
 }
 
-// WithProtocol .
+// WithProtocol filters for instances that support a specific protocol (e.g., "grpc", "rest").
 func WithProtocol(protocol string) func(opts *Options) {
 	return func(opts *Options) {
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
-			for protocol := range instance.Service.Endpoints {
-				if protocol == protocol {
+			for p := range instance.Service.Endpoints {
+				if p == protocol {
 					return true
 				}
 			}
@@ -129,7 +134,7 @@ func WithProtocol(protocol string) func(opts *Options) {
 	}
 }
 
-// WithVersion .
+// WithVersion filters instances by their semantic version (e.g., "v1.2.0").
 func WithVersion(version string) func(opts *Options) {
 	return func(opts *Options) {
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
@@ -138,7 +143,8 @@ func WithVersion(version string) func(opts *Options) {
 	}
 }
 
-// WithMetadata .
+// WithMetadata filters instances based on custom key-value pairs in their metadata.
+// It ensures that ALL key-values in the provided map match the instance's metadata.
 func WithMetadata(metadata map[string]string) func(opts *Options) {
 	return func(opts *Options) {
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
@@ -159,13 +165,16 @@ func WithMetadata(metadata map[string]string) func(opts *Options) {
 	}
 }
 
-// WithWatch 更新服务变化
+// WithWatch enables the observer pattern. When the service cache changes,
+// the callback will be executed if the instance matches the current filters.
 func WithWatch(watchName string, callback func(*Event)) func(opts *Options) {
 	return func(opts *Options) {
 		opts.watch = callback
 		opts.watchName = watchName
 	}
 }
+
+// --- Helpers ---
 
 func okPickFunc() PickFunc {
 	return func(instance *Instance) bool {

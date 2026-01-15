@@ -3,40 +3,42 @@ package registry
 import "github.com/asjard/asjard/core/logger"
 
 const (
-	// LocalRegistryName 本地注册发现中心名称
+	// LocalRegistryName is the identifier for the built-in local service discovery.
 	LocalRegistryName = "local"
 )
 
-// Discovery 服务发现相关功能
+// Discovery defines the standard interface that any service discovery provider
+// (e.g., ETCD, Consul) must implement to plug into the framework.
 type Discovery interface {
-	// 获取所有服务实例
+	// GetAll retrieves the full list of available service instances from the remote registry.
 	GetAll() ([]*Instance, error)
-	// 服务发现中心名称
+	// Name returns the unique identifier of the discovery implementation.
 	Name() string
 }
 
-// CallbackFunc 回调方法
+// CallbackFunc is the signature for functions that react to service topology changes.
 type CallbackFunc func(event *Event)
 
-// DiscoveryOptions 服务发现初始化参数列表
+// DiscoveryOptions encapsulates the configuration for initializing a Discovery provider.
 type DiscoveryOptions struct {
+	// Callback is triggered by the provider when it detects changes in the remote registry.
 	Callback CallbackFunc
 }
 
-// DiscoveryOption 服务发现初始化参数
+// DiscoveryOption is a functional argument for customizing DiscoveryOptions.
 type DiscoveryOption func(options *DiscoveryOptions)
 
-// NewDiscoveryFunc 服务发现
+// NewDiscoveryFunc is a factory function type that creates a new Discovery instance.
 type NewDiscoveryFunc func(options *DiscoveryOptions) (Discovery, error)
 
-// WithDiscoveryCallback 设置服务发现回调函数
+// WithDiscoveryCallback is a functional option to attach a watcher to the discovery process.
 func WithDiscoveryCallback(callback CallbackFunc) func(options *DiscoveryOptions) {
 	return func(options *DiscoveryOptions) {
 		options.Callback = callback
 	}
 }
 
-// NewDiscoveryOptions 服务发现参数初始化
+// NewDiscoveryOptions aggregates multiple functional options into a single options struct.
 func NewDiscoveryOptions(opts ...DiscoveryOption) *DiscoveryOptions {
 	options := &DiscoveryOptions{}
 	for _, opt := range opts {
@@ -46,23 +48,26 @@ func NewDiscoveryOptions(opts ...DiscoveryOption) *DiscoveryOptions {
 }
 
 var (
+	// newDiscoverys maintains a registry of available discovery implementation factories.
 	newDiscoverys = make(map[string]NewDiscoveryFunc)
 )
 
-// AddDiscover 添加服务发现组件
+// AddDiscover registers a new discovery provider factory (e.g., called by an 'etcd' driver init function).
 func AddDiscover(name string, newFunc NewDiscoveryFunc) error {
 	logger.Debug("add discover", "name", name)
 	newDiscoverys[name] = newFunc
 	return nil
 }
 
-// Discover 服务发现
+// Discover initiates the discovery process through the global registry manager.
+// It usually triggers the initial pull of services from all registered sources.
 func Discover() error {
 	return registryManager.discove()
 }
 
-// PickServices 获取服务列表
-// 从本地缓存中获取符合要求的服务实例
+// PickServices is the primary API used by Load Balancers or Clients.
+// It returns a filtered list of service instances from the local cache based on criteria
+// like service name, version, or labels.
 func PickServices(opts ...Option) []*Instance {
 	options := NewOptions(opts)
 	if len(opts) == 0 {
@@ -71,7 +76,7 @@ func PickServices(opts ...Option) []*Instance {
 	return registryManager.pick(options)
 }
 
-// RemoveListener 移除监听
+// RemoveListener unregisters a service-watch listener by name to stop receiving topology updates.
 func RemoveListener(name string) {
 	registryManager.removeListener(name)
 }

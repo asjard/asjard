@@ -8,39 +8,53 @@ import (
 	"github.com/asjard/asjard/utils"
 )
 
+// Config defines the settings for a server instance.
 type Config struct {
+	// Enabled indicates if this server should be started.
 	Enabled bool `json:"enabled"`
-	// 自定义拦截器
+
+	// Interceptors are custom middleware specified by the user in config files.
 	Interceptors utils.JSONStrings `json:"interceptors"`
-	// 内建拦截器
-	// 配置的拦截器和内建拦截器合并
+
+	// BuiltInInterceptors are standard framework middleware (e.g., tracing, logging).
+	// These are merged with custom Interceptors during initialization.
 	BuiltInInterceptors utils.JSONStrings `json:"builtInInterceptors"`
-	// 默认处理器
+
+	// DefaultHandlers are custom API handlers specified by the user.
 	DefaultHandlers utils.JSONStrings `json:"defaultHandlers"`
-	// 内建默认处理器
+
+	// BuiltInDefaultHandlers are system-provided handlers (e.g., /health, /metrics).
 	BuiltInDefaultHandlers utils.JSONStrings `json:"builtInDefaultHandlers"`
-	// 监听地址配置
+
+	// Addresses specifies where the server listens and how it announces itself.
 	Addresses AddressConfig `json:"addresses"`
-	// 证书文件配置,相对于ASJARD_CONF_DIR/certs的相对路径
+
+	// CertFile is the relative path to the TLS certificate (relative to ASJARD_CONF_DIR/certs).
 	CertFile string `json:"certFile"`
-	KeyFile  string `json:"keyFile"`
+	// KeyFile is the relative path to the TLS private key.
+	KeyFile string `json:"keyFile"`
 }
 
-// AddressConfig 监听地址配置
+// AddressConfig manages network binding and service discovery announcement.
 type AddressConfig struct {
-	// 本地监听地址
+	// Listen is the local network address the server binds to (e.g., "0.0.0.0:8080").
 	Listen string `json:"listen"`
-	// 广播地址,主要用来垮区域通信
+
+	// Advertise is the address broadcasted to the service registry.
+	// This is useful for cross-region communication or NAT/Docker environments.
 	Advertise string `json:"advertise"`
 }
 
-// DefaultConfig 默认配置
+// DefaultConfig provides a standard baseline for all servers in the framework.
 var DefaultConfig = Config{
-	BuiltInInterceptors:    utils.JSONStrings{"panic", "i18n", "trace", "ratelimiter", "metrics", "accessLog", "restReadEntity"},
+	// Standard interceptor stack order: panic recovery -> i18n -> trace -> etc.
+	BuiltInInterceptors: utils.JSONStrings{"panic", "i18n", "trace", "ratelimiter", "metrics", "accessLog", "restReadEntity"},
+	// Standard diagnostic and monitoring endpoints.
 	BuiltInDefaultHandlers: utils.JSONStrings{"default", "health", "metrics"},
 }
 
-// GetConfigWithProtocol 根据协议获取配置
+// GetConfigWithProtocol retrieves server settings for a specific protocol (e.g., "rest", "grpc").
+// It follows a configuration chain: Global Server Config -> Protocol-Specific Config.
 func GetConfigWithProtocol(protocol string) Config {
 	conf := DefaultConfig
 	config.GetWithUnmarshal(constant.ConfigServerPrefix,
@@ -49,14 +63,15 @@ func GetConfigWithProtocol(protocol string) Config {
 	return conf.complete()
 }
 
-// GetConfig 获取服务全局配置
+// GetConfig retrieves the global server settings without protocol-specific overrides.
 func GetConfig() Config {
 	conf := DefaultConfig
 	config.GetWithUnmarshal(constant.ConfigServerPrefix, &conf)
 	return conf.complete()
 }
 
-// 去重，添加内建配置
+// complete handles the merging logic to ensure built-in and custom configurations coexist correctly.
+// It deduplicates lists and ensures that essential framework features are included.
 func (c Config) complete() Config {
 	c.Interceptors = c.BuiltInInterceptors.Merge(c.Interceptors)
 	c.DefaultHandlers = c.BuiltInDefaultHandlers.Merge(c.DefaultHandlers)
