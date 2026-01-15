@@ -1,11 +1,11 @@
 package client
 
 import (
-	"fmt"
 	"testing"
+	"time"
 
 	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
+	_ "github.com/asjard/asjard/pkg/config/mem"
 	"github.com/asjard/asjard/utils"
 )
 
@@ -27,10 +27,9 @@ func TestConfigHierarchy(t *testing.T) {
 
 	t.Run("ProtocolLevelOverride", func(t *testing.T) {
 		// Simulate setting protocol-level config
-		configKey := fmt.Sprintf(constant.ConfigClientWithProtocolPrefix, protocol)
-		config.Set(configKey, map[string]interface{}{
-			"loadbalance": protocolLB,
-		})
+		key := "asjard.clients." + protocol + ".loadbalance"
+		config.Set(key, protocolLB)
+		time.Sleep(200 * time.Millisecond)
 
 		conf := GetConfigWithProtocol(protocol)
 		if conf.Loadbalance != protocolLB {
@@ -40,10 +39,9 @@ func TestConfigHierarchy(t *testing.T) {
 
 	t.Run("ServiceLevelOverride", func(t *testing.T) {
 		// Simulate setting service-level config
-		configKey := fmt.Sprintf(constant.ConfigClientWithSevicePrefix, protocol, serviceName)
-		config.Set(configKey, map[string]interface{}{
-			"loadbalance": serviceLB,
-		})
+		key := "asjard.clients." + protocol + "." + serviceName + ".loadbalance"
+		config.Set(key, serviceLB)
+		time.Sleep(200 * time.Millisecond)
 
 		conf := serviceConfig(protocol, serviceName)
 		if conf.Loadbalance != serviceLB {
