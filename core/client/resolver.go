@@ -11,22 +11,26 @@ import (
 	"google.golang.org/grpc/resolver"
 )
 
-// AddressAttrKey 空的结构体用来作为address attr的key
+// AddressAttrKey is an empty struct used as a key for storing registry.Instance
+// metadata within RPC address attributes.
 type AddressAttrKey struct{}
 
-// ListenAddressKey 空的结构用来作为标记监听地址
+// ListenAddressKey is used as a marker key in address attributes to identify
+// a local listening address.
 type ListenAddressKey struct{}
 
-// AdvertiseAddressKey 空的结构体用来标记广播地址
+// AdvertiseAddressKey is used as a marker key in address attributes to identify
+// a publicly accessible broadcast (advertise) address.
 type AdvertiseAddressKey struct{}
 
-// ClientBuilder .
+// ClientBuilder implements the RPC resolver.Builder interface.
+// It parses the custom Asjard scheme to create a resolver that watches for service changes.
 type ClientBuilder struct{}
 
 var _ resolver.Builder = &ClientBuilder{}
 
-// Build .
-// target: asjard://grpc/serviceName
+// Build creates a new resolver for the given target.
+// The target URL format is: asjard://[protocol]/[serviceName]?instanceID=[id]&registryName=[name]
 func (c *ClientBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	query := target.URL.Query()
 	cr := &clientResolver{
@@ -37,33 +41,37 @@ func (c *ClientBuilder) Build(target resolver.Target, cc resolver.ClientConn, op
 		registryName: query.Get("registryName"),
 	}
 
+	// Trigger initial resolution immediately upon building.
 	cr.ResolveNow(resolver.ResolveNowOptions{})
 	return cr, nil
 }
 
-// Scheme 解析器名称
+// Scheme returns the naming scheme supported by this builder (default: "asjard").
 func (*ClientBuilder) Scheme() string {
 	return constant.Framework
 }
 
+// clientResolver implements the gRPC resolver.Resolver interface.
+// It bridges the gRPC connection and the Asjard service discovery system.
 type clientResolver struct {
 	cc resolver.ClientConn
-	// 协议
+	// protocol defines the communication method (e.g., grpc, http).
 	protocol string
-	// 服务名称
+	// serviceName is the name of the target service in the registry.
 	serviceName string
-	// 实例ID
+	// instanceID optionally filters for a specific service instance.
 	instanceID string
-	// 注册/发现中心名称
+	// registryName optionally specifies which discovery backend to query.
 	registryName string
 }
 
-// Close .
+// Close cleans up the resolver by removing the listener from the registry.
 func (r *clientResolver) Close() {
 	registry.RemoveListener(r.listenerName())
 }
 
-// ResolveNow 从服务发现中心获取服务列表
+// ResolveNow fetches the latest service list from the discovery center.
+// It configures registry options based on the current application runtime and target parameters.
 func (r *clientResolver) ResolveNow(_ resolver.ResolveNowOptions) {
 	app := runtime.GetAPP()
 	options := []registry.Option{
@@ -71,6 +79,7 @@ func (r *clientResolver) ResolveNow(_ resolver.ResolveNowOptions) {
 		registry.WithProtocol(r.protocol),
 		registry.WithEnvironment(app.Environment),
 		registry.WithApp(app.App),
+		// Watch enables real-time updates when instances join or leave.
 		registry.WithWatch(r.listenerName(), r.watch),
 	}
 	if r.instanceID != "" {
@@ -83,6 +92,7 @@ func (r *clientResolver) ResolveNow(_ resolver.ResolveNowOptions) {
 	r.update(instances)
 }
 
+// listenerName generates a unique identifier for the registry watch event.
 func (r *clientResolver) listenerName() string {
 	return fmt.Sprintf("%s_clientResolver_%s_%s",
 		constant.Framework,
@@ -90,12 +100,15 @@ func (r *clientResolver) listenerName() string {
 		r.serviceName)
 }
 
+// update transforms registry instances into gRPC-compatible resolver addresses
+// and pushes them to the gRPC ClientConn.
 func (r *clientResolver) update(instances []*registry.Instance) {
 	addresses := []resolver.Address{}
 	for _, instance := range instances {
 		attr := attributes.New(AddressAttrKey{}, instance)
 		endpoint, ok := instance.Service.GetEndpoint(r.protocol)
 		if ok {
+			// Process both Listen and Advertise addresses for the instance.
 			if len(endpoint.Listen) != 0 {
 				for _, addr := range endpoint.Listen {
 					logger.Debug("client resolver add addr", "addr", addr)
@@ -116,7 +129,9 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 			}
 		}
 	}
+
 	logger.Debug("updating state with addresses", "addresses", addresses)
+	// UpdateState triggers the gRPC Balancer to re-evaluate the connection pool.
 	if err := r.cc.UpdateState(resolver.State{
 		Addresses: addresses,
 	}); err != nil {
@@ -129,9 +144,11 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 	}
 }
 
+// watch is the callback function triggered by the registry when service instances change.
 func (r *clientResolver) watch(event *registry.Event) {
 	logger.Debug("receive changed event", "type", event.Type, "instance", event.Instance)
 	if event.Type == registry.EventTypeDelete {
+		// When an instance is deleted, we refresh to get the latest valid set.
 		r.cc.UpdateState(resolver.State{})
 	} else {
 		r.update([]*registry.Instance{event.Instance})
