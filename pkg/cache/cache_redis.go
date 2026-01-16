@@ -13,6 +13,7 @@ import (
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/pkg/stores"
 	"github.com/asjard/asjard/pkg/stores/xredis"
+	"github.com/asjard/asjard/pkg/tools"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -253,13 +254,7 @@ func (c *CacheRedis) Del(ctx context.Context, keys ...string) error {
 	client := c.client.Load()
 	switch c.tp {
 	case CacheRedisTypeKeyValue:
-		// Evict from L1 first.
-		if c.options.localCache != nil && c.options.localCache.Enabled() {
-			if err := c.options.localCache.Del(ctx, keys...); err != nil {
-				return err
-			}
-		}
-		if err := client.Del(ctx, keys...).Err(); err != nil {
+		if err := c.delKeys(ctx, client, keys...); err != nil {
 			return err
 		}
 	case CacheRedisTypeHash:
@@ -405,14 +400,16 @@ func (c *CacheRedis) delGroup(ctx context.Context) error {
 			for key := range result.Val() {
 				keys = append(keys, key)
 			}
+
 			logger.Debug("delete group", "group", group, "keys", keys)
-			// Purge from both Local and Redis layers.
-			if c.options.localCache != nil && c.options.localCache.Enabled() {
-				if err := c.options.localCache.Del(ctx, keys...); err != nil {
-					return err
-				}
+			if err := c.delKeys(ctx, client, keys...); err != nil {
+				return err
 			}
-			if err := client.Del(ctx, keys...).Err(); err != nil {
+			if err := tools.DefaultTW.AddTask(time.Second, func() {
+				if err := c.delKeys(ctx, client, keys...); err != nil {
+					logger.L(ctx).Error("delay delete group keys fail", "group", group)
+				}
+			}); err != nil {
 				return err
 			}
 		}
@@ -420,6 +417,19 @@ func (c *CacheRedis) delGroup(ctx context.Context) error {
 		if err := client.Del(ctx, c.groups...).Err(); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (c *CacheRedis) delKeys(ctx context.Context, client *redis.Client, keys ...string) error {
+	// Purge from both Local and Redis layers.
+	if c.options.localCache != nil && c.options.localCache.Enabled() {
+		if err := c.options.localCache.Del(ctx, keys...); err != nil {
+			return err
+		}
+	}
+	if err := client.Del(ctx, keys...).Err(); err != nil {
+		return err
 	}
 	return nil
 }

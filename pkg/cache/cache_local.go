@@ -110,7 +110,10 @@ func (c *CacheLocal) Del(ctx context.Context, keys ...string) error {
 		return err
 	}
 	// 2. Broadcast deletion to other instances.
-	return c.delPublish(ctx, keys...)
+	if err := c.delPublish(ctx, keys...); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *CacheLocal) del(keys ...string) error {
