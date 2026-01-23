@@ -117,6 +117,34 @@ func TestConnDBs(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, db)
 	})
+	t.Run("transaction", func(t *testing.T) {
+		fn := func(ctx context.Context) error {
+			db, err := DB(ctx)
+			if err != nil {
+				return err
+			}
+			return db.Where("db_name=?", "notExistRecord").First(&testTable{}).Error
+		}
+		fnCreate := func(ctx context.Context) error {
+			db, err := DB(ctx)
+			if err != nil {
+				return err
+			}
+			return db.Create(&testTable{DBName: "testTransaction"}).Error
+		}
+		ctx := context.Background()
+		db, err := DB(ctx)
+		assert.Nil(t, err)
+		assert.NotNil(t, db.Transaction(func(tx *gorm.DB) error {
+			dbCtx := WithDB(ctx, tx)
+			assert.Nil(t, fnCreate(dbCtx))
+			// 这里会失败
+			return fn(dbCtx)
+		}))
+
+		// 事务失败了，应该是没有数据的
+		assert.NotNil(t, db.Where("db_name=?", "testTransaction").First(&testTable{}).Error)
+	})
 	t.Run("shutdown", func(t *testing.T) {
 		dbManager.Stop()
 		_, err := DB(context.TODO())
