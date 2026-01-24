@@ -78,9 +78,9 @@ func (instance *Instance) canPick(options *Options) bool {
 
 // pick filters the cache for instances matching the provided options and registers a listener if requested.
 func (c *cache) pick(options *Options) []*Instance {
-	var instances []*Instance
 	c.sm.RLock()
 	defer c.sm.RUnlock()
+	instances := make([]*Instance, 0, len(c.services))
 	for _, instance := range c.services {
 		if instance.canPick(options) {
 			instances = append(instances, instance)
@@ -89,6 +89,17 @@ func (c *cache) pick(options *Options) []*Instance {
 	// Automatically register a watcher if the user provided watch criteria.
 	c.addListener(options)
 	return instances
+}
+
+func (c *cache) isAvailable(options *Options) bool {
+	c.sm.RLock()
+	defer c.sm.RUnlock()
+	for _, instance := range c.services {
+		if instance.canPick(options) {
+			return true
+		}
+	}
+	return false
 }
 
 // addListener registers a callback to be notified when services matching the criteria are added/removed.

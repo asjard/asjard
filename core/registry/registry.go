@@ -182,6 +182,12 @@ func (r *RegistryManager) pick(options *Options) []*Instance {
 	return r.cache.pick(options)
 }
 
+// checks if there is at least one service instance currently available
+// in the registry that matches the given criteria.
+func (r *RegistryManager) isAvailable(options *Options) bool {
+	return r.cache.isAvailable(options)
+}
+
 // removeListener stops watching for changes under a specific listener ID.
 func (r *RegistryManager) removeListener(name string) {
 	r.cache.removeListener(name)

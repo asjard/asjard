@@ -76,6 +76,30 @@ func PickServices(opts ...Option) []*Instance {
 	return registryManager.pick(options)
 }
 
+// IsAvailable checks if there is at least one service instance currently available
+// in the registry that matches the given criteria.
+//
+// If no options are provided, it uses the default configuration to perform the check.
+//
+// Example:
+//
+//	// Check if any instance of the current service is available
+//	if registry.IsAvailable() {
+//	    fmt.Println("Service is ready")
+//	}
+//
+//	// Check with specific constraints (e.g., version or region)
+//	ready := registry.IsAvailable(registry.WithVersion("1.0.0"), registry.WithRegion("us-east-1"))
+func IsAvailable(opts ...Option) bool {
+	options := NewOptions(opts)
+	// If no options are provided, fallback to DefaultOptions to ensure
+	// a consistent baseline for the availability check.
+	if len(opts) == 0 {
+		options = DefaultOptions()
+	}
+	return registryManager.isAvailable(options)
+}
+
 // RemoveListener unregisters a service-watch listener by name to stop receiving topology updates.
 func RemoveListener(name string) {
 	registryManager.removeListener(name)
