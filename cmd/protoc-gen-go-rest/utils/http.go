@@ -133,7 +133,7 @@ func ParseMethodHttpOption(service *protogen.Service, h *httppb.Http) *HttpOptio
 			methodOption.Service = serviceFullNameList[2]
 		}
 	}
-	if len(serviceFullNameList) >= 4 {
+	if len(serviceFullNameList) > 4 {
 		methodOption.Classify = serviceFullNameList[3]
 	}
 	if methodOption.Group == "" {
