@@ -18,6 +18,8 @@ type Initiator interface {
 
 ### Bootstrap
 
+> 框架初始化完成后服务启动之前执行
+
 添加到引导队列中
 
 ```go
@@ -73,6 +75,8 @@ func (m *DBManager) Shutdown() {
 ```
 
 ### Initiator
+
+> 在本地配置文件加载完成后执行
 
 添加到初始化队列
 

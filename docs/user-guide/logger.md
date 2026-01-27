@@ -2,43 +2,56 @@
 
 ```yaml
 asjard:
-  ## 日志相关配置
+  ## log configuration
   logger:
-    ## 支持DEBUG,INFO,WARN,ERROR,大小写不敏感,修改立即生效
+    ## supports: DEBUG,INFO,WARN,ERROR,Case insensitive
     # level: INFO
-    ## 日志格式, text或json,修改立即生效
+    ## log format, supports: text,json
     # format: json
-    ## 日志文件,修改立即生效
+    ## log file path
     # filePath: /dev/stdout
-    ## 日志防爆相关配置
-    ## 文件大小, 单位MB,修改立即生效
+    ## Log explosion prevention configuration
+    ## File size (in MB)
     # maxSize: 100
-    ## 文件最大保留天数,修改立即生效
+    ## Maximum number of days to keep a file.
     # maxAge: 0
-    ## 最大备份数量,修改立即生效
+    ## Maximum number of backups.
     # maxBackups: 10
-    ## 是否进行压缩,修改立即生效
+    ## Whether to compress
     # compress: true
-    ## access日志相关配置
-    ## 继承asjard.logger配置
+    ## access log configuration
     accessLog:
-      ## 是否开启access日志
+      ## enable access log
       # enabled: false
-      ## 配置格式: [protocol://]{fullMethod}
-      ## 例如grpc协议的某个方法: grpc:///api.v1.hello.Hello/Call
-      ## 或者协议无关的某个方法: /api.v1.hello.Hello/Call
-      ## 拦截协议的所有方法: grpc
+      ## format: [protocol://]{fullMethod}
+      ## skip specify protocol and method: grpc:///api.v1.hello.Hello/Call
+      ## skip a protocol-independent method: /api.v1.hello.Hello/Call
+      ## skip all grpc proto: grpc
       # skipMethods:
       # - grpc
-    ## gorm相关配置
-    ## 继承asjard.logger配置
+      ## other configurations same as asjard.logger
+    ## gorm log configuration
     gorm:
-      ## 比公共配置多这两个字段
       # ignoreRecordNotFoundError: false
       # slowThreshold: 200ms
-    ## 横幅，修改后需重新启动
-    ## 开启后会在标准输出打印服务启动详情
+      ## other configurations same as asjard.logger
+    ## banner log
     banner:
-      ## 是否打印横幅
+      ## if enabled it will be print banner message after server start.
       # enabled: true
+```
+
+## 使用
+
+```go
+import "github.com/asjard/asjard/core/logger"
+
+func (api *SampleAPI) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+	logger.Debug("say hello request", "name", name)
+	// 或者带链路追踪的logger
+	logger.L(ctx).Debug("say hello request", "name", name)
+	return &pb.HelloReply{
+		Message: "hello " + in.Name,
+	}, nil
+}
 ```

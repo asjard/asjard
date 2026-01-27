@@ -23,7 +23,7 @@ type Config struct {
 // DefaultConfig provides the baseline settings for all clients if no specific configuration is found.
 var DefaultConfig = Config{
 	Loadbalance:         "localityRoundRobin",
-	BuiltInInterceptors: utils.JSONStrings{"rest2RpcContext", "validate", "errLog", "slowLog", "cycleChainInterceptor"},
+	BuiltInInterceptors: utils.JSONStrings{"panic", "rest2RpcContext", "validate", "errLog", "slowLog", "cycleChainInterceptor"},
 }
 
 // GetConfigWithProtocol retrieves the configuration for a specific protocol.
