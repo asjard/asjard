@@ -6,6 +6,12 @@ validate
 
 - GRPC
 
+## 功能
+
+- 请求参数校验
+
 ## 配置
 
 无配置
+
+依赖`protoc-gen-validate`生成的代码

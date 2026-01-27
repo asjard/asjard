@@ -6,6 +6,10 @@ rest2RpcContext
 
 - HTTP
 
+## 功能
+
+- 将http请求头注入到grpc的metadata中
+
 ## 配置
 
 ```yaml

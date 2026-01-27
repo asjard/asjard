@@ -3,14 +3,14 @@
 ## 规范
 
 - [protobuf规范](user-guide/standard-protobuf.md)
-- [目录规范](user-guide/standard-service.md)
+- [目录规范](user-guide/standard-floder.md)
 - [错误规范](user-guide/standard-error.md)
 
 ## 组件
 
 - [启动引导](user-guide/bootstrap.md)
 - [日志](user-guide/logger.md)
-- [拦截器]
+- 拦截器
   - [客户端拦截器](user-guide/interceptor-client.md)
     - [熔断降级](user-guide/interceptor-client-circuit-breaker.md)
     - [循环调用检测](user-guide/interceptor-client-cycle-chain.md)
