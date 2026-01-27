@@ -13,3 +13,9 @@ asjard:
       ## 超时时间
       # timeout: 5s
 ```
+
+## 使用
+
+```go
+import _"github.com/asjard/asjard/pkg/registry/etcd"
+```

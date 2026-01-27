@@ -62,6 +62,9 @@ func DefaultOptions() *Options {
 // WithApp filters instances by Application name.
 func WithApp(app string) func(opts *Options) {
 	return func(opts *Options) {
+		if app == "" {
+			return
+		}
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
 			return instance.Service.App == app
 		})
@@ -78,6 +81,9 @@ func WithPickFunc(pickFuns []PickFunc) func(opts *Options) {
 // WithRegion filters instances by physical region (e.g., "us-east-1").
 func WithRegion(region string) func(opts *Options) {
 	return func(opts *Options) {
+		if region == "" {
+			return
+		}
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
 			return instance.Service.Region == region
 		})
@@ -87,6 +93,9 @@ func WithRegion(region string) func(opts *Options) {
 // WithEnvironment filters instances by lifecycle stage (e.g., "prod", "dev").
 func WithEnvironment(environment string) func(opts *Options) {
 	return func(opts *Options) {
+		if environment == "" {
+			return
+		}
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
 			return instance.Service.Environment == environment
 		})
@@ -96,6 +105,9 @@ func WithEnvironment(environment string) func(opts *Options) {
 // WithServiceName filters instances by their specific service name (e.g., "order-api").
 func WithServiceName(serviceName string) func(opts *Options) {
 	return func(opts *Options) {
+		if serviceName == "" {
+			return
+		}
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
 			return instance.Service.Instance.Name == serviceName
 		})
@@ -105,6 +117,9 @@ func WithServiceName(serviceName string) func(opts *Options) {
 // WithInstanceID filters for one specific unique instance.
 func WithInstanceID(instanceID string) func(opts *Options) {
 	return func(opts *Options) {
+		if instanceID == "" {
+			return
+		}
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
 			return instance.Service.Instance.ID == instanceID
 		})
@@ -114,6 +129,9 @@ func WithInstanceID(instanceID string) func(opts *Options) {
 // WithRegistryName filters based on which discovery source found the service (e.g., "etcd").
 func WithRegistryName(registryName string) func(opts *Options) {
 	return func(opts *Options) {
+		if registryName == "" {
+			return
+		}
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
 			return instance.DiscoverName == registryName
 		})
@@ -123,6 +141,9 @@ func WithRegistryName(registryName string) func(opts *Options) {
 // WithProtocol filters for instances that support a specific protocol (e.g., "grpc", "rest").
 func WithProtocol(protocol string) func(opts *Options) {
 	return func(opts *Options) {
+		if protocol == "" {
+			return
+		}
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
 			for p := range instance.Service.Endpoints {
 				if p == protocol {
@@ -137,6 +158,9 @@ func WithProtocol(protocol string) func(opts *Options) {
 // WithVersion filters instances by their semantic version (e.g., "v1.2.0").
 func WithVersion(version string) func(opts *Options) {
 	return func(opts *Options) {
+		if version == "" {
+			return
+		}
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
 			return instance.Service.Instance.Version == version
 		})
@@ -147,6 +171,9 @@ func WithVersion(version string) func(opts *Options) {
 // It ensures that ALL key-values in the provided map match the instance's metadata.
 func WithMetadata(metadata map[string]string) func(opts *Options) {
 	return func(opts *Options) {
+		if len(metadata) == 0 {
+			return
+		}
 		opts.pickFuncs = append(opts.pickFuncs, func(instance *Instance) bool {
 			for wantKey, wantValue := range metadata {
 				isOk := false

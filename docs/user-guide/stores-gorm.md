@@ -55,4 +55,33 @@ if err != nil {
 // 自定义客户端
 // 前提是你需要配置asjrd.stores.gorm.dbs.xxx
 db, err := xgorm.DB(context.Background(), xgorm.WithConnName("xxx"))
+
+// 事务,通过ctx传递db
+fn := func(ctx context.Context) error {
+	db, err := DB(ctx)
+	if err != nil {
+		return err
+	}
+	return db.Where("db_name=?", "notExistRecord").First(&testTable{}).Error
+}
+fnCreate := func(ctx context.Context) error {
+	db, err := DB(ctx)
+	if err != nil {
+		return err
+	}
+	return db.Create(&testTable{DBName: "testTransaction"}).Error
+}
+ctx := context.Background()
+db, err := xgorm.DB(ctx)
+if err != nil {
+	return err
+}
+db.Transaction(func(tx *gorm.DB) error {
+	dbCtx := WithDB(ctx, tx)
+	if err :=  fnCreate(dbCtx); err != nil {
+		return err
+	}
+	// 这里会失败, 上面那条创建记录也不会成功
+	return fn(dbCtx)
+})
 ```

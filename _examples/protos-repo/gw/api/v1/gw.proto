@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package api.v1.gw;
+
+option go_package = "protos-repo/gw/api/v1/gw";
+
+import "github.com/asjard/protobuf/http.proto";
+
+service Gw {
+  // 获取服务的所有实例
+  rpc GetServiceInstances(ServiceInstancesReq) returns (ServiceInstancesResp) {
+    option (asjard.api.http) = {
+      get : '/instances'
+    };
+  }
+}
+
+message ServiceInstancesReq {
+  // 服务名称
+  string service_name = 1;
+}
+
+message ServiceInstancesResp {
+  message Instance {
+    string service_name = 1;
+    string instance_id = 2;
+  }
+  repeated Instance instances = 1;
+}

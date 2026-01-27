@@ -1,4 +1,4 @@
-export BIFROST_DIR ?= ../third_party/bifrost
+export BIFROST_DIR ?= ../../third_party/bifrost
 export PROTO_DIR ?= ../protos-repo
 export PROTOC_OPT ?= "-I../third_party"
 

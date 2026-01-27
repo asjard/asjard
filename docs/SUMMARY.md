@@ -15,23 +15,23 @@
     - [熔断降级](user-guide/interceptor-client-circuit-breaker.md)
     - [循环调用检测](user-guide/interceptor-client-cycle-chain.md)
     - [请求错误日志](user-guide/interceptor-client-errlog.md)
-    - [HTTP请求头转GRPC上下文](user-guide/inteceptor-client-rest2grpc.md)
-    - [慢日志](user-guide/inteceptor-client-slowlog.md)
-    - [请求参数校验](user-guide/inteceptor-client-validate.md)
-    - [panic日志](user-guide/inteceptor-client-panic.md)
+    - [HTTP请求头转GRPC上下文](user-guide/interceptor-client-rest2grpc.md)
+    - [慢日志](user-guide/interceptor-client-slowlog.md)
+    - [请求参数校验](user-guide/interceptor-client-validate.md)
+    - [panic日志](user-guide/interceptor-client-panic.md)
 
   - [服务端拦截器](user-guide/interceptor-server.md)
     - [accessLog](user-guide/interceptor-server-accessLog.md)
     - [i18n](user-guide/interceptor-server-i18n.md)
     - [监控](user-guide/interceptor-server-metrics.md)
-    - [panic日志](user-guide/inteceptor-server-panic.md)
-    - [限速](user-guide/inteceptor-server-ratelimit.md)
-    - [请求参数解析](user-guide/inteceptor-server-restReadEntity.md)
-    - [链路追踪](user-guide/inteceptor-server-trace.md)
-    - [参数校验](user-guide/inteceptor-server-validate.md)
+    - [panic日志](user-guide/interceptor-server-panic.md)
+    - [限速](user-guide/interceptor-server-ratelimit.md)
+    - [请求参数解析](user-guide/interceptor-server-restReadEntity.md)
+    - [链路追踪](user-guide/interceptor-server-trace.md)
+    - [参数校验](user-guide/interceptor-server-validate.md)
 
 - [服务发现&注册](user-guide/registry.md)
-  - [consul](user-guide/registry-consule.md)
+  - [consul](user-guide/registry-consul.md)
   - [etcd](user-guide/registry-etcd.md)
   - [local](user-guide/registry-local.md)
 - [客户端负载均衡](user-guide/balance.md)
@@ -43,7 +43,6 @@
   - [etcd](user-guide/config-etcd.md)
   - [file](user-guide/config-file.md)
 - [存储](user-guide/stores.md)
-  - [asynq](user-guide/stores-asynq.md)
   - [consul](user-guide/stores-consul.md)
   - [etcd](user-guide/stores-etcd.md)
   - [gorm](user-guide/stores-gorm.md)
@@ -58,7 +57,7 @@
   - [asynq](user-guide/server-asynq.md)
   - [rabbitmq](user-guide/server-rabbitmq.md)
 - [客户端](user-guide/client.md)
-  - [grpc](user-guide/cient-grpc.md)
+  - [grpc](user-guide/client-grpc.md)
 - [其他](user-guide/other.md)
   - [分布式锁](user-guide/other-mutex.md)
     - [redis](user-guide/other-mutex-redis.md)
@@ -70,5 +69,5 @@
 
 ## 运维
 
-- [Makefile]
-- [代码生成]
+- [Makefile](user-guide/makefile.md)
+- [代码生成](user-guide/makefile.md)
