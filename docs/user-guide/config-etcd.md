@@ -59,7 +59,7 @@ examples:
 
 ### 使用
 
-添加配置,文件配置可查看[这里](config_file.md)
+添加配置,文件配置可查看[这里](config-file.md)
 
 ```bash
 # key/value方式添加配置
