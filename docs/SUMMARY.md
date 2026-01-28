@@ -1,74 +1,76 @@
-‌# Summary​
+# Summary
 
-## Bootstrap
+- [快速开始](README.md "快速开始")
 
-- [概览](user-guide/bootstrap.md)
+## 规范
 
-## 缓存
+- [protobuf规范](user-guide/standard-protobuf.md)
+- [目录规范](user-guide/standard-floder.md)
+- [错误规范](user-guide/standard-error.md)
 
-- [概览](user-guide/cache.md)
-- [本地缓存](user-guide/cache-local.md)
-- [redis缓存](user-guide/cache-redis.md)
+## 组件
 
-## 客户端
+- [启动引导](user-guide/bootstrap.md)
+- [日志](user-guide/logger.md)
+- 拦截器
+  - [客户端拦截器](user-guide/interceptor-client.md)
+    - [熔断降级](user-guide/interceptor-client-circuit-breaker.md)
+    - [循环调用检测](user-guide/interceptor-client-cycle-chain.md)
+    - [请求错误日志](user-guide/interceptor-client-errlog.md)
+    - [HTTP请求头转GRPC上下文](user-guide/interceptor-client-rest2grpc.md)
+    - [慢日志](user-guide/interceptor-client-slowlog.md)
+    - [请求参数校验](user-guide/interceptor-client-validate.md)
+    - [panic日志](user-guide/interceptor-client-panic.md)
 
-- [概览](user-guide/client.md)
-- [GRPC](user-guide/client-grpc.md)
-- [拦截器](user-guide/client-interceptor.md)
+  - [服务端拦截器](user-guide/interceptor-server.md)
+    - [accessLog](user-guide/interceptor-server-accessLog.md)
+    - [i18n](user-guide/interceptor-server-i18n.md)
+    - [监控](user-guide/interceptor-server-metrics.md)
+    - [panic日志](user-guide/interceptor-server-panic.md)
+    - [限速](user-guide/interceptor-server-ratelimit.md)
+    - [请求参数解析](user-guide/interceptor-server-restReadEntity.md)
+    - [链路追踪](user-guide/interceptor-server-trace.md)
+    - [参数校验](user-guide/interceptor-server-validate.md)
 
-## 配置
+- [服务发现&注册](user-guide/registry.md)
+  - [consul](user-guide/registry-consul.md)
+  - [etcd](user-guide/registry-etcd.md)
+  - [local](user-guide/registry-local.md)
+- [客户端负载均衡](user-guide/balance.md)
+  - [本地优先负载均衡](user-guide/balance-locality.md)
+  - [轮询](user-guide/balance-roundrobin.md)
+- [配置](user-guide/config.md)
+  - [consul](user-guide/config-consul.md)
+  - [env](user-guide/config-env.md)
+  - [etcd](user-guide/config-etcd.md)
+  - [file](user-guide/config-file.md)
+- [存储](user-guide/stores.md)
+  - [consul](user-guide/stores-consul.md)
+  - [etcd](user-guide/stores-etcd.md)
+  - [gorm](user-guide/stores-gorm.md)
+  - [rabbitmq](user-guide/stores-rabbitmq.md)
+  - [redis](user-guide/stores-redis.md)
+- [缓存](user-guide/cache.md)
+  - [redis](user-guide/cache-redis.md)
+  - [local](user-guide/cache-loacal.md)
+- [服务/协议](user-guide/server.md)
+  - [grpc](user-guide/server-grpc.md)
+  - [http](user-guide/server-rest.md)
+  - [asynq](user-guide/server-asynq.md)
+  - [rabbitmq](user-guide/server-rabbitmq.md)
+- [客户端](user-guide/client.md)
+  - [grpc](user-guide/client-grpc.md)
+- [其他](user-guide/other.md)
+  - [分布式锁](user-guide/other-mutex.md)
+    - [redis](user-guide/other-mutex-redis.md)
+    - [mysql](user-guide/other-mutex-mysql.md)
+  - [安全](user-guide/other-security.md)
+  - [监控指标](user-guide/other-metrics.md)
 
-- [概览](user-guide/config.md)
-- [Consul](user-guide/config-consul.md)
-- [Env](user-guide/config-env.md)
-- [Etcd](user-guide/config-etcd.md)
-- [File](user-guide/config-file.md)
+## [性能](user-guide/benchmark.md)
 
-## 错误
+## 运维
 
-- [概览](user-guide/error.md)
-
-## 日志
-
-- [概览](user-guide/logger.md)
-
-## 监控
-
-- [概览](user-guide/metrics.md)
-
-## 分布式锁
-
-- [概览](user-guide/mutex.md)
-
-## Protobuf
-
-- [概览](user-guide/protobuf.md)
-
-## 服务注册/发现
-
-- [概览](user-guide/registry.md)
-- [Consul](user-guide/registry-consul.md)
-- [Etcd](user-guide/registry-etcd.md)
-- [Local](user-guide/registry-local.md)
-
-## 安全
-
-- [概览](user-guide/security.md)
-
-## 服务端
-
-- [概览](user-guide/server.md)
-- [GRPC](user-guide/server-grpc.md)
-- [拦截器](user-guide/server-interceptor.md)
-- [Pprof](user-guide/server-pprof.md)
-- [Rest](user-guide/server-rest.md)
-- [Asynq](user-guide/server-asynq.md)
-
-## 存储
-
-- [概览](user-guide/stores.md)
-- [Etcd](user-guide/stores-etcd.md)
-- [Gorm](user-guide/stores-gorm.md)
-- [Redis](user-guide/stores-redis.md)
-- [Consul](user-guide/stores-consul.md)
-- [Model](user-guide/stores-model.md)
+- [Makefile](user-guide/makefile.md)
+- [Dockerfile](user-guide/dockerfile.md)
+- [代码生成](user-guide/cmd.md)

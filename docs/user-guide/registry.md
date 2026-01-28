@@ -108,3 +108,25 @@ package main
 
 import _ "your_custome_discover_dir"
 ```
+
+## 服务发现
+
+```go
+import "github.com/asjard/asjard/core/registry"
+
+func (api *GwAPI) GetServiceInstances(ctx context.Context, in *pb.ServiceInstancesReq) (*pb.ServiceInstancesResp, error) {
+	var instances []*pb.ServiceInstancesResp_Instance
+	for _, item := range registry.PickServices(registry.WithServiceName(in.ServiceName)) {
+		instances = append(instances, &pb.ServiceInstancesResp_Instance{
+			ServiceName: item.Service.Instance.Name,
+			InstanceId:  item.Service.Instance.ID,
+		})
+	}
+
+	return &pb.ServiceInstancesResp{
+		Instances: instances,
+	}, nil
+}
+```
+
+你也可以通过registry库中的`WithXXX`方法选择指定服务

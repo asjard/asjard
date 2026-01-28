@@ -7,6 +7,7 @@ import (
 
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
+	"github.com/asjard/asjard/pkg/tools"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -55,6 +56,7 @@ func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (
 		// Cache Miss: Fetch from database using Singleflight to protect the DB.
 		result, err, _ := m.sg.Do(cache.Key(), get)
 		if err != nil {
+			m.sg.Forget(cache.Key())
 			// DB Miss/Error: Cache the empty result for a short period (Negative Caching).
 			if rerr := cache.Set(ctx, cache.Key(), out, cache.EmptyExpiresIn()); rerr != nil {
 				logger.Error("set empty into cache fail", "err", rerr)
@@ -96,18 +98,13 @@ func (m *Model) SetData(ctx context.Context, set func() error, caches ...Cacher)
 		return err
 	}
 
-	// Second Delete (Delayed): Clean up any potential race condition data.
-	go func(ctx context.Context, caches ...Cacher) {
-		select {
-		case <-time.After(100 * time.Millisecond):
-			for _, cache := range caches {
-				if err := m.delCache(ctx, cache); err != nil {
-					logger.L(ctx).Error("delay delete cache fail", "err", err)
-				}
+	return tools.DefaultTW.AddTask(100*time.Millisecond, func() {
+		for _, cache := range caches {
+			if err := m.delCache(ctx, cache); err != nil {
+				logger.L(ctx).Error("delay delete cache fail", "err", err)
 			}
 		}
-	}(ctx, caches...)
-	return nil
+	})
 }
 
 // SetAndGetData updates the database and immediately synchronizes the cache.

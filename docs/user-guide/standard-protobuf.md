@@ -6,11 +6,9 @@
 - protobuf中使用添加openapi文档参考[这里](https://github.com/google/gnostic/tree/main/openapiv3), `protoc-gen-rest`命令中已集成
 
 ```proto
-// github.com/asjard/asjard/examples/protobuf/server.proto
-
 syntax = "proto3";
 
-// 约定此处格式为: {接口类型}.{接口版本}.{服务名称}
+// 约定此处格式为: {接口类型}.{接口版本}.{服务名称}[.服务分类]
 // 其中{接口类型}和{接口版本}会在rest服务中用来生成路由前缀
 // 可在ajard.api.http中通过api,和version字段修改
 // 例如如下package名称生成的路由前缀为/api/v1
@@ -23,6 +21,7 @@ package api.v1.hello;
 option go_package = "github.com/asjard/asjard/examples/example/hellopb";
 
 import "github.com/asjard/protobuf/http.proto";
+import "github.com/asjard/protobuf/validate.proto";
 import "github.com/asjard/protobuf/mq.proto";
 
 // 需要实现的功能
@@ -81,7 +80,7 @@ service Hello {
 message SayReq {
   // 字段描述
   // 会渲染到openapi的字段描述中
-  string name = 1;
+  string name = 1 [(asjard.api.validate).rules="required,max=20"];
 }
 
 // 请求返回

@@ -22,3 +22,13 @@ asjard:
           cipherName: ""
           cipherParams: {}
 ```
+
+## 使用
+
+```go
+import "github.com/asjard/asjard/pkg/stores/consul"
+
+client, err := consul.Client()
+// OR
+client, err := consul.Client(consul.WithClientName("config"))
+```

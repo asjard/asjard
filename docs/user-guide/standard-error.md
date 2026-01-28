@@ -1,5 +1,3 @@
-> 错误处理
-
 ## 约定
 
 - 约定所有**对外**暴露的错误使用`github.com/asjard/asjard/core/status`提供的`Error`和`Errorf`方法

@@ -109,7 +109,8 @@ const (
 //
 // Syntax:
 // "-a"      => Remove "a"
-// "+a:b"    => Append "b" after "a"
+// "+a:b"    => Append "b" before "a"
+// "a+:b"    => Append "b" after "a"
 // "=a:b"    => Replace "a" with "b"
 // "e"       => Simply add "e" to the end
 //
@@ -128,9 +129,14 @@ func (s JSONStrings) Merge(cs JSONStrings) JSONStrings {
 				values = JSONStrings{}
 				continue
 			}
-			// Handle appending: +target:new
+			// Handle appending before: +target:new
 			if strings.HasPrefix(v1, AppendFlag+v+SplitFlag) {
-				values = JSONStrings{v, strings.TrimPrefix(v1, AppendFlag+v+SplitFlag)}
+				values = JSONStrings{strings.TrimPrefix(v1, AppendFlag+v+SplitFlag), v}
+				continue
+			}
+			// Handle appending after: target+:new
+			if strings.HasPrefix(v1, v+AppendFlag+SplitFlag) {
+				values = JSONStrings{v, strings.TrimPrefix(v1, v+AppendFlag+SplitFlag)}
 				continue
 			}
 			// Handle replacement: =target:new
@@ -146,7 +152,7 @@ func (s JSONStrings) Merge(cs JSONStrings) JSONStrings {
 	// Append new items from cs that are not instructions (don't start with -, +, or =).
 	for _, v := range cs {
 		if strings.HasPrefix(v, DelFlag) ||
-			strings.HasPrefix(v, AppendFlag) ||
+			strings.Contains(v, AppendFlag) ||
 			strings.HasPrefix(v, ReplaceFlag) {
 			continue
 		}

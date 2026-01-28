@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/pkg/tools"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -69,6 +70,7 @@ func TestMain(m *testing.M) {
 	if err := config.Load(-1); err != nil {
 		panic(err)
 	}
+	tools.DefaultTW.Start()
 	m.Run()
 }
 

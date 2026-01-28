@@ -24,6 +24,7 @@ type HttpOption struct {
 	Service    string
 	Version    string
 	Group      string
+	Classify   string
 	WriterName string
 }
 
@@ -38,6 +39,9 @@ func (h HttpOption) GetPath() string {
 	version := strings.Trim(h.Version, pathDelimiter)
 	if version != "" {
 		paths = append(paths, version)
+	}
+	if h.Classify != "" {
+		paths = append(paths, h.Classify)
 	}
 	group := strings.Trim(h.Group, pathDelimiter)
 	if group != "" {
@@ -114,8 +118,8 @@ func parseMethodHttpOption(h *httppb.Http, serviceOption *HttpOption) *HttpOptio
 // service没有配置则解析package名称
 func ParseMethodHttpOption(service *protogen.Service, h *httppb.Http) *HttpOption {
 	methodOption := parseMethodHttpOption(h, parseServiceHttpOption(service))
+	serviceFullNameList := strings.Split(string(service.Desc.FullName()), ".")
 	if methodOption.Api == "" || methodOption.Group == "" {
-		serviceFullNameList := strings.Split(string(service.Desc.FullName()), ".")
 		if len(serviceFullNameList) < 2 {
 			panic("invalid package name")
 		}
@@ -128,6 +132,9 @@ func ParseMethodHttpOption(service *protogen.Service, h *httppb.Http) *HttpOptio
 		if len(serviceFullNameList) >= 3 {
 			methodOption.Service = serviceFullNameList[2]
 		}
+	}
+	if len(serviceFullNameList) > 4 {
+		methodOption.Classify = serviceFullNameList[3]
 	}
 	if methodOption.Group == "" {
 		methodOption.Group = strings.ToLower(service.GoName)

@@ -119,7 +119,10 @@ func TestStrings(t *testing.T) {
 			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-a", "c"}, expect: JSONStrings{"b", "c"}},
 			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-b", "a", "c"}, expect: JSONStrings{"a", "c"}},
 			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-b", "-a", "c"}, expect: JSONStrings{"c"}},
-			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-b", "+a:c"}, expect: JSONStrings{"a", "c"}},
+			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"+a:c", "d"}, expect: JSONStrings{"c", "a", "b", "d"}},
+			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-b", "a+:c"}, expect: JSONStrings{"a", "c"}},
+			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-b", "+a:c"}, expect: JSONStrings{"c", "a"}},
+			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-b", "a+:c"}, expect: JSONStrings{"a", "c"}},
 			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"+b", "=a:c"}, expect: JSONStrings{"c", "b"}},
 			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-b", "=a:c"}, expect: JSONStrings{"c"}},
 			{s: JSONStrings{"a", "b", "c"}, cs: JSONStrings{"=a:c", "-b"}, expect: JSONStrings{"c"}},
@@ -127,7 +130,7 @@ func TestStrings(t *testing.T) {
 		}
 		for _, caze := range cases {
 			output := caze.s.Merge(caze.cs)
-			assert.Equal(t, caze.expect, output)
+			assert.Equal(t, caze.expect, output, "case: %v", caze)
 		}
 	})
 }
