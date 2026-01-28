@@ -3,7 +3,8 @@ package apiv1
 import (
 	"context"
 
-	pb "github.com/asjard/asjard/_examples/protos-repo/example/api/v1/sample"
+	pb "protos-repo/example/api/v1/sample"
+
 	"github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 )

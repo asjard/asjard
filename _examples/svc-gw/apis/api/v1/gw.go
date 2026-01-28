@@ -3,7 +3,8 @@ package apiv1
 import (
 	"context"
 
-	pb "github.com/asjard/asjard/_examples/protos-repo/gw/api/v1/gw"
+	pb "protos-repo/gw/api/v1/gw"
+
 	"github.com/asjard/asjard/core/registry"
 	"github.com/asjard/asjard/pkg/server/rest"
 )

@@ -9,9 +9,9 @@
 syntax = "proto3";
 
 // 约定此处格式为: {接口类型}.{接口版本}.{服务名称}[.服务分类]
-// 其中{接口类型}和{接口版本}会在rest服务中用来生成路由前缀
+// 其中{接口类型},{接口版本},[服务分类]会在rest服务中用来生成路由前缀
 // 可在ajard.api.http中通过api,和version字段修改
-// 例如如下package名称生成的路由前缀为/api/v1
+// 例如如下package名称生成的路由前缀为/api/v1/docs
 //
 // {服务名称}会在生成gw代码时用以确定客户端名称, 例如:
 // conn, err := client.NewClient(grpc.Protocol, config.GetString("asjard.topology.services.{hello}.name", "{hello}")).Conn()

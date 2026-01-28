@@ -63,7 +63,7 @@ func main() {
 ### See more examples and documents
 
 - Reference [Document](https://asjard.gitbook.io/docs)
-- Daemon [asjard-example](https://github.com/asjard/examples)
+- Examples [asjard-example](https://github.com/asjard/asjard/tree/develop/_examples)
 - Study in [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/asjard/asjard)
 
 ## Benchmark

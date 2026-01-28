@@ -1,0 +1,4 @@
+example:
+  config:
+    configs:
+      field_in_different_file_under_same_section: file_example_config_1.yaml

@@ -2,7 +2,7 @@
 asjard.service.app: example
 asjard.service.environment: local
 
-asjard.logger.level: DEBUG
+# asjard.logger.level: DEBUG
 
 asjard.trace.enabled: true
 # asjard.trace.endpoint: http://127.0.0.1:4318

@@ -1,0 +1,113 @@
+syntax = "proto3";  // Defines the use of proto3 syntax
+
+// Package naming convention: api.{version}.{app}.{module}
+package api.v1.example.docs;
+
+// Target Go package path for the generated code
+option go_package = "protos-repo/example/api/v1/config";
+
+// ASJARD SPECIFIC: Imports the HTTP option extensions.
+// This allows mapping RPC methods to RESTful HTTP endpoints.
+import "github.com/asjard/protobuf/http.proto";
+import "github.com/asjard/protobuf/validate.proto";
+
+// Import common message types (like Empty) from your shared repository
+import "protos-repo/common/common.proto";
+
+// Config service handles application configuration retrieval and management.
+service Config {
+
+    // Simple Get: Retrieves the current configuration.
+    // Asjard generates both a gRPC method and a REST endpoint.
+    rpc Get(ConfigGetReq) returns (ConfigGetResp) {
+        option (asjard.api.http) = {
+            get : '/'  // Accessible via GET / (or prefixed by service base path)
+        };
+    };
+
+    // GetAndDecrypt: Retrieves an encrypted configuration and returns it in plain text.
+    // Demonstrates handling specialized business logic through the same framework.
+    rpc GetAndDecrypt(api.common.Empty) returns (ConfigDecryptResp) {
+        option (asjard.api.http) = {
+            get : '/decrypt'  // Accessible via GET /decrypt
+        };
+    };
+}
+
+message ConfigGetReq {
+    int32  page = 1 [ (asjard.api.validate).rules = "min=0" ];
+    int32  size = 2 [ (asjard.api.validate).rules = "min=5,max=100" ];
+    string sort = 3 [ (asjard.api.validate).rules = "sortFields=created_at" ];
+}
+
+// ConfigGetResp defines a comprehensive configuration response structure.
+// This message showcases Asjard's ability to handle complex nested data.
+message ConfigGetResp {
+
+    // Sub-object for structured configuration fields
+    message Obj {
+        int32  field_int = 1;
+        string field_str = 2;
+    }
+
+    // Configs group: Illustrates Asjard's "Configuration Aggregation" capability.
+    message Configs {
+        string timeout = 1;
+        // Fields mapped from different physical files but merged into the same section
+        string field_in_different_file_under_same_section = 2;
+        // Value potentially sourced from different providers (e.g., Apollo, ETCD, or Local YAML)
+        string key_in_different_sourcer = 4;
+    }
+
+    // Instance metadata: Used for service discovery and runtime inspection.
+    message Instance {
+        string              id          = 1;  // Unique instance identifier
+        string              name        = 2;  // Service name
+        uint32              system_code = 3;  // System identification code
+        string              version     = 4;  // Deployment version
+        map<string, string> metadata    = 5;  // Dynamic tags/metadata
+    }
+
+    // Standard Enum for type categorization
+    enum Kind {
+        K_A = 0;
+        K_B = 1;
+    }
+
+    // Collection types
+    repeated string str_list = 4;
+    repeated int64  int_list = 5;
+
+    // Nested objects and lists of objects
+    Obj          obj  = 6;
+    repeated Obj objs = 7;
+
+    // Aggregated configuration details
+    Configs configs = 8;
+
+    // Pagination and standard response fields
+    int32  page = 9;
+    int32  size = 10;
+    string sort = 11;
+
+    // Enum usage
+    Kind          kind  = 15;
+    repeated Kind kinds = 16;
+
+    // Data types for binary or large integers
+    bytes  bytes_value  = 17;
+    uint64 uint64_value = 18;
+
+    // Environment and Topology information
+    string         app        = 20;  // Application identifier
+    string         region     = 21;  // Geographical region (e.g., us-east-1)
+    string         az         = 22;  // Availability Zone
+    Instance       instance   = 23;  // Runtime instance details
+    bool           true_false = 24;  // Success flag
+    repeated int32 int32_list = 25;
+}
+
+// Response structure for decryption requests
+message ConfigDecryptResp {
+    string plain_text = 1;  // The decrypted sensitive data
+}

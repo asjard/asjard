@@ -8,20 +8,18 @@ import "github.com/asjard/protobuf/http.proto";
 import "github.com/asjard/protobuf/validate.proto";
 
 service Sample {
-  rpc SayHello(HelloRequest) returns (HelloReply) {
-    option (asjard.api.http) = {
-      get : "/helloworld/{name}"
-    };
-    option (asjard.api.http) = {
-      get : '/hello'
-    };
-  }
+    rpc SayHello(HelloRequest) returns (HelloReply) {
+        option (asjard.api.http) = {
+            get : "/helloworld/{name}"
+        };
+        option (asjard.api.http) = {
+            get : '/hello'
+        };
+    }
 }
 
 // The request message containing the user's name.
-message HelloRequest {
-  string name = 1 [ (asjard.api.validate).rules = "required,max=20" ];
-}
+message HelloRequest { string name = 1 [ (asjard.api.validate).rules = "required,max=20" ]; }
 
 // The response message containing the greetings
 message HelloReply { string message = 1; }

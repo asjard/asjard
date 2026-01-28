@@ -1,0 +1,34 @@
+example:
+  config:
+    encrypted_value: encrypted_base64:aGVsbG8gd29ybGQK
+    str_list:
+      - a
+      - b
+      - c
+    int_list:
+      - 1
+      - 2
+      - 3
+    int32_list:
+      - 1
+      - 2
+      - 3
+    obj:
+      field_int: 1
+      field_str: a
+    objs:
+      - field_int: 11
+        field_str: aa
+      - field_int: 22
+        field_str: bb
+    configs:
+      timeout: 5s
+      field_in_different_file_under_same_section: file_example_config.yaml
+      key_in_different_sourcer: in_file_source
+    kind: 0
+    kinds:
+      - 0
+      - 1
+    bytes_value: aGVsbG8gd29ybGQK
+    uint64_value: 123456789
+    true_false: true
