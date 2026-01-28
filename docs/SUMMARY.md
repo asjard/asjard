@@ -67,7 +67,7 @@
   - [安全](user-guide/other-security.md)
   - [监控指标](user-guide/other-metrics.md)
 
-## 性能
+## [性能](user-guide/benchmark.md)
 
 ## 运维
 
