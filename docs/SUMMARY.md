@@ -7,6 +7,7 @@
 - [protobuf规范](user-guide/standard-protobuf.md)
 - [目录规范](user-guide/standard-floder.md)
 - [错误规范](user-guide/standard-error.md)
+- [服务描述](user-guide/standard-service.md)
 
 ## 组件
 
@@ -39,7 +40,7 @@
 - [客户端负载均衡](user-guide/balance.md)
   - [本地优先负载均衡](user-guide/balance-locality.md)
   - [轮询](user-guide/balance-roundrobin.md)
-- [配置](user-guide/config.md)
+- [配置中心](user-guide/config.md)
   - [consul](user-guide/config-consul.md)
   - [env](user-guide/config-env.md)
   - [etcd](user-guide/config-etcd.md)

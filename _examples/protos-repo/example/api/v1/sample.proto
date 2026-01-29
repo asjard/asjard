@@ -2,26 +2,37 @@ syntax = "proto3";
 
 package api.v1.example.docs;
 
+// The target Go package path for generated code.
 option go_package = "protos-repo/example/api/v1/sample";
 
 import "github.com/asjard/protobuf/http.proto";
 import "github.com/asjard/protobuf/validate.proto";
 
+// Sample service provides basic greeting operations.
 service Sample {
-  rpc SayHello(HelloRequest) returns (HelloReply) {
-    option (asjard.api.http) = {
-      get : "/helloworld/{name}"
-    };
-    option (asjard.api.http) = {
-      get : '/hello'
-    };
-  }
+    // SayHello returns a greeting message based on the provided name.
+    // It supports multiple HTTP GET entrypoints for compatibility and routing flexibility.
+    rpc SayHello(HelloRequest) returns (HelloReply) {
+        // Dynamic path mapping (e.g., /helloworld/john)
+        option (asjard.api.http) = {
+            get : "/helloworld/{name}"
+        };
+        // Static path mapping for general greetings
+        option (asjard.api.http) = {
+            get : '/hello'
+        };
+    }
 }
 
-// The request message containing the user's name.
+// HelloRequest defines the input payload for the SayHello method.
 message HelloRequest {
-  string name = 1 [ (asjard.api.validate).rules = "required,max=20" ];
+    // The name of the person to greet.
+    // Validation: Must be provided (required) and no longer than 20 characters.
+    string name = 1 [ (asjard.api.validate).rules = "required,max=20" ];
 }
 
-// The response message containing the greetings
-message HelloReply { string message = 1; }
+// HelloReply defines the output payload containing the greeting result.
+message HelloReply {
+    // The formatted greeting string (e.g., "Hello, name!").
+    string message = 1;
+}

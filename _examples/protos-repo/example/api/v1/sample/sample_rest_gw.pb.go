@@ -43,6 +43,9 @@ func (api *SampleAPI) Start() error {
 }
 func (api *SampleAPI) Stop() {
 }
+
+// SayHello returns a greeting message based on the provided name.
+// It supports multiple HTTP GET entrypoints for compatibility and routing flexibility.
 func (api *SampleAPI) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, error) {
 	return api.client.SayHello(ctx, in)
 }

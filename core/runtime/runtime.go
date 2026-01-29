@@ -42,8 +42,13 @@ type Instance struct {
 	ID string
 	// SystemCode is a numeric identifier (100-999) used for internal error codes or routing.
 	SystemCode uint32 `json:"systemCode"`
-	// Name is the name of the microservice (e.g., "user-api").
+	// Name is the specific deployment or entrypoint name (e.g., "svc-example-api", "svc-example-openapi").
+	// It is used for fine-grained routing and service discovery.
 	Name string `json:"name"`
+	// Group identifies the logical service entity (e.g., "svc-example").
+	// Multiple entrypoints (Names) can share the same Group to indicate they
+	// belong to the same business logic and code base.
+	Group string `json:"group"`
 	// Version follows semantic versioning (e.g., "1.2.3").
 	Version string `json:"version"`
 	// Shareable indicates if this service can be used across different organizational units.
@@ -92,6 +97,12 @@ func GetAPP() APP {
 		app.Instance.ID = uuid.NewString()
 		app.Website = fmt.Sprintf(website, app.App, app.Instance.Name)
 
+		// If Group is not specified, the service is treated as a standalone entity
+		// where the entrypoint (Name) and the logical group (Group) are identical.
+		if app.Instance.Group == "" {
+			app.Instance.Group = app.Instance.Name
+		}
+
 		// Synchronize metadata into the constant package for easy access in other modules.
 		constant.APP.Store(app.App)
 		constant.Region.Store(app.Region)
@@ -113,10 +124,10 @@ var bufPool = sync.Pool{
 }
 
 // ResourceKey generates a structured, delimited string useful for resource isolation.
-// Format: {app}/{resource}/{env}/{service}/{version}/{region}/{az}/{key}
+// Format: {app}/{resource}/{env}/{service-group}/{version}/{region}/{az}/{key}
 //
 // Examples:
-// - Redis Key: "asjard/caches/prod/user-api/v1/us-east/az1/user:123"
+// - Redis Key: "asjard/caches/prod/svc-user/v1/us-east/az1/user:123"
 // - Distributed Lock: "asjard/lock/staging/order-svc/v2/orders:lock"
 func (app APP) ResourceKey(resource, key string, opts ...Option) string {
 	options := defaultOptions()
@@ -151,7 +162,7 @@ func (app APP) ResourceKey(resource, key string, opts ...Option) string {
 		if options.withServiceId {
 			write(app.Instance.ID)
 		} else {
-			write(app.Instance.Name)
+			write(app.Instance.Group)
 		}
 	}
 	if !options.withoutVersion {

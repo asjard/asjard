@@ -126,6 +126,7 @@ func (m *MetricsManager) push() {
 				Grouping("env", app.Environment).
 				Grouping("service_version", app.Instance.Version).
 				Grouping("service", app.Instance.Name).
+				Grouping("group", app.Instance.Group).
 				Push(); err != nil {
 				logger.Error("push metrics fail", "endpoint", m.conf.PushGateway.Endpoint, "err", err)
 			}

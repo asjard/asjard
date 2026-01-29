@@ -1,5 +1,7 @@
 > 配置相关
 
+使用方法可参考[这里](https://github.com/asjard/asjard/tree/develop/_examples/svc-example/apis/api/v1/config.go)
+
 ## 配置
 
 ```yaml
@@ -222,6 +224,7 @@ val := config.GetString("encrypted_key", "default_value")
 val := config.GetString("encrypted_key", "default_value", config.WithDisableAutoDecryptValue())
 // output: encrypted_base64:ZW5jcnlwdGVkX3ZhbHVl
 ```
+
 ## 配置监听
 
 ```go
@@ -245,15 +248,15 @@ val = config.GetString("key", "default_value", config.WithWatch(func(event *conf
 
 | 支持 | 配置源                     | 优先级 | 描述                           |
 | :--: | :------------------------- | :----: | ------------------------------ |
-|  x   | [环境变量](config-env.md)  |   0    |
+|  ✅  | [环境变量](config-env.md)  |   0    |
 |      | cli                        |   1    |
-|  x   | [文件](config-file.md)     |   2    |
-|  x   | [etcd](config-etcd.md)     |   10   | key/value, file模式配置        |
-|  x   | [consul](config-consul.md) |   11   | ket/value模式配置,file模式配置 |
+|  ✅  | [文件](config-file.md)     |   2    |
+|  ✅  | [etcd](config-etcd.md)     |   10   | key/value, file模式配置        |
+|  ✅  | [consul](config-consul.md) |   11   | ket/value模式配置,file模式配置 |
 |      | nacos                      |   12   | 没有删除事件                   |
 |      | apollo                     |   13   |
 |      | configmap                  |   14   |
-|  x   | [本地内存](config-mem.md)  |   99   |
+|  ✅  | [本地内存](config-mem.md)  |   99   |
 
 ## 配置源优先级
 

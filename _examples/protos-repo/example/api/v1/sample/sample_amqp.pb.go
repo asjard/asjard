@@ -89,6 +89,9 @@ func (c *SampleAmqpClient) Stop() {}
 func (c *SampleAmqpClient) GetChannel() (*amqp.Channel, error) {
 	return c.ClientConn.Channel()
 }
+
+// SayHello returns a greeting message based on the provided name.
+// It supports multiple HTTP GET entrypoints for compatibility and routing flexibility.
 func (c *SampleAmqpClient) SayHello(ctx context.Context, in *HelloRequest, opts ...xamqp1.PublishOption) error {
 	options := &xamqp1.PublishOptions{}
 	for _, opt := range opts {
@@ -108,6 +111,9 @@ func (c *SampleAmqpClient) SayHello(ctx context.Context, in *HelloRequest, opts 
 		Body:        payload,
 	})
 }
+
+// SayHello returns a greeting message based on the provided name.
+// It supports multiple HTTP GET entrypoints for compatibility and routing flexibility.
 func _Sample_SayHello_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(HelloRequest)
 	if err := proto.Unmarshal(ctx.Body(), in); err != nil {
@@ -130,6 +136,8 @@ func _Sample_SayHello_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor serv
 // SampleAmqpServiceDesc is the xamqp1.ServiceDesc for Sample service.
 // It's only intended for direct use with xamqp1.AddHandler,
 // and not to be introspected or modified (even as a copy)
+//
+// Sample service provides basic greeting operations.
 var SampleAmqpServiceDesc = xamqp1.ServiceDesc{
 	ServiceName: "api.v1.example.docs.Sample",
 	HandlerType: (*SampleServer)(nil),

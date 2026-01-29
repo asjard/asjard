@@ -18,13 +18,19 @@ asjard:
 
 ### 配置优先级
 
-> 从上向下优先级依次递增,多个字段之间以英文`/`分隔,不以`/`结尾
+> 从上向下优先级依次递增,多个字段之间以英文`asjard.config.etcd.delimiter`分隔,不以`asjard.config.etcd.delimiter`结尾
 
 - `/{app}/configs/`: 项目相关全局配置
-- `/{app}/configs/{env}/`: 项目相关全局配置
+- `/{app}/configs/{env}/`: 环境相关全局配置
+- `/{app}/configs/service/{group}/`: 服务相关配置
+- `/{app}/configs/service/{group}/{region}/`: 服务region相关配置
+- `/{app}/configs/service/{group}/{region}/{az}/`: 服务region，az配置
 - `/{app}/configs/service/{service}/`: 服务相关配置
 - `/{app}/configs/service/{service}/{region}/`: 服务region相关配置
 - `/{app}/configs/service/{service}/{region}/{az}/`: 服务region，az配置
+- `/{app}/configs/{env}/service/{group}/`: 服务相关配置
+- `/{app}/configs/{env}/service/{group}/{region}/`: 服务region相关配置
+- `/{app}/configs/{env}/service/{group}/{region}/{az}/`: 服务region，az配置
 - `/{app}/configs/{env}/service/{service}/`: 服务相关配置
 - `/{app}/configs/{env}/service/{service}/{region}/`: 服务region相关配置
 - `/{app}/configs/{env}/service/{service}/{region}/{az}/`: 服务region，az配置
@@ -59,7 +65,7 @@ examples:
 
 ### 使用
 
-添加配置,文件配置可查看[这里](config_file.md)
+添加配置,文件配置可查看[这里](config-file.md)
 
 ```bash
 # key/value方式添加配置

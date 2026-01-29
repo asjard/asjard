@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package api.common;
+
+option go_package = "protos-repo/common/common";
+
+import "github.com/asjard/protobuf/validate.proto";
+
+message Empty {}
+
+message ReqWithId { int64 id = 1 [ (asjard.api.validate).rules = "required" ]; }
+message ReqWithName { string name = 1 [ (asjard.api.validate).rules = "required" ]; }

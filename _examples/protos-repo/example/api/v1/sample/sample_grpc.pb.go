@@ -26,6 +26,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SampleClient interface {
+	// SayHello returns a greeting message based on the provided name.
+	// It supports multiple HTTP GET entrypoints for compatibility and routing flexibility.
 	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloReply, error)
 }
 
@@ -50,6 +52,8 @@ func (c *sampleClient) SayHello(ctx context.Context, in *HelloRequest, opts ...g
 // All implementations must embed UnimplementedSampleServer
 // for forward compatibility
 type SampleServer interface {
+	// SayHello returns a greeting message based on the provided name.
+	// It supports multiple HTTP GET entrypoints for compatibility and routing flexibility.
 	SayHello(context.Context, *HelloRequest) (*HelloReply, error)
 	mustEmbedUnimplementedSampleServer()
 }
