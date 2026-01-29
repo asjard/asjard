@@ -67,7 +67,7 @@ func (t *Trace) Interceptor() server.UnaryServerInterceptor {
 		tx, span := t.tracer.Start(t.propagator.Extract(ctx, carrier),
 			info.Protocol+"://"+info.FullMethod,
 			trace.WithSpanKind(trace.SpanKindServer),
-			trace.WithAttributes(semconv.ServiceName(t.app.Instance.Name)))
+			trace.WithAttributes(semconv.ServiceName(t.app.Instance.Name), semconv.ServiceNamespace(t.app.Instance.Group)))
 		defer span.End()
 
 		// 4. Inject the new span context back into the carrier for downstream propagation.
