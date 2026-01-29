@@ -291,9 +291,17 @@ func (s *Etcd) prefixs() []string {
 		strings.Join([]string{s.prefix(), ""}, s.conf.Delimiter),
 		strings.Join([]string{s.prefix(), s.app.Environment, ""}, s.conf.Delimiter),
 
+		strings.Join([]string{s.prefix(), "service", s.app.Instance.Group, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), "service", s.app.Instance.Group, s.app.Region, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), "service", s.app.Instance.Group, s.app.Region, s.app.AZ, ""}, s.conf.Delimiter),
+
 		strings.Join([]string{s.prefix(), "service", s.app.Instance.Name, ""}, s.conf.Delimiter),
 		strings.Join([]string{s.prefix(), "service", s.app.Instance.Name, s.app.Region, ""}, s.conf.Delimiter),
 		strings.Join([]string{s.prefix(), "service", s.app.Instance.Name, s.app.Region, s.app.AZ, ""}, s.conf.Delimiter),
+
+		strings.Join([]string{s.prefix(), s.app.Environment, "service", s.app.Instance.Group, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), s.app.Environment, "service", s.app.Instance.Group, s.app.Region, ""}, s.conf.Delimiter),
+		strings.Join([]string{s.prefix(), s.app.Environment, "service", s.app.Instance.Group, s.app.Region, s.app.AZ, ""}, s.conf.Delimiter),
 
 		strings.Join([]string{s.prefix(), s.app.Environment, "service", s.app.Instance.Name, ""}, s.conf.Delimiter),
 		strings.Join([]string{s.prefix(), s.app.Environment, "service", s.app.Instance.Name, s.app.Region, ""}, s.conf.Delimiter),

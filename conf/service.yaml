@@ -22,8 +22,13 @@ asjard:
       # systemCode: 100
       ## Can be accessed by services in different az
       # shareable: false
-      ## service name
-      # name: ${asjard.app}
+      ## Name is the specific deployment or entrypoint name (e.g., "svc-example-api", "svc-example-openapi").
+      ## It is used for fine-grained routing and service discovery.
+      name: svc-example-api
+      ## Group identifies the logical service entity (e.g., "svc-example").
+      ## Multiple entrypoints (Names) can share the same Group to indicate they
+      ## belong to the same business logic and code base.
+      group: svc-example
       ## service version
       # version: 1.0.0
       ## custome service configuration.
