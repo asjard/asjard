@@ -10,6 +10,9 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/status"
+
+	// init remote config center etcd
+	_ "github.com/asjard/asjard/pkg/config/etcd"
 	"github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 )
@@ -44,7 +47,10 @@ func (api *ConfigAPI) Get(ctx context.Context, in *pb.ConfigGetReq) (*pb.ConfigG
 		App:    app.App,
 		Region: app.Region,
 		Az:     app.AZ,
+		// etcdctl put /example/configs/global_config global_value_in_etcd
+		ValueFromRemoteSource: config.GetString("global_config", ""),
 	}
+
 	if err := config.GetWithJsonUnmarshal("example.config", &result); err != nil {
 		logger.L(ctx).Error("get config with json unmarshal fail", "err", err)
 		return nil, status.InternalServerError()
@@ -56,6 +62,7 @@ func (api *ConfigAPI) Get(ctx context.Context, in *pb.ConfigGetReq) (*pb.ConfigG
 // Demonstrates handling specialized business logic through the same framework.
 func (api *ConfigAPI) GetAndDecrypt(ctx context.Context, in *cpb.Empty) (*pb.ConfigDecryptResp, error) {
 	return &pb.ConfigDecryptResp{
-		PlainText: config.GetString("example.config.encrypted_value", ""),
+		PlainText:                     config.GetString("example.config.encrypted_value", ""),
+		PlainTextWithSpecifyCiperName: config.GetString("example.config.encrypted_value_without_prefix", "", config.WithCipher("base64")),
 	}, nil
 }

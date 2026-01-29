@@ -1,5 +1,7 @@
 > 配置相关
 
+使用方法可参考[这里](https://github.com/asjard/asjard/tree/develop/_examples/svc-example/apis/api/v1/config.go)
+
 ## 配置
 
 ```yaml
@@ -299,5 +301,3 @@ import (
 )
 // 同一个配置项始终会获得最高优先级配置源的值
 ```
-
-more examples at [here](https://github.com/asjard/asjard/tree/develop/_examples/svc-example/apis/api/v1/config.go)

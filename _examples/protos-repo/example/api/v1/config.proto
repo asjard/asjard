@@ -99,15 +99,17 @@ message ConfigGetResp {
     uint64 uint64_value = 18;
 
     // Environment and Topology information
-    string         app        = 20;  // Application identifier
-    string         region     = 21;  // Geographical region (e.g., us-east-1)
-    string         az         = 22;  // Availability Zone
-    Instance       instance   = 23;  // Runtime instance details
-    bool           true_false = 24;  // Success flag
-    repeated int32 int32_list = 25;
+    string         app                      = 20;  // Application identifier
+    string         region                   = 21;  // Geographical region (e.g., us-east-1)
+    string         az                       = 22;  // Availability Zone
+    Instance       instance                 = 23;  // Runtime instance details
+    bool           true_false               = 24;  // Success flag
+    repeated int32 int32_list               = 25;
+    string         value_from_remote_source = 26;  // get value from remote source, like etcd or consul
 }
 
 // Response structure for decryption requests
 message ConfigDecryptResp {
-    string plain_text = 1;  // The decrypted sensitive data
+    string plain_text                         = 1;  // The decrypted sensitive data
+    string plain_text_with_specify_ciper_name = 2;
 }

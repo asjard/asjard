@@ -1,6 +1,7 @@
 example:
   config:
     encrypted_value: encrypted_base64:aGVsbG8gd29ybGQK
+    encrypted_value_without_prefix: aGVsbG8gd29ybGQK
     str_list:
       - a
       - b
