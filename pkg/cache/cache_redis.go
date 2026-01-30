@@ -369,6 +369,11 @@ func (c *CacheRedis) Close() {
 	}
 }
 
+// Enabed checks if caching is currently active and redis was connect.
+func (c *CacheRedis) Enabled() bool {
+	return c.Cache.Enabled() && c.client.Load() != nil
+}
+
 // addGroup links a specific key to one or more groups for bulk management.
 func (c *CacheRedis) addGroup(ctx context.Context, key string) error {
 	client := c.client.Load()
@@ -437,7 +442,6 @@ func (c *CacheRedis) delKeys(ctx context.Context, client *redis.Client, keys ...
 // loadAndWatch handles initial setup and dynamic configuration reloads.
 func (c *CacheRedis) loadAndWatch() (*CacheRedis, error) {
 	if err := c.load(); err != nil {
-		logger.Error("redis cache load config fail", "err", err)
 		return nil, err
 	}
 	config.AddPatternListener("asjard.cache.redis.*", c.watch)
@@ -454,6 +458,7 @@ func (c *CacheRedis) load() error {
 			"asjard.cache.redis",
 			fmt.Sprintf("asjard.cache.redis.models.%s", c.modelName),
 		})); err != nil {
+		logger.Error("redis cache load config fail", "err", err)
 		return err
 	}
 	logger.Debug("load redis cache", "conf", conf)
@@ -461,6 +466,7 @@ func (c *CacheRedis) load() error {
 	if conf.Enabled {
 		client, err := xredis.NewClient(xredis.WithClientName(conf.Client))
 		if err != nil {
+			logger.Error("redis cache get redis client fail", "err", err)
 			return err
 		}
 		// Safely update the connection pointer.

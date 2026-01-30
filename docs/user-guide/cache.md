@@ -1,6 +1,6 @@
 > 缓存使用
 
-详细实例参考[examples/mysql](https://github.com/asjard/examples/blob/main/mysql/model/table.go)
+详细实例参考[examples/mysql](https://github.com/asjard/examples/blob/develop/_examples/svc-example/services/user.go)
 
 ## 全局配置
 

@@ -2,7 +2,12 @@
 asjard.service.app: example
 asjard.service.environment: local
 
-# asjard.logger.level: DEBUG
+## log
+asjard.logger.level: DEBUG
+
+## cache
+asjard.cache.enabled: true
+# asjard.cache.redis.client: default
 
 asjard.trace.enabled: true
 asjard.trace.endpoint: http://127.0.0.1:4318
@@ -18,7 +23,7 @@ dbAutoMigrate: true
 asjard.stores.etcd.clients.default.endpoints: 127.0.0.1:2379
 
 ## 数据库相关配置
-asjard.stores.gorm.dbs.default.dsn: root:my-secret-pw@tcp(127.0.0.1:3306)/pf?charset=utf8&parseTime=True&loc=Local
+asjard.stores.gorm.dbs.default.dsn: root:my-secret-pw@tcp(127.0.0.1:3306)/example?charset=utf8&parseTime=True&loc=Local
 asjard.stores.gorm.dbs.default.driver: mysql
 asjard.stores.gorm.options.debug: true
 asjard.stores.gorm.options.translateError: true
