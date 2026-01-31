@@ -24,15 +24,19 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// 分页请求
+// ReqWithPage defines common parameters for paginated list requests.
 type ReqWithPage struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Page   int32  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
-	Size   int32  `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
-	Sort   string `protobuf:"bytes,3,opt,name=sort,proto3" json:"sort,omitempty"`
+	// page is the requested page number (must be at least 1).
+	Page int32 `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	// size is the number of items per page (must be between 5 and 500).
+	Size int32 `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
+	// sort defines the field and direction for ordering results (e.g., "id desc").
+	Sort string `protobuf:"bytes,3,opt,name=sort,proto3" json:"sort,omitempty"`
+	// search provides a keyword for filtering the result set.
 	Search string `protobuf:"bytes,4,opt,name=search,proto3" json:"search,omitempty"`
 }
 
@@ -96,12 +100,13 @@ func (x *ReqWithPage) GetSearch() string {
 	return ""
 }
 
-// Id 请求
+// ReqWithId is used for requests that only require a unique identifier.
 type ReqWithId struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// id is the primary identifier of the resource.
 	Id int64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
@@ -144,7 +149,7 @@ func (x *ReqWithId) GetId() int64 {
 	return 0
 }
 
-// 空请求
+// Empty is a placeholder message used when no input or output data is required.
 type Empty struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

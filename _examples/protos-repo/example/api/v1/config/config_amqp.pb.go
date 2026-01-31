@@ -93,7 +93,8 @@ func (c *ConfigAmqpClient) GetChannel() (*amqp.Channel, error) {
 	return c.ClientConn.Channel()
 }
 
-// Simple Get: Retrieves the current configuration.
+// Simple Get
+// Retrieves the current configuration.
 // Asjard generates both a gRPC method and a REST endpoint.
 func (c *ConfigAmqpClient) Get(ctx context.Context, in *ConfigGetReq, opts ...xamqp1.PublishOption) error {
 	options := &xamqp1.PublishOptions{}
@@ -137,7 +138,8 @@ func (c *ConfigAmqpClient) GetAndDecrypt(ctx context.Context, in *common.Empty, 
 	})
 }
 
-// Simple Get: Retrieves the current configuration.
+// Simple Get
+// Retrieves the current configuration.
 // Asjard generates both a gRPC method and a REST endpoint.
 func _Config_Get_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(ConfigGetReq)
@@ -183,6 +185,7 @@ func _Config_GetAndDecrypt_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor
 // It's only intended for direct use with xamqp1.AddHandler,
 // and not to be introspected or modified (even as a copy)
 //
+// Config Example
 // Config service handles application configuration retrieval and management.
 var ConfigAmqpServiceDesc = xamqp1.ServiceDesc{
 	ServiceName: "api.v1.example.docs.Config",

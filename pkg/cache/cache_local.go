@@ -96,7 +96,7 @@ func (c *CacheLocal) Get(ctx context.Context, key string, out any) (bool, error)
 	if err != nil {
 		return true, err // Key not found (or actual error)
 	}
-	logger.Debug("get value from local cache", "key", key, "value", value)
+	logger.L(ctx).Debug("get value from local cache", "key", key, "value", value)
 	return true, json.Unmarshal(value, out)
 }
 
@@ -105,6 +105,7 @@ func (c *CacheLocal) Del(ctx context.Context, keys ...string) error {
 	if len(keys) == 0 {
 		return nil
 	}
+	logger.L(ctx).Debug("delete cache from local", "keys", keys)
 	// 1. Delete locally first.
 	if err := c.del(keys...); err != nil {
 		return err
@@ -132,7 +133,7 @@ func (c *CacheLocal) Set(ctx context.Context, key string, in any, expiresIn time
 	if err != nil {
 		return err
 	}
-	logger.Debug("set local", "key", key)
+	logger.L(ctx).Debug("set local", "key", key)
 	return c.cache.Set(utils.UnsafeString2Byte(key), value, int(expiresIn.Seconds()))
 }
 
@@ -179,7 +180,7 @@ func (c *CacheLocal) delPublish(ctx context.Context, keys ...string) error {
 	if err != nil {
 		return err
 	}
-	logger.Debug("local cache del publish", "msg", string(v))
+	logger.L(ctx).Debug("local cache del publish", "msg", string(v))
 	return c.redis.Publish(ctx, c.delChannel(), string(v)).Err()
 }
 

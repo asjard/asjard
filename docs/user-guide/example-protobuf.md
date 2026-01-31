@@ -1,3 +1,5 @@
+详细示例参考[这里](https://github.com/asjard/examples/blob/develop/_examples/protos-repo)
+
 ## 定义protobuf协议文件
 
 ```proto

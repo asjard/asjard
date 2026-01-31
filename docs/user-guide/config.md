@@ -1,6 +1,6 @@
 > 配置相关
 
-使用方法可参考[这里](https://github.com/asjard/asjard/tree/develop/_examples/svc-example/apis/api/v1/config.go)
+详细示例参考[这里](https://github.com/asjard/asjard/tree/develop/_examples/svc-example/apis/api/v1/config.go)
 
 ## 配置
 

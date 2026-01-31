@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package api.common.xcodes;
+
+option go_package = "protos-repo/common/xcodes";
+
+enum ERR_USER {
+    EUSE_SUCCESS               = 0;
+    EUSE_NOT_FOUND             = 404201;
+    EUSE_EXIST                 = 409202;
+    EUSE_CREDIT_CARD_NOT_FOUND = 404203;
+}

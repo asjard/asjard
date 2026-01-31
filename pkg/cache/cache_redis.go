@@ -220,7 +220,7 @@ func (c *CacheRedis) Get(ctx context.Context, key string, out any) (bool, error)
 			if _, err := c.options.localCache.Get(ctx, key, out); err == nil {
 				return false, nil
 			} else {
-				logger.Debug("redis cache read data from local fail", "key", key, "err", err)
+				logger.L(ctx).Debug("redis cache read data from local fail", "key", key, "err", err)
 			}
 		}
 		// Fallback to L2 (Redis).
@@ -290,7 +290,7 @@ func (c *CacheRedis) Set(ctx context.Context, key string, in any, expiresIn time
 	case CacheRedisTypeKeyValue:
 		if c.options.localCache != nil && c.options.localCache.Enabled() {
 			if err := c.options.localCache.Set(ctx, key, in, expiresIn/2); err != nil {
-				logger.Error("redis cache set local cache fail", "key", key, "err", err)
+				logger.L(ctx).Error("redis cache set local cache fail", "key", key, "err", err)
 			}
 		}
 		b, err := json.Marshal(in)
@@ -332,7 +332,7 @@ func (c *CacheRedis) Refresh(ctx context.Context, key string, in any, expiresIn 
 	case CacheRedisTypeKeyValue:
 		if c.options.localCache != nil && c.options.localCache.Enabled() {
 			if err := c.options.localCache.Set(ctx, key, in, expiresIn); err != nil {
-				logger.Error("redis cache refresh local cache fail", "err", err)
+				logger.L(ctx).Error("redis cache refresh local cache fail", "err", err)
 			}
 		}
 		err = client.Expire(ctx, key, expiresIn).Err()
@@ -369,12 +369,17 @@ func (c *CacheRedis) Close() {
 	}
 }
 
+// Enabed checks if caching is currently active and redis was connect.
+func (c *CacheRedis) Enabled() bool {
+	return c.Cache.Enabled() && c.client.Load() != nil
+}
+
 // addGroup links a specific key to one or more groups for bulk management.
 func (c *CacheRedis) addGroup(ctx context.Context, key string) error {
 	client := c.client.Load()
 	if len(c.groups) != 0 {
 		for _, group := range c.groups {
-			logger.Debug("add group", "group", group, "key", key)
+			logger.L(ctx).Debug("add group", "group", group, "key", key)
 			// Store key-type mapping in the group index (a Redis Hash).
 			if err := client.HSet(ctx, group, key, c.tp.String()).Err(); err != nil {
 				return err
@@ -401,7 +406,7 @@ func (c *CacheRedis) delGroup(ctx context.Context) error {
 				keys = append(keys, key)
 			}
 
-			logger.Debug("delete group", "group", group, "keys", keys)
+			logger.L(ctx).Debug("delete group", "group", group, "keys", keys)
 			if err := c.delKeys(ctx, client, keys...); err != nil {
 				return err
 			}
@@ -428,6 +433,7 @@ func (c *CacheRedis) delKeys(ctx context.Context, client *redis.Client, keys ...
 			return err
 		}
 	}
+	logger.L(ctx).Debug("delete cache from redis", "keys", keys)
 	if err := client.Del(ctx, keys...).Err(); err != nil {
 		return err
 	}
@@ -437,7 +443,6 @@ func (c *CacheRedis) delKeys(ctx context.Context, client *redis.Client, keys ...
 // loadAndWatch handles initial setup and dynamic configuration reloads.
 func (c *CacheRedis) loadAndWatch() (*CacheRedis, error) {
 	if err := c.load(); err != nil {
-		logger.Error("redis cache load config fail", "err", err)
 		return nil, err
 	}
 	config.AddPatternListener("asjard.cache.redis.*", c.watch)
@@ -454,6 +459,7 @@ func (c *CacheRedis) load() error {
 			"asjard.cache.redis",
 			fmt.Sprintf("asjard.cache.redis.models.%s", c.modelName),
 		})); err != nil {
+		logger.Error("redis cache load config fail", "err", err)
 		return err
 	}
 	logger.Debug("load redis cache", "conf", conf)
@@ -461,6 +467,7 @@ func (c *CacheRedis) load() error {
 	if conf.Enabled {
 		client, err := xredis.NewClient(xredis.WithClientName(conf.Client))
 		if err != nil {
+			logger.Error("redis cache get redis client fail", "err", err)
 			return err
 		}
 		// Safely update the connection pointer.

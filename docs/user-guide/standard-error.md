@@ -1,3 +1,5 @@
+详细示例参考[这里](https://github.com/asjard/examples/blob/develop/_examples/protos-repo/common/err_200_user.proto)
+
 ## 约定
 
 - 约定所有**对外**暴露的错误使用`github.com/asjard/asjard/core/status`提供的`Error`和`Errorf`方法

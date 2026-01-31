@@ -1,0 +1,150 @@
+syntax = "proto3";
+
+package api.v1.example.docs;
+
+// Go package path for the generated code.
+// Follows the internal repository structure for consistent dependency management.
+option go_package = "protos-repo/example/api/v1/user";
+
+import "github.com/asjard/protobuf/http.proto";
+import "github.com/asjard/protobuf/validate.proto";
+
+import "protos-repo/common/common.proto";
+
+// User example
+// User service handles lifecycle management and data retrieval for User entities.
+// It integrates with the Asjard Store layer to provide transparent caching
+// and high-concurrency protection (Singleflight).
+service User {
+    // Create persists a new user record.
+    // In Asjard, this method typically uses 'SetData' to pre-allocate IDs
+    // and initialize the cache state to prevent early cache-miss storms.
+    rpc Create(UserReq) returns (api.common.Empty) {
+        option (asjard.api.http) = {
+            post : '/'
+        };
+    };
+
+    // Get retrieves a single user by their primary identifier (username/key).
+    // Workflow: LocalCache -> Redis -> Database.
+    // Failure to find a record results in a gRPC NOT_FOUND (HTTP 404).
+    rpc Get(api.common.ReqWithName) returns (UserInfo) {
+        option (asjard.api.http) = {
+            get : '/'
+        };
+        option (asjard.api.http) = {
+            get : '/{name}'
+        };
+    };
+
+    // Update modifies an existing user profile.
+    // Triggers the 'Delayed Double Delete' strategy via Asjard's Time Wheel
+    // to ensure consistency across distributed LocalCache nodes.
+    rpc Update(UserReq) returns (api.common.Empty) {
+        option (asjard.api.http) = {
+            put : '/'
+        };
+        option (asjard.api.http) = {
+            put : '/{username}'
+        };
+    };
+
+    // Del removes the user record from the persistent store and
+    // synchronously purges associated entries from all cache levels.
+    rpc Del(api.common.ReqWithName) returns (api.common.Empty) {
+        option (asjard.api.http) = {
+            delete : '/'
+        };
+        option (asjard.api.http) = {
+            delete : '/{name}'
+        };
+    };
+
+    // Search filters users with pagination support.
+    // Note: Search results are typically cached at the 'Group' level
+    // with shorter TTLs compared to individual 'Get' records.
+    rpc Search(UserSearchReq) returns (UserList) {
+        option (asjard.api.http) = {
+            get : '/search'
+        };
+    }
+
+    // User add a credit card
+    // Add a credit card and update user's card count
+    // This implementation demonstrates how to use xgorm.WithDB(ctx, tx) to maintain
+    // transactional integrity across multiple table updates.
+    rpc AddCreditCard(UserCreditCardReq) returns (api.common.Empty) {
+        option (asjard.api.http) = {
+            post : '/{username}/creditcards'
+        };
+    }
+    // User remove a credit card
+    rpc RemoveCreditCard(UserCreditCardReq) returns (api.common.Empty) {
+        option (asjard.api.http) = {
+            delete : '/{username}/creditcards'
+        };
+    }
+    // Get user specify credit card info
+    rpc GetCreditCard(UserCreditCardReq) returns (UserCreditCardInfo) {
+        option (asjard.api.http) = {
+            get : '/{username}/creditcards'
+        };
+    }
+
+    // Get all credit cards under user
+    rpc SearchCreditCard(api.common.ReqWithName) returns (UserCreditCardList) {
+        option (asjard.api.http) = {
+            get : '/{username}/creditcards/search'
+        };
+    }
+}
+
+message UserCreditCardReq {
+    string username = 1 [ (asjard.api.validate).rules = "required" ];
+    string number   = 2 [ (asjard.api.validate).rules = "required,max=100" ];
+}
+
+message UserCreditCardInfo { string number = 1; }
+
+message UserCreditCardList {
+    int32                       total = 1;
+    repeated UserCreditCardInfo list  = 2;
+}
+
+// UserReq represents the input payload for creating or updating a user.
+// Validation is enforced by the Asjard Validation Interceptor before reaching the handler.
+message UserReq {
+    // Required field. Must be unique in the system.
+    string username = 1 [ (asjard.api.validate).rules = "required,max=50" ];
+    // User age for demographic filtering. Range restricted to human-realistic values.
+    int32 age = 2 [ (asjard.api.validate).rules = "min=0,max=200" ];
+}
+
+// UserInfo represents the data structure returned for single or list queries.
+message UserInfo {
+    // Unique internal system identifier (Snowflake or Auto-increment).
+    int64  user_id   = 1;
+    string username  = 2;
+    int32  age       = 3;
+    int32  card_nums = 4;
+}
+
+// UserSearchReq provides parameters for complex queries.
+message UserSearchReq {
+    // Page index (0-based). If negative, the validation interceptor returns INVALID_ARGUMENT.
+    int32 page = 1 [ (asjard.api.validate).rules = "min=0" ];
+    // Page size. Minimum 5 enforced to prevent excessive small-page queries.
+    int32 size = 2 [ (asjard.api.validate).rules = "min=5" ];
+    // Sorting directive. Strict validation ensures only indexed fields like 'created_at' are used.
+    string sort = 3 [ (asjard.api.validate).rules = "sortFields=created_at" ];
+    // Full-text or partial match search string for usernames.
+    string keywords = 4;
+}
+
+// UserList is the standard response envelope for paginated Search results.
+message UserList {
+    // The total count of records matching the filter, regardless of pagination size.
+    int32 total = 1;
+    // The slice of users for the requested page.
+    repeated UserInfo list = 2;
+}

@@ -14,14 +14,16 @@ import "github.com/asjard/protobuf/validate.proto";
 // Import common message types (like Empty) from your shared repository
 import "protos-repo/common/common.proto";
 
+// Config Example
 // Config service handles application configuration retrieval and management.
 service Config {
 
-    // Simple Get: Retrieves the current configuration.
+    // Simple Get
+    // Retrieves the current configuration.
     // Asjard generates both a gRPC method and a REST endpoint.
     rpc Get(ConfigGetReq) returns (ConfigGetResp) {
         option (asjard.api.http) = {
-            get : '/'  // Accessible via GET / (or prefixed by service base path)
+            get : '/'  // Accessible via GET /api/v1/docs/configs
         };
     };
 
@@ -29,7 +31,7 @@ service Config {
     // Demonstrates handling specialized business logic through the same framework.
     rpc GetAndDecrypt(api.common.Empty) returns (ConfigDecryptResp) {
         option (asjard.api.http) = {
-            get : '/decrypt'  // Accessible via GET /decrypt
+            get : '/decrypt'  // Accessible via GET /api/v1/docs/configs/decrypt
         };
     };
 }

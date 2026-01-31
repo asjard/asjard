@@ -1,5 +1,7 @@
 ## Redis缓存
 
+详细示例参考[这里](https://github.com/asjard/examples/blob/develop/_examples/svc-example/services/user.go)
+
 ### 配置
 
 > 比[全局配置](cache.md)多`client`redis客户端配置
