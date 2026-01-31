@@ -68,9 +68,20 @@ func main() {
 
 ## Benchmark
 
-![latency](https://raw.githubusercontent.com/asjard/benchmark/main/benchmark_latency.png)
+- Latency
+
+![benchmark_latency](https://raw.githubusercontent.com/asjard/benchmark/main/benchmark_latency.png)
+![concurrency_latency](https://raw.githubusercontent.com/asjard/benchmark/main/concurrency_latency.png)
+
+- Concurrency
+
+![concurrency](https://raw.githubusercontent.com/asjard/benchmark/main/concurrency.png)
 ![benchmark](https://raw.githubusercontent.com/asjard/benchmark/main/benchmark.png)
-![alloc](https://raw.githubusercontent.com/asjard/benchmark/main/benchmark_alloc.png)
+
+- Allocations
+
+![benchmark_alloc](https://raw.githubusercontent.com/asjard/benchmark/main/benchmark_alloc.png)
+![concurrency_alloc](https://raw.githubusercontent.com/asjard/benchmark/main/concurrency_alloc.png)
 
 More information see [TestCode](https://github.com/asjard/benchmark)
 
