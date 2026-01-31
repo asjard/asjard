@@ -47,7 +47,7 @@ func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (
 		if err != nil {
 			return err
 		}
-		return m.copy(result, out)
+		return m.copy(ctx, result, out)
 	}
 
 	// Try fetching from the cache provider.
@@ -59,21 +59,21 @@ func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (
 			m.sg.Forget(cache.Key())
 			// DB Miss/Error: Cache the empty result for a short period (Negative Caching).
 			if rerr := cache.Set(ctx, cache.Key(), out, cache.EmptyExpiresIn()); rerr != nil {
-				logger.Error("set empty into cache fail", "err", rerr)
+				logger.L(ctx).Error("set empty into cache fail", "err", rerr)
 			}
 			return err
 		}
 		// DB Success: Populate cache with the new data.
 		if err := cache.Set(ctx, cache.Key(), result, cache.ExpiresIn()); err != nil {
-			logger.Error("set cache fail", "key", cache.Key(), "err", err)
+			logger.L(ctx).Error("set cache fail", "key", cache.Key(), "err", err)
 		}
-		return m.copy(result, out)
+		return m.copy(ctx, result, out)
 	}
 
 	// Optional: Extend the cache TTL if AutoRefresh is enabled.
 	if fromCurrent && cache.AutoRefresh() {
 		if err := cache.Refresh(ctx, cache.Key(), out, cache.ExpiresIn()); err != nil {
-			logger.Error("refresh cache expire fail", "key", cache.Key(), "err", err)
+			logger.L(ctx).Error("refresh cache expire fail", "key", cache.Key(), "err", err)
 		}
 	}
 	return nil
@@ -99,6 +99,7 @@ func (m *Model) SetData(ctx context.Context, set func() error, caches ...Cacher)
 	}
 
 	return tools.DefaultTW.AddTask(100*time.Millisecond, func() {
+		ctx = context.WithoutCancel(ctx)
 		for _, cache := range caches {
 			if err := m.delCache(ctx, cache); err != nil {
 				logger.L(ctx).Error("delay delete cache fail", "err", err)
@@ -111,7 +112,7 @@ func (m *Model) SetData(ctx context.Context, set func() error, caches ...Cacher)
 // Used for "Write-Through" style operations where cache consistency is a priority.
 func (m *Model) SetAndGetData(ctx context.Context, out any, cache Cacher, set func() (any, error)) error {
 	if out == nil {
-		logger.Error("SetAndGetData out is nil")
+		logger.L(ctx).Error("SetAndGetData out is nil")
 		return status.InternalServerError()
 	}
 
@@ -129,10 +130,10 @@ func (m *Model) SetAndGetData(ctx context.Context, out any, cache Cacher, set fu
 	// Update cache with the new DB value.
 	if cache != nil && cache.Enabled() {
 		if err := cache.Set(ctx, cache.Key(), result, cache.ExpiresIn()); err != nil {
-			logger.Error("SetAndGetData set cache fail", "key", cache.Key(), "err", err)
+			logger.L(ctx).Error("SetAndGetData set cache fail", "key", cache.Key(), "err", err)
 		}
 	}
-	return m.copy(result, out)
+	return m.copy(ctx, result, out)
 }
 
 // delCache internal helper to safely delete a key from a cache provider.
@@ -140,8 +141,10 @@ func (m *Model) delCache(ctx context.Context, cache Cacher) error {
 	if cache == nil || !cache.Enabled() {
 		return nil
 	}
-	if err := cache.Del(ctx, cache.Key()); err != nil {
-		logger.Error("delete cache fail", "key", cache.Key(), "err", err)
+	key := cache.Key()
+	logger.L(ctx).Debug("delete cache", "key", key)
+	if err := cache.Del(ctx, key); err != nil {
+		logger.L(ctx).Error("delete cache fail", "key", key, "err", err)
 		return status.DeleteCacheFailError()
 	}
 	return nil
@@ -149,17 +152,17 @@ func (m *Model) delCache(ctx context.Context, cache Cacher) error {
 
 // copy uses reflection to deep-copy the database result into the output pointer.
 // It ensures type safety between the 'get' function return and the user-provided output.
-func (m *Model) copy(from, to any) error {
+func (m *Model) copy(ctx context.Context, from, to any) error {
 	fromVal := reflect.ValueOf(from)
 	toVal := reflect.ValueOf(to)
 	// Validation: 'to' must be a pointer so we can modify its value.
 	if toVal.Kind() != reflect.Ptr || toVal.IsNil() {
-		logger.Error("out must be a non-nil ptr")
+		logger.L(ctx).Error("out must be a non-nil ptr")
 		return status.InternalServerError()
 	}
 	// Validation: Ensure types match before copying.
 	if fromVal.Type() != toVal.Type() {
-		logger.Error("type mismatch: get func return type must be same with out type")
+		logger.L(ctx).Error("type mismatch: get func return type must be same with out type")
 		return status.InternalServerError()
 	}
 	// Set the value of the 'to' pointer to the value held by 'from'.

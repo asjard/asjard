@@ -26,7 +26,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GwClient interface {
-	// 获取服务的所有实例
+	// Get all service instances
+	// This is a example that how to get service instances from registry
 	GetServiceInstances(ctx context.Context, in *ServiceInstancesReq, opts ...grpc.CallOption) (*ServiceInstancesResp, error)
 }
 
@@ -51,7 +52,8 @@ func (c *gwClient) GetServiceInstances(ctx context.Context, in *ServiceInstances
 // All implementations must embed UnimplementedGwServer
 // for forward compatibility
 type GwServer interface {
-	// 获取服务的所有实例
+	// Get all service instances
+	// This is a example that how to get service instances from registry
 	GetServiceInstances(context.Context, *ServiceInstancesReq) (*ServiceInstancesResp, error)
 	mustEmbedUnimplementedGwServer()
 }

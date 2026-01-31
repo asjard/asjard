@@ -19,8 +19,9 @@ import (
 
 type User struct {
 	Id        int64  `gorm:"type:BIGINT(20);primayKey"`
-	Username  string `gorm:"type:VARCHAR(50);uniqueIndex;comment:username"`
-	Age       int32  `gorm:"type:INT"`
+	Username  string `gorm:"type:VARCHAR(50);uniqueIndex;NOT NULL;comment:username"`
+	Age       int32  `gorm:"type:INT;default:0"`
+	CardNums  int32  `gorm:"type:INT;default:0"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -53,6 +54,20 @@ func (t User) Update(ctx context.Context, in *user.UserReq) error {
 			"age": in.Age,
 		}).Error; err != nil {
 		logger.L(ctx).Error("update user fail", "req", in, "err", err)
+		return status.InternalServerError()
+	}
+	return nil
+}
+
+func (t User) UpdateCardNum(ctx context.Context, username string, num int) error {
+	db, err := xgorm.DB(ctx)
+	if err != nil {
+		return err
+	}
+	if err := db.Model(&User{}).
+		Where("username=?", username).
+		Update("card_nums", gorm.Expr("card_nums+?", num)).Error; err != nil {
+		logger.L(ctx).Error("update user card nums fail", "username", username, "err", err)
 		return status.InternalServerError()
 	}
 	return nil
@@ -124,5 +139,6 @@ func (t User) Info() *user.UserInfo {
 		UserId:   t.Id,
 		Username: t.Username,
 		Age:      t.Age,
+		CardNums: t.CardNums,
 	}
 }

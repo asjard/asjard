@@ -44,7 +44,8 @@ func (api *GwAPI) Start() error {
 func (api *GwAPI) Stop() {
 }
 
-// 获取服务的所有实例
+// Get all service instances
+// This is a example that how to get service instances from registry
 func (api *GwAPI) GetServiceInstances(ctx context.Context, in *ServiceInstancesReq) (*ServiceInstancesResp, error) {
 	return api.client.GetServiceInstances(ctx, in)
 }

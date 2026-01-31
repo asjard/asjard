@@ -109,14 +109,14 @@ func TestCopy(t *testing.T) {
 	from := "test_from"
 	var to string
 	t.Run("OutNotPtr", func(t *testing.T) {
-		assert.NotNil(t, model.copy(&from, to))
+		assert.NotNil(t, model.copy(context.Background(), &from, to))
 	})
 	t.Run("DiffType", func(t *testing.T) {
-		assert.NotNil(t, model.copy(from, &to))
+		assert.NotNil(t, model.copy(context.Background(), from, &to))
 	})
 	t.Run("Success", func(t *testing.T) {
 		var to string
-		assert.Nil(t, model.copy(&from, &to))
+		assert.Nil(t, model.copy(context.Background(), &from, &to))
 		assert.Equal(t, from, to)
 	})
 }

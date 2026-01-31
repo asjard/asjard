@@ -47,7 +47,8 @@ func (api *ConfigAPI) Start() error {
 func (api *ConfigAPI) Stop() {
 }
 
-// Simple Get: Retrieves the current configuration.
+// Simple Get
+// Retrieves the current configuration.
 // Asjard generates both a gRPC method and a REST endpoint.
 func (api *ConfigAPI) Get(ctx context.Context, in *ConfigGetReq) (*ConfigGetResp, error) {
 	return api.client.Get(ctx, in)

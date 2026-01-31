@@ -9,6 +9,8 @@ import (
 
 	"github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/pkg/stores/xgorm"
+	"gorm.io/gorm"
 )
 
 type UserAPI struct {
@@ -48,7 +50,17 @@ func (api *UserAPI) Update(ctx context.Context, in *user.UserReq) (*cpb.Empty, e
 // Del removes the user record from the persistent store and
 // synchronously purges associated entries from all cache levels.
 func (api *UserAPI) Del(ctx context.Context, in *cpb.ReqWithName) (*cpb.Empty, error) {
-	return &cpb.Empty{}, api.svcCtx.Svcs.UserSvc.Del(ctx, in)
+	db, err := xgorm.DB(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &cpb.Empty{}, db.Transaction(func(tx *gorm.DB) error {
+		ttx := xgorm.WithDB(ctx, tx)
+		if err := api.svcCtx.Svcs.UserCreditCardSvc.RemoveByUser(ttx, in); err != nil {
+			return err
+		}
+		return api.svcCtx.Svcs.UserSvc.Del(ttx, in)
+	})
 }
 
 // Search filters users with pagination support.
@@ -56,4 +68,44 @@ func (api *UserAPI) Del(ctx context.Context, in *cpb.ReqWithName) (*cpb.Empty, e
 // with shorter TTLs compared to individual 'Get' records.
 func (api *UserAPI) Search(ctx context.Context, in *user.UserSearchReq) (*user.UserList, error) {
 	return api.svcCtx.Svcs.UserSvc.Search(ctx, in)
+}
+
+// User add a credit card
+func (api *UserAPI) AddCreditCard(ctx context.Context, in *user.UserCreditCardReq) (*cpb.Empty, error) {
+	db, err := xgorm.DB(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &cpb.Empty{}, db.Transaction(func(tx *gorm.DB) error {
+		ttx := xgorm.WithDB(ctx, tx)
+		if err := api.svcCtx.Svcs.UserCreditCardSvc.Add(ttx, in); err != nil {
+			return err
+		}
+		return api.svcCtx.Svcs.UserSvc.UpdateCardNum(ttx, in.Username, 1)
+	})
+}
+
+// User remove a credit card
+func (api *UserAPI) RemoveCreditCard(ctx context.Context, in *user.UserCreditCardReq) (*cpb.Empty, error) {
+	db, err := xgorm.DB(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &cpb.Empty{}, db.Transaction(func(tx *gorm.DB) error {
+		ttx := xgorm.WithDB(ctx, tx)
+		if err := api.svcCtx.Svcs.UserCreditCardSvc.Remove(ttx, in); err != nil {
+			return err
+		}
+		return api.svcCtx.Svcs.UserSvc.UpdateCardNum(ttx, in.Username, -1)
+	})
+}
+
+// get user credit card info
+func (api *UserAPI) GetCreditCard(ctx context.Context, in *user.UserCreditCardReq) (*user.UserCreditCardInfo, error) {
+	return api.svcCtx.Svcs.UserCreditCardSvc.Get(ctx, in)
+}
+
+// Get all credit cards under user
+func (api *UserAPI) SearchCreditCard(ctx context.Context, in *cpb.ReqWithName) (*user.UserCreditCardList, error) {
+	return api.svcCtx.Svcs.UserCreditCardSvc.Search(ctx, in)
 }

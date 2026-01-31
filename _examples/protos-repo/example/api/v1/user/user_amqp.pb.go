@@ -205,6 +205,93 @@ func (c *UserAmqpClient) Search(ctx context.Context, in *UserSearchReq, opts ...
 	})
 }
 
+// User add a credit card
+// Add a credit card and update user's card count
+// This implementation demonstrates how to use xgorm.WithDB(ctx, tx) to maintain
+// transactional integrity across multiple table updates.
+func (c *UserAmqpClient) AddCreditCard(ctx context.Context, in *UserCreditCardReq, opts ...xamqp1.PublishOption) error {
+	options := &xamqp1.PublishOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	payload, err := proto.Marshal(in)
+	if err != nil {
+		return err
+	}
+	ch, err := c.GetChannel()
+	if err != nil {
+		return err
+	}
+	defer ch.Close()
+	return ch.Publish(options.Exchange, options.Key, options.Mandatory, options.Immediate, amqp.Publishing{
+		ContentType: "application/protobuf",
+		Body:        payload,
+	})
+}
+
+// User remove a credit card
+func (c *UserAmqpClient) RemoveCreditCard(ctx context.Context, in *UserCreditCardReq, opts ...xamqp1.PublishOption) error {
+	options := &xamqp1.PublishOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	payload, err := proto.Marshal(in)
+	if err != nil {
+		return err
+	}
+	ch, err := c.GetChannel()
+	if err != nil {
+		return err
+	}
+	defer ch.Close()
+	return ch.Publish(options.Exchange, options.Key, options.Mandatory, options.Immediate, amqp.Publishing{
+		ContentType: "application/protobuf",
+		Body:        payload,
+	})
+}
+
+// Get user specify credit card info
+func (c *UserAmqpClient) GetCreditCard(ctx context.Context, in *UserCreditCardReq, opts ...xamqp1.PublishOption) error {
+	options := &xamqp1.PublishOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	payload, err := proto.Marshal(in)
+	if err != nil {
+		return err
+	}
+	ch, err := c.GetChannel()
+	if err != nil {
+		return err
+	}
+	defer ch.Close()
+	return ch.Publish(options.Exchange, options.Key, options.Mandatory, options.Immediate, amqp.Publishing{
+		ContentType: "application/protobuf",
+		Body:        payload,
+	})
+}
+
+// Get all credit cards under user
+func (c *UserAmqpClient) SearchCreditCard(ctx context.Context, in *common.ReqWithName, opts ...xamqp1.PublishOption) error {
+	options := &xamqp1.PublishOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	payload, err := proto.Marshal(in)
+	if err != nil {
+		return err
+	}
+	ch, err := c.GetChannel()
+	if err != nil {
+		return err
+	}
+	defer ch.Close()
+	return ch.Publish(options.Exchange, options.Key, options.Mandatory, options.Immediate, amqp.Publishing{
+		ContentType: "application/protobuf",
+		Body:        payload,
+	})
+}
+
 // Create persists a new user record.
 // In Asjard, this method typically uses 'SetData' to pre-allocate IDs
 // and initialize the cache state to prevent early cache-miss storms.
@@ -314,10 +401,94 @@ func _User_Search_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor server.U
 	return interceptor(ctx, in, info, handler)
 }
 
+// User add a credit card
+// Add a credit card and update user's card count
+// This implementation demonstrates how to use xgorm.WithDB(ctx, tx) to maintain
+// transactional integrity across multiple table updates.
+func _User_AddCreditCard_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+	in := new(UserCreditCardReq)
+	if err := proto.Unmarshal(ctx.Body(), in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).AddCreditCard(ctx, in)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_AddCreditCard_FullMethodName,
+		Protocol:   xamqp1.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(UserServer).AddCreditCard(ctx, in)
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// User remove a credit card
+func _User_RemoveCreditCard_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+	in := new(UserCreditCardReq)
+	if err := proto.Unmarshal(ctx.Body(), in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).RemoveCreditCard(ctx, in)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_RemoveCreditCard_FullMethodName,
+		Protocol:   xamqp1.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(UserServer).RemoveCreditCard(ctx, in)
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// Get user specify credit card info
+func _User_GetCreditCard_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+	in := new(UserCreditCardReq)
+	if err := proto.Unmarshal(ctx.Body(), in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).GetCreditCard(ctx, in)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_GetCreditCard_FullMethodName,
+		Protocol:   xamqp1.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(UserServer).GetCreditCard(ctx, in)
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// Get all credit cards under user
+func _User_SearchCreditCard_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+	in := new(common.ReqWithName)
+	if err := proto.Unmarshal(ctx.Body(), in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).SearchCreditCard(ctx, in)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_SearchCreditCard_FullMethodName,
+		Protocol:   xamqp1.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(UserServer).SearchCreditCard(ctx, in)
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserAmqpServiceDesc is the xamqp1.ServiceDesc for User service.
 // It's only intended for direct use with xamqp1.AddHandler,
 // and not to be introspected or modified (even as a copy)
 //
+// User example
 // User service handles lifecycle management and data retrieval for User entities.
 // It integrates with the Asjard Store layer to provide transparent caching
 // and high-concurrency protection (Singleflight).

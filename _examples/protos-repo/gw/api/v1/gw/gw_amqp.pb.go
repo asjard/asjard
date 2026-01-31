@@ -90,7 +90,8 @@ func (c *GwAmqpClient) GetChannel() (*amqp.Channel, error) {
 	return c.ClientConn.Channel()
 }
 
-// 获取服务的所有实例
+// Get all service instances
+// This is a example that how to get service instances from registry
 func (c *GwAmqpClient) GetServiceInstances(ctx context.Context, in *ServiceInstancesReq, opts ...xamqp1.PublishOption) error {
 	options := &xamqp1.PublishOptions{}
 	for _, opt := range opts {
@@ -111,7 +112,8 @@ func (c *GwAmqpClient) GetServiceInstances(ctx context.Context, in *ServiceInsta
 	})
 }
 
-// 获取服务的所有实例
+// Get all service instances
+// This is a example that how to get service instances from registry
 func _Gw_GetServiceInstances_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(ServiceInstancesReq)
 	if err := proto.Unmarshal(ctx.Body(), in); err != nil {
@@ -134,6 +136,8 @@ func _Gw_GetServiceInstances_AmqpHandler(ctx *xamqp1.Context, srv any, intercept
 // GwAmqpServiceDesc is the xamqp1.ServiceDesc for Gw service.
 // It's only intended for direct use with xamqp1.AddHandler,
 // and not to be introspected or modified (even as a copy)
+//
+// Gateway Example
 var GwAmqpServiceDesc = xamqp1.ServiceDesc{
 	ServiceName: "api.v1.gw.Gw",
 	HandlerType: (*GwServer)(nil),

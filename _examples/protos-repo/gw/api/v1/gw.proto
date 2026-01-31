@@ -6,8 +6,10 @@ option go_package = "protos-repo/gw/api/v1/gw";
 
 import "github.com/asjard/protobuf/http.proto";
 
+// Gateway Example
 service Gw {
-    // 获取服务的所有实例
+    // Get all service instances
+    // This is a example that how to get service instances from registry
     rpc GetServiceInstances(ServiceInstancesReq) returns (ServiceInstancesResp) {
         option (asjard.api.http) = {
             get : '/instances'
@@ -16,7 +18,7 @@ service Gw {
 }
 
 message ServiceInstancesReq {
-    // 服务名称
+    // service name
     string service_name = 1;
 }
 

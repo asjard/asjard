@@ -11,7 +11,6 @@ import (
 	"svc-example/datas"
 
 	"github.com/asjard/asjard/core/bootstrap"
-	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/pkg/cache"
 	"github.com/asjard/asjard/pkg/stores"
@@ -39,7 +38,6 @@ func NewUserSvc() *UserSvc {
 }
 
 func (s *UserSvc) Start() error {
-	logger.Info("----------------------")
 	localCache, err := cache.NewLocalCache(s)
 	if err != nil {
 		return err
@@ -56,7 +54,7 @@ func (s *UserSvc) Stop() {}
 func (s *UserSvc) Create(ctx context.Context, in *user.UserReq) error {
 	record, err := s.Get(ctx, &cpb.ReqWithName{Name: in.Username})
 	if err == nil && record.UserId != 0 {
-		return status.Errorf(codes.Code(xcodes.ERR_USER_EUSE_EXIST), "user '%s' already exist")
+		return status.Errorf(codes.Code(xcodes.ERR_USER_EUSE_EXIST), "user '%s' already exist", in.Username)
 	}
 	return s.SetData(ctx, func() error {
 		return s.User.Create(ctx, in)
@@ -70,6 +68,15 @@ func (s *UserSvc) Update(ctx context.Context, in *user.UserReq) error {
 	return s.SetData(ctx, func() error {
 		return s.User.Update(ctx, in)
 	}, s.kvCache.WithKey(s.usernameCacheKey(in.Username)).WithGroup(s.searchCacheGroupKey()))
+}
+
+func (s *UserSvc) UpdateCardNum(ctx context.Context, username string, num int) error {
+	if _, err := s.Get(ctx, &cpb.ReqWithName{Name: username}); err != nil {
+		return err
+	}
+	return s.SetData(ctx, func() error {
+		return s.User.UpdateCardNum(ctx, username, num)
+	}, s.kvCache.WithKey(s.usernameCacheKey(username)).WithGroup(s.searchCacheGroupKey()))
 }
 
 func (s *UserSvc) Get(ctx context.Context, in *cpb.ReqWithName) (*user.UserInfo, error) {

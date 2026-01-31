@@ -12,6 +12,30 @@ import (
 	codes "google.golang.org/grpc/codes"
 )
 
+func (m *UserCreditCardReq) IsValid(parentFieldName, fullMethod string) error {
+	v := validatepb.DefaultValidator
+	if err := v.Var(m.Username, "required"); err != nil {
+		return status.Errorf(codes.InvalidArgument, "validation field '%s' on 'required' fail", validatepb.ValidateFieldName(parentFieldName, "username"))
+	}
+	if err := v.Var(m.Number, "required,max=100"); err != nil {
+		return status.Errorf(codes.InvalidArgument, "validation field '%s' on 'required,max=100' fail", validatepb.ValidateFieldName(parentFieldName, "number"))
+	}
+	return nil
+}
+
+func (m *UserCreditCardInfo) IsValid(parentFieldName, fullMethod string) error {
+	return nil
+}
+
+func (m *UserCreditCardList) IsValid(parentFieldName, fullMethod string) error {
+	for _, fm := range m.List {
+		if err := fm.IsValid(validatepb.ValidateFieldName(parentFieldName, "list"), fullMethod); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // IsValid Params validate
 // UserReq represents the input payload for creating or updating a user.
 // Validation is enforced by the Asjard Validation Interceptor before reaching the handler.

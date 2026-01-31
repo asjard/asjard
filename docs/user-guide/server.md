@@ -1,5 +1,7 @@
 > 可以通过暴露已有的服务，或者自行实现相应的协议对外暴露服务
 
+详细示例参考[这里](https://github.com/asjard/examples/blob/develop/_examples/svc-example/apis/api/v1/user.go)
+
 ## 已实现服务
 
 - [x] [rest](./server-rest.md)

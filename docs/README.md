@@ -2,6 +2,8 @@
 title: 快速开始
 ---
 
+详细示例参考[这里](https://github.com/asjard/examples/blob/develop/_examples)
+
 ## 安装protoc插件
 
 > 按需安装, 框架自动生成代码的命令可在`cmd/`目录下查看

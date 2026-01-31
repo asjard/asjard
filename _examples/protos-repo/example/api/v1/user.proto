@@ -11,6 +11,7 @@ import "github.com/asjard/protobuf/validate.proto";
 
 import "protos-repo/common/common.proto";
 
+// User example
 // User service handles lifecycle management and data retrieval for User entities.
 // It integrates with the Asjard Store layer to provide transparent caching
 // and high-concurrency protection (Singleflight).
@@ -31,6 +32,9 @@ service User {
         option (asjard.api.http) = {
             get : '/'
         };
+        option (asjard.api.http) = {
+            get : '/{name}'
+        };
     };
 
     // Update modifies an existing user profile.
@@ -40,6 +44,9 @@ service User {
         option (asjard.api.http) = {
             put : '/'
         };
+        option (asjard.api.http) = {
+            put : '/{username}'
+        };
     };
 
     // Del removes the user record from the persistent store and
@@ -47,6 +54,9 @@ service User {
     rpc Del(api.common.ReqWithName) returns (api.common.Empty) {
         option (asjard.api.http) = {
             delete : '/'
+        };
+        option (asjard.api.http) = {
+            delete : '/{name}'
         };
     };
 
@@ -58,6 +68,47 @@ service User {
             get : '/search'
         };
     }
+
+    // User add a credit card
+    // Add a credit card and update user's card count
+    // This implementation demonstrates how to use xgorm.WithDB(ctx, tx) to maintain
+    // transactional integrity across multiple table updates.
+    rpc AddCreditCard(UserCreditCardReq) returns (api.common.Empty) {
+        option (asjard.api.http) = {
+            post : '/{username}/creditcards'
+        };
+    }
+    // User remove a credit card
+    rpc RemoveCreditCard(UserCreditCardReq) returns (api.common.Empty) {
+        option (asjard.api.http) = {
+            delete : '/{username}/creditcards'
+        };
+    }
+    // Get user specify credit card info
+    rpc GetCreditCard(UserCreditCardReq) returns (UserCreditCardInfo) {
+        option (asjard.api.http) = {
+            get : '/{username}/creditcards'
+        };
+    }
+
+    // Get all credit cards under user
+    rpc SearchCreditCard(api.common.ReqWithName) returns (UserCreditCardList) {
+        option (asjard.api.http) = {
+            get : '/{username}/creditcards/search'
+        };
+    }
+}
+
+message UserCreditCardReq {
+    string username = 1 [ (asjard.api.validate).rules = "required" ];
+    string number   = 2 [ (asjard.api.validate).rules = "required,max=100" ];
+}
+
+message UserCreditCardInfo { string number = 1; }
+
+message UserCreditCardList {
+    int32                       total = 1;
+    repeated UserCreditCardInfo list  = 2;
 }
 
 // UserReq represents the input payload for creating or updating a user.
@@ -72,9 +123,10 @@ message UserReq {
 // UserInfo represents the data structure returned for single or list queries.
 message UserInfo {
     // Unique internal system identifier (Snowflake or Auto-increment).
-    int64  user_id  = 1;
-    string username = 2;
-    int32  age      = 3;
+    int64  user_id   = 1;
+    string username  = 2;
+    int32  age       = 3;
+    int32  card_nums = 4;
 }
 
 // UserSearchReq provides parameters for complex queries.

@@ -30,7 +30,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConfigClient interface {
-	// Simple Get: Retrieves the current configuration.
+	// Simple Get
+	// Retrieves the current configuration.
 	// Asjard generates both a gRPC method and a REST endpoint.
 	Get(ctx context.Context, in *ConfigGetReq, opts ...grpc.CallOption) (*ConfigGetResp, error)
 	// GetAndDecrypt: Retrieves an encrypted configuration and returns it in plain text.
@@ -68,7 +69,8 @@ func (c *configClient) GetAndDecrypt(ctx context.Context, in *common.Empty, opts
 // All implementations must embed UnimplementedConfigServer
 // for forward compatibility
 type ConfigServer interface {
-	// Simple Get: Retrieves the current configuration.
+	// Simple Get
+	// Retrieves the current configuration.
 	// Asjard generates both a gRPC method and a REST endpoint.
 	Get(context.Context, *ConfigGetReq) (*ConfigGetResp, error)
 	// GetAndDecrypt: Retrieves an encrypted configuration and returns it in plain text.

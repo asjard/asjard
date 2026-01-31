@@ -1,5 +1,7 @@
 > 通过暴露grpc服务对外提供grpc服务
 
+详细示例参考[这里](https://github.com/asjard/examples/blob/develop/_examples/svc-example/apis/api/v1/user.go)
+
 ## 配置
 
 > 除[公共配置](./server.md#公共配置)外新增如下配置

@@ -78,6 +78,29 @@ func (api *UserAPI) Del(ctx context.Context, in *common.ReqWithName) (*common.Em
 func (api *UserAPI) Search(ctx context.Context, in *UserSearchReq) (*UserList, error) {
 	return api.client.Search(ctx, in)
 }
+
+// User add a credit card
+// Add a credit card and update user's card count
+// This implementation demonstrates how to use xgorm.WithDB(ctx, tx) to maintain
+// transactional integrity across multiple table updates.
+func (api *UserAPI) AddCreditCard(ctx context.Context, in *UserCreditCardReq) (*common.Empty, error) {
+	return api.client.AddCreditCard(ctx, in)
+}
+
+// User remove a credit card
+func (api *UserAPI) RemoveCreditCard(ctx context.Context, in *UserCreditCardReq) (*common.Empty, error) {
+	return api.client.RemoveCreditCard(ctx, in)
+}
+
+// Get user specify credit card info
+func (api *UserAPI) GetCreditCard(ctx context.Context, in *UserCreditCardReq) (*UserCreditCardInfo, error) {
+	return api.client.GetCreditCard(ctx, in)
+}
+
+// Get all credit cards under user
+func (api *UserAPI) SearchCreditCard(ctx context.Context, in *common.ReqWithName) (*UserCreditCardList, error) {
+	return api.client.SearchCreditCard(ctx, in)
+}
 func (api *UserAPI) RestServiceDesc() *rest.ServiceDesc {
 	return &UserRestServiceDesc
 }

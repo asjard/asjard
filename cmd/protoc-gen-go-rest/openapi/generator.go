@@ -716,7 +716,6 @@ func (g *OpenAPIv3Generator) addPathsToDocumentV3(d *v3.Document, services []*pr
 	for _, service := range services {
 		annotationsCount := 0
 		for _, method := range service.Methods {
-			comment := g.filterCommentString(method.Comments.Leading)
 			inputMessage := method.Input
 			outputMessage := method.Output
 			operationID := string(service.Desc.FullName()) + "." + method.GoName
@@ -727,7 +726,7 @@ func (g *OpenAPIv3Generator) addPathsToDocumentV3(d *v3.Document, services []*pr
 					httpOption := utils.ParseMethodHttpOption(service, rule)
 					summary := rule.Desc
 					if summary == "" {
-						summary = comment
+						summary = g.getCommentTitle(method.Comments)
 					}
 					tagName := g.getCommentTitle(service.Comments) + "(" + httpOption.Version + ")"
 					if tagName == "" {
@@ -739,7 +738,8 @@ func (g *OpenAPIv3Generator) addPathsToDocumentV3(d *v3.Document, services []*pr
 							d, operationID+"_"+strconv.Itoa(index),
 							fmt.Sprintf("/%s/%s", service.Desc.FullName(), method.GoName),
 							tagName,
-							comment, summary, defaultHost,
+							g.filterCommentString(method.Comments.Leading),
+							summary, defaultHost,
 							httpOption.GetPath(), httpOption.Body, inputMessage, outputMessage)
 
 						// Merge any `Operation` annotations with the current

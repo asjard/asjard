@@ -11,7 +11,8 @@ import (
 )
 
 type Svcs struct {
-	UserSvc *UserSvc
+	UserSvc           *UserSvc
+	UserCreditCardSvc *UserCreditCardSvc
 }
 type ServiceContext struct {
 	Svcs *Svcs
@@ -28,7 +29,8 @@ func NewServiceContext() *ServiceContext {
 		bootstrap.AddBootstrap(serviceContext)
 
 		serviceContext.Svcs = &Svcs{
-			UserSvc: NewUserSvc(),
+			UserSvc:           NewUserSvc(),
+			UserCreditCardSvc: NewUserCreditCardSvc(),
 		}
 	})
 	return serviceContext
@@ -40,7 +42,7 @@ func (s *ServiceContext) Start() error {
 		if err != nil {
 			return err
 		}
-		if err := db.AutoMigrate(&datas.User{}); err != nil {
+		if err := db.AutoMigrate(&datas.User{}, &datas.UserCreditCard{}); err != nil {
 			return err
 		}
 	}

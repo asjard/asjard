@@ -20,11 +20,15 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	User_Create_FullMethodName = "/api.v1.example.docs.User/Create"
-	User_Get_FullMethodName    = "/api.v1.example.docs.User/Get"
-	User_Update_FullMethodName = "/api.v1.example.docs.User/Update"
-	User_Del_FullMethodName    = "/api.v1.example.docs.User/Del"
-	User_Search_FullMethodName = "/api.v1.example.docs.User/Search"
+	User_Create_FullMethodName           = "/api.v1.example.docs.User/Create"
+	User_Get_FullMethodName              = "/api.v1.example.docs.User/Get"
+	User_Update_FullMethodName           = "/api.v1.example.docs.User/Update"
+	User_Del_FullMethodName              = "/api.v1.example.docs.User/Del"
+	User_Search_FullMethodName           = "/api.v1.example.docs.User/Search"
+	User_AddCreditCard_FullMethodName    = "/api.v1.example.docs.User/AddCreditCard"
+	User_RemoveCreditCard_FullMethodName = "/api.v1.example.docs.User/RemoveCreditCard"
+	User_GetCreditCard_FullMethodName    = "/api.v1.example.docs.User/GetCreditCard"
+	User_SearchCreditCard_FullMethodName = "/api.v1.example.docs.User/SearchCreditCard"
 )
 
 // UserClient is the client API for User service.
@@ -50,6 +54,17 @@ type UserClient interface {
 	// Note: Search results are typically cached at the 'Group' level
 	// with shorter TTLs compared to individual 'Get' records.
 	Search(ctx context.Context, in *UserSearchReq, opts ...grpc.CallOption) (*UserList, error)
+	// User add a credit card
+	// Add a credit card and update user's card count
+	// This implementation demonstrates how to use xgorm.WithDB(ctx, tx) to maintain
+	// transactional integrity across multiple table updates.
+	AddCreditCard(ctx context.Context, in *UserCreditCardReq, opts ...grpc.CallOption) (*common.Empty, error)
+	// User remove a credit card
+	RemoveCreditCard(ctx context.Context, in *UserCreditCardReq, opts ...grpc.CallOption) (*common.Empty, error)
+	// Get user specify credit card info
+	GetCreditCard(ctx context.Context, in *UserCreditCardReq, opts ...grpc.CallOption) (*UserCreditCardInfo, error)
+	// Get all credit cards under user
+	SearchCreditCard(ctx context.Context, in *common.ReqWithName, opts ...grpc.CallOption) (*UserCreditCardList, error)
 }
 
 type userClient struct {
@@ -105,6 +120,42 @@ func (c *userClient) Search(ctx context.Context, in *UserSearchReq, opts ...grpc
 	return out, nil
 }
 
+func (c *userClient) AddCreditCard(ctx context.Context, in *UserCreditCardReq, opts ...grpc.CallOption) (*common.Empty, error) {
+	out := new(common.Empty)
+	err := c.cc.Invoke(ctx, User_AddCreditCard_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userClient) RemoveCreditCard(ctx context.Context, in *UserCreditCardReq, opts ...grpc.CallOption) (*common.Empty, error) {
+	out := new(common.Empty)
+	err := c.cc.Invoke(ctx, User_RemoveCreditCard_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userClient) GetCreditCard(ctx context.Context, in *UserCreditCardReq, opts ...grpc.CallOption) (*UserCreditCardInfo, error) {
+	out := new(UserCreditCardInfo)
+	err := c.cc.Invoke(ctx, User_GetCreditCard_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userClient) SearchCreditCard(ctx context.Context, in *common.ReqWithName, opts ...grpc.CallOption) (*UserCreditCardList, error) {
+	out := new(UserCreditCardList)
+	err := c.cc.Invoke(ctx, User_SearchCreditCard_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServer is the server API for User service.
 // All implementations must embed UnimplementedUserServer
 // for forward compatibility
@@ -128,6 +179,17 @@ type UserServer interface {
 	// Note: Search results are typically cached at the 'Group' level
 	// with shorter TTLs compared to individual 'Get' records.
 	Search(context.Context, *UserSearchReq) (*UserList, error)
+	// User add a credit card
+	// Add a credit card and update user's card count
+	// This implementation demonstrates how to use xgorm.WithDB(ctx, tx) to maintain
+	// transactional integrity across multiple table updates.
+	AddCreditCard(context.Context, *UserCreditCardReq) (*common.Empty, error)
+	// User remove a credit card
+	RemoveCreditCard(context.Context, *UserCreditCardReq) (*common.Empty, error)
+	// Get user specify credit card info
+	GetCreditCard(context.Context, *UserCreditCardReq) (*UserCreditCardInfo, error)
+	// Get all credit cards under user
+	SearchCreditCard(context.Context, *common.ReqWithName) (*UserCreditCardList, error)
 	mustEmbedUnimplementedUserServer()
 }
 
@@ -149,6 +211,18 @@ func (UnimplementedUserServer) Del(context.Context, *common.ReqWithName) (*commo
 }
 func (UnimplementedUserServer) Search(context.Context, *UserSearchReq) (*UserList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Search not implemented")
+}
+func (UnimplementedUserServer) AddCreditCard(context.Context, *UserCreditCardReq) (*common.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddCreditCard not implemented")
+}
+func (UnimplementedUserServer) RemoveCreditCard(context.Context, *UserCreditCardReq) (*common.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveCreditCard not implemented")
+}
+func (UnimplementedUserServer) GetCreditCard(context.Context, *UserCreditCardReq) (*UserCreditCardInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCreditCard not implemented")
+}
+func (UnimplementedUserServer) SearchCreditCard(context.Context, *common.ReqWithName) (*UserCreditCardList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchCreditCard not implemented")
 }
 func (UnimplementedUserServer) mustEmbedUnimplementedUserServer() {}
 
@@ -253,6 +327,78 @@ func _User_Search_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
+func _User_AddCreditCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserCreditCardReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).AddCreditCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_AddCreditCard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).AddCreditCard(ctx, req.(*UserCreditCardReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _User_RemoveCreditCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserCreditCardReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).RemoveCreditCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_RemoveCreditCard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).RemoveCreditCard(ctx, req.(*UserCreditCardReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _User_GetCreditCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserCreditCardReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).GetCreditCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_GetCreditCard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).GetCreditCard(ctx, req.(*UserCreditCardReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _User_SearchCreditCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(common.ReqWithName)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).SearchCreditCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_SearchCreditCard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).SearchCreditCard(ctx, req.(*common.ReqWithName))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // User_ServiceDesc is the grpc.ServiceDesc for User service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -279,6 +425,22 @@ var User_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Search",
 			Handler:    _User_Search_Handler,
+		},
+		{
+			MethodName: "AddCreditCard",
+			Handler:    _User_AddCreditCard_Handler,
+		},
+		{
+			MethodName: "RemoveCreditCard",
+			Handler:    _User_RemoveCreditCard_Handler,
+		},
+		{
+			MethodName: "GetCreditCard",
+			Handler:    _User_GetCreditCard_Handler,
+		},
+		{
+			MethodName: "SearchCreditCard",
+			Handler:    _User_SearchCreditCard_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

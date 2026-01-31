@@ -1,5 +1,7 @@
 > protobuf编写及约定
 
+详细示例参考[这里](https://github.com/asjard/examples/blob/develop/_examples/protos-repo)
+
 ### 规范和约定
 
 - protbuf规范参考[这里](https://protobuf.dev/programming-guides/proto3/)
