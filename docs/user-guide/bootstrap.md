@@ -1,7 +1,7 @@
 > 主要是用来在框架初始化后加入一些逻辑来引导业务系统的启动和在系统停止后做一些清理逻辑,
 > 比如框架中的gorm数据库的连接就是通过bootstrap引导连接并断开的
 
-详细示例参考[这里](https://github.com/asjard/examples/blob/develop/_examples/svc-example/services/user.go)
+详细示例参考[这里](https://github.com/asjard/asjard/blob/develop/_examples/svc-example/services/user.go)
 
 ## 如何实现
 

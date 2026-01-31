@@ -1,6 +1,6 @@
 > 通过暴露grpc服务对外提供grpc服务
 
-详细示例参考[这里](https://github.com/asjard/examples/blob/develop/_examples/svc-example/apis/api/v1/user.go)
+详细示例参考[这里](https://github.com/asjard/asjard/blob/develop/_examples/svc-example/apis/api/v1/sample.go)
 
 ## 配置
 
@@ -20,47 +20,43 @@ asjard:
 
 ## 示例
 
-### 编写[protobuf](./protobuf.md)文件
+### 编写[protobuf](./standard-protobuf.md)文件
 
 ### 实现
 
 ```go
-package main
+package apiv1
 
 import (
 	"context"
 
-	"github.com/asjard/asjard"
-	"github.com/asjard/asjard/examples/example/hellopb"
+	pb "protos-repo/example/api/v1/sample"
+
 	"github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 )
 
-// HelloAPI hello相关接口
-type HelloAPI struct {
-	hellopb.UnimplementedHelloServer
+type SampleAPI struct {
+	pb.UnimplementedSampleServer
 }
 
-func (api *HelloAPI) Say(ctx context.Context, in *hellopb.SayReq) (*hellopb.SayResp, error) {
-	return &hellopb.SayResp{
+func NewSampleAPI() *SampleAPI {
+	return &SampleAPI{}
+}
+
+func (api *SampleAPI) Start() error { return nil }
+func (api *SampleAPI) Stop()        {}
+
+// GRPC服务
+func (api *SampleAPI) GrpcServiceDesc() *grpc.ServiceDesc { return &pb.Sample_ServiceDesc }
+
+// HTTP服务
+func (api *SampleAPI) RestServiceDesc() *rest.ServiceDesc { return &pb.SampleRestServiceDesc }
+
+func (api *SampleAPI) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+	return &pb.HelloReply{
 		Message: "hello " + in.Name,
 	}, nil
-}
-
-// 如果需要提供grpc服务则需要实现此方法
-func (api *HelloAPI) GrpcServiceDesc() *grpc.ServiceDesc {
-	return &hellopb.Hello_ServiceDesc
-}
-
-
-func main() {
-	server := asjard.New()
-	//提供grpc服务
-	server.AddHandler(&HelloAPI{}, grpc.Protocol)
-	// 启动服务
-	if err := server.Start(); err != nil {
-		panic(err)
-	}
 }
 
 ```

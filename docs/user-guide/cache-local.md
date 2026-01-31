@@ -1,6 +1,6 @@
 ## 本地缓存
 
-详细示例参考[这里](https://github.com/asjard/examples/blob/develop/_examples/svc-example/services/user.go)
+详细示例参考[这里](https://github.com/asjard/asjard/blob/develop/_examples/svc-example/services/user.go)
 
 ### 配置
 
@@ -22,8 +22,6 @@ asjard:
 ```
 
 ### 使用
-
-您可以参考[https://github.com/asjard/examples/blob/main/mysql/model/table.go](https://github.com/asjard/examples/blob/main/mysql/model/table.go)
 
 ```go
 import "github.com/asjard/asjard/pkg/database/cache"
