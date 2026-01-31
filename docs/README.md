@@ -2,7 +2,7 @@
 title: 快速开始
 ---
 
-详细示例参考[这里](https://github.com/asjard/examples/blob/develop/_examples)
+详细示例参考[这里](https://github.com/asjard/asjard/blob/develop/_examples)
 
 ## 安装protoc插件
 
