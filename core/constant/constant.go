@@ -11,7 +11,7 @@ import (
 const (
 	// Framework identity and versioning.
 	Framework        = "asjard"
-	FrameworkVersion = "0.8.8"
+	FrameworkVersion = "1.0.2"
 	FrameworkGithub  = "https://github.com/asjard/asjard"
 
 	// Delimiters for data processing.

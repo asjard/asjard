@@ -1,4 +1,4 @@
-详细示例参考[这里](https://github.com/asjard/examples/blob/develop/_examples/protos-repo/common/err_200_user.proto)
+详细示例参考[这里](https://github.com/asjard/asjard/blob/develop/_examples/protos-repo/common/err_200_user.proto)
 
 ## 约定
 

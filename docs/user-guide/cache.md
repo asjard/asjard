@@ -1,6 +1,6 @@
 > 缓存使用
 
-详细示例参考[这里](https://github.com/asjard/examples/blob/develop/_examples/svc-example/services/user.go)
+详细示例参考[这里](https://github.com/asjard/asjard/blob/develop/_examples/svc-example/services/user.go)
 
 ## 全局配置
 

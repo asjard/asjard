@@ -45,7 +45,7 @@ asjard:
 
 ## 使用
 
-具体你可以参考`protoc-gen-go-rest-gw`生成的[gateway代码](https://github.com/asjard/examples/blob/main/protobuf/serverpb/server_rest_gw.pb.go)
+具体你可以参考`protoc-gen-go-rest-gw`生成的[gateway代码](https://github.com/asjard/asjard/blob/develop/_examples/protos-repo/example/api/v1/sample/sample_rest_gw.pb.go)
 
 ```go
 type ServerAPI struct {
