@@ -13,10 +13,11 @@ import (
 	"github.com/asjard/asjard/core/security"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
+	"github.com/glebarez/sqlite"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
+
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
 	"gorm.io/plugin/opentelemetry/tracing"
@@ -312,7 +313,7 @@ func (m *DBManager) dialector(cfg *DBConnConfig) (gorm.Dialector, error) {
 	case postgresDefaultDriverName:
 		return postgres.New(postgres.Config{DriverName: cfg.Options.CustomeDriverName, DSN: dsn}), nil
 	case sqliteDefaultDriverName:
-		return sqlite.New(sqlite.Config{DriverName: cfg.Options.CustomeDriverName, DSN: dsn}), nil
+		return sqlite.Open(dsn), nil
 	case sqlserverDefaultDrierName:
 		return sqlserver.New(sqlserver.Config{DriverName: cfg.Options.CustomeDriverName, DSN: dsn}), nil
 	default:
