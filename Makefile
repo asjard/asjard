@@ -1,10 +1,10 @@
 export BIFROST_DIR ?= ./third_party/bifrost
 
-.PHONY: test
 
 -include $(BIFROST_DIR)/Makefile_base
 
-update: .gitmodules ## 更新本地代码
+.PHONY: update
+update: .gitmodules ## Update submodule
 	git submodule sync
 	git submodule foreach --recursive git reset --hard
 	git submodule foreach --recursive git clean -fdx
@@ -13,54 +13,70 @@ update: .gitmodules ## 更新本地代码
 	git submodule update --remote
 	git submodule foreach  --recursive 'tag="$$(git config -f $$toplevel/.gitmodules submodule.$$name.tag)";[ -n $$tag ] && git reset --hard  $$tag || echo "this module has no tag"'
 
-build_cipher_aes: ## 生成asjard_cipher_aes命令
+.PHONY: build_cipher_aes
+build_cipher_aes: ## Build command asjard_cipher_aes
 	go build -o $(GOPATH)/bin/asjard_cipher_aes -ldflags '-w -s' ./cmd/asjard_cipher_aes/*.go
 
-build_gen_go_rest: ## 生成protoc-gen-go-rest命令
+.PHONY: build_gen_go_rest
+build_gen_go_rest: ## Build command protoc-gen-go-rest
 	go build -o $(GOPATH)/bin/protoc-gen-go-rest -ldflags '-w -s' ./cmd/protoc-gen-go-rest/*.go
 
-build_gen_go_validate: ## 生成protoc-gen-go-validate命令
+.PHONY: build_gen_go_validate
+build_gen_go_validate: ## Build command protoc-gen-go-validate
 	go build -o $(GOPATH)/bin/protoc-gen-go-validate -ldflags '-w -s' ./cmd/protoc-gen-go-validate/*.go
 
-build_gen_go_asynq: ## 生成protoc-gen-go-rest命令
+.PHONY: build_gen_go_asynq
+build_gen_go_asynq: ## Build command protoc-gen-go-rest
 	go build -o $(GOPATH)/bin/protoc-gen-go-asynq -ldflags '-w -s' ./cmd/protoc-gen-go-asynq/*.go
 
-build_gen_go_amqp: ## 生成protoc-gen-go-amqp命令
+.PHONY: build_gen_go_amqp
+build_gen_go_amqp: ## build command protoc-gen-go-amqp
 	go build -o $(GOPATH)/bin/protoc-gen-go-amqp -ldflags '-w -s' ./cmd/protoc-gen-go-amqp/*.go
 
-build_gen_go_rest2grpc_gw: ## 生成protoc-gen-go-rest2grpc-gw命令
+.PHONY: build_gen_go_rest2grpc_gw
+build_gen_go_rest2grpc_gw: ## Build command protoc-gen-go-rest2grpc-gw
 	go build -o $(GOPATH)/bin/protoc-gen-go-rest2grpc-gw -ldflags '-w -s' ./cmd/protoc-gen-go-rest2grpc-gw/*.go
 
-build_gen_ts: ## 生成protoc-gen-ts命令
+.PHONY: build_gen_ts
+build_gen_ts: ## Build command protoc-gen-ts
 	go build -o $(GOPATH)/bin/protoc-gen-ts -ldflags '-w -s' ./cmd/protoc-gen-ts/*.go
 
-build_gen_ts_enum: ## 生成protoc-gen-ts-enum命令
+.PHONY: build_gen_ts_enum
+build_gen_ts_enum: ## Build command protoc-gen-ts-enum
 	go build -o $(GOPATH)/bin/protoc-gen-ts-enum -ldflags '-w -s' ./cmd/protoc-gen-ts-enum/*.go
 
-build_gen_ts_umi: ## 生成protoc-gen-ts-umi命令
+.PHONY: build_gen_ts_umi
+build_gen_ts_umi: ## Build command protoc-gen-ts-umi
 	go build -o $(GOPATH)/bin/protoc-gen-ts-umi -ldflags '-w -s' ./cmd/protoc-gen-ts-umi/*.go
 
-gen_proto: clean ## 生成协议文件
+.PHONY: gen_proto
+gen_proto: clean ## Build protobuf
 	bash third_party/github.com/asjard/protobuf/build.sh
 
-github_workflows_dependices: docker-compose.yaml ## github workflows 依赖环境
+.PHONY: github_workflows_dependices
+github_workflows_dependices: docker-compose.yaml ## Install github workflows environment
 	docker compose -p asjard up -d
 
-github_workflows_test: update github_workflows_dependices test ## github workflow 运行测试用例
+.PHONY: github_workflows_test
+github_workflows_test: update github_workflows_dependices test ## Run unit test in github workflow
 
-test: clean gocyclo govet ## 运行测试用例
-	CGO_ENABLED=0 go test -race -cover -coverprofile=cover.out $$(go list ./...|grep -v cmd|grep -v 'protobuf/')
-	CGO_ENABLED=0 go test -benchmem -bench=. -run=^$$ $$(go list ./...|grep -v cmd|grep -v 'protobuf/')
+.PHONY: test
+test: clean gocyclo govet ## Run unit test
+	go test -race -cover -coverprofile=cover.out $$(go list ./...|grep -v cmd|grep -v 'protobuf/')
+	go test -benchmem -bench=. -run=^$$ $$(go list ./...|grep -v cmd|grep -v 'protobuf/')
 
 	# go tool cover -html=cover.out
 
-gocyclo: ## 圈复杂度检测
+.PHONY: gocyclo
+gocyclo: ## Cyclo check
 	go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
 	gocyclo -over 15 -ignore third_party/ .
 
-govet: ## 静态检查
+.PHONY: govet
+govet: ## Static check
 	go vet -all ./...
 
-clean: ## 清理
-	# go clean -cache
+.PHONY: clean
+clean: ## Clean
+	# go clean -cache -testcache -modcache
 	find . -name '._*' -delete
