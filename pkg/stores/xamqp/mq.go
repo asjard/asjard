@@ -1,7 +1,11 @@
 package xamqp
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -194,9 +198,32 @@ func (c *ClientManager) newClient(name string, conf *ClientConnConfig) (*amqp.Co
 
 	// Handle TLS configuration if certificates are provided.
 	if conf.Options.CAFile != "" && conf.Options.CertFile != "" && conf.Options.KeyFile != "" {
-		// Certificate path resolution logic...
-		// (Reads CA, loads KeyPair, creates CertPool)
-		// ... (omitted for brevity in comments)
+		conf.Options.CAFile = filepath.Join(utils.GetCertDir(), conf.Options.CAFile)
+		if !utils.IsPathExists(conf.Options.CAFile) {
+			return nil, fmt.Errorf("cafile %s not found", conf.Options.CAFile)
+		}
+		conf.Options.CertFile = filepath.Join(utils.GetCertDir(), conf.Options.CertFile)
+		if !utils.IsPathExists(conf.Options.CertFile) {
+			return nil, fmt.Errorf("certfile %s not found", conf.Options.CertFile)
+		}
+		conf.Options.KeyFile = filepath.Join(utils.GetCertDir(), conf.Options.KeyFile)
+		if !utils.IsPathExists(conf.Options.KeyFile) {
+			return nil, fmt.Errorf("keyfile %s not found", conf.Options.KeyFile)
+		}
+		caData, err := os.ReadFile(conf.Options.CAFile)
+		if err != nil {
+			return nil, err
+		}
+		cert, err := tls.LoadX509KeyPair(conf.Options.CertFile, conf.Options.KeyFile)
+		if err != nil {
+			return nil, err
+		}
+		pool := x509.NewCertPool()
+		pool.AppendCertsFromPEM(caData)
+		dialConfig.TLSClientConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			RootCAs:      pool,
+		}
 	}
 
 	connUrl := conf.Url
@@ -236,7 +263,9 @@ func (c *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 	// Apply global options to clients.
 	for name, client := range clients {
 		client.Options = options
-		config.GetWithUnmarshal(fmt.Sprintf("asjard.stores.amqp.clients.%s.options", name), &client.Options)
+		if err := config.GetWithUnmarshal(fmt.Sprintf("asjard.stores.amqp.clients.%s.options", name), &client.Options); err != nil {
+			return clients, err
+		}
 	}
 
 	c.cm.Lock()
@@ -256,7 +285,21 @@ func (c *ClientManager) watch(event *config.Event) {
 		logger.Error("new clients fail", "err", err)
 		return
 	}
-	// Cleanup removed clients...
+	c.clients.Range(func(key, value any) bool {
+		exist := false
+		for clientName := range clients {
+			if key.(string) == clientName {
+				exist = true
+				break
+			}
+		}
+		if !exist {
+			conn := value.(*ClientConn)
+			close(conn.done)
+			c.clients.Delete(key)
+		}
+		return true
+	})
 }
 
 // keepalive is a background goroutine that monitors connection health.

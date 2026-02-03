@@ -111,12 +111,26 @@ func mapForm(ptr any, form map[string][]string) error {
 // setWithProperType dispatches the string value to the correct setter based on the target Kind.
 func setWithProperType(valueKind reflect.Kind, val string, structField reflect.Value) error {
 	switch valueKind {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		bitSizes := map[reflect.Kind]int{reflect.Int: 0, reflect.Int8: 8, reflect.Int16: 16, reflect.Int32: 32, reflect.Int64: 64}
-		return setIntField(val, bitSizes[valueKind], structField)
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		bitSizes := map[reflect.Kind]int{reflect.Uint: 0, reflect.Uint8: 8, reflect.Uint16: 16, reflect.Uint32: 32, reflect.Uint64: 64}
-		return setUintField(val, bitSizes[valueKind], structField)
+	case reflect.Int:
+		return setIntField(val, 0, structField)
+	case reflect.Int8:
+		return setIntField(val, 8, structField)
+	case reflect.Int16:
+		return setIntField(val, 16, structField)
+	case reflect.Int32:
+		return setIntField(val, 32, structField)
+	case reflect.Int64:
+		return setIntField(val, 64, structField)
+	case reflect.Uint:
+		return setUintField(val, 0, structField)
+	case reflect.Uint8:
+		return setUintField(val, 8, structField)
+	case reflect.Uint16:
+		return setUintField(val, 16, structField)
+	case reflect.Uint32:
+		return setUintField(val, 32, structField)
+	case reflect.Uint64:
+		return setUintField(val, 64, structField)
 	case reflect.Bool:
 		return setBoolField(val, structField)
 	case reflect.Float32:

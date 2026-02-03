@@ -52,6 +52,54 @@ func (api RoutesAPI) List(ctx context.Context, in *emptypb.Empty) (*RouteList, e
 }
 
 // genRoutes processes all handlers and organizes them into a three-level tree:
+/*
+[
+
+	{
+	    "label": "API",
+	    "value": "api",
+	    "children": [
+	        {
+	            "label": "V1",
+	            "value": "v1",
+	            "children": [
+	                {
+	                    "label": "RestDefaultHandler",
+	                    "value": "RestDefaultHandler"
+	                }
+	            ]
+	        },
+	        {
+	            "label": "V1",
+	            "value": "v1",
+	            "children": [
+	                {
+	                    "label": "RestDefaultHandler",
+	                    "value": "RestDefaultHandler"
+	                }
+	            ]
+	        }
+	    ]
+	},
+	{
+	    "label": "OtherAPI",
+	    "value": "api",
+	    "children": [
+	        {
+	            "label": "V1",
+	            "value": "v1",
+	            "children": [
+	                {
+	                    "label": "RestDefaultHandler",
+	                    "value": "RestDefaultHandler"
+	                }
+	            ]
+	        }
+	    ]
+	}
+
+]
+*/
 // Level 1: API Type (e.g., "API")
 // Level 2: Version (e.g., "V1")
 // Level 3: Service & Methods (e.g., "UserService" -> "Login")

@@ -90,17 +90,34 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 		errorHandler: &ErrorHandlerAPI{},
 		server: fasthttp.Server{
 			// Extensive performance tuning parameters mapped from configuration.
-			Name:               runtime.GetAPP().App,
-			Concurrency:        conf.Options.Concurrency,
-			ReadBufferSize:     conf.Options.ReadBufferSize,
-			WriteBufferSize:    conf.Options.WriteBufferSize,
-			ReadTimeout:        conf.Options.ReadTimeout.Duration,
-			WriteTimeout:       conf.Options.WriteTimeout.Duration,
-			IdleTimeout:        conf.Options.IdleTimeout.Duration,
-			MaxRequestBodySize: conf.Options.MaxRequestBodySize,
-			DisableKeepalive:   conf.Options.DisableKeepalive,
-			Logger:             &Logger{}, // Bridge to Asjard logger.
-			// ... other fasthttp settings
+			Name:                               runtime.GetAPP().App,
+			Concurrency:                        conf.Options.Concurrency,
+			ReadBufferSize:                     conf.Options.ReadBufferSize,
+			WriteBufferSize:                    conf.Options.WriteBufferSize,
+			ReadTimeout:                        conf.Options.ReadTimeout.Duration,
+			WriteTimeout:                       conf.Options.WriteTimeout.Duration,
+			IdleTimeout:                        conf.Options.IdleTimeout.Duration,
+			MaxConnsPerIP:                      conf.Options.MaxConnsPerIP,
+			MaxRequestsPerConn:                 conf.Options.MaxRequestsPerConn,
+			MaxIdleWorkerDuration:              conf.Options.MaxIdleWorkerDuration.Duration,
+			TCPKeepalivePeriod:                 conf.Options.TCPKeepalivePeriod.Duration,
+			MaxRequestBodySize:                 conf.Options.MaxRequestBodySize,
+			DisableKeepalive:                   conf.Options.DisableKeepalive,
+			TCPKeepalive:                       conf.Options.TCPKeepalive,
+			ReduceMemoryUsage:                  conf.Options.ReduceMemoryUsage,
+			GetOnly:                            conf.Options.GetOnly,
+			DisablePreParseMultipartForm:       conf.Options.DisablePreParseMultipartForm,
+			LogAllErrors:                       conf.Options.LogAllErrors,
+			SecureErrorLogMessage:              conf.Options.SecureErrorLogMessage,
+			DisableHeaderNamesNormalizing:      conf.Options.DisableHeaderNamesNormalizing,
+			SleepWhenConcurrencyLimitsExceeded: conf.Options.SleepWhenConcurrencyLimitsExceeded.Duration,
+			NoDefaultServerHeader:              conf.Options.NoDefaultServerHeader,
+			NoDefaultDate:                      conf.Options.NoDefaultDate,
+			NoDefaultContentType:               conf.Options.NoDefaultContentType,
+			KeepHijackedConns:                  conf.Options.KeepHijackedConns,
+			CloseOnShutdown:                    conf.Options.CloseOnShutdown,
+			StreamRequestBody:                  conf.Options.StreamRequestBody,
+			Logger:                             &Logger{},
 		},
 	}, nil
 }
@@ -162,6 +179,7 @@ func (s *RestServer) Start(startErr chan error) error {
 			}
 		}()
 	}
+	logger.Debug("start rest server", "address", s.conf.Addresses.Listen)
 	return nil
 }
 

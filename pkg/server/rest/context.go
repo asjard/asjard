@@ -128,6 +128,14 @@ func (c *Context) NewOutgoingContext() context.Context {
 	return metadata.NewOutgoingContext(c, c.ReadHeaderParams())
 }
 
+func (c *Context) FromIncomingContext() map[string][]string {
+	return c.ReadHeaderParams()
+}
+
+func (c *Context) SetWriter(writer Writer) {
+	c.write = writer
+}
+
 // Close cleans up the context and returns it to the pool for reuse.
 func (c *Context) Close() {
 	c.write = nil

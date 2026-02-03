@@ -220,7 +220,10 @@ func (e *Etcd) watch() {
 				callbackEvent.Type = registry.EventTypeUpdate
 				var service server.Service
 				if err := json.Unmarshal(event.Kv.Value, &service); err != nil {
-					logger.Error("unmarshal service fail", "err", err)
+					logger.Error("unmarshal service fail",
+						"key", string(event.Kv.Key),
+						"value", string(event.Kv.Value),
+						"err", err)
 					continue
 				}
 				callbackEvent.Instance.Service = &service

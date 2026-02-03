@@ -62,6 +62,7 @@ func (api *OpenAPI) Json(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 		b, err := api.document.YAMLValue(fmt.Sprintf("Generated with %s(%s) \n %s",
 			constant.Framework, constant.FrameworkVersion, constant.FrameworkGithub))
 		if err != nil {
+			logger.Error("openapi yaml value fail", "err", err)
 			return nil, status.InternalServerError()
 		}
 		// Convert the YAML representation to JSON.
@@ -111,7 +112,45 @@ func (api *OpenAPI) scalarOptions() []scalargo.Option {
 	if api.conf.Scalar.Theme != "" {
 		options = append(options, scalargo.WithTheme(scalargo.Theme(api.conf.Scalar.Theme)))
 	}
-	// ... (additional options for CDN, DarkMode, etc. follow the same pattern)
+
+	if api.conf.Scalar.CDN != "" {
+		options = append(options, scalargo.WithCDN(api.conf.Scalar.CDN))
+	}
+
+	if api.conf.Scalar.SidebarVisibility {
+		options = append(options, scalargo.WithSidebarVisibility(api.conf.Scalar.SidebarVisibility))
+	}
+
+	if api.conf.Scalar.HideModels {
+		options = append(options, scalargo.WithHideModels())
+	}
+
+	if api.conf.Scalar.HideDownloadButton {
+		options = append(options, scalargo.WithHideDownloadButton())
+	}
+
+	if api.conf.Scalar.DarkMode {
+		options = append(options, scalargo.WithDarkMode())
+	}
+
+	if len(api.conf.Scalar.HideClients) != 0 {
+		allClients := false
+		for _, client := range api.conf.Scalar.HideClients {
+			if client == "*" {
+				allClients = true
+				break
+			}
+		}
+		if allClients {
+			options = append(options, scalargo.WithHideAllClients())
+		} else {
+			options = append(options, scalargo.WithHiddenClients(api.conf.Scalar.HideClients...))
+		}
+	}
+
+	if api.conf.Scalar.Authentication != "" {
+		options = append(options, scalargo.WithAuthentication(api.conf.Scalar.Authentication))
+	}
 
 	options = append(options, scalargo.WithBaseServerURL(api.listenAddress()))
 	return options

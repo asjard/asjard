@@ -61,11 +61,13 @@ var defaultConfig = Config{
 
 // GetConfig retrieves the metrics configuration by merging defaults with
 // values from the global config manager (e.g., from a YAML file or ETCD).
-func GetConfig() Config {
+func GetConfig() (Config, error) {
 	conf := defaultConfig
 	// Uses the standardized prefix "asjard.metrics" defined in the constant package.
-	config.GetWithUnmarshal(constant.ConfigMetricsPrefix, &conf)
-	return conf.complete()
+	if err := config.GetWithUnmarshal(constant.ConfigMetricsPrefix, &conf); err != nil {
+		return conf, err
+	}
+	return conf.complete(), nil
 }
 
 // complete is a helper method that merges the built-in collectors with
