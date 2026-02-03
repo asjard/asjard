@@ -269,8 +269,20 @@ func (m *DBManager) connDB(dbName string, cfg *DBConnConfig) (*gorm.DB, error) {
 		return nil, err
 	}
 	db, err := gorm.Open(dial, &gorm.Config{
-		// ... mapping configuration options to GORM's Config struct
-		Logger: dbLogger,
+		SkipDefaultTransaction:                   cfg.Options.SkipDefaultTransaction,
+		FullSaveAssociations:                     cfg.Options.FullSaveAssociations,
+		DryRun:                                   cfg.Options.DryRun,
+		DisableAutomaticPing:                     cfg.Options.DisableAutomaticPing,
+		PrepareStmt:                              cfg.Options.PrepareStmt,
+		DisableForeignKeyConstraintWhenMigrating: cfg.Options.DisableForeignKeyConstraintWhenMigrating,
+		IgnoreRelationshipsWhenMigrating:         cfg.Options.IgnoreRelationshipsWhenMigrating,
+		DisableNestedTransaction:                 cfg.Options.DisableNestedTransaction,
+		AllowGlobalUpdate:                        cfg.Options.AllowGlobalUpdate,
+		QueryFields:                              cfg.Options.QueryFields,
+		CreateBatchSize:                          cfg.Options.CreateBatchSize,
+		TranslateError:                           cfg.Options.TranslateError,
+		PropagateUnscoped:                        cfg.Options.PropagateUnscoped,
+		Logger:                                   dbLogger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("connect to %s fail[%s]", dbName, err.Error())

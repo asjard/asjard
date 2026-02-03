@@ -263,6 +263,7 @@ func (s *Etcd) watchPrefix(prefix string, priority int) {
 		for _, event := range resp.Events {
 			key := s.configKey(prefix, event.Kv.Key)
 			ref := string(event.Kv.Key)
+			logger.Debug("etcd config event", "event", event.Type.String(), "key", key, "prefix", prefix)
 			switch event.Type {
 			case mvccpb.PUT:
 				// Push events to the framework for updates/creates.
@@ -285,7 +286,7 @@ func (s *Etcd) watchPrefix(prefix string, priority int) {
 }
 
 // prefixs defines the search order for configs in etcd.
-// Order: App-Global -> Env -> Service -> Region -> AZ -> Runtime(Instance)
+// Order: App-Global -> Group->  Service -> Env -> Region -> AZ -> Runtime(Instance)
 func (s *Etcd) prefixs() []string {
 	return []string{
 		strings.Join([]string{s.prefix(), ""}, s.conf.Delimiter),

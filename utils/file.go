@@ -141,7 +141,9 @@ func CopyDir(srcDir, destDir string) error {
 			}
 			continue
 		}
-		// Recursive call for sub-directories.
+		if err := os.MkdirAll(dst, os.ModePerm); err != nil {
+			return err
+		}
 		if err := CopyDir(src, dst); err != nil {
 			return err
 		}

@@ -42,8 +42,12 @@ func init() {
 // Init initializes the monitoring system. It registers collectors,
 // sets up the HTTP handler for scraping, and starts the background pusher.
 func Init() error {
-	conf := GetConfig()
+	conf, err := GetConfig()
+	if err != nil {
+		return err
+	}
 	if conf.Enabled {
+		logger.Debug("metrics enabled")
 		for name, colletor := range metricsManager.collectors {
 			for _, cname := range conf.Collectors {
 				// Register only if the wildcard "*" is used or the name matches the config list.

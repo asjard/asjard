@@ -163,4 +163,55 @@ func TestFileMD5(t *testing.T) {
 	assert.Equal(t, contentMd5, fileMd5)
 }
 
-func TestMergeFile(t *testing.T) {}
+func TestMergeFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	srcFilePath := filepath.Join(tmpDir, "source.txt")
+	content := []byte("abcdefghij1234567890") // 20 字节
+	if err := os.WriteFile(srcFilePath, content, 0640); err != nil {
+		t.Fatalf("failed to create test file: %v", err)
+	}
+
+	// 定义测试用例
+	tests := []struct {
+		name          string
+		chunkSize     int64
+		expectedParts int
+	}{
+		{"ExactDivision", 10, 2}, // 刚好平分 20/10 = 2
+		{"WithRemainder", 6, 4},  // 向上取整 ceil(20/6) = 4
+		{"SingleChunk", 50, 1},   // chunk 大于文件大小
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dstDir := filepath.Join(tmpDir, tt.name)
+			_ = os.Mkdir(dstDir, 0755)
+
+			// 执行分割
+			parts, err := SplitFile(srcFilePath, dstDir, tt.chunkSize)
+			if err != nil {
+				t.Errorf("SplitFile() error = %v", err)
+				return
+			}
+
+			// 2. 校验分片数量
+			if len(parts) != tt.expectedParts {
+				t.Errorf("expected %d parts, got %d", tt.expectedParts, len(parts))
+			}
+
+			// 3. 校验数据完整性（合并后是否等于原内容）
+			var restoredContent []byte
+			for _, partPath := range parts {
+				pContent, err := os.ReadFile(partPath)
+				if err != nil {
+					t.Fatalf("failed to read part file %s: %v", partPath, err)
+				}
+				restoredContent = append(restoredContent, pContent...)
+			}
+
+			if string(restoredContent) != string(content) {
+				t.Errorf("restored content mismatch! got %s, want %s", string(restoredContent), string(content))
+			}
+		})
+	}
+}

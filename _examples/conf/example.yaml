@@ -9,6 +9,11 @@ asjard.logger.level: DEBUG
 asjard.cache.enabled: true
 # asjard.cache.redis.client: default
 
+## metrics
+asjard.metrics.enabled: true
+asjard.metrics.pushGateway.endpoint: http://127.0.0.1:9091
+
+## trace
 asjard.trace.enabled: true
 asjard.trace.endpoint: http://127.0.0.1:4318
 

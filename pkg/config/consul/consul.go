@@ -261,11 +261,13 @@ func (w *configWatch) handler(_ uint64, data any) {
 				ext := filepath.Ext(kv.Key)
 				if ext != "" && config.IsExtSupport(ext) {
 					configs, err := config.ConvertToProperties(ext, kv.Value)
-					if err == nil {
-						if _, ok := configs[key]; ok {
-							exist = true
-							break
-						}
+					if err != nil {
+						logger.Error("consul conver to props fail", "key", kv.Key, "err", err)
+						continue
+					}
+					if _, ok := configs[key]; ok {
+						exist = true
+						break
 					}
 				} else {
 					if kv.Key == key {
