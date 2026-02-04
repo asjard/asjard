@@ -73,6 +73,7 @@ func (*AccessLog) Name() string {
 // Interceptor returns the actual middleware function that wraps request execution.
 func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
+		logger.L(ctx).Debug("start server interceptor", "interceptor", al.Name(), "full_method", info.FullMethod, "protocol", info.Protocol)
 		// 1. Check if this specific request should be ignored based on skip rules.
 		if al.skipped(info.Protocol, info.FullMethod) {
 			return handler(ctx, req)

@@ -48,7 +48,7 @@ type AddressConfig struct {
 // DefaultConfig provides a standard baseline for all servers in the framework.
 var DefaultConfig = Config{
 	// Standard interceptor stack order: panic recovery -> i18n -> trace -> etc.
-	BuiltInInterceptors: utils.JSONStrings{"panic", "i18n", "trace", "ratelimiter", "metrics", "accessLog", "restReadEntity"},
+	BuiltInInterceptors: utils.JSONStrings{"panic", "metrics", "i18n", "trace", "ratelimiter", "accessLog", "restReadEntity"},
 	// Standard diagnostic and monitoring endpoints.
 	BuiltInDefaultHandlers: utils.JSONStrings{"default", "health", "metrics"},
 }

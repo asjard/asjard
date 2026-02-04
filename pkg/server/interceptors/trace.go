@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/asjard/asjard/core/constant"
+	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server"
 	mtrace "github.com/asjard/asjard/core/trace"
@@ -54,6 +55,7 @@ func (*Trace) Name() string {
 // Interceptor implements the tracing logic for every unary request.
 func (t *Trace) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
+		logger.L(ctx).Debug("start server interceptor", "interceptor", t.Name(), "full_method", info.FullMethod, "protocol", info.Protocol)
 		// 1. Skip if tracing is disabled in configuration.
 		if !t.conf.Enabled {
 			return handler(ctx, req)

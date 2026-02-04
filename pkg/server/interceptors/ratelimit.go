@@ -73,6 +73,7 @@ func NewRateLimiterInterceptor() (server.ServerInterceptor, error) {
 // Interceptor returns the middleware that enforces rate limits.
 func (rl *RateLimiter) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
+		logger.L(ctx).Debug("start server interceptor", "interceptor", rl.Name(), "full_method", info.FullMethod, "protocol", info.Protocol)
 		if !rl.conf.Enabled {
 			return handler(ctx, req)
 		}
