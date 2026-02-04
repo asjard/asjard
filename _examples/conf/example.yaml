@@ -3,7 +3,7 @@ asjard.service.app: example
 asjard.service.environment: local
 
 ## log
-asjard.logger.level: DEBUG
+# asjard.logger.level: DEBUG
 
 ## cache
 asjard.cache.enabled: true
@@ -15,7 +15,7 @@ asjard.metrics.pushGateway.endpoint: http://127.0.0.1:9091
 
 ## trace
 asjard.trace.enabled: true
-asjard.trace.endpoint: http://127.0.0.1:4318
+# asjard.trace.endpoint: http://127.0.0.1:4318
 
 ## 注册中心配置
 asjard.registry.etcd.client: default

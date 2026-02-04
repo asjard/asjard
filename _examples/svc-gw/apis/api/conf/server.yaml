@@ -1,8 +1,14 @@
 asjard:
   servers:
+    pprof:
+      enabled: true
+      addresses:
+        listen: 0.0.0.0:7${asjard.service.instance.systemCode}
     rest:
       enabled: true
       openapi:
         enabled: true
       addresses:
         listen: 0.0.0.0:8${asjard.service.instance.systemCode}
+      options:
+        tCPKeepalive: true
