@@ -53,6 +53,7 @@ func NewReadEntityInterceptor() (server.ServerInterceptor, error) {
 // Interceptor returns the actual middleware function.
 func (r *ReadEntity) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
+		logger.L(ctx).Debug("start server interceptor", "interceptor", r.Name(), "full_method", info.FullMethod, "protocol", info.Protocol)
 		// 1. Verify that we are within a REST context and the method isn't skipped.
 		rtx, ok := ctx.(*rest.Context)
 		if ok && !r.isSkipped(info.FullMethod) {

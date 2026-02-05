@@ -48,9 +48,9 @@ func (Metrics) Name() string {
 // Interceptor returns the middleware function that records telemetry data.
 func (m Metrics) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
-		logger.L(ctx).Debug("start metrics interceptor", "full_method", info.FullMethod, "protocol", info.Protocol)
+		logger.L(ctx).Debug("start server interceptor", "interceptor", m.Name(), "full_method", info.FullMethod, "protocol", info.Protocol)
 
-		now := time.Now()
+		start := time.Now()
 
 		// 1. Execute the business logic handler.
 		resp, err = handler(ctx, req)
@@ -64,7 +64,7 @@ func (m Metrics) Interceptor() server.UnaryServerInterceptor {
 		m.requestTotal.Inc(codeStr, info.FullMethod, info.Protocol)
 
 		// - Record execution latency in seconds.
-		m.requestLatency.Observe(info.FullMethod, info.Protocol, time.Since(now).Seconds())
+		m.requestLatency.Observe(info.FullMethod, info.Protocol, float64(time.Now().Sub(start))/float64(time.Second))
 
 		// 4. Protocol-specific metrics (Size tracking for REST).
 		if rtx, ok := ctx.(*rest.Context); ok {

@@ -17,4 +17,4 @@ services ?= svc-example/apis/api \
 
 .PHONY: run_dev
 run_dev: ## 本地运行服务
-	ASJARD_CONF_DIR="$(PWD)/$(services)/conf $(PWD)/$(services)/../../conf $(PWD)/conf" CGO_ENABLED=0  go run -race ./$(services)/
+	ASJARD_CONF_DIR="$(PWD)/$(services)/conf $(PWD)/$(services)/../../conf $(PWD)/conf" CGO_ENABLED=0  go run ./$(services)/

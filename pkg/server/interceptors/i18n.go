@@ -101,6 +101,7 @@ func (*I18n) Name() string {
 // Interceptor returns the middleware that translates error responses.
 func (m *I18n) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
+		logger.L(ctx).Debug("start server interceptor", "interceptor", m.Name(), "full_method", info.FullMethod, "protocol", info.Protocol)
 		// 1. Execute the handler logic first.
 		resp, err = handler(ctx, req)
 		if err == nil {

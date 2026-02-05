@@ -28,8 +28,9 @@ func NewPanic() (server.ServerInterceptor, error) {
 }
 
 // Interceptor returns the middleware function that handles panic recovery.
-func (*Panic) Interceptor() server.UnaryServerInterceptor {
+func (p *Panic) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
+		logger.L(ctx).Debug("start server interceptor", "interceptor", p.Name(), "full_method", info.FullMethod, "protocol", info.Protocol)
 		// Use defer to ensure the recovery logic runs even if the handler panics.
 		defer func() {
 			if rcv := recover(); rcv != nil {

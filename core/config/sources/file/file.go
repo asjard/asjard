@@ -97,9 +97,7 @@ func (s *File) GetAll() map[string]*config.Value {
 				s.setConfig(file, key, value.Value)
 			}
 		} else {
-			logger.Error("read file fail",
-				"file", file,
-				"err", err.Error())
+			logger.Error("read file fail", "file", file, "err", err.Error())
 		}
 	}
 	return configs
@@ -130,11 +128,15 @@ func (s *File) Name() string {
 
 // 读取文件内容，并解析为config_manager所需要的properties格式
 func (s *File) read(file string) (map[string]*config.Value, error) {
+	baseName := filepath.Base(file)
+	// ignore hide file
+	if strings.HasPrefix(baseName, ".") {
+		return map[string]*config.Value{}, nil
+	}
 	content, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
-	baseName := filepath.Base(file)
 	if strings.HasPrefix(baseName, FileEncryptFlag) {
 		nameList := strings.Split(baseName, FileNameSplitSymbol)
 		var decryptOptions []security.Option
@@ -186,8 +188,7 @@ func (s *File) doWatch() {
 			}
 			switch event.Op {
 			case fsnotify.Create, fsnotify.Write:
-				logger.Debug("file source watch event",
-					"event", event, "op", event.Op.String())
+				logger.Debug("file source watch event", "event", event, "op", event.Op.String())
 				if utils.IsDir(event.Name) {
 					if err := s.watcher.Add(event.Name); err != nil {
 						logger.Error("watch dir fail", "dir", event.Name, "err", err)
@@ -199,14 +200,11 @@ func (s *File) doWatch() {
 							s.options.Callback(event)
 						}
 					} else {
-						logger.Error("read file fail",
-							"file", event.Name,
-							"err", err.Error())
+						logger.Error("read file fail", "file", event.Name, "err", err.Error())
 					}
 				}
 			case fsnotify.Remove, fsnotify.Rename:
-				logger.Debug("file source watch event",
-					"event", event, "op", event.Op.String())
+				logger.Debug("file source watch event", "event", event, "op", event.Op.String())
 				if utils.IsDir(event.Name) {
 					if err := s.watcher.Remove(event.Name); err != nil {
 						logger.Error("remove watch dir fail", "dir", event.Name, "err", err)
@@ -227,8 +225,7 @@ func (s *File) doWatch() {
 			if !ok {
 				return
 			}
-			logger.Error("watch err",
-				"err", err)
+			logger.Error("watch err", "err", err)
 		}
 	}
 }
