@@ -26,37 +26,95 @@ go get -u github.com/asjard/asjard
 
 ### Running in asjard
 
+- define protobuf
+
+```proto
+syntax = "proto3";
+
+package api.v1.example.docs;
+
+// The target Go package path for generated code.
+option go_package = "protos-repo/example/api/v1/sample";
+
+import "github.com/asjard/protobuf/http.proto";
+import "github.com/asjard/protobuf/validate.proto";
+
+// Sample service provides basic greeting operations.
+service Sample {
+    // SayHello returns a greeting message based on the provided name.
+    // It supports multiple HTTP GET entrypoints for compatibility and routing flexibility.
+    rpc SayHello(HelloRequest) returns (HelloReply) {
+        // Dynamic path mapping (e.g., /helloworld/john)
+        option (asjard.api.http) = {
+            get : "/helloworld/{name}"
+        };
+        // Static path mapping for general greetings
+        option (asjard.api.http) = {
+            get : '/hello'
+        };
+    }
+}
+
+// HelloRequest defines the input payload for the SayHello method.
+message HelloRequest {
+    // The name of the person to greet.
+    // Validation: Must be provided (required) and no longer than 20 characters.
+    string name = 1 [ (asjard.api.validate).rules = "required,max=20" ];
+}
+
+// HelloReply defines the output payload containing the greeting result.
+message HelloReply {
+    // The formatted greeting string (e.g., "Hello, name!").
+    string message = 1;
+}
+```
+
+- implement in go
+
 ```go
 package main
 
 import (
+	"context"
+	"log"
+
+	pb "protos-repo/example/api/v1/sample"
+
 	"github.com/asjard/asjard"
 	"github.com/asjard/asjard/pkg/server/grpc"
-	"your_protobuf_generated_dir/pb"
+	"github.com/asjard/asjard/pkg/server/rest"
 )
 
-type ExampleAPI struct{}
-
-func NewExampleAPI() *ExampleAPI {
-	return &ExampleAPI{}
+type SampleAPI struct {
+	pb.UnimplementedSampleServer
 }
 
-func(ExampleAPI) Start() error {return nil}
-func (ExampleAPI) Stop() {}
-func (ExampleAPI) GrpcServiceDesc() *grpc.ServiceDesc{
-	return pb.Example_ServiceDesc
+func NewSampleAPI() *SampleAPI {
+	return &SampleAPI{}
+}
+
+func (api *SampleAPI) Start() error { return nil }
+func (api *SampleAPI) Stop()        {}
+
+// GRPC server
+func (api *SampleAPI) GrpcServiceDesc() *grpc.ServiceDesc { return &pb.Sample_ServiceDesc }
+
+// HTTP server
+func (api *SampleAPI) RestServiceDesc() *rest.ServiceDesc { return &pb.SampleRestServiceDesc }
+
+func (api *SampleAPI) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+	return &pb.HelloReply{
+		Message: "hello " + in.Name,
+	}, nil
 }
 
 func main() {
 	server := asjard.New()
 
-	if err := server.AddHandlers(grpc.Protocol,
-		apiV1.NewExampleAPI(svcCtx)); err != nil {
+	if err := server.AddHandler(&apiv1.SampleAPI{}, rest.Protocol, grpc.Protocol); err != nil {
 		log.Fatal(err)
 	}
-	if err := server.Start(); err != nil {
-		log.Fatal(err)
-	}
+	log.Fatal(server.Start())
 }
 ```
 
