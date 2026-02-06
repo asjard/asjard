@@ -48,7 +48,7 @@ type CacheConfig struct {
 
 	// Key Namespace Overrides:
 	// These flags allow sharing cache data across different deployment dimensions.
-	IgnoreVersionDiff bool `json:"ignoreVersionDiff"` // Share cache across different app versions
+	CareVersionDiff   bool `json:"careVersionDiff"`   // Share cache across different app versions
 	IgnoreAppDiff     bool `json:"ignoreAppDiff"`     // Share cache across different applications
 	IgnoreEnvDiff     bool `json:"ignoreEnvDiff"`     // Share cache across Dev/Staging/Prod
 	IgnoreServiceDiff bool `json:"ignoreServiceDiff"` // Share cache across different microservices
@@ -79,8 +79,7 @@ type Cache struct {
 var (
 	// DefaultCacheConfig provides a safe baseline: 10-minute TTL and version independence.
 	DefaultCacheConfig = CacheConfig{
-		ExpiresIn:         utils.JSONDuration{Duration: 10 * time.Minute},
-		IgnoreVersionDiff: true,
+		ExpiresIn: utils.JSONDuration{Duration: 10 * time.Minute},
 	}
 )
 
@@ -123,7 +122,7 @@ func (c *Cache) NewKey(key string) string {
 	// Uses the runtime ResourceKey builder to ensure consistent naming conventions.
 	return c.app.ResourceKey("caches", c.ModelKey(key),
 		runtime.WithDelimiter(":"),
-		runtime.WithoutVersion(c.conf.IgnoreVersionDiff),
+		runtime.WithVersion(c.conf.CareVersionDiff),
 		runtime.WithoutApp(c.conf.IgnoreAppDiff),
 		runtime.WithoutEnv(c.conf.IgnoreEnvDiff),
 		runtime.WithoutService(c.conf.IgnoreServiceDiff),

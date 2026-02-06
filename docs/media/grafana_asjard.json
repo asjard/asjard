@@ -123,11 +123,11 @@
     },
     {
       "datasource": {
-        "name": "${datasource}",
+        "default": false,
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "The number of HTTP requests made in the last 2 minute window",
+      "description": "The number of requests made in the last in $__interval window",
       "fieldConfig": {
         "defaults": {
           "decimals": 0,
@@ -199,7 +199,7 @@
           "refId": "A"
         }
       ],
-      "title": "Reqs (2m)",
+      "title": "Reqs ($__interval)",
       "type": "stat"
     },
     {
@@ -290,7 +290,7 @@
     },
     {
       "datasource": {
-        "name": "${datasource}",
+        "default": false,
         "type": "prometheus",
         "uid": "${datasource}"
       },
@@ -355,7 +355,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "histogram_quantile(0.5, sum(irate(api_requests_latency_seconds_bucket{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\"}[$__rate_interval])) by (api,le)) / 1000",
+          "expr": "histogram_quantile(0.5, sum(irate(api_requests_latency_seconds_bucket{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\"}[$__rate_interval])) by (api,le)) ",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -371,7 +371,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "histogram_quantile(0.9, sum(irate(api_requests_latency_seconds_bucket{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\"}[$__rate_interval])) by (api,le)) / 1000",
+          "expr": "histogram_quantile(0.9, sum(irate(api_requests_latency_seconds_bucket{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\"}[$__rate_interval])) by (api,le)) ",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -387,7 +387,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "histogram_quantile(0.99, sum(irate(api_requests_latency_seconds_bucket{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\"}[$__rate_interval])) by (api,le)) / 1000",
+          "expr": "histogram_quantile(0.99, sum(irate(api_requests_latency_seconds_bucket{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\"}[$__rate_interval])) by (api,le)) ",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -482,7 +482,7 @@
     },
     {
       "datasource": {
-        "name": "${datasource}",
+        "default": false,
         "type": "prometheus",
         "uid": "${datasource}"
       },
@@ -554,7 +554,9 @@
           "calcs": ["mean", "lastNotNull", "max"],
           "displayMode": "table",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
@@ -568,7 +570,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (api,protocol) (rate(api_requests_total{app=\"$app\", service=~\"$service\", env=~\"$env\", api=~\"$api\", instance=~\"$instance\",protocol=~\"$protocol\"}[5m]))",
+          "expr": "sum by (api,protocol) (rate(api_requests_total{app=\"$app\", service=~\"$service\", env=~\"$env\", api=~\"$api\", instance=~\"$instance\",protocol=~\"$protocol\"}[$__rate_interval]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{api}}-{{protocol}}",
@@ -697,7 +699,7 @@
     },
     {
       "datasource": {
-        "name": "${datasource}",
+        "default": false,
         "type": "prometheus",
         "uid": "${datasource}"
       },
@@ -783,23 +785,10 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "api_requests_latency_ms{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\", quantile=\"0.99\"}",
-          "hide": true,
-          "instant": false,
-          "legendFormat": "{{api}}",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(irate(api_requests_latency_seconds_bucket{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\"}[$__rate_interval])) by (api,le)) / 1000",
+          "expr": "histogram_quantile(0.99, sum(rate(api_requests_latency_seconds_bucket{app=\"$app\",instance=~\"$instance\",service=~\"$service\",region=~\"$region\", az=~\"$az\",api=~\"$api\", protocol=~\"$protocol\"}[$__rate_interval])) by (api,protocol,le)) ",
           "hide": false,
           "instant": false,
-          "legendFormat": "{{api}}",
+          "legendFormat": "{{api}}-{{protocol}}",
           "range": true,
           "refId": "A"
         }
@@ -2112,14 +2101,14 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "5s",
+  "refresh": "auto",
   "schemaVersion": 39,
   "tags": ["Go ", "RPC", "HTTP", "Microservice", "Asjard"],
   "templating": {
     "list": [
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "prometheus",
           "value": "ffc0u8qtg5f5sc"
         },
@@ -2137,9 +2126,9 @@
       },
       {
         "current": {
-          "selected": true,
-          "text": "pushgateway",
-          "value": "pushgateway"
+          "selected": false,
+          "text": "example",
+          "value": "example"
         },
         "datasource": {
           "type": "prometheus",
@@ -2164,10 +2153,9 @@
       },
       {
         "current": {
-          "isNone": true,
           "selected": false,
-          "text": "None",
-          "value": ""
+          "text": "default",
+          "value": "default"
         },
         "datasource": {
           "type": "prometheus",
@@ -2192,10 +2180,9 @@
       },
       {
         "current": {
-          "isNone": true,
           "selected": false,
-          "text": "None",
-          "value": ""
+          "text": "default",
+          "value": "default"
         },
         "datasource": {
           "type": "prometheus",
@@ -2302,8 +2289,8 @@
       {
         "current": {
           "selected": false,
-          "text": "All",
-          "value": "$__all"
+          "text": "rest",
+          "value": "rest"
         },
         "datasource": {
           "type": "prometheus",
@@ -2364,6 +2351,6 @@
   "timezone": "browser",
   "title": "ASJARD",
   "uid": "adrteheceyigwd",
-  "version": 3,
+  "version": 6,
   "weekStart": ""
 }

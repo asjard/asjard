@@ -14,10 +14,10 @@ asjard:
     # enabled: false
     ## 全局是否自动刷新
     # autoRefresh: false
-    ## 忽略版本差异
-    ## 默认缓存key带version标签
-    ## 升级服务版本后缓存将会集体失效
-    # ignoreVersionDiff: false
+    ## 关注版本差异
+    ## 默认缓存key不带version标签
+    ## 如果设置为true升级服务版本后缓存将会集体失效
+    # careVersionDiff: false
     # ignoreAppDiff: false
     # ignoreEnvDiff: false
     # ignoreServiceDiff: false

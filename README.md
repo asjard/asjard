@@ -111,7 +111,7 @@ func (api *SampleAPI) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.He
 func main() {
 	server := asjard.New()
 
-	if err := server.AddHandler(&apiv1.SampleAPI{}, rest.Protocol, grpc.Protocol); err != nil {
+	if err := server.AddHandler(SampleAPI{}, rest.Protocol, grpc.Protocol); err != nil {
 		log.Fatal(err)
 	}
 	log.Fatal(server.Start())

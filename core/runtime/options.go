@@ -20,7 +20,7 @@ type Options struct {
 	// withoutService if true, the service name will be omitted
 	withoutService bool
 	// withoutVersion if true, the service version will be omitted
-	withoutVersion bool
+	withVersion bool
 	// withServiceId if true, the unique Service ID will be included (usually replacing or following the name)
 	withServiceId bool
 }
@@ -84,10 +84,10 @@ func WithoutService(value bool) Option {
 	}
 }
 
-// WithoutVersion toggles the inclusion of the Service version.
-func WithoutVersion(value bool) Option {
+// WithVersion toggles the inclusion of the Service version.
+func WithVersion(value bool) Option {
 	return func(options *Options) {
-		options.withoutVersion = value
+		options.withVersion = value
 	}
 }
 
