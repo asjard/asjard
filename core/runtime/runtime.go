@@ -165,7 +165,7 @@ func (app APP) ResourceKey(resource, key string, opts ...Option) string {
 			write(app.Instance.Group)
 		}
 	}
-	if !options.withoutVersion {
+	if options.withVersion {
 		write(app.Instance.Version)
 	}
 	if !options.withoutRegion {

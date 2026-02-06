@@ -103,7 +103,6 @@ func (m *Mutex) TryLock(ctx context.Context, key string, do func() error, opts .
 func (m *Mutex) resourceKey(key string) string {
 	return runtime.GetAPP().ResourceKey("lock", key,
 		runtime.WithoutAz(true),
-		runtime.WithoutVersion(true),
 		runtime.WithDelimiter(":"))
 }
 

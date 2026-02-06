@@ -8,7 +8,7 @@ asjard:
     # autoRefresh: false
     ## ignore ${asjard.service.instance.version} value in cache key.
     ## If enabled, After upgrading the service version, the cache will be collectively invalidated.
-    # ignoreVersionDiff: false
+    # careVersionDiff: false
     ## ignore ${asjard.service.app} value in cache key.
     # ignoreAppDiff: false
     ## ignore ${asjard.service.environment} value in cache key.
