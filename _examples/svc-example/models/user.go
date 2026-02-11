@@ -1,4 +1,4 @@
-package services
+package models
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-type UserSvc struct {
+type UserModel struct {
 	datas.User
 	stores.Model
 
@@ -25,19 +25,19 @@ type UserSvc struct {
 }
 
 var (
-	userSvc     *UserSvc
-	userSvcOnce sync.Once
+	userModel     *UserModel
+	userModelOnce sync.Once
 )
 
-func NewUserSvc() *UserSvc {
-	userSvcOnce.Do(func() {
-		userSvc = &UserSvc{}
-		bootstrap.AddBootstrap(userSvc)
+func NewUserModel() *UserModel {
+	userModelOnce.Do(func() {
+		userModel = &UserModel{}
+		bootstrap.AddBootstrap(userModel)
 	})
-	return userSvc
+	return userModel
 }
 
-func (s *UserSvc) Start() error {
+func (s *UserModel) Start() error {
 	localCache, err := cache.NewLocalCache(s)
 	if err != nil {
 		return err
@@ -49,9 +49,9 @@ func (s *UserSvc) Start() error {
 
 	return nil
 }
-func (s *UserSvc) Stop() {}
+func (s *UserModel) Stop() {}
 
-func (s *UserSvc) Create(ctx context.Context, in *user.UserReq) error {
+func (s *UserModel) Create(ctx context.Context, in *user.UserReq) error {
 	record, err := s.Get(ctx, &cpb.ReqWithName{Name: in.Username})
 	if err == nil && record.UserId != 0 {
 		return status.Errorf(codes.Code(xcodes.ERR_USER_EUSE_EXIST), "user '%s' already exist", in.Username)
@@ -61,7 +61,7 @@ func (s *UserSvc) Create(ctx context.Context, in *user.UserReq) error {
 	}, s.kvCache.WithKey(s.usernameCacheKey(in.Username)).WithGroup(s.searchCacheGroupKey()))
 }
 
-func (s *UserSvc) Update(ctx context.Context, in *user.UserReq) error {
+func (s *UserModel) Update(ctx context.Context, in *user.UserReq) error {
 	if _, err := s.Get(ctx, &cpb.ReqWithName{Name: in.Username}); err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (s *UserSvc) Update(ctx context.Context, in *user.UserReq) error {
 	}, s.kvCache.WithKey(s.usernameCacheKey(in.Username)).WithGroup(s.searchCacheGroupKey()))
 }
 
-func (s *UserSvc) UpdateCardNum(ctx context.Context, username string, num int) error {
+func (s *UserModel) UpdateCardNum(ctx context.Context, username string, num int) error {
 	if _, err := s.Get(ctx, &cpb.ReqWithName{Name: username}); err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (s *UserSvc) UpdateCardNum(ctx context.Context, username string, num int) e
 	}, s.kvCache.WithKey(s.usernameCacheKey(username)).WithGroup(s.searchCacheGroupKey()))
 }
 
-func (s *UserSvc) Get(ctx context.Context, in *cpb.ReqWithName) (*user.UserInfo, error) {
+func (s *UserModel) Get(ctx context.Context, in *cpb.ReqWithName) (*user.UserInfo, error) {
 	var record user.UserInfo
 	if err := s.GetData(ctx,
 		&record,
@@ -94,7 +94,7 @@ func (s *UserSvc) Get(ctx context.Context, in *cpb.ReqWithName) (*user.UserInfo,
 	return &record, nil
 }
 
-func (s *UserSvc) Del(ctx context.Context, in *cpb.ReqWithName) error {
+func (s *UserModel) Del(ctx context.Context, in *cpb.ReqWithName) error {
 	if _, err := s.Get(ctx, in); err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func (s *UserSvc) Del(ctx context.Context, in *cpb.ReqWithName) error {
 	}, s.kvCache.WithKey(s.usernameCacheKey(in.Name)).WithGroup(s.searchCacheGroupKey()))
 }
 
-func (s *UserSvc) Search(ctx context.Context, in *user.UserSearchReq) (*user.UserList, error) {
+func (s *UserModel) Search(ctx context.Context, in *user.UserSearchReq) (*user.UserList, error) {
 	var record user.UserList
 	if err := s.GetData(ctx,
 		&record,
@@ -116,13 +116,13 @@ func (s *UserSvc) Search(ctx context.Context, in *user.UserSearchReq) (*user.Use
 	return &record, nil
 }
 
-func (s *UserSvc) usernameCacheKey(username string) string {
+func (s *UserModel) usernameCacheKey(username string) string {
 	return fmt.Sprintf("username:%s", username)
 }
-func (s *UserSvc) searchCacheGroupKey() string {
+func (s *UserModel) searchCacheGroupKey() string {
 	return "search"
 }
 
-func (s *UserSvc) searchCacheKey(in *user.UserSearchReq) string {
+func (s *UserModel) searchCacheKey(in *user.UserSearchReq) string {
 	return fmt.Sprintf("search:%d:%d:%s:%s", in.Page, in.Size, in.Sort, in.Keywords)
 }

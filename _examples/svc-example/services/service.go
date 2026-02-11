@@ -2,20 +2,22 @@ package services
 
 import (
 	"context"
-	"svc-example/datas"
 	"sync"
+
+	"svc-example/datas"
+	"svc-example/models"
 
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/pkg/stores/xgorm"
 )
 
-type Svcs struct {
-	UserSvc           *UserSvc
-	UserCreditCardSvc *UserCreditCardSvc
+type Models struct {
+	UserModel           *models.UserModel
+	UserCreditCardModel *models.UserCreditCardModel
 }
 type ServiceContext struct {
-	Svcs *Svcs
+	Models *Models
 }
 
 var (
@@ -27,11 +29,6 @@ func NewServiceContext() *ServiceContext {
 	serviceContextOnce.Do(func() {
 		serviceContext = &ServiceContext{}
 		bootstrap.AddBootstrap(serviceContext)
-
-		serviceContext.Svcs = &Svcs{
-			UserSvc:           NewUserSvc(),
-			UserCreditCardSvc: NewUserCreditCardSvc(),
-		}
 	})
 	return serviceContext
 }
@@ -45,6 +42,10 @@ func (s *ServiceContext) Start() error {
 		if err := db.AutoMigrate(&datas.User{}, &datas.UserCreditCard{}); err != nil {
 			return err
 		}
+	}
+	s.Models = &Models{
+		UserModel:           models.NewUserModel(),
+		UserCreditCardModel: models.NewUserCreditCardModel(),
 	}
 	return nil
 }
