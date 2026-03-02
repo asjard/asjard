@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
 	"github.com/valyala/fasthttp"
@@ -148,6 +149,7 @@ func (c *Context) JSONBodyParams() []byte {
 	if bytes.Equal(c.Request.Header.ContentType(), []byte(MIME_JSON)) {
 		return c.Request.Body()
 	}
+	logger.L(c).Warn("request contentType not json", "content_type", utils.SafeByte2String(c.Request.Header.ContentType()))
 	return []byte{}
 }
 
@@ -249,6 +251,8 @@ func (c *Context) ReadBodyParamsToEntity(entity proto.Message) error {
 		if err := protojson.Unmarshal(body, entity); err != nil {
 			return status.Errorf(codes.InvalidArgument, "read body params to entity fail: %v", err)
 		}
+	} else {
+		logger.L(c).Warn("read body params is empty", "request_method", utils.SafeByte2String(c.Method()))
 	}
 	return nil
 }
