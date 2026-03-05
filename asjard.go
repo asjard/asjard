@@ -110,6 +110,11 @@ func (asd *Asjard) Start() error {
 		return err
 	}
 
+	// Run standard bootstrap tasks.
+	if err := bootstrap.Bootstrap(); err != nil {
+		return err
+	}
+
 	// Start protocol listeners (HTTP/gRPC, etc.).
 	if err := asd.startServers(); err != nil {
 		return err
@@ -188,11 +193,6 @@ func (asd *Asjard) Init() error {
 		return err
 	}
 	if err := registry.Init(); err != nil {
-		return err
-	}
-
-	// Run standard bootstrap tasks.
-	if err := bootstrap.Bootstrap(); err != nil {
 		return err
 	}
 

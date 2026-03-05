@@ -37,7 +37,9 @@ _examples
     │   └── example.yaml
     ├── datas ## 数据持久化
     │   └── example.go
-    ├── services ## 业务逻辑和数据持久化的连接层,比如缓存在这一层实现
+    ├── models ## 业务逻辑和数据持久化的连接层，缓存构建，多持久层写入
+    │   └── example.go
+    ├── services ## 通用业务逻辑共享
     │   └── example.go
     ├── third_party ## 无法通过当前语言包管理器管理的三方库，可通过fork或submodule管理在此目录下
     └── version ## 服务版本

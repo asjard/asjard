@@ -30,21 +30,21 @@ func (api *UserAPI) RestServiceDesc() *rest.ServiceDesc { return &user.UserRestS
 // In Asjard, this method typically uses 'SetData' to pre-allocate IDs
 // and initialize the cache state to prevent early cache-miss storms.
 func (api *UserAPI) Create(ctx context.Context, in *user.UserReq) (*cpb.Empty, error) {
-	return &cpb.Empty{}, api.svcCtx.Svcs.UserSvc.Create(ctx, in)
+	return &cpb.Empty{}, api.svcCtx.Models.UserModel.Create(ctx, in)
 }
 
 // Get retrieves a single user by their primary identifier (username/key).
 // Workflow: LocalCache -> Redis -> Database.
 // Failure to find a record results in a gRPC NOT_FOUND (HTTP 404).
 func (api *UserAPI) Get(ctx context.Context, in *cpb.ReqWithName) (*user.UserInfo, error) {
-	return api.svcCtx.Svcs.UserSvc.Get(ctx, in)
+	return api.svcCtx.Models.UserModel.Get(ctx, in)
 }
 
 // Update modifies an existing user profile.
 // Triggers the 'Delayed Double Delete' strategy via Asjard's Time Wheel
 // to ensure consistency across distributed LocalCache nodes.
 func (api *UserAPI) Update(ctx context.Context, in *user.UserReq) (*cpb.Empty, error) {
-	return &cpb.Empty{}, api.svcCtx.Svcs.UserSvc.Update(ctx, in)
+	return &cpb.Empty{}, api.svcCtx.Models.UserModel.Update(ctx, in)
 }
 
 // Del removes the user record from the persistent store and
@@ -56,10 +56,10 @@ func (api *UserAPI) Del(ctx context.Context, in *cpb.ReqWithName) (*cpb.Empty, e
 	}
 	return &cpb.Empty{}, db.Transaction(func(tx *gorm.DB) error {
 		ttx := xgorm.WithDB(ctx, tx)
-		if err := api.svcCtx.Svcs.UserCreditCardSvc.RemoveByUser(ttx, in); err != nil {
+		if err := api.svcCtx.Models.UserCreditCardModel.RemoveByUser(ttx, in); err != nil {
 			return err
 		}
-		return api.svcCtx.Svcs.UserSvc.Del(ttx, in)
+		return api.svcCtx.Models.UserModel.Del(ttx, in)
 	})
 }
 
@@ -67,7 +67,7 @@ func (api *UserAPI) Del(ctx context.Context, in *cpb.ReqWithName) (*cpb.Empty, e
 // Note: Search results are typically cached at the 'Group' level
 // with shorter TTLs compared to individual 'Get' records.
 func (api *UserAPI) Search(ctx context.Context, in *user.UserSearchReq) (*user.UserList, error) {
-	return api.svcCtx.Svcs.UserSvc.Search(ctx, in)
+	return api.svcCtx.Models.UserModel.Search(ctx, in)
 }
 
 // User add a credit card
@@ -78,10 +78,10 @@ func (api *UserAPI) AddCreditCard(ctx context.Context, in *user.UserCreditCardRe
 	}
 	return &cpb.Empty{}, db.Transaction(func(tx *gorm.DB) error {
 		ttx := xgorm.WithDB(ctx, tx)
-		if err := api.svcCtx.Svcs.UserCreditCardSvc.Add(ttx, in); err != nil {
+		if err := api.svcCtx.Models.UserCreditCardModel.Add(ttx, in); err != nil {
 			return err
 		}
-		return api.svcCtx.Svcs.UserSvc.UpdateCardNum(ttx, in.Username, 1)
+		return api.svcCtx.Models.UserModel.UpdateCardNum(ttx, in.Username, 1)
 	})
 }
 
@@ -93,19 +93,19 @@ func (api *UserAPI) RemoveCreditCard(ctx context.Context, in *user.UserCreditCar
 	}
 	return &cpb.Empty{}, db.Transaction(func(tx *gorm.DB) error {
 		ttx := xgorm.WithDB(ctx, tx)
-		if err := api.svcCtx.Svcs.UserCreditCardSvc.Remove(ttx, in); err != nil {
+		if err := api.svcCtx.Models.UserCreditCardModel.Remove(ttx, in); err != nil {
 			return err
 		}
-		return api.svcCtx.Svcs.UserSvc.UpdateCardNum(ttx, in.Username, -1)
+		return api.svcCtx.Models.UserModel.UpdateCardNum(ttx, in.Username, -1)
 	})
 }
 
 // get user credit card info
 func (api *UserAPI) GetCreditCard(ctx context.Context, in *user.UserCreditCardReq) (*user.UserCreditCardInfo, error) {
-	return api.svcCtx.Svcs.UserCreditCardSvc.Get(ctx, in)
+	return api.svcCtx.Models.UserCreditCardModel.Get(ctx, in)
 }
 
 // Get all credit cards under user
 func (api *UserAPI) SearchCreditCard(ctx context.Context, in *cpb.ReqWithName) (*user.UserCreditCardList, error) {
-	return api.svcCtx.Svcs.UserCreditCardSvc.Search(ctx, in)
+	return api.svcCtx.Models.UserCreditCardModel.Search(ctx, in)
 }

@@ -88,8 +88,11 @@ func Init() error {
 // Bootstrap executes all registered Bootstrap handlers sequentially.
 // Typically called after successful execution of Init().
 func Bootstrap() error {
-	for _, handler := range bootstrapHandlers {
+	for idx, handler := range bootstrapHandlers {
 		if err := handler.Start(); err != nil {
+			for j := idx - 1; j >= 0; j-- {
+				handler.Stop()
+			}
 			return err
 		}
 	}
