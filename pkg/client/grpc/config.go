@@ -50,9 +50,9 @@ func defaultConfig() Config {
 	}
 }
 
-// serviceConfig merges global gRPC defaults with service-specific overrides.
+// serverConfig merges global gRPC defaults with service-specific overrides.
 // It uses a configuration chain: Default -> Global gRPC -> Specific Service.
-func serviceConfig(serviceName string) Config {
+func serverConfig(serviceName string) Config {
 	conf := defaultConfig()
 	// Unmarshal configuration from the provider (e.g., YAML/ETCD).
 	// Priority 1: asjard.clients.grpc.services.{serviceName}

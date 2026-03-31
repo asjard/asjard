@@ -96,7 +96,7 @@ func (c Client) Conn(ops ...ConnOption) (grpc.ClientConnInterface, error) {
 	}
 
 	// Fetch specific configuration for the target service to override defaults.
-	conf := serviceConfig(c.protocol, c.serverName)
+	conf := serverConfig(c.protocol, c.serverName)
 	interceptor, err := getChainUnaryInterceptors(c.protocol, conf)
 	if err != nil {
 		return nil, err

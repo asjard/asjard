@@ -98,7 +98,7 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (client
 	options = append(options, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}]}`, balanceName)))
 
 	// 2. Load gRPC specific configuration (Keepalive, TLS, etc.)
-	conf := serviceConfig(serviceName)
+	conf := serverConfig(serviceName)
 
 	// 3. Configure Security (TLS vs Insecure)
 	if conf.CertFile != "" {
