@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
@@ -17,11 +18,13 @@ type Config struct {
 	// BuiltInInterceptors defines the framework-provided interceptors that run by default.
 	BuiltInInterceptors utils.JSONStrings `json:"builtInInterceptors"`
 	// CertFile specifies the path to the client-side TLS certificate.
-	CertFile string `json:"ccertFile"`
+	CertFile string             `json:"ccertFile"`
+	Timeout  utils.JSONDuration `json:"timeout"`
 }
 
 // DefaultConfig provides the baseline settings for all clients if no specific configuration is found.
 var DefaultConfig = Config{
+	Timeout:             utils.JSONDuration{Duration: 10 * time.Second},
 	Loadbalance:         "localityRoundRobin",
 	BuiltInInterceptors: utils.JSONStrings{"panic", "circuitBreaker", "rest2RpcContext", "validate", "errLog", "slowLog", "cycleChainInterceptor"},
 }
