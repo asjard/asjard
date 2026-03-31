@@ -58,12 +58,7 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 	if !conf.Enabled {
 		return &AmqpServer{}, nil
 	}
-	conn, err := xamqp.Client(xamqp.WithClientName(conf.ClientName))
-	if err != nil {
-		return nil, err
-	}
 	return &AmqpServer{
-		conn:    conn,
 		conf:    conf,
 		options: options,
 		closed:  make(chan *amqp.Error),
@@ -81,6 +76,11 @@ func (s *AmqpServer) AddHandler(handler any) error {
 
 // Start opens the channel and starts the keepalive monitor.
 func (s *AmqpServer) Start(startErr chan error) error {
+	conn, err := xamqp.Client(xamqp.WithClientName(s.conf.ClientName))
+	if err != nil {
+		return err
+	}
+	s.conn = conn
 	if err := s.start(); err != nil {
 		return err
 	}
