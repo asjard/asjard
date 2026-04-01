@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Health_Check_FullMethodName = "/asjard.api.health.Health/Check"
+	Health_Check_FullMethodName = "/api.v1.Health/Check"
 )
 
 // HealthClient is the client API for Health service.
@@ -98,7 +98,7 @@ func _Health_Check_Handler(srv interface{}, ctx context.Context, dec func(interf
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Health_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "asjard.api.health.Health",
+	ServiceName: "api.v1.Health",
 	HandlerType: (*HealthServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

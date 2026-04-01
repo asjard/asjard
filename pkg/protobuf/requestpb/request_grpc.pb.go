@@ -20,14 +20,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	DefaultHandlers_Favicon_FullMethodName = "/asjard.api.DefaultHandlers/Favicon"
+	DefaultHandlers_Favicon_FullMethodName = "/api.v1.DefaultHandlers/Favicon"
 )
 
 // DefaultHandlersClient is the client API for DefaultHandlers service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DefaultHandlersClient interface {
-	// Favicon returns the site icon typically requested by web browsers.
+	// Return favicon.ico
 	Favicon(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -52,7 +52,7 @@ func (c *defaultHandlersClient) Favicon(ctx context.Context, in *emptypb.Empty, 
 // All implementations must embed UnimplementedDefaultHandlersServer
 // for forward compatibility
 type DefaultHandlersServer interface {
-	// Favicon returns the site icon typically requested by web browsers.
+	// Return favicon.ico
 	Favicon(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	mustEmbedUnimplementedDefaultHandlersServer()
 }
@@ -99,7 +99,7 @@ func _DefaultHandlers_Favicon_Handler(srv interface{}, ctx context.Context, dec 
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var DefaultHandlers_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "asjard.api.DefaultHandlers",
+	ServiceName: "api.v1.DefaultHandlers",
 	HandlerType: (*DefaultHandlersServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

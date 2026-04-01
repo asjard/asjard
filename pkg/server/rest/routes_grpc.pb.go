@@ -20,8 +20,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Routes_Tree_FullMethodName = "/asjard.api.Routes/Tree"
-	Routes_List_FullMethodName = "/asjard.api.Routes/List"
+	Routes_Tree_FullMethodName = "/api.v1.Routes/Tree"
+	Routes_List_FullMethodName = "/api.v1.Routes/List"
 )
 
 // RoutesClient is the client API for Routes service.
@@ -132,7 +132,7 @@ func _Routes_List_Handler(srv interface{}, ctx context.Context, dec func(interfa
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Routes_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "asjard.api.Routes",
+	ServiceName: "api.v1.Routes",
 	HandlerType: (*RoutesServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

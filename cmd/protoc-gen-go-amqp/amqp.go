@@ -151,11 +151,7 @@ func (g *amqpGenerator) genServiceDesc(service *protogen.Service, serverType str
 		if ok {
 			for _, mqOption := range mqOptions {
 				g.gen.P("{")
-				if mqOption.Queue == nil {
-					g.gen.P("Queue: ", fmt.Sprintf("%s_%s_FullMethodName", service.GoName, method.GoName), ",")
-				} else {
-					g.gen.P("Queue: ", strconv.Quote(*mqOption.Queue), ",")
-				}
+				g.gen.P("Queue: ", fmt.Sprintf("%s_%s_FullMethodName", service.GoName, method.GoName), ",")
 				g.gen.P("Handler: ", handlerNames[i], ",")
 				option := utils.ParseMethodMqOption(service, mqOption)
 				if option.Exchange != "" {
