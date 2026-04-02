@@ -60,6 +60,10 @@ func main() {
 
 	var flags flag.FlagSet
 
+	conf := Config{
+		WithoutApiType: flags.Bool("without_api_type", false, "ignore apiType in service name"),
+	}
+
 	protogen.Options{
 		ParamFunc: flags.Set,
 	}.Run(func(gen *protogen.Plugin) error {
@@ -68,7 +72,7 @@ func main() {
 			if !f.Generate {
 				continue
 			}
-			NewGwGenerator(gen, f).Run()
+			NewGwGenerator(gen, conf, f).Run()
 		}
 		return nil
 	})

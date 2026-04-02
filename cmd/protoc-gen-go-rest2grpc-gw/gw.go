@@ -40,17 +40,23 @@ const (
 	fileDescriptorProtoSyntaxFieldNumber = 12
 )
 
+type Config struct {
+	WithoutApiType *bool
+}
+
 type GwGenerator struct {
 	plugin     *protogen.Plugin
 	gen        *protogen.GeneratedFile
 	file       *protogen.File
 	openapiVar string
+	conf       Config
 }
 
-func NewGwGenerator(plugin *protogen.Plugin, file *protogen.File) *GwGenerator {
+func NewGwGenerator(plugin *protogen.Plugin, conf Config, file *protogen.File) *GwGenerator {
 	return &GwGenerator{
 		plugin: plugin,
 		file:   file,
+		conf:   conf,
 	}
 }
 
@@ -106,9 +112,13 @@ func (g *GwGenerator) genFileContent() {
 		g.gen.P("}")
 
 		g.gen.P("func (api *", service.GoName, "API)Start() error {")
+		serviceName := fmt.Sprintf("svc-%s-%s", serviceFullName[2], serviceFullName[0])
+		if *g.conf.WithoutApiType {
+			serviceName = fmt.Sprintf("svc-%s", serviceFullName[2])
+		}
 		g.gen.P("conn, err := ", clientPackage.Ident("NewClient"), "(", grpcPackage.Ident("Protocol"),
 			",",
-			configPackage.Ident("GetString"), "(", `"asjard.topology.services.`, serviceFullName[2], `.name",`, `"svc-`, serviceFullName[2], "-", serviceFullName[0], `")`,
+			configPackage.Ident("GetString"), "(", `"asjard.topology.services.`, serviceFullName[2], `.name",`, `"`, serviceName, `")`,
 			").Conn()")
 		g.gen.P("if err != nil {")
 		g.gen.P("return err")
