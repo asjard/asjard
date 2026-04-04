@@ -29,6 +29,10 @@ func NewServiceContext() *ServiceContext {
 	serviceContextOnce.Do(func() {
 		serviceContext = &ServiceContext{}
 		bootstrap.AddBootstrap(serviceContext)
+		serviceContext.Models = &Models{
+			UserModel:           models.NewUserModel(),
+			UserCreditCardModel: models.NewUserCreditCardModel(),
+		}
 	})
 	return serviceContext
 }
@@ -42,10 +46,6 @@ func (s *ServiceContext) Start() error {
 		if err := db.AutoMigrate(&datas.User{}, &datas.UserCreditCard{}); err != nil {
 			return err
 		}
-	}
-	s.Models = &Models{
-		UserModel:           models.NewUserModel(),
-		UserCreditCardModel: models.NewUserCreditCardModel(),
 	}
 	return nil
 }
