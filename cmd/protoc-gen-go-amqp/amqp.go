@@ -25,6 +25,7 @@ import (
 
 	"github.com/asjard/asjard/cmd/protoc-gen-go-amqp/utils"
 	"github.com/asjard/asjard/pkg/protobuf/mqpb"
+	"github.com/spf13/cast"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -169,7 +170,15 @@ func (g *amqpGenerator) genServiceDesc(service *protogen.Service, serverType str
 				if len(option.Table) != 0 {
 					g.gen.P("Table:", "map[string]any{")
 					for k, v := range option.Table {
-						g.gen.P("\"", k, "\":", v, ",")
+						var val any
+						if vb, err := cast.ToBoolE(v); err == nil {
+							val = vb
+						} else if vi, err := cast.ToIntE(v); err == nil {
+							val = vi
+						} else {
+							val = strconv.Quote(cast.ToString(v))
+						}
+						g.gen.P("\"", k, "\":", val, ",")
 					}
 					g.gen.P("},")
 
