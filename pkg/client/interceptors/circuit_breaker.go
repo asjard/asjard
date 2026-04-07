@@ -102,15 +102,15 @@ func (ccb *CircuitBreaker) Name() string {
 func (ccb *CircuitBreaker) Interceptor() client.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
 		// Match the call to a specific Hystrix command based on protocol/service/method.
-		return ccb.do(ccb.match(cc.Protocol(), cc.ServiceName(), method), method, req, reply, cc, invoker)
+		return ccb.do(ctx, ccb.match(cc.Protocol(), cc.ServiceName(), method), method, req, reply, cc, invoker)
 	}
 }
 
 // do executes the request within a Hystrix context.
-func (ccb *CircuitBreaker) do(commandConfigName, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) (invokeErr error) {
-	ctx, cancel := context.WithCancel(context.Background())
+func (ccb *CircuitBreaker) do(ctx context.Context, commandConfigName, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) (invokeErr error) {
+	htx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	if err := hystrix.DoC(ctx, commandConfigName, func(ctx context.Context) error {
+	if err := hystrix.DoC(htx, commandConfigName, func(ctx context.Context) error {
 		if invokeErr = invoker(ctx, method, req, reply, cc); invokeErr != nil {
 			// Only count 5xx (Server Errors) towards the circuit breaker failure rate.
 			// Client errors (4xx) usually don't indicate an unhealthy downstream service.
