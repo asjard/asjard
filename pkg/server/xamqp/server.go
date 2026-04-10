@@ -209,7 +209,7 @@ func (s *AmqpServer) start() error {
 			}
 			if method.RetryExchange != "" {
 				if err := ch.ExchangeDeclare(method.RetryExchange,
-					"direct", method.Durable, method.AutoDelete, method.Internal, method.NoWait, method.Table); err != nil {
+					"x-delayed-message", method.Durable, method.AutoDelete, method.Internal, method.NoWait, method.Table); err != nil {
 					return err
 				}
 				if err := ch.QueueBind(queue.Name, method.RetryRoute, method.RetryExchange, method.NoWait, method.Table); err != nil {
