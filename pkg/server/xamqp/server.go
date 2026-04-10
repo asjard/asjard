@@ -175,6 +175,8 @@ func (s *AmqpServer) start() error {
 	s.ch = ch
 	// Register a listener for channel closure.
 	ch.NotifyClose(s.closed)
+	r := ch.NotifyReturn(make(chan amqp.Return))
+	go s.notifyReturn(r)
 
 	// Apply Quality of Service (QoS) settings like PrefetchCount.
 	if err := ch.Qos(s.conf.PrefetchCount, s.conf.PrefetchSize, s.conf.Global); err != nil {
@@ -243,6 +245,19 @@ func (s *AmqpServer) run(msgs <-chan amqp.Delivery, svc Handler, method MethodDe
 				s.retry(msg, method)
 			}
 			s.tasks.Add(-1)
+		}
+	}
+}
+
+func (s *AmqpServer) notifyReturn(r chan amqp.Return) {
+	for {
+		select {
+		case msg, ok := <-r:
+			if !ok {
+				return
+			}
+			logger.Error("delivery msg returned",
+				"return", msg)
 		}
 	}
 }

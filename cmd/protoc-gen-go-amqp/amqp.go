@@ -106,6 +106,8 @@ func (g *amqpGenerator) genService(service *protogen.Service) {
 		mqOptions, ok := proto.GetExtension(method.Desc.Options(), mqpb.E_Mq).([]*mqpb.MQ)
 		if ok && len(mqOptions) > 0 {
 			dataFormat = mqOptions[0].DataFormat
+		} else {
+			continue
 		}
 		g.genServiceMethodClient(service, clientType, method, dataFormat)
 	}
@@ -114,6 +116,9 @@ func (g *amqpGenerator) genService(service *protogen.Service) {
 		mqOptions, ok := proto.GetExtension(method.Desc.Options(), mqpb.E_Mq).([]*mqpb.MQ)
 		if ok && len(mqOptions) > 0 {
 			dataFormat = mqOptions[0].DataFormat
+		} else {
+			handlerNames = append(handlerNames, "")
+			continue
 		}
 		hname := g.genServiceMethod(service, serverType, method, dataFormat)
 		handlerNames = append(handlerNames, hname)
@@ -124,14 +129,22 @@ func (g *amqpGenerator) genService(service *protogen.Service) {
 
 func (g *amqpGenerator) genConstant(service *protogen.Service) {
 	g.gen.P("const (")
-	g.gen.P(fmt.Sprintf("%s_Exchange", service.GoName), "=", strconv.Quote(string(service.Desc.FullName())))
-	g.gen.P(fmt.Sprintf("%s_Exchange_Retry", service.GoName), "=", strconv.Quote(string(service.Desc.FullName())+"_Retry"))
-	for _, method := range service.Methods {
-		g.gen.P(fmt.Sprintf("%s_%s_Route", service.GoName, method.GoName), "=", strconv.Quote(method.GoName))
-		g.gen.P(fmt.Sprintf("%s_%s_Route_Retry", service.GoName, method.GoName), "=", strconv.Quote(method.GoName+"_Retry"))
 
-		g.gen.P(fmt.Sprintf("%s_%s_Queue", service.GoName, method.GoName), "=", strconv.Quote(string(method.Desc.FullName())))
-		g.gen.P(fmt.Sprintf("%s_%s_Queue_Retry", service.GoName, method.GoName), "=", strconv.Quote(string(method.Desc.FullName())+"_Retry"))
+	hashMqOption := false
+	for _, method := range service.Methods {
+		mqOptions, ok := proto.GetExtension(method.Desc.Options(), mqpb.E_Mq).([]*mqpb.MQ)
+		if ok && len(mqOptions) > 0 {
+			hashMqOption = true
+			g.gen.P(fmt.Sprintf("%s_%s_Route", service.GoName, method.GoName), "=", strconv.Quote(method.GoName))
+			g.gen.P(fmt.Sprintf("%s_%s_Route_Retry", service.GoName, method.GoName), "=", strconv.Quote(method.GoName+"_Retry"))
+
+			g.gen.P(fmt.Sprintf("%s_%s_Queue", service.GoName, method.GoName), "=", strconv.Quote(string(method.Desc.FullName())))
+			g.gen.P(fmt.Sprintf("%s_%s_Queue_Retry", service.GoName, method.GoName), "=", strconv.Quote(string(method.Desc.FullName())+"_Retry"))
+		}
+	}
+	if hashMqOption {
+		g.gen.P(fmt.Sprintf("%s_Exchange", service.GoName), "=", strconv.Quote(string(service.Desc.FullName())))
+		g.gen.P(fmt.Sprintf("%s_Exchange_Retry", service.GoName), "=", strconv.Quote(string(service.Desc.FullName())+"_Retry"))
 	}
 	g.gen.P(")")
 }
@@ -164,7 +177,7 @@ func (g *amqpGenerator) genServiceDesc(service *protogen.Service, serverType str
 			}
 		}
 		mqOptions, ok := proto.GetExtension(method.Desc.Options(), mqpb.E_Mq).([]*mqpb.MQ)
-		if ok {
+		if ok && len(mqOptions) > 0 {
 			for index, mqOption := range mqOptions {
 				if index > 0 {
 					continue
@@ -177,23 +190,33 @@ func (g *amqpGenerator) genServiceDesc(service *protogen.Service, serverType str
 				g.gen.P("Queue: ", queueName, ",")
 				g.gen.P("Handler: ", handlerNames[i], ",")
 				option := utils.ParseMethodMqOption(service, mqOption)
-				if option.Exchange != "" {
-					g.gen.P("Exchange:", "\"", option.Exchange, "\",")
-				}
 				if option.Kind != "" {
 					g.gen.P("Kind:", "\"", option.Kind, "\",")
+					if option.Exchange == "" {
+						g.gen.P("Exchange:", fmt.Sprintf("%s_Exchange", service.GoName), ",")
+					} else {
+						g.gen.P("Exchange:", strconv.Quote(option.Exchange), ",")
+					}
 				}
+				routeKey := fmt.Sprintf("%s_%s_Route", service.GoName, method.GoName)
 				if option.Route != "" {
-					g.gen.P("Route:", "\"", option.Route, "\",")
+					routeKey = strconv.Quote(option.Route)
 				}
+				g.gen.P("Route:", routeKey, ",")
+
 				if option.Consumer != "" {
 					g.gen.P("Consumer:", "\"", option.Consumer, "\",")
 				}
 
 				if len(option.RetryDelays) != 0 {
 					g.gen.P("RetryQueue:", fmt.Sprintf("%s_%s_Queue_Retry", service.GoName, method.GoName), ",")
-					g.gen.P("RetryExchange:", fmt.Sprintf("%s_%s_Exchange_Retry", service.GoName, method.GoName), ",")
+					g.gen.P("RetryExchange:", fmt.Sprintf("%s_Exchange_Retry", service.GoName), ",")
 					g.gen.P("RetryRoute:", fmt.Sprintf("%s_%s_Route_Retry", service.GoName, method.GoName), ",")
+					retryDelays := make([]string, 0, len(option.RetryDelays))
+					for _, item := range option.RetryDelays {
+						retryDelays = append(retryDelays, strconv.Itoa(int(item)))
+					}
+					g.gen.P("RetryDelays:", fmt.Sprintf("[]int32{%s}", strings.Join(retryDelays, ",")), ",")
 				}
 				switch option.DataFormat {
 				case "json":
