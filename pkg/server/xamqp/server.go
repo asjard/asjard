@@ -212,7 +212,7 @@ func (s *AmqpServer) start() error {
 					"direct", method.Durable, method.AutoDelete, method.Internal, method.NoWait, method.Table); err != nil {
 					return err
 				}
-				if err := ch.QueueBind(queue.Name, method.RetryRoute, method.Exchange, method.NoWait, method.Table); err != nil {
+				if err := ch.QueueBind(queue.Name, method.RetryRoute, method.RetryExchange, method.NoWait, method.Table); err != nil {
 					return err
 				}
 			}
