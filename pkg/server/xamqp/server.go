@@ -208,8 +208,13 @@ func (s *AmqpServer) start() error {
 				}
 			}
 			if method.RetryExchange != "" {
+				retryTable := amqp.Table{}
+				for k, v := range method.Table {
+					retryTable[k] = v
+				}
+				retryTable["x-delayed-type"] = method.Kind
 				if err := ch.ExchangeDeclare(method.RetryExchange,
-					"x-delayed-message", method.Durable, method.AutoDelete, method.Internal, method.NoWait, method.Table); err != nil {
+					"x-delayed-message", method.Durable, method.AutoDelete, method.Internal, method.NoWait, retryTable); err != nil {
 					return err
 				}
 				if err := ch.QueueBind(queue.Name, method.RetryRoute, method.RetryExchange, method.NoWait, method.Table); err != nil {
