@@ -37,7 +37,7 @@ const (
 	xamqpPackage     = protogen.GoImportPath("github.com/asjard/asjard/pkg/server/xamqp")
 	amqpStorePackage = protogen.GoImportPath("github.com/asjard/asjard/pkg/stores/xamqp")
 	jsonPackage      = protogen.GoImportPath("encoding/json")
-	amqpPackage      = protogen.GoImportPath("github.com/streadway/amqp")
+	amqpPackage      = protogen.GoImportPath("github.com/rabbitmq/amqp091-go")
 	serverPackage    = protogen.GoImportPath("github.com/asjard/asjard/core/server")
 	protoPackage     = protogen.GoImportPath("google.golang.org/protobuf/proto")
 	syncPackage      = protogen.GoImportPath("sync")
@@ -118,7 +118,22 @@ func (g *amqpGenerator) genService(service *protogen.Service) {
 		hname := g.genServiceMethod(service, serverType, method, dataFormat)
 		handlerNames = append(handlerNames, hname)
 	}
+	g.genConstant(service)
 	g.genServiceDesc(service, serverType, handlerNames)
+}
+
+func (g *amqpGenerator) genConstant(service *protogen.Service) {
+	g.gen.P("const (")
+	g.gen.P(fmt.Sprintf("%s_Exchange", service.GoName), "=", strconv.Quote(string(service.Desc.FullName())))
+	g.gen.P(fmt.Sprintf("%s_Exchange_Retry", service.GoName), "=", strconv.Quote(string(service.Desc.FullName())+"_Retry"))
+	for _, method := range service.Methods {
+		g.gen.P(fmt.Sprintf("%s_%s_Route", service.GoName, method.GoName), "=", strconv.Quote(method.GoName))
+		g.gen.P(fmt.Sprintf("%s_%s_Route_Retry", service.GoName, method.GoName), "=", strconv.Quote(method.GoName+"_Retry"))
+
+		g.gen.P(fmt.Sprintf("%s_%s_Queue", service.GoName, method.GoName), "=", strconv.Quote(string(method.Desc.FullName())))
+		g.gen.P(fmt.Sprintf("%s_%s_Queue_Retry", service.GoName, method.GoName), "=", strconv.Quote(string(method.Desc.FullName())+"_Retry"))
+	}
+	g.gen.P(")")
 }
 
 //gocyclo:ignore
@@ -150,9 +165,16 @@ func (g *amqpGenerator) genServiceDesc(service *protogen.Service, serverType str
 		}
 		mqOptions, ok := proto.GetExtension(method.Desc.Options(), mqpb.E_Mq).([]*mqpb.MQ)
 		if ok {
-			for _, mqOption := range mqOptions {
+			for index, mqOption := range mqOptions {
+				if index > 0 {
+					continue
+				}
 				g.gen.P("{")
-				g.gen.P("Queue: ", fmt.Sprintf("%s_%s_FullMethodName", service.GoName, method.GoName), ",")
+				queueName := fmt.Sprintf("%s_%s_Queue", service.GoName, method.GoName)
+				if mqOption.Queue != "" {
+					queueName = strconv.Quote(mqOption.Queue)
+				}
+				g.gen.P("Queue: ", queueName, ",")
 				g.gen.P("Handler: ", handlerNames[i], ",")
 				option := utils.ParseMethodMqOption(service, mqOption)
 				if option.Exchange != "" {
@@ -167,6 +189,19 @@ func (g *amqpGenerator) genServiceDesc(service *protogen.Service, serverType str
 				if option.Consumer != "" {
 					g.gen.P("Consumer:", "\"", option.Consumer, "\",")
 				}
+
+				if len(option.RetryDelays) != 0 {
+					g.gen.P("RetryQueue:", fmt.Sprintf("%s_%s_Queue_Retry", service.GoName, method.GoName), ",")
+					g.gen.P("RetryExchange:", fmt.Sprintf("%s_%s_Exchange_Retry", service.GoName, method.GoName), ",")
+					g.gen.P("RetryRoute:", fmt.Sprintf("%s_%s_Route_Retry", service.GoName, method.GoName), ",")
+				}
+				switch option.DataFormat {
+				case "json":
+					g.gen.P("ContentType:", strconv.Quote("application/json"), ",")
+				default:
+					g.gen.P("ContentType:", strconv.Quote("application/protobuf"), ",")
+				}
+
 				if len(option.Table) != 0 {
 					g.gen.P("Table:", "map[string]any{")
 					for k, v := range option.Table {
@@ -203,7 +238,10 @@ func (g *amqpGenerator) genServiceDesc(service *protogen.Service, serverType str
 					g.gen.P("NoWait:", *option.NoWait, ",")
 				}
 				if option.Internal != nil {
-					g.gen.P("NoWait:", *option.Internal, ",")
+					g.gen.P("Internal:", *option.Internal, ",")
+				}
+				if option.Requeue != nil {
+					g.gen.P("Requeue:", *option.Requeue, ",")
 				}
 
 				g.gen.P("},")

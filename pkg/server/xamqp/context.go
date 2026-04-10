@@ -3,7 +3,7 @@ package xamqp
 import (
 	"context"
 
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 // Context wraps the standard Go context and the RabbitMQ delivery object.

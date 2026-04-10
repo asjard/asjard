@@ -15,13 +15,15 @@ type MQOption struct {
 	Table      map[string]any
 	DataFormat string
 
-	AutoAck    *bool
-	Durable    *bool
-	AutoDelete *bool
-	Exclusive  *bool
-	NoLocal    *bool
-	NoWait     *bool
-	Internal   *bool
+	AutoAck     *bool
+	Durable     *bool
+	AutoDelete  *bool
+	Exclusive   *bool
+	NoLocal     *bool
+	NoWait      *bool
+	Internal    *bool
+	Requeue     *bool
+	RetryDelays []int32
 }
 
 func ParseMethodMqOption(service *protogen.Service, h *mqpb.MQ) *MQOption {
@@ -34,17 +36,19 @@ func parseMethodMqOption(h *mqpb.MQ, serviceOption *MQOption) *MQOption {
 		table[k] = v
 	}
 	option := &MQOption{
-		Route:      h.GetRoute(),
-		Consumer:   h.GetConsumer(),
-		Table:      table,
-		DataFormat: h.DataFormat,
-		AutoAck:    h.AutoAck,
-		Durable:    h.Durable,
-		AutoDelete: h.AutoDelete,
-		Exclusive:  h.Exclusive,
-		NoLocal:    h.NoLocal,
-		NoWait:     h.NoWait,
-		Internal:   h.Internal,
+		Route:       h.GetRoute(),
+		Consumer:    h.GetConsumer(),
+		Table:       table,
+		DataFormat:  h.DataFormat,
+		AutoAck:     h.AutoAck,
+		Durable:     h.Durable,
+		AutoDelete:  h.AutoDelete,
+		Exclusive:   h.Exclusive,
+		NoLocal:     h.NoLocal,
+		NoWait:      h.NoWait,
+		Internal:    h.Internal,
+		Requeue:     h.Requeue,
+		RetryDelays: h.RetryDelays,
 	}
 	if option.AutoAck == nil {
 		option.AutoAck = serviceOption.AutoAck
@@ -63,6 +67,12 @@ func parseMethodMqOption(h *mqpb.MQ, serviceOption *MQOption) *MQOption {
 	}
 	if option.NoWait == nil {
 		option.NoWait = serviceOption.NoWait
+	}
+	if option.Requeue == nil {
+		option.Requeue = serviceOption.Requeue
+	}
+	if len(option.RetryDelays) == 0 {
+		option.RetryDelays = serviceOption.RetryDelays
 	}
 	if option.Internal == nil {
 		option.Internal = serviceOption.Internal
@@ -94,6 +104,8 @@ func parseServiceMqOption(service *protogen.Service) *MQOption {
 		option.NoLocal = serviceMqOption.NoLocal
 		option.NoWait = serviceMqOption.NoWait
 		option.Internal = serviceMqOption.Internal
+		option.Requeue = serviceMqOption.Requeue
+		option.RetryDelays = serviceMqOption.RetryDelays
 	}
 	return option
 }

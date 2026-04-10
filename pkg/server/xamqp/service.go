@@ -46,6 +46,14 @@ type MethodDesc struct {
 	NoWait bool
 	// Internal exchanges cannot be published to directly by users, only by other exchanges.
 	Internal bool
+	// Requeue if consumer fail
+	ReQueue bool
+
+	RetryDelays   []int32
+	RetryExchange string
+	RetryRoute    string
+	RetryQueue    string
+	ContentType   string
 
 	// Table provides additional arguments for advanced features like TTL,
 	// Max-Length, or Dead Letter Exchanges.

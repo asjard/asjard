@@ -12,7 +12,7 @@ import (
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/pkg/stores/xamqp"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 const (
@@ -205,6 +205,15 @@ func (s *AmqpServer) start() error {
 					return err
 				}
 			}
+			if method.RetryExchange != "" {
+				if err := ch.ExchangeDeclare(method.RetryExchange,
+					"direct", method.Durable, method.AutoDelete, method.Internal, method.NoWait, method.Table); err != nil {
+					return err
+				}
+				if err := ch.QueueBind(queue.Name, method.RetryRoute, method.Exchange, method.NoWait, method.Table); err != nil {
+					return err
+				}
+			}
 			// Start the actual consumption process.
 			msgs, err := ch.Consume(queue.Name, method.Consumer, method.AutoAck, method.Exclusive, method.NoLocal, method.NoWait, method.Table)
 			if err != nil {
@@ -227,13 +236,51 @@ func (s *AmqpServer) run(msgs <-chan amqp.Delivery, svc Handler, method MethodDe
 			}
 			s.tasks.Add(1)
 			// Execute business logic via the descriptor's handler.
-			// Success results in an Ack, failure results in a Reject (with requeue).
+			// Success results in an Ack, failure results in an Nack
 			if _, err := method.Handler(&Context{Context: context.Background(), task: msg}, svc, s.options.Interceptor); err == nil {
 				msg.Ack(false)
 			} else {
-				msg.Reject(true)
+				s.retry(msg, method)
 			}
 			s.tasks.Add(-1)
 		}
 	}
+}
+
+const (
+	retryHeaderKey = "x-retry-counts"
+)
+
+func (s *AmqpServer) retry(msg amqp.Delivery, method MethodDesc) {
+	maxRetries := len(method.RetryDelays)
+	if maxRetries == 0 {
+		msg.Nack(false, method.ReQueue)
+		return
+	}
+
+	count, ok := msg.Headers[retryHeaderKey].(int32)
+	if !ok {
+		count = 0
+	}
+
+	if count >= int32(maxRetries) {
+		msg.Nack(false, false)
+		return
+	}
+
+	if err := s.ch.Publish(method.RetryExchange, method.RetryRoute, false, false, amqp.Publishing{
+		Headers: amqp.Table{
+			"x-delay":      method.RetryDelays[count],
+			retryHeaderKey: count + 1,
+		},
+		Body:         msg.Body,
+		ContentType:  method.ContentType,
+		DeliveryMode: amqp.Persistent,
+	}); err != nil {
+		logger.Error("republish msg to retry queue fail",
+			"retry_exchange", method.RetryExchange, "retry_queue", method.RetryQueue, "err", err)
+		msg.Nack(false, true)
+		return
+	}
+	msg.Ack(false)
 }

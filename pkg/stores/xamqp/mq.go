@@ -15,7 +15,7 @@ import (
 	"github.com/asjard/asjard/core/security"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/utils"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 const (
@@ -60,7 +60,7 @@ type ClientConnConfig struct {
 
 // Options defines the technical AMQP dial parameters and TLS certificate paths.
 type Options struct {
-	ChannelMax int                `json:"channelMax"`
+	ChannelMax uint16             `json:"channelMax"`
 	FrameSize  int                `json:"frameSize"`
 	HeartBeat  utils.JSONDuration `json:"heartbeat"`
 	CAFile     string             `json:"caFile"`
