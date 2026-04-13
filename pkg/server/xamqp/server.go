@@ -192,43 +192,50 @@ func (s *AmqpServer) start() error {
 			if method.Handler == nil {
 				continue
 			}
-			// Idempotently declare the queue.
-			queue, err := ch.QueueDeclare(method.Queue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, method.Table)
-			if err != nil {
+			if s.declareAndRun(svc, method); err != nil {
 				return err
 			}
-			// If an exchange is specified, declare it and bind the queue.
-			if method.Exchange != "" {
-				if err := ch.ExchangeDeclare(method.Exchange,
-					method.Kind, method.Durable, method.AutoDelete, method.Internal, method.NoWait, method.Table); err != nil {
-					return err
-				}
-				if err := ch.QueueBind(queue.Name, method.Route, method.Exchange, method.NoWait, method.Table); err != nil {
-					return err
-				}
-			}
-			if method.RetryExchange != "" {
-				retryTable := amqp.Table{}
-				for k, v := range method.Table {
-					retryTable[k] = v
-				}
-				retryTable["x-delayed-type"] = method.Kind
-				if err := ch.ExchangeDeclare(method.RetryExchange,
-					"x-delayed-message", method.Durable, method.AutoDelete, method.Internal, method.NoWait, retryTable); err != nil {
-					return err
-				}
-				if err := ch.QueueBind(queue.Name, method.RetryRoute, method.RetryExchange, method.NoWait, method.Table); err != nil {
-					return err
-				}
-			}
-			// Start the actual consumption process.
-			msgs, err := ch.Consume(queue.Name, method.Consumer, method.AutoAck, method.Exclusive, method.NoLocal, method.NoWait, method.Table)
-			if err != nil {
-				return err
-			}
-			go s.run(msgs, svc, method)
 		}
 	}
+	return nil
+}
+
+func (s *AmqpServer) declareAndRun(svc Handler, method MethodDesc) error {
+	// Idempotently declare the queue.
+	queue, err := s.ch.QueueDeclare(method.Queue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, method.Table)
+	if err != nil {
+		return err
+	}
+	// If an exchange is specified, declare it and bind the queue.
+	if method.Exchange != "" {
+		if err := s.ch.ExchangeDeclare(method.Exchange,
+			method.Kind, method.Durable, method.AutoDelete, method.Internal, method.NoWait, method.Table); err != nil {
+			return err
+		}
+		if err := s.ch.QueueBind(queue.Name, method.Route, method.Exchange, method.NoWait, method.Table); err != nil {
+			return err
+		}
+	}
+	if method.RetryExchange != "" {
+		retryTable := amqp.Table{}
+		for k, v := range method.Table {
+			retryTable[k] = v
+		}
+		retryTable["x-delayed-type"] = method.Kind
+		if err := s.ch.ExchangeDeclare(method.RetryExchange,
+			"x-delayed-message", method.Durable, method.AutoDelete, method.Internal, method.NoWait, retryTable); err != nil {
+			return err
+		}
+		if err := s.ch.QueueBind(queue.Name, method.RetryRoute, method.RetryExchange, method.NoWait, method.Table); err != nil {
+			return err
+		}
+	}
+	// Start the actual consumption process.
+	msgs, err := s.ch.Consume(queue.Name, method.Consumer, method.AutoAck, method.Exclusive, method.NoLocal, method.NoWait, method.Table)
+	if err != nil {
+		return err
+	}
+	go s.run(msgs, svc, method)
 	return nil
 }
 
