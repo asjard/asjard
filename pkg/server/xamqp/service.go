@@ -1,6 +1,9 @@
 package xamqp
 
-import "github.com/asjard/asjard/core/server"
+import (
+	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/pkg/protobuf/mqpb"
+)
 
 // HandlerFunc defines the signature for processing an AMQP delivery.
 // It receives a custom AMQP Context, the service implementation (srv),
@@ -49,10 +52,11 @@ type MethodDesc struct {
 	// Requeue if consumer fail
 	ReQueue bool
 
-	RetryDelays   []int32
 	RetryExchange string
 	RetryRoute    string
 	RetryQueue    string
+	FixedRetry    *mqpb.FixedRetryPolicy
+	BackoffRetry  *mqpb.BackoffRetryPolicy
 	ContentType   string
 
 	// Table provides additional arguments for advanced features like TTL,

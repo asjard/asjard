@@ -36,6 +36,7 @@ const (
 	configPakcage    = protogen.GoImportPath("github.com/asjard/asjard/core/config")
 	xamqpPackage     = protogen.GoImportPath("github.com/asjard/asjard/pkg/server/xamqp")
 	amqpStorePackage = protogen.GoImportPath("github.com/asjard/asjard/pkg/stores/xamqp")
+	mqpbPackage      = protogen.GoImportPath("github.com/asjard/asjard/pkg/protobuf/mqpb")
 	jsonPackage      = protogen.GoImportPath("encoding/json")
 	amqpPackage      = protogen.GoImportPath("github.com/rabbitmq/amqp091-go")
 	serverPackage    = protogen.GoImportPath("github.com/asjard/asjard/core/server")
@@ -208,15 +209,29 @@ func (g *amqpGenerator) genServiceDesc(service *protogen.Service, serverType str
 					g.gen.P("Consumer:", "\"", option.Consumer, "\",")
 				}
 
-				if len(option.RetryDelays) != 0 {
+				if option.FixedRetry != nil || option.BackoffRetry != nil {
 					g.gen.P("RetryQueue:", fmt.Sprintf("%s_%s_Queue_Retry", service.GoName, method.GoName), ",")
 					g.gen.P("RetryExchange:", fmt.Sprintf("%s_Exchange_Retry", service.GoName), ",")
 					g.gen.P("RetryRoute:", fmt.Sprintf("%s_%s_Route_Retry", service.GoName, method.GoName), ",")
-					retryDelays := make([]string, 0, len(option.RetryDelays))
-					for _, item := range option.RetryDelays {
+				}
+				if option.FixedRetry != nil {
+
+					retryDelays := make([]string, 0, len(option.FixedRetry.RetryDelays))
+					for _, item := range option.FixedRetry.RetryDelays {
 						retryDelays = append(retryDelays, strconv.Itoa(int(item)))
 					}
+					g.gen.P("FixedRetry: &", mqpbPackage.Ident("FixedRetryPolicy"), "{")
 					g.gen.P("RetryDelays:", fmt.Sprintf("[]int32{%s}", strings.Join(retryDelays, ",")), ",")
+					g.gen.P("},")
+
+				}
+				if option.BackoffRetry != nil {
+					g.gen.P("BackoffRetry:&", mqpbPackage.Ident("BackoffRetryPolicy"), "{")
+					g.gen.P("InitialDelayMs:", option.BackoffRetry.InitialDelayMs, ",")
+					g.gen.P("Multiplier:", option.BackoffRetry.Multiplier, ",")
+					g.gen.P("MaxDelayMs:", option.BackoffRetry.MaxDelayMs, ",")
+					g.gen.P("MaxRetries:", option.BackoffRetry.MaxRetries, ",")
+					g.gen.P("},")
 				}
 				switch option.DataFormat {
 				case "json":

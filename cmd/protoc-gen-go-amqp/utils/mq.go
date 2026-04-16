@@ -15,40 +15,45 @@ type MQOption struct {
 	Table      map[string]any
 	DataFormat string
 
-	AutoAck     *bool
-	Durable     *bool
-	AutoDelete  *bool
-	Exclusive   *bool
-	NoLocal     *bool
-	NoWait      *bool
-	Internal    *bool
-	Requeue     *bool
-	RetryDelays []int32
+	AutoAck      *bool
+	Durable      *bool
+	AutoDelete   *bool
+	Exclusive    *bool
+	NoLocal      *bool
+	NoWait       *bool
+	Internal     *bool
+	Requeue      *bool
+	FixedRetry   *mqpb.FixedRetryPolicy
+	BackoffRetry *mqpb.BackoffRetryPolicy
+}
+
+type isMQ_Retry interface {
+	isMQ_Retry()
 }
 
 func ParseMethodMqOption(service *protogen.Service, h *mqpb.MQ) *MQOption {
 	return parseMethodMqOption(h, parseServiceMqOption(service))
 }
 
+//gocyclo:ignore
 func parseMethodMqOption(h *mqpb.MQ, serviceOption *MQOption) *MQOption {
 	table := make(map[string]any, len(h.GetTable()))
 	for k, v := range h.GetTable() {
 		table[k] = v
 	}
 	option := &MQOption{
-		Route:       h.GetRoute(),
-		Consumer:    h.GetConsumer(),
-		Table:       table,
-		DataFormat:  h.DataFormat,
-		AutoAck:     h.AutoAck,
-		Durable:     h.Durable,
-		AutoDelete:  h.AutoDelete,
-		Exclusive:   h.Exclusive,
-		NoLocal:     h.NoLocal,
-		NoWait:      h.NoWait,
-		Internal:    h.Internal,
-		Requeue:     h.Requeue,
-		RetryDelays: h.RetryDelays,
+		Route:      h.GetRoute(),
+		Consumer:   h.GetConsumer(),
+		Table:      table,
+		DataFormat: h.DataFormat,
+		AutoAck:    h.AutoAck,
+		Durable:    h.Durable,
+		AutoDelete: h.AutoDelete,
+		Exclusive:  h.Exclusive,
+		NoLocal:    h.NoLocal,
+		NoWait:     h.NoWait,
+		Internal:   h.Internal,
+		Requeue:    h.Requeue,
 	}
 	if option.AutoAck == nil {
 		option.AutoAck = serviceOption.AutoAck
@@ -71,8 +76,18 @@ func parseMethodMqOption(h *mqpb.MQ, serviceOption *MQOption) *MQOption {
 	if option.Requeue == nil {
 		option.Requeue = serviceOption.Requeue
 	}
-	if len(option.RetryDelays) == 0 {
-		option.RetryDelays = serviceOption.RetryDelays
+
+	switch h.GetRetry().(type) {
+	case *mqpb.MQ_FixedRetry:
+		option.FixedRetry = h.GetFixedRetry()
+	case *mqpb.MQ_BackoffRetry:
+		option.BackoffRetry = h.GetBackoffRetry()
+	}
+	if option.FixedRetry == nil {
+		option.FixedRetry = serviceOption.FixedRetry
+	}
+	if option.BackoffRetry == nil {
+		option.BackoffRetry = serviceOption.BackoffRetry
 	}
 	if option.Internal == nil {
 		option.Internal = serviceOption.Internal
@@ -105,7 +120,12 @@ func parseServiceMqOption(service *protogen.Service) *MQOption {
 		option.NoWait = serviceMqOption.NoWait
 		option.Internal = serviceMqOption.Internal
 		option.Requeue = serviceMqOption.Requeue
-		option.RetryDelays = serviceMqOption.RetryDelays
+		switch serviceMqOption.GetRetry().(type) {
+		case *mqpb.MQ_FixedRetry:
+			option.FixedRetry = serviceMqOption.GetFixedRetry()
+		case *mqpb.MQ_BackoffRetry:
+			option.BackoffRetry = serviceMqOption.GetBackoffRetry()
+		}
 	}
 	return option
 }

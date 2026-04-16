@@ -3,6 +3,7 @@ package xamqp
 import (
 	"context"
 	"fmt"
+	"math"
 	"reflect"
 	"sync/atomic"
 	"time"
@@ -221,7 +222,7 @@ func (s *AmqpServer) declareAndRun(svc Handler, method MethodDesc) error {
 		for k, v := range method.Table {
 			retryTable[k] = v
 		}
-		retryTable["x-delayed-type"] = method.Kind
+		retryTable["x-delayed-type"] = "direct"
 		if err := s.ch.ExchangeDeclare(method.RetryExchange,
 			"x-delayed-message", method.Durable, method.AutoDelete, method.Internal, method.NoWait, retryTable); err != nil {
 			return err
@@ -279,11 +280,21 @@ const (
 )
 
 func (s *AmqpServer) retry(msg amqp.Delivery, method MethodDesc) {
-	maxRetries := len(method.RetryDelays)
-	if maxRetries == 0 {
-		msg.Nack(false, method.ReQueue)
+	if method.FixedRetry != nil {
+		s.fixedRetry(msg, method)
 		return
 	}
+
+	if method.BackoffRetry != nil {
+		s.backoffRetry(msg, method)
+		return
+	}
+
+	msg.Nack(false, method.ReQueue)
+}
+
+func (s *AmqpServer) fixedRetry(msg amqp.Delivery, method MethodDesc) {
+	maxRetries := len(method.FixedRetry.RetryDelays)
 
 	count, ok := msg.Headers[retryHeaderKey].(int32)
 	if !ok {
@@ -294,10 +305,38 @@ func (s *AmqpServer) retry(msg amqp.Delivery, method MethodDesc) {
 		msg.Nack(false, false)
 		return
 	}
+	s.retryPublish(msg, method, count, method.FixedRetry.RetryDelays[count])
+}
 
+func (s *AmqpServer) backoffRetry(msg amqp.Delivery, method MethodDesc) {
+
+	count, ok := msg.Headers[retryHeaderKey].(int32)
+	if !ok {
+		count = 0
+	}
+
+	if method.BackoffRetry.MaxRetries > 0 && count >= method.BackoffRetry.MaxRetries {
+		msg.Nack(false, false)
+		return
+	}
+
+	// initial * (multiplier ^ attempt)
+	delay := method.BackoffRetry.InitialDelayMs * int32(math.Pow(float64(method.BackoffRetry.Multiplier), float64(count)))
+	if delay < method.BackoffRetry.InitialDelayMs {
+		delay = method.BackoffRetry.InitialDelayMs
+	}
+
+	if method.BackoffRetry.MaxDelayMs > 0 && delay > method.BackoffRetry.MaxDelayMs {
+		delay = method.BackoffRetry.MaxDelayMs
+	}
+
+	s.retryPublish(msg, method, count, delay)
+}
+
+func (s *AmqpServer) retryPublish(msg amqp.Delivery, method MethodDesc, count, delay int32) {
 	if err := s.ch.Publish(method.RetryExchange, method.RetryRoute, false, false, amqp.Publishing{
 		Headers: amqp.Table{
-			"x-delay":      method.RetryDelays[count],
+			"x-delay":      int64(delay),
 			retryHeaderKey: count + 1,
 		},
 		Body:         msg.Body,

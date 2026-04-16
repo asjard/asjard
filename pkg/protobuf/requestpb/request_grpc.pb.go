@@ -27,7 +27,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DefaultHandlersClient interface {
-	// Return favicon.ico
+	// Favicon returns the site icon typically requested by web browsers.
 	Favicon(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -52,7 +52,7 @@ func (c *defaultHandlersClient) Favicon(ctx context.Context, in *emptypb.Empty, 
 // All implementations must embed UnimplementedDefaultHandlersServer
 // for forward compatibility
 type DefaultHandlersServer interface {
-	// Return favicon.ico
+	// Favicon returns the site icon typically requested by web browsers.
 	Favicon(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	mustEmbedUnimplementedDefaultHandlersServer()
 }
