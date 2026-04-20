@@ -20,10 +20,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ErrorHandler_NotFound_FullMethodName         = "/asjard.api.ErrorHandler/NotFound"
-	ErrorHandler_MethodNotAllowed_FullMethodName = "/asjard.api.ErrorHandler/MethodNotAllowed"
-	ErrorHandler_Panic_FullMethodName            = "/asjard.api.ErrorHandler/Panic"
-	ErrorHandler_Error_FullMethodName            = "/asjard.api.ErrorHandler/Error"
+	ErrorHandler_NotFound_FullMethodName         = "/api.v1.ErrorHandler/NotFound"
+	ErrorHandler_MethodNotAllowed_FullMethodName = "/api.v1.ErrorHandler/MethodNotAllowed"
+	ErrorHandler_Panic_FullMethodName            = "/api.v1.ErrorHandler/Panic"
+	ErrorHandler_Error_FullMethodName            = "/api.v1.ErrorHandler/Error"
 )
 
 // ErrorHandlerClient is the client API for ErrorHandler service.
@@ -204,7 +204,7 @@ func _ErrorHandler_Error_Handler(srv interface{}, ctx context.Context, dec func(
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ErrorHandler_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "asjard.api.ErrorHandler",
+	ServiceName: "api.v1.ErrorHandler",
 	HandlerType: (*ErrorHandlerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

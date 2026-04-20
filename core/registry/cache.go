@@ -144,6 +144,7 @@ func (c *cache) update(instances []*Instance) {
 func (c *cache) delete(instance *Instance) {
 	logger.Debug("delete instance",
 		"instance", instance.Service.Instance.ID,
+		"instance_name", instance.Service.Instance.Name,
 		"registry", instance.DiscoverName)
 	c.sm.Lock()
 	if svc, ok := c.services[instance.Service.Instance.ID]; ok {

@@ -20,10 +20,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	OpenAPI_Yaml_FullMethodName       = "/asjard.api.OpenAPI/Yaml"
-	OpenAPI_Json_FullMethodName       = "/asjard.api.OpenAPI/Json"
-	OpenAPI_Page_FullMethodName       = "/asjard.api.OpenAPI/Page"
-	OpenAPI_ScalarPage_FullMethodName = "/asjard.api.OpenAPI/ScalarPage"
+	OpenAPI_Yaml_FullMethodName       = "/api.v1.OpenAPI/Yaml"
+	OpenAPI_Json_FullMethodName       = "/api.v1.OpenAPI/Json"
+	OpenAPI_Page_FullMethodName       = "/api.v1.OpenAPI/Page"
+	OpenAPI_ScalarPage_FullMethodName = "/api.v1.OpenAPI/ScalarPage"
 )
 
 // OpenAPIClient is the client API for OpenAPI service.
@@ -204,7 +204,7 @@ func _OpenAPI_ScalarPage_Handler(srv interface{}, ctx context.Context, dec func(
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var OpenAPI_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "asjard.api.OpenAPI",
+	ServiceName: "api.v1.OpenAPI",
 	HandlerType: (*OpenAPIServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

@@ -20,7 +20,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Metrics_Fetch_FullMethodName = "/asjard.api.Metrics/Fetch"
+	Metrics_Fetch_FullMethodName = "/api.v1.Metrics/Fetch"
 )
 
 // MetricsClient is the client API for Metrics service.
@@ -99,7 +99,7 @@ func _Metrics_Fetch_Handler(srv interface{}, ctx context.Context, dec func(inter
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Metrics_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "asjard.api.Metrics",
+	ServiceName: "api.v1.Metrics",
 	HandlerType: (*MetricsServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

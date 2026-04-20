@@ -32,8 +32,23 @@ type ReadEntity struct {
 // ReadEntityConfig defines which methods should bypass automatic parameter parsing.
 type ReadEntityConfig struct {
 	// SkipMethods is a list of full method names (e.g., /api.v1.User/Upload) to ignore.
-	SkipMethods   utils.JSONStrings   `json:"skipMethods"`
-	skipMethodMap map[string]struct{} // Map for O(1) lookup.
+	SkipMethods        utils.JSONStrings   `json:"skipMethods"`
+	BuiltInSkipMethods utils.JSONStrings   `json:"builtInSkipMethods"`
+	skipMethodMap      map[string]struct{} // Map for O(1) lookup.
+}
+
+var DefaultConfig = ReadEntityConfig{
+	BuiltInSkipMethods: utils.JSONStrings{
+		"/api.v1.ErrorHandler/NotFound",
+		"/api.v1.ErrorHandler/MethodNotAllowed",
+		"/api.v1.ErrorHandler/Panic",
+		"/api.v1.ErrorHandler/Error",
+		"/api.v1.OpenAPI/Yaml",
+		"/api.v1.OpenAPI/Json",
+		"/api.v1.OpenAPI/Page",
+		"/api.v1.OpenAPI/ScalarPage",
+	},
+	skipMethodMap: make(map[string]struct{}),
 }
 
 // Name returns the interceptor name.
@@ -88,12 +103,11 @@ func (r *ReadEntity) loadAndWatch() error {
 
 // load fetches the configuration and rebuilds the lookup map.
 func (r *ReadEntity) load() error {
-	conf := ReadEntityConfig{
-		skipMethodMap: map[string]struct{}{},
-	}
+	conf := DefaultConfig
 	if err := config.GetWithUnmarshal("asjard.interceptors.server.restReadEntity", &conf); err != nil {
 		return err
 	}
+	conf.SkipMethods = conf.BuiltInSkipMethods.Merge(conf.SkipMethods)
 	for _, item := range conf.SkipMethods {
 		conf.skipMethodMap[item] = struct{}{}
 	}

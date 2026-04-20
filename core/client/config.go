@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
@@ -17,13 +18,15 @@ type Config struct {
 	// BuiltInInterceptors defines the framework-provided interceptors that run by default.
 	BuiltInInterceptors utils.JSONStrings `json:"builtInInterceptors"`
 	// CertFile specifies the path to the client-side TLS certificate.
-	CertFile string `json:"ccertFile"`
+	CertFile string             `json:"ccertFile"`
+	Timeout  utils.JSONDuration `json:"timeout"`
 }
 
 // DefaultConfig provides the baseline settings for all clients if no specific configuration is found.
 var DefaultConfig = Config{
+	Timeout:             utils.JSONDuration{Duration: 10 * time.Second},
 	Loadbalance:         "localityRoundRobin",
-	BuiltInInterceptors: utils.JSONStrings{"panic", "rest2RpcContext", "validate", "errLog", "slowLog", "cycleChainInterceptor"},
+	BuiltInInterceptors: utils.JSONStrings{"panic", "circuitBreaker", "rest2RpcContext", "validate", "errLog", "slowLog", "cycleChainInterceptor"},
 }
 
 // GetConfigWithProtocol retrieves the configuration for a specific protocol.
@@ -36,9 +39,9 @@ func GetConfigWithProtocol(protocol string) Config {
 	return conf.complete()
 }
 
-// serviceConfig retrieves the configuration for a specific service under a given protocol.
+// serverConfig retrieves the configuration for a specific server under a given protocol.
 // It follows a hierarchy: Default -> Protocol Global -> Service Specific.
-func serviceConfig(protocol, serviceName string) Config {
+func serverConfig(protocol, serviceName string) Config {
 	conf := GetConfigWithProtocol(protocol)
 	config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigClientWithSevicePrefix, protocol, serviceName), &conf)
 	return conf.complete()

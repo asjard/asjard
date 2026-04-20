@@ -43,7 +43,7 @@ func TestConfigHierarchy(t *testing.T) {
 		config.Set(key, serviceLB)
 		time.Sleep(200 * time.Millisecond)
 
-		conf := serviceConfig(protocol, serviceName)
+		conf := serverConfig(protocol, serviceName)
 		if conf.Loadbalance != serviceLB {
 			t.Errorf("Expected service LB %s, got %s", serviceLB, conf.Loadbalance)
 		}

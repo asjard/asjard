@@ -47,6 +47,20 @@ services:
       - 5672:5672
       - 15692:15692
       - 15672:15672
+  # rabbitmq:
+  #   image: rabbitmq:4.3-rc-management-delayed-message-plugin
+  #   restart: always
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "10"
+  #   networks:
+  #     - example
+  #   ports:
+  #     - 5672:5672
+  #     - 15692:15692
+  #     - 15672:15672
   redis:
     image: redis
     restart: always

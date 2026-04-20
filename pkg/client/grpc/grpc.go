@@ -98,7 +98,7 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (client
 	options = append(options, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}]}`, balanceName)))
 
 	// 2. Load gRPC specific configuration (Keepalive, TLS, etc.)
-	conf := serviceConfig(serviceName)
+	conf := serverConfig(serviceName)
 
 	// 3. Configure Security (TLS vs Insecure)
 	if conf.CertFile != "" {
@@ -129,6 +129,11 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (client
 		options = append(options,
 			grpc.WithUnaryInterceptor(func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 				return interceptor(ctx, method, req, reply, &ClientConn{ClientConn: cc, serviceName: serviceName, protocol: Protocol}, func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface) error {
+					if conf.Timeout.Duration > 0 {
+						ctx, cancel := context.WithTimeout(ctx, conf.Timeout.Duration)
+						defer cancel()
+						return invoker(ctx, method, req, reply, cc.Conn().(*grpc.ClientConn))
+					}
 					return invoker(ctx, method, req, reply, cc.Conn().(*grpc.ClientConn))
 				})
 			}))

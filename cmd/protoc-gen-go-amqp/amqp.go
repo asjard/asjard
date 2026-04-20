@@ -25,6 +25,7 @@ import (
 
 	"github.com/asjard/asjard/cmd/protoc-gen-go-amqp/utils"
 	"github.com/asjard/asjard/pkg/protobuf/mqpb"
+	"github.com/spf13/cast"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -35,8 +36,9 @@ const (
 	configPakcage    = protogen.GoImportPath("github.com/asjard/asjard/core/config")
 	xamqpPackage     = protogen.GoImportPath("github.com/asjard/asjard/pkg/server/xamqp")
 	amqpStorePackage = protogen.GoImportPath("github.com/asjard/asjard/pkg/stores/xamqp")
+	mqpbPackage      = protogen.GoImportPath("github.com/asjard/asjard/pkg/protobuf/mqpb")
 	jsonPackage      = protogen.GoImportPath("encoding/json")
-	amqpPackage      = protogen.GoImportPath("github.com/streadway/amqp")
+	amqpPackage      = protogen.GoImportPath("github.com/rabbitmq/amqp091-go")
 	serverPackage    = protogen.GoImportPath("github.com/asjard/asjard/core/server")
 	protoPackage     = protogen.GoImportPath("google.golang.org/protobuf/proto")
 	syncPackage      = protogen.GoImportPath("sync")
@@ -105,6 +107,8 @@ func (g *amqpGenerator) genService(service *protogen.Service) {
 		mqOptions, ok := proto.GetExtension(method.Desc.Options(), mqpb.E_Mq).([]*mqpb.MQ)
 		if ok && len(mqOptions) > 0 {
 			dataFormat = mqOptions[0].DataFormat
+		} else {
+			continue
 		}
 		g.genServiceMethodClient(service, clientType, method, dataFormat)
 	}
@@ -113,11 +117,37 @@ func (g *amqpGenerator) genService(service *protogen.Service) {
 		mqOptions, ok := proto.GetExtension(method.Desc.Options(), mqpb.E_Mq).([]*mqpb.MQ)
 		if ok && len(mqOptions) > 0 {
 			dataFormat = mqOptions[0].DataFormat
+		} else {
+			handlerNames = append(handlerNames, "")
+			continue
 		}
 		hname := g.genServiceMethod(service, serverType, method, dataFormat)
 		handlerNames = append(handlerNames, hname)
 	}
+	g.genConstant(service)
 	g.genServiceDesc(service, serverType, handlerNames)
+}
+
+func (g *amqpGenerator) genConstant(service *protogen.Service) {
+	g.gen.P("const (")
+
+	hashMqOption := false
+	for _, method := range service.Methods {
+		mqOptions, ok := proto.GetExtension(method.Desc.Options(), mqpb.E_Mq).([]*mqpb.MQ)
+		if ok && len(mqOptions) > 0 {
+			hashMqOption = true
+			g.gen.P(fmt.Sprintf("%s_%s_Route", service.GoName, method.GoName), "=", strconv.Quote(method.GoName))
+			g.gen.P(fmt.Sprintf("%s_%s_Route_Retry", service.GoName, method.GoName), "=", strconv.Quote(method.GoName+"_Retry"))
+
+			g.gen.P(fmt.Sprintf("%s_%s_Queue", service.GoName, method.GoName), "=", strconv.Quote(string(method.Desc.FullName())))
+			g.gen.P(fmt.Sprintf("%s_%s_Queue_Retry", service.GoName, method.GoName), "=", strconv.Quote(string(method.Desc.FullName())+"_Retry"))
+		}
+	}
+	if hashMqOption {
+		g.gen.P(fmt.Sprintf("%s_Exchange", service.GoName), "=", strconv.Quote(string(service.Desc.FullName())))
+		g.gen.P(fmt.Sprintf("%s_Exchange_Retry", service.GoName), "=", strconv.Quote(string(service.Desc.FullName())+"_Retry"))
+	}
+	g.gen.P(")")
 }
 
 //gocyclo:ignore
@@ -148,32 +178,80 @@ func (g *amqpGenerator) genServiceDesc(service *protogen.Service, serverType str
 			}
 		}
 		mqOptions, ok := proto.GetExtension(method.Desc.Options(), mqpb.E_Mq).([]*mqpb.MQ)
-		if ok {
-			for _, mqOption := range mqOptions {
-				g.gen.P("{")
-				if mqOption.Queue == nil {
-					g.gen.P("Queue: ", fmt.Sprintf("%s_%s_FullMethodName", service.GoName, method.GoName), ",")
-				} else {
-					g.gen.P("Queue: ", strconv.Quote(*mqOption.Queue), ",")
+		if ok && len(mqOptions) > 0 {
+			for index, mqOption := range mqOptions {
+				if index > 0 {
+					continue
 				}
+				g.gen.P("{")
+				queueName := fmt.Sprintf("%s_%s_Queue", service.GoName, method.GoName)
+				if mqOption.Queue != "" {
+					queueName = strconv.Quote(mqOption.Queue)
+				}
+				g.gen.P("Queue: ", queueName, ",")
 				g.gen.P("Handler: ", handlerNames[i], ",")
 				option := utils.ParseMethodMqOption(service, mqOption)
-				if option.Exchange != "" {
-					g.gen.P("Exchange:", "\"", option.Exchange, "\",")
-				}
 				if option.Kind != "" {
 					g.gen.P("Kind:", "\"", option.Kind, "\",")
+					if option.Exchange == "" {
+						g.gen.P("Exchange:", fmt.Sprintf("%s_Exchange", service.GoName), ",")
+					} else {
+						g.gen.P("Exchange:", strconv.Quote(option.Exchange), ",")
+					}
 				}
+				routeKey := fmt.Sprintf("%s_%s_Route", service.GoName, method.GoName)
 				if option.Route != "" {
-					g.gen.P("Route:", "\"", option.Route, "\",")
+					routeKey = strconv.Quote(option.Route)
 				}
+				g.gen.P("Route:", routeKey, ",")
+
 				if option.Consumer != "" {
 					g.gen.P("Consumer:", "\"", option.Consumer, "\",")
 				}
+
+				if option.FixedRetry != nil || option.BackoffRetry != nil {
+					g.gen.P("RetryQueue:", fmt.Sprintf("%s_%s_Queue_Retry", service.GoName, method.GoName), ",")
+					g.gen.P("RetryExchange:", fmt.Sprintf("%s_Exchange_Retry", service.GoName), ",")
+					g.gen.P("RetryRoute:", fmt.Sprintf("%s_%s_Route_Retry", service.GoName, method.GoName), ",")
+				}
+				if option.FixedRetry != nil {
+
+					retryDelays := make([]string, 0, len(option.FixedRetry.RetryDelays))
+					for _, item := range option.FixedRetry.RetryDelays {
+						retryDelays = append(retryDelays, strconv.Itoa(int(item)))
+					}
+					g.gen.P("FixedRetry: &", mqpbPackage.Ident("FixedRetryPolicy"), "{")
+					g.gen.P("RetryDelays:", fmt.Sprintf("[]int32{%s}", strings.Join(retryDelays, ",")), ",")
+					g.gen.P("},")
+
+				}
+				if option.BackoffRetry != nil {
+					g.gen.P("BackoffRetry:&", mqpbPackage.Ident("BackoffRetryPolicy"), "{")
+					g.gen.P("InitialDelayMs:", option.BackoffRetry.InitialDelayMs, ",")
+					g.gen.P("Multiplier:", option.BackoffRetry.Multiplier, ",")
+					g.gen.P("MaxDelayMs:", option.BackoffRetry.MaxDelayMs, ",")
+					g.gen.P("MaxRetries:", option.BackoffRetry.MaxRetries, ",")
+					g.gen.P("},")
+				}
+				switch option.DataFormat {
+				case "json":
+					g.gen.P("ContentType:", strconv.Quote("application/json"), ",")
+				default:
+					g.gen.P("ContentType:", strconv.Quote("application/protobuf"), ",")
+				}
+
 				if len(option.Table) != 0 {
 					g.gen.P("Table:", "map[string]any{")
 					for k, v := range option.Table {
-						g.gen.P("\"", k, "\":", v, ",")
+						var val any
+						if vb, err := cast.ToBoolE(v); err == nil {
+							val = vb
+						} else if vi, err := cast.ToIntE(v); err == nil {
+							val = vi
+						} else {
+							val = strconv.Quote(cast.ToString(v))
+						}
+						g.gen.P("\"", k, "\":", val, ",")
 					}
 					g.gen.P("},")
 
@@ -198,7 +276,10 @@ func (g *amqpGenerator) genServiceDesc(service *protogen.Service, serverType str
 					g.gen.P("NoWait:", *option.NoWait, ",")
 				}
 				if option.Internal != nil {
-					g.gen.P("NoWait:", *option.Internal, ",")
+					g.gen.P("Internal:", *option.Internal, ",")
+				}
+				if option.Requeue != nil {
+					g.gen.P("Requeue:", *option.Requeue, ",")
 				}
 
 				g.gen.P("},")

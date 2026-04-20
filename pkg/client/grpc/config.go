@@ -43,16 +43,16 @@ func defaultConfig() Config {
 		Options: OptionsConfig{
 			Keepalive: KeepaliveConfig{
 				// Default to sending a ping every 20s with a 3s response window.
-				Time:    utils.JSONDuration{Duration: 20 * time.Second},
+				Time:    utils.JSONDuration{Duration: 3 * time.Second},
 				Timeout: utils.JSONDuration{Duration: 3 * time.Second},
 			},
 		},
 	}
 }
 
-// serviceConfig merges global gRPC defaults with service-specific overrides.
+// serverConfig merges global gRPC defaults with service-specific overrides.
 // It uses a configuration chain: Default -> Global gRPC -> Specific Service.
-func serviceConfig(serviceName string) Config {
+func serverConfig(serviceName string) Config {
 	conf := defaultConfig()
 	// Unmarshal configuration from the provider (e.g., YAML/ETCD).
 	// Priority 1: asjard.clients.grpc.services.{serviceName}

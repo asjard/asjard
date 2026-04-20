@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
@@ -63,6 +64,8 @@ type clientResolver struct {
 	instanceID string
 	// registryName optionally specifies which discovery backend to query.
 	registryName string
+	// instanceId -> instance
+	instances sync.Map
 }
 
 // Close cleans up the resolver by removing the listener from the registry.
@@ -149,8 +152,14 @@ func (r *clientResolver) watch(event *registry.Event) {
 	logger.Debug("receive changed event", "type", event.Type, "instance", event.Instance)
 	if event.Type == registry.EventTypeDelete {
 		// When an instance is deleted, we refresh to get the latest valid set.
-		r.cc.UpdateState(resolver.State{})
+		r.instances.Delete(event.Instance.Service.Instance.ID)
 	} else {
-		r.update([]*registry.Instance{event.Instance})
+		r.instances.Store(event.Instance.Service.Instance.ID, event.Instance)
 	}
+	instances := []*registry.Instance{}
+	r.instances.Range(func(key, value any) bool {
+		instances = append(instances, value.(*registry.Instance))
+		return true
+	})
+	r.update(instances)
 }

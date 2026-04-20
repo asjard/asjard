@@ -20,7 +20,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	DefaultHandlers_Favicon_FullMethodName = "/asjard.api.DefaultHandlers/Favicon"
+	DefaultHandlers_Favicon_FullMethodName = "/api.v1.DefaultHandlers/Favicon"
 )
 
 // DefaultHandlersClient is the client API for DefaultHandlers service.
@@ -99,7 +99,7 @@ func _DefaultHandlers_Favicon_Handler(srv interface{}, ctx context.Context, dec 
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var DefaultHandlers_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "asjard.api.DefaultHandlers",
+	ServiceName: "api.v1.DefaultHandlers",
 	HandlerType: (*DefaultHandlersServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
