@@ -33,17 +33,23 @@ const (
 	fileDescriptorProtoSyntaxFieldNumber = 12
 )
 
+type Configuration struct {
+	WithoutValueEnum *bool
+}
+
 type TsGenerator struct {
 	plugin     *protogen.Plugin
 	gen        *protogen.GeneratedFile
 	file       *protogen.File
 	openapiVar string
+	conf       Configuration
 }
 
-func NewGwGenerator(plugin *protogen.Plugin, file *protogen.File) *TsGenerator {
+func NewGwGenerator(plugin *protogen.Plugin, conf Configuration, file *protogen.File) *TsGenerator {
 	return &TsGenerator{
 		plugin: plugin,
 		file:   file,
+		conf:   conf,
 	}
 }
 
@@ -168,23 +174,25 @@ func (g *TsGenerator) genEnum(em *protogen.Enum) {
 	g.gen.P("  }")
 	g.gen.P("")
 
-	g.genComment(em.Comments)
-	g.gen.P("export const ValueEnum", em.GoIdent, "={")
-	for idx, value := range em.Values {
-		if idx == 0 {
-			continue
+	if !*g.conf.WithoutValueEnum {
+		g.genComment(em.Comments)
+		g.gen.P("export const ValueEnum", em.GoIdent, "={")
+		for idx, value := range em.Values {
+			if idx == 0 {
+				continue
+			}
+			g.genComment(value.Comments)
+			g.gen.P(value.Desc.Name(), ":{")
+			name := strings.Split(string(value.Desc.Name()), "_")
+			if len(name) > 1 {
+				g.gen.P("text:'", strings.Join(name[1:], "_"), "',")
+			} else {
+				g.gen.P("text:'", name, "',")
+			}
+			g.gen.P("},")
 		}
-		g.genComment(value.Comments)
-		g.gen.P(value.Desc.Name(), ":{")
-		name := strings.Split(string(value.Desc.Name()), "_")
-		if len(name) > 1 {
-			g.gen.P("text:'", strings.Join(name[1:], "_"), "',")
-		} else {
-			g.gen.P("text:'", name, "',")
-		}
-		g.gen.P("},")
+		g.gen.P("}")
 	}
-	g.gen.P("}")
 }
 
 func (g *TsGenerator) tsKindString(field *protogen.Field) string {

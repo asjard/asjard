@@ -89,6 +89,13 @@ func parseMethodMqOption(h *mqpb.MQ, serviceOption *MQOption) *MQOption {
 	if option.BackoffRetry == nil {
 		option.BackoffRetry = serviceOption.BackoffRetry
 	}
+	if option.FixedRetry == nil && option.BackoffRetry == nil {
+		option.BackoffRetry = &mqpb.BackoffRetryPolicy{
+			InitialDelayMs: 3000,
+			Multiplier:     1,
+			MaxRetries:     3,
+		}
+	}
 	if option.Internal == nil {
 		option.Internal = serviceOption.Internal
 	}
@@ -105,6 +112,8 @@ func parseMethodMqOption(h *mqpb.MQ, serviceOption *MQOption) *MQOption {
 	case *mqpb.MQ_Headers:
 		option.Kind = "headers"
 		option.Exchange = h.GetHeaders()
+	default:
+		option.Kind = "direct"
 	}
 	return option
 }

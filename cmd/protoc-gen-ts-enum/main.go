@@ -46,18 +46,19 @@ const (
 	name    = "protoc-gen-ts-enum"
 )
 
-var requireUnimplemented *bool
-var useGenericStreams *bool
+var flags flag.FlagSet
 
 func main() {
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
 	if *showVersion {
-		fmt.Printf("protoc-gen-go-rest %v\n", version)
+		fmt.Printf("%s %v\n", name, version)
 		return
 	}
 
-	var flags flag.FlagSet
+	conf := Configuration{
+		WithoutValueEnum: flags.Bool("without_value_enum", false, "do not generate value enumeration"),
+	}
 
 	protogen.Options{
 		ParamFunc: flags.Set,
@@ -67,7 +68,7 @@ func main() {
 			if !f.Generate {
 				continue
 			}
-			NewGwGenerator(gen, f).Run()
+			NewGwGenerator(gen, conf, f).Run()
 		}
 		return nil
 	})

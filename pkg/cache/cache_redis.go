@@ -248,33 +248,32 @@ func (c *CacheRedis) Get(ctx context.Context, key string, out any) (bool, error)
 
 // Del invalidates keys in Redis and Local cache, then cleans up group indexes.
 func (c *CacheRedis) Del(ctx context.Context, keys ...string) error {
-	if len(keys) == 0 {
-		return nil
-	}
-	client := c.client.Load()
-	switch c.tp {
-	case CacheRedisTypeKeyValue:
-		if err := c.delKeys(ctx, client, keys...); err != nil {
-			return err
-		}
-	case CacheRedisTypeHash:
-		if c.field != "" {
-			for _, key := range keys {
-				if err := client.HDel(ctx, key, c.field).Err(); err != nil {
-					return err
+	if len(keys) != 0 {
+		client := c.client.Load()
+		switch c.tp {
+		case CacheRedisTypeKeyValue:
+			if err := c.delKeys(ctx, client, keys...); err != nil {
+				return err
+			}
+		case CacheRedisTypeHash:
+			if c.field != "" {
+				for _, key := range keys {
+					if err := client.HDel(ctx, key, c.field).Err(); err != nil {
+						return err
+					}
 				}
 			}
-		}
-	case CacheRedisTypeSet:
-		if c.field != "" {
-			for _, key := range keys {
-				if err := client.SRem(ctx, key, c.field).Err(); err != nil {
-					return err
+		case CacheRedisTypeSet:
+			if c.field != "" {
+				for _, key := range keys {
+					if err := client.SRem(ctx, key, c.field).Err(); err != nil {
+						return err
+					}
 				}
 			}
+		default:
+			return fmt.Errorf("unimplement cache type %d", c.tp)
 		}
-	default:
-		return fmt.Errorf("unimplement cache type %d", c.tp)
 	}
 	return c.delGroup(ctx)
 }
@@ -394,6 +393,7 @@ func (c *CacheRedis) delGroup(ctx context.Context) error {
 	client := c.client.Load()
 	if len(c.groups) != 0 {
 		for _, group := range c.groups {
+			logger.L(ctx).Debug("delete group", "group", group)
 			result := client.HGetAll(ctx, group)
 			if err := result.Err(); err != nil {
 				return err

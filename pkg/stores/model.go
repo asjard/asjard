@@ -156,7 +156,7 @@ func (m *Model) copy(ctx context.Context, from, to any) error {
 	fromVal := reflect.ValueOf(from)
 	toVal := reflect.ValueOf(to)
 	// Validation: 'to' must be a pointer so we can modify its value.
-	if toVal.Kind() != reflect.Ptr || toVal.IsNil() {
+	if toVal.Kind() != reflect.Pointer || toVal.IsNil() {
 		logger.L(ctx).Error("out must be a non-nil ptr")
 		return status.InternalServerError()
 	}
