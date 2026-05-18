@@ -43,8 +43,8 @@ func defaultConfig() Config {
 		Options: OptionsConfig{
 			Keepalive: KeepaliveConfig{
 				// Default to sending a ping every 20s with a 3s response window.
-				Time:    utils.JSONDuration{Duration: 3 * time.Second},
-				Timeout: utils.JSONDuration{Duration: 3 * time.Second},
+				Time:    utils.JSONDuration{Duration: 5 * time.Minute},
+				Timeout: utils.JSONDuration{Duration: 20 * time.Second},
 			},
 		},
 	}

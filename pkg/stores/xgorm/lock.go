@@ -95,10 +95,7 @@ func (l Lock) KeepAlive(ctx context.Context, key, threadId string, expiresIn tim
 // cleanUp periodically removes expired records from the database to prevent the table from growing
 // indefinitely and to allow abandoned locks to be re-acquired.
 func (l Lock) cleanUp() {
-	// Note: This logic currently only runs once after a 1-second delay.
-	// In a production scenario, this would usually be inside a for { select { case <-ticker.C: ... } } loop.
-	select {
-	case <-time.After(time.Second):
+	for _ = range time.After(time.Second) {
 		db, err := DB(context.Background(), l.options...)
 		if err == nil {
 			if err := db.Where("expires_at<?", time.Now()).

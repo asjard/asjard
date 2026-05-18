@@ -74,36 +74,38 @@ func (*AccessLog) Name() string {
 func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
 		logger.L(ctx).Debug("start server interceptor", "interceptor", al.Name(), "full_method", info.FullMethod, "protocol", info.Protocol)
-		// 1. Check if this specific request should be ignored based on skip rules.
+
+		start := time.Now()
+		//  Execute the actual business logic handler.
+		resp, err = handler(ctx, req)
+
+		// Check if this specific request should be ignored based on skip rules.
 		if al.skipped(info.Protocol, info.FullMethod) {
-			return handler(ctx, req)
+			return resp, err
 		}
 
-		now := time.Now()
 		var fields []any
 		fields = append(fields, []any{"protocol", info.Protocol}...)
 		fields = append(fields, []any{"full_method", info.FullMethod}...)
 
-		// 2. Protocol-specific metadata extraction (e.g., HTTP headers/paths).
-		switch info.Protocol {
-		case rest.Protocol:
-			if rc, ok := ctx.(*rest.Context); ok {
-				fields = append(fields, []any{"header", rc.ReadHeaderParams()}...)
-				fields = append(fields, []any{"method", string(rc.Method())}...)
-				fields = append(fields, []any{"path", string(rc.Path())}...)
-			}
+		rtx, ok := ctx.(*rest.Context)
+		if ok {
+			fields = append(fields, []any{"header", rtx.ReadHeaderParams()}...)
+			fields = append(fields, []any{"method", string(rtx.Method())}...)
+			fields = append(fields, []any{"path", string(rtx.Path())}...)
 		}
 
-		// 3. Execute the actual business logic handler.
-		resp, err = handler(ctx, req)
-
-		// 4. Record post-execution metrics (latency, success, error details).
-		fields = append(fields, []any{"cost", time.Since(now).String()}...)
+		//  Record post-execution metrics (latency, success, error details).
+		fields = append(fields, []any{"cost", time.Since(start).String()}...)
 		fields = append(fields, []any{"req", req}...)
 		fields = append(fields, []any{"success", err == nil}...)
 		fields = append(fields, []any{"err", err}...)
 
-		// 5. Output to log. Errors use Error level; successful requests use Info level.
+		if ok {
+			ctx = rtx.Context()
+		}
+
+		//  Output to log. Errors use Error level; successful requests use Info level.
 		if err != nil {
 			al.logger.L(ctx).Error("access log", fields...)
 		} else {

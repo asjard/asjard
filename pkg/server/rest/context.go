@@ -32,6 +32,8 @@ type Context struct {
 	write   Writer
 }
 
+type userContext struct{}
+
 // contextPool implements Object Pooling to reduce GC overhead by reusing Context objects.
 var (
 	contextPool = sync.Pool{
@@ -49,6 +51,25 @@ func NewContext(ctx *fasthttp.RequestCtx, options ...Option) *Context {
 		opt(c)
 	}
 	return c
+}
+
+func (c *Context) Context() context.Context {
+	if c.RequestCtx == nil {
+		return context.Background()
+	}
+	if ctx, ok := c.UserValue(userContext{}).(context.Context); ok {
+		return ctx
+	}
+	ctx := context.Background()
+	c.SetContext(ctx)
+	return ctx
+}
+
+func (c *Context) SetContext(ctx context.Context) {
+	if c.RequestCtx == nil {
+		return
+	}
+	c.SetUserValue(userContext{}, ctx)
 }
 
 // ReadEntity parses request parameters and serializes them into a Protobuf message.

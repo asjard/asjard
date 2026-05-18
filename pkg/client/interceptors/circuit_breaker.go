@@ -49,7 +49,7 @@ type CircuitBreakerMethodConfig struct {
 var (
 	// baseline settings for the circuit breaker.
 	defaultConfig = hystrix.CommandConfig{
-		Timeout:                hystrix.DefaultTimeout,
+		Timeout:                30_000,
 		MaxConcurrentRequests:  10_0000,
 		RequestVolumeThreshold: hystrix.DefaultVolumeThreshold,
 		SleepWindow:            hystrix.DefaultSleepWindow,
@@ -74,7 +74,7 @@ var (
 // CircuitBreakerLogger redirects Hystrix internal logs to the framework logger.
 type CircuitBreakerLogger struct{}
 
-func (CircuitBreakerLogger) Printf(format string, items ...interface{}) {
+func (CircuitBreakerLogger) Printf(format string, items ...any) {
 	logger.Error(fmt.Sprintf(format, items...))
 }
 
@@ -108,7 +108,7 @@ func (ccb *CircuitBreaker) Interceptor() client.UnaryClientInterceptor {
 
 // do executes the request within a Hystrix context.
 func (ccb *CircuitBreaker) do(ctx context.Context, commandConfigName, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) (invokeErr error) {
-	if err := hystrix.Do(commandConfigName, func() error {
+	if err := hystrix.DoC(ctx, commandConfigName, func(ctx context.Context) error {
 		if invokeErr = invoker(ctx, method, req, reply, cc); invokeErr != nil {
 			// Only count 5xx (Server Errors) towards the circuit breaker failure rate.
 			// Client errors (4xx) usually don't indicate an unhealthy downstream service.
@@ -125,7 +125,7 @@ func (ccb *CircuitBreaker) do(ctx context.Context, commandConfigName, method str
 			if errors.Is(cerr, hystrix.ErrMaxConcurrency) {
 				return status.Error(codes.ResourceExhausted, cerr.Error())
 			}
-			return status.Error(codes.DataLoss, err.Error())
+			return status.Error(codes.DeadlineExceeded, err.Error())
 		}
 		return err
 	}

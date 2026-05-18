@@ -109,7 +109,7 @@ func (r *Rest2RpcContext) Interceptor() client.UnaryClientInterceptor {
 		// Create a new gRPC outgoing context and continue the invocation chain.
 		// Note: context.Background() is used here to reset the context type to standard
 		// while carrying the new metadata.
-		return invoker(metadata.NewOutgoingContext(context.Background(), md),
+		return invoker(metadata.NewOutgoingContext(rtx.Context(), md),
 			method, req, reply, cc)
 	}
 }

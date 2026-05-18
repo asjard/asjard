@@ -253,7 +253,7 @@ func (s *RestServer) newHandler(methodHandler methodHandler, svc Handler, writer
 
 // applyMiddleware chains multiple middleware functions into a single handler.
 func (s *RestServer) applyMiddleware(h fasthttp.RequestHandler, middlewares ...MiddlewareFunc) fasthttp.RequestHandler {
-	for i := 0; i < len(middlewares); i++ {
+	for i := range len(middlewares) {
 		h = middlewares[i](h)
 	}
 	return h

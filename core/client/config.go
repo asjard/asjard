@@ -24,9 +24,9 @@ type Config struct {
 
 // DefaultConfig provides the baseline settings for all clients if no specific configuration is found.
 var DefaultConfig = Config{
-	Timeout:             utils.JSONDuration{Duration: 10 * time.Second},
+	Timeout:             utils.JSONDuration{Duration: 60 * time.Second},
 	Loadbalance:         "localityRoundRobin",
-	BuiltInInterceptors: utils.JSONStrings{"panic", "circuitBreaker", "rest2RpcContext", "validate", "errLog", "slowLog", "cycleChainInterceptor"},
+	BuiltInInterceptors: utils.JSONStrings{"panic", "rest2RpcContext", "errLog", "slowLog", "validate", "cycleChainInterceptor", "circuitBreaker"},
 }
 
 // GetConfigWithProtocol retrieves the configuration for a specific protocol.
@@ -42,8 +42,13 @@ func GetConfigWithProtocol(protocol string) Config {
 // serverConfig retrieves the configuration for a specific server under a given protocol.
 // It follows a hierarchy: Default -> Protocol Global -> Service Specific.
 func serverConfig(protocol, serviceName string) Config {
-	conf := GetConfigWithProtocol(protocol)
-	config.GetWithUnmarshal(fmt.Sprintf(constant.ConfigClientWithSevicePrefix, protocol, serviceName), &conf)
+	conf := DefaultConfig
+	config.GetWithUnmarshal(constant.ConfigClientPrefix,
+		&conf,
+		config.WithChain([]string{
+			fmt.Sprintf(constant.ConfigClientWithProtocolPrefix, protocol),
+			fmt.Sprintf(constant.ConfigClientWithSevicePrefix, protocol, serviceName),
+		}))
 	return conf.complete()
 }
 
