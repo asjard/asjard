@@ -111,15 +111,7 @@ func (api *RoutesAPI) genRoutes() {
 
 	// Sort services by name to ensure consistent output in the UI.
 	sort.SliceStable(serviceDescs, func(i, j int) bool {
-		n1 := serviceDescs[i].ServiceName
-		n2 := serviceDescs[j].ServiceName
-		if n1List := strings.Split(n1, "."); len(n1List) > 4 {
-			n1 = strings.Join(append(n1List[:2], n1List[3:]...), ".")
-		}
-		if n2List := strings.Split(n2, "."); len(n2List) > 4 {
-			n2 = strings.Join(append(n2List[:2], n2List[3:]...), ".")
-		}
-		return n1 < n2
+		return serviceDescs[i].ServiceName < serviceDescs[j].ServiceName
 	})
 
 	for _, desc := range serviceDescs {
@@ -147,12 +139,6 @@ func (api *RoutesAPI) addRoute(nodes []*RouteInfo_Node, index int, serviceName, 
 	} else if index == len(parts)-2 {
 		label = serviceName
 	}
-
-	// api.v1.auth.merchant.App.Add
-	// TODO insert into admin children not auth children
-	// if len(parts) > 5 && index == 3 {
-	// 	// label=
-	// }
 
 	value := strings.Join(parts[:index+1], ".")
 	if index != len(parts)-1 {
