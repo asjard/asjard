@@ -3,6 +3,7 @@ package xamqp
 import (
 	"context"
 	"fmt"
+	"maps"
 	"math"
 	"reflect"
 	"sync/atomic"
@@ -70,7 +71,7 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 func (s *AmqpServer) AddHandler(handler any) error {
 	h, ok := handler.(Handler)
 	if !ok {
-		return fmt.Errorf("invalid handler, %T must implement *amqp.Handler", handler)
+		return fmt.Errorf("invalid handler, %T must implement *amqp.AmqpServiceDesc", handler)
 	}
 	return s.addHandler(h)
 }
@@ -133,16 +134,10 @@ func (s *AmqpServer) addHandler(handler Handler) error {
 // keepalive listens for unexpected channel closures and triggers reconnection.
 func (s *AmqpServer) keepalive() error {
 	go func() {
-		for {
-			select {
-			case err, ok := <-s.closed:
-				if !ok {
-					return
-				}
-				if err != nil {
-					logger.Error("channel exit, start reconnect", "err", err)
-					s.reconnect()
-				}
+		for err := range s.closed {
+			if err != nil {
+				logger.Error("channel exit, start reconnect", "err", err)
+				s.reconnect()
 			}
 		}
 	}()
@@ -193,7 +188,7 @@ func (s *AmqpServer) start() error {
 			if method.Handler == nil {
 				continue
 			}
-			if s.declareAndRun(svc, method); err != nil {
+			if err := s.declareAndRun(svc, method); err != nil {
 				return err
 			}
 		}
@@ -219,9 +214,7 @@ func (s *AmqpServer) declareAndRun(svc Handler, method MethodDesc) error {
 	}
 	if method.RetryExchange != "" {
 		retryTable := amqp.Table{}
-		for k, v := range method.Table {
-			retryTable[k] = v
-		}
+		maps.Copy(retryTable, method.Table)
 		retryTable["x-delayed-type"] = "direct"
 		if err := s.ch.ExchangeDeclare(method.RetryExchange,
 			"x-delayed-message", method.Durable, method.AutoDelete, method.Internal, method.NoWait, retryTable); err != nil {
@@ -242,36 +235,23 @@ func (s *AmqpServer) declareAndRun(svc Handler, method MethodDesc) error {
 
 // run processes the message delivery stream for a specific queue.
 func (s *AmqpServer) run(msgs <-chan amqp.Delivery, svc Handler, method MethodDesc) {
-	for {
-		select {
-		case msg, ok := <-msgs:
-			if !ok {
-				logger.Debug("channel exit, exit goroutine", "queue", method.Queue)
-				return
-			}
-			s.tasks.Add(1)
-			// Execute business logic via the descriptor's handler.
-			// Success results in an Ack, failure results in an Nack
-			if _, err := method.Handler(&Context{Context: context.Background(), task: msg}, svc, s.options.Interceptor); err == nil {
-				msg.Ack(false)
-			} else {
-				s.retry(msg, method)
-			}
-			s.tasks.Add(-1)
+	for msg := range msgs {
+		s.tasks.Add(1)
+		// Execute business logic via the descriptor's handler.
+		// Success results in an Ack, failure results in an Nack
+		if _, err := method.Handler(&Context{Context: context.Background(), task: msg}, svc, s.options.Interceptor); err == nil {
+			msg.Ack(false)
+		} else {
+			s.retry(msg, method)
 		}
+		s.tasks.Add(-1)
 	}
 }
 
 func (s *AmqpServer) notifyReturn(r chan amqp.Return) {
-	for {
-		select {
-		case msg, ok := <-r:
-			if !ok {
-				return
-			}
-			logger.Error("delivery msg returned",
-				"return", msg)
-		}
+	for msg := range r {
+		logger.Error("delivery msg returned",
+			"return", msg)
 	}
 }
 
@@ -321,10 +301,7 @@ func (s *AmqpServer) backoffRetry(msg amqp.Delivery, method MethodDesc) {
 	}
 
 	// initial * (multiplier ^ attempt)
-	delay := method.BackoffRetry.InitialDelayMs * int32(math.Pow(float64(method.BackoffRetry.Multiplier), float64(count)))
-	if delay < method.BackoffRetry.InitialDelayMs {
-		delay = method.BackoffRetry.InitialDelayMs
-	}
+	delay := max(method.BackoffRetry.InitialDelayMs*int32(math.Pow(float64(method.BackoffRetry.Multiplier), float64(count))), method.BackoffRetry.InitialDelayMs)
 
 	if method.BackoffRetry.MaxDelayMs > 0 && delay > method.BackoffRetry.MaxDelayMs {
 		delay = method.BackoffRetry.MaxDelayMs

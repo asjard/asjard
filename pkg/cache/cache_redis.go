@@ -411,9 +411,9 @@ func (c *CacheRedis) delGroup(ctx context.Context) error {
 				return err
 			}
 			if err := tools.DefaultTW.AddTask(time.Second, func() {
-				ctx = context.WithoutCancel(ctx)
-				if err := c.delKeys(ctx, client, keys...); err != nil {
-					logger.L(ctx).Error("delay delete group keys fail", "group", group, "err", err)
+				bgctx := context.WithoutCancel(ctx)
+				if err := c.delKeys(bgctx, client, keys...); err != nil {
+					logger.L(bgctx).Error("delay delete group keys fail", "group", group, "err", err)
 				}
 			}); err != nil {
 				return err

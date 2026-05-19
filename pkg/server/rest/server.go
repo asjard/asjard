@@ -126,7 +126,7 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 func (s *RestServer) AddHandler(handler any) error {
 	h, ok := handler.(Handler)
 	if !ok {
-		return fmt.Errorf("invlaid handler %T, must implement *rest.Handler", handler)
+		return fmt.Errorf("invlaid handler %T, must implement *rest.RestServiceDesc", handler)
 	}
 	s.handlers = append(s.handlers, h)
 	return s.addRouter(h)

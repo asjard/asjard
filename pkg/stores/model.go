@@ -99,10 +99,10 @@ func (m *Model) SetData(ctx context.Context, set func() error, caches ...Cacher)
 	}
 
 	return tools.DefaultTW.AddTask(100*time.Millisecond, func() {
-		ctx = context.WithoutCancel(ctx)
+		bgctx := context.WithoutCancel(ctx)
 		for _, cache := range caches {
-			if err := m.delCache(ctx, cache); err != nil {
-				logger.L(ctx).Error("delay delete cache fail", "err", err)
+			if err := m.delCache(bgctx, cache); err != nil {
+				logger.L(bgctx).Error("delay delete cache fail", "err", err)
 			}
 		}
 	})
