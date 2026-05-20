@@ -56,6 +56,10 @@ func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (
 		// Cache Miss: Fetch from database using Singleflight to protect the DB.
 		result, err, _ := m.sg.Do(cache.Key(), get)
 		if err != nil {
+			// Not cache empty results if the error is a 500 Internal Error.
+			if cache.EmptySetStrict() && status.FromError(err).Status/100 == 5 {
+				return err
+			}
 			m.sg.Forget(cache.Key())
 			// DB Miss/Error: Cache the empty result for a short period (Negative Caching).
 			if rerr := cache.Set(ctx, cache.Key(), out, cache.EmptyExpiresIn()); rerr != nil {
