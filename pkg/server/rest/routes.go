@@ -117,30 +117,80 @@ func (api *RoutesAPI) genRoutes() {
 	for _, desc := range serviceDescs {
 		// Split the service name (e.g., "api.v1.user") into parts.
 		keys := strings.Split(desc.ServiceName, ".")
-		if len(keys) == 0 {
+		keyLen := len(keys)
+		if keyLen == 0 {
 			continue
 		}
 
 		for _, method := range desc.Methods {
-			api.tree.Routes = api.addRoute(api.tree.Routes, 0, desc.Name, method.Name, append(keys, method.MethodName))
+			parts := make([]*nodePart, 0, len(keys)+1)
+			if keyLen > 4 {
+				for idx := range keyLen - 2 {
+					parts = append(parts, &nodePart{
+						key:   keys[idx],
+						value: strings.Join(keys[:idx+1], "."),
+					})
+				}
+				parts = append(parts, &nodePart{
+					key:   keys[keyLen-1],
+					value: strings.Join(keys, "."),
+				})
+			} else {
+				for idx, item := range keys {
+					parts = append(parts, &nodePart{
+						key:   item,
+						value: strings.Join(keys[:idx+1], "."),
+					})
+				}
+			}
+
+			parts = append(parts, &nodePart{key: method.MethodName, value: desc.ServiceName + "." + method.MethodName})
+			api.tree.Routes = api.addRoute(api.tree.Routes, 0, desc.Name, method.Name, parts)
 		}
 	}
 }
 
-// api.v1.merchant.wallet.add
-func (api *RoutesAPI) addRoute(nodes []*RouteInfo_Node, index int, serviceName, methodName string, parts []string) []*RouteInfo_Node {
+// api.v1.service.module.subModule
+
+/*
+	[{
+		"key": "api",
+		"value": "api"
+		}, {
+		"key": "v1",
+		"value": "api.v1",
+	}, {
+
+		"key":"service",
+		"value": "api.v1.service",
+	}, {
+
+		"key": "module/subModule",
+	 "value": "api.v1.service.module/subModule"
+	}, {
+
+		"key": "method",
+	 	"method": "method"
+	}]
+*/
+type nodePart struct {
+	key   string
+	value string
+}
+
+func (api *RoutesAPI) addRoute(nodes []*RouteInfo_Node, index int, serviceName, methodName string, parts []*nodePart) []*RouteInfo_Node {
 	if index >= len(parts) {
 		return nodes
 	}
 	var target *RouteInfo_Node
-	label := parts[index]
+	label := parts[index].key
 	if index == len(parts)-1 {
 		label = methodName
 	} else if index == len(parts)-2 {
 		label = serviceName
 	}
 
-	value := strings.Join(parts[:index+1], ".")
+	value := parts[index].value
 	if index != len(parts)-1 {
 		value += ".*"
 	}
