@@ -157,7 +157,7 @@ func (c *CacheLocal) loadAndWatch() (*CacheLocal, error) {
 		return nil, err
 	}
 	// Watch for runtime configuration changes (e.g., resizing cache).
-	config.AddPatternListener("asjard.cache.local.*", c.watch)
+	config.AddPatternListener("asjard.cache.*", c.watch)
 	return c, nil
 }
 

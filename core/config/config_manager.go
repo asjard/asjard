@@ -21,7 +21,7 @@ import (
 
 var (
 	// Regex to identify ${variable} patterns for dynamic parameter injection.
-	configParamCompile = regexp.MustCompile("\\${(.*?)}")
+	configParamCompile = regexp.MustCompile(`\${(.*?)}`)
 	// Atomic flag to ensure the configuration system is initialized only once.
 	loadedFlag atomic.Bool
 )

@@ -73,11 +73,7 @@ func (asd *Asjard) AddHandler(handler any, protocols ...string) error {
 	asd.hm.Lock()
 	defer asd.hm.Unlock()
 	for _, protocol := range protocols {
-		if _, ok := asd.handlers[protocol]; ok {
-			asd.handlers[protocol] = append(asd.handlers[protocol], handler)
-		} else {
-			asd.handlers[protocol] = []any{handler}
-		}
+		asd.handlers[protocol] = append(asd.handlers[protocol], handler)
 		// Register as a bootstrap initiator if supported.
 		if bootstrapHandler, ok := handler.(bootstrap.Initiator); ok {
 			bootstrap.AddBootstrap(bootstrapHandler)
@@ -133,7 +129,7 @@ func (asd *Asjard) Start() error {
 	// Wait for OS signals or startup errors.
 	quit := make(chan os.Signal, 1)
 	defer close(quit)
-	signal.Notify(quit, syscall.SIGKILL, syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP, syscall.SIGABRT)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP, syscall.SIGABRT)
 	select {
 	case s := <-quit:
 		logger.Info("system get os signal start exiting...",

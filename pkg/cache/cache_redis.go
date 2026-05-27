@@ -446,7 +446,7 @@ func (c *CacheRedis) loadAndWatch() (*CacheRedis, error) {
 	if err := c.load(); err != nil {
 		return nil, err
 	}
-	config.AddPatternListener("asjard.cache.redis.*", c.watch)
+	config.AddPatternListener("asjard.cache.*", c.watch)
 	return c, nil
 }
 

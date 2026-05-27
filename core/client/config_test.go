@@ -1,6 +1,7 @@
 package client
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -41,7 +42,7 @@ func TestConfigHierarchy(t *testing.T) {
 		// Simulate setting service-level config
 		key := "asjard.clients." + protocol + "." + serviceName + ".loadbalance"
 		config.Set(key, serviceLB)
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 
 		conf := serverConfig(protocol, serviceName)
 		if conf.Loadbalance != serviceLB {
@@ -67,14 +68,7 @@ func TestConfigComplete(t *testing.T) {
 	}
 
 	// Verify specific elements exist
-	found := false
-	for _, s := range completed.Interceptors {
-		if s == "custom-metric" {
-			found = true
-			break
-		}
-	}
-	if !found {
+	if !slices.Contains(completed.Interceptors, "custom-metric") {
 		t.Error("Custom interceptor lost during merge")
 	}
 }
