@@ -114,7 +114,11 @@ type Option func(*DBOptions)
 // ctxDBKey is an unexported type for context keys to avoid collisions with
 // other packages. This ensures that only this package can access the DB
 // instance stored in the context.
-type ctxDBKey struct{}
+type ctxKey int
+
+const (
+	ctxDBKey ctxKey = 1
+)
 
 // WithConnName allows the caller to request a specific named database connection.
 func WithConnName(connName string) func(*DBOptions) {
@@ -139,7 +143,7 @@ func WithConnName(connName string) func(*DBOptions) {
 //		anotherFn(xgorm.WithDB(ctx, tx))
 //	})
 func WithDB(ctx context.Context, db *gorm.DB) context.Context {
-	return context.WithValue(ctx, ctxDBKey{}, db)
+	return context.WithValue(ctx, ctxDBKey, db)
 }
 
 var (
@@ -165,7 +169,7 @@ func init() {
 // It automatically injects the context and configures debug mode if required.
 // If no database is found in the context, it returns the global manager's instance
 func DB(ctx context.Context, opts ...Option) (*gorm.DB, error) {
-	if db, ok := ctx.Value(ctxDBKey{}).(*gorm.DB); ok {
+	if db, ok := ctx.Value(ctxDBKey).(*gorm.DB); ok {
 		return db, nil
 	}
 
