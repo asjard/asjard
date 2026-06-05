@@ -32,7 +32,11 @@ type Context struct {
 	write   Writer
 }
 
-type userContext struct{}
+type ctxKey int32
+
+const (
+	userContext ctxKey = 1
+)
 
 // contextPool implements Object Pooling to reduce GC overhead by reusing Context objects.
 var (
@@ -57,7 +61,7 @@ func (c *Context) Context() context.Context {
 	if c.RequestCtx == nil {
 		return context.Background()
 	}
-	if ctx, ok := c.UserValue(userContext{}).(context.Context); ok {
+	if ctx, ok := c.UserValue(userContext).(context.Context); ok {
 		return ctx
 	}
 	ctx := context.Background()
@@ -69,7 +73,7 @@ func (c *Context) SetContext(ctx context.Context) {
 	if c.RequestCtx == nil {
 		return
 	}
-	c.SetUserValue(userContext{}, ctx)
+	c.SetUserValue(userContext, ctx)
 }
 
 // ReadEntity parses request parameters and serializes them into a Protobuf message.

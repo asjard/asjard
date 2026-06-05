@@ -140,7 +140,7 @@ func (asd *Asjard) Start() error {
 	}
 
 	// Standard delay to allow service meshes or load balancers to detect the offline state.
-	time.Sleep(5 * time.Second)
+	// time.Sleep(5 * time.Second)
 	close(runtime.Exit)
 
 	// Execute shutdown sequence.

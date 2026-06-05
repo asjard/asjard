@@ -106,7 +106,15 @@ func (c *ClientConn) Channel() (*amqp.Channel, error) {
 	if c.conn == nil || c.conn.IsClosed() {
 		return nil, status.DatabaseNotFoundError()
 	}
-	return c.conn.Channel()
+	ch, err := c.conn.Channel()
+	if err != nil {
+		return nil, err
+	}
+	if ch.IsClosed() {
+		return nil, status.DatabaseNotFoundError()
+	}
+
+	return ch, nil
 }
 
 // Client retrieves a managed ClientConn from the global manager.

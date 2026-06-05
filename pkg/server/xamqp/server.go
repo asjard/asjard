@@ -78,11 +78,7 @@ func (s *AmqpServer) AddHandler(handler any) error {
 
 // Start opens the channel and starts the keepalive monitor.
 func (s *AmqpServer) Start(startErr chan error) error {
-	conn, err := xamqp.Client(xamqp.WithClientName(s.conf.ClientName))
-	if err != nil {
-		return err
-	}
-	s.conn = conn
+
 	if err := s.start(); err != nil {
 		return err
 	}
@@ -164,11 +160,18 @@ func (s *AmqpServer) reconnect() {
 
 // start performs the heavy lifting: declaring queues, exchanges, and bindings.
 func (s *AmqpServer) start() error {
+	conn, err := xamqp.Client(xamqp.WithClientName(s.conf.ClientName))
+	if err != nil {
+		return err
+	}
+	s.conn = conn
 	ch, err := s.conn.Channel()
 	if err != nil {
 		return err
 	}
+
 	s.ch = ch
+	s.closed = make(chan *amqp.Error)
 	// Register a listener for channel closure.
 	ch.NotifyClose(s.closed)
 	r := ch.NotifyReturn(make(chan amqp.Return))
@@ -221,6 +224,15 @@ func (s *AmqpServer) declareAndRun(svc Handler, method MethodDesc) error {
 			return err
 		}
 		if err := s.ch.QueueBind(queue.Name, method.RetryRoute, method.RetryExchange, method.NoWait, method.Table); err != nil {
+			return err
+		}
+	}
+	if method.DelayQueue != "" {
+		_, err := s.ch.QueueDeclare(method.DelayQueue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, amqp.Table{
+			"x-dead-letter-exchange":    method.Exchange,
+			"x-dead-letter-routing-key": method.Route,
+		})
+		if err != nil {
 			return err
 		}
 	}
@@ -283,6 +295,7 @@ func (s *AmqpServer) fixedRetry(msg amqp.Delivery, method MethodDesc) {
 
 	if count >= int32(maxRetries) {
 		msg.Nack(false, false)
+		logger.Warn("message after fixed retry delivery still fail", "exchange", msg.Exchange, "msg", msg.Body)
 		return
 	}
 	s.retryPublish(msg, method, count, method.FixedRetry.RetryDelays[count])
@@ -297,6 +310,7 @@ func (s *AmqpServer) backoffRetry(msg amqp.Delivery, method MethodDesc) {
 
 	if method.BackoffRetry.MaxRetries > 0 && count >= method.BackoffRetry.MaxRetries {
 		msg.Nack(false, false)
+		logger.Warn("message after backoff retry delivery still fail", "exchange", msg.Exchange, "msg", msg.Body)
 		return
 	}
 

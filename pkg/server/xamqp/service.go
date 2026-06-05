@@ -54,7 +54,9 @@ type MethodDesc struct {
 
 	RetryExchange string
 	RetryRoute    string
+	DelayRoute    string
 	RetryQueue    string
+	DelayQueue    string
 	FixedRetry    *mqpb.FixedRetryPolicy
 	BackoffRetry  *mqpb.BackoffRetryPolicy
 	ContentType   string
