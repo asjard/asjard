@@ -134,6 +134,9 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 	}
 
 	logger.Debug("updating state with addresses", "addresses", addresses)
+	if len(addresses) == 0 {
+		return
+	}
 	// UpdateState triggers the gRPC Balancer to re-evaluate the connection pool.
 	if err := r.cc.UpdateState(resolver.State{
 		Addresses: addresses,
@@ -143,6 +146,7 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 			"resolve_service", r.serviceName,
 			"resolve_instance", r.instanceID,
 			"resolve_registry", r.registryName,
+			"addresses", addresses,
 			"err", err)
 	}
 }
@@ -161,5 +165,7 @@ func (r *clientResolver) watch(event *registry.Event) {
 		instances = append(instances, value.(*registry.Instance))
 		return true
 	})
-	r.update(instances)
+	if len(instances) != 0 {
+		r.update(instances)
+	}
 }

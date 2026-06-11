@@ -201,8 +201,6 @@ func WithWatch(watchName string, callback func(*Event)) func(opts *Options) {
 	}
 }
 
-// --- Helpers ---
-
 func okPickFunc() PickFunc {
 	return func(instance *Instance) bool {
 		return true

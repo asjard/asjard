@@ -247,16 +247,26 @@ func (s *AmqpServer) declareAndRun(svc Handler, method MethodDesc) error {
 
 // run processes the message delivery stream for a specific queue.
 func (s *AmqpServer) run(msgs <-chan amqp.Delivery, svc Handler, method MethodDesc) {
+	workPool := make(chan struct{}, s.conf.PrefetchCount)
 	for msg := range msgs {
-		s.tasks.Add(1)
-		// Execute business logic via the descriptor's handler.
-		// Success results in an Ack, failure results in an Nack
-		if _, err := method.Handler(&Context{Context: context.Background(), task: msg}, svc, s.options.Interceptor); err == nil {
-			msg.Ack(false)
-		} else {
-			s.retry(msg, method)
-		}
-		s.tasks.Add(-1)
+		workPool <- struct{}{}
+		go func(msg amqp.Delivery) {
+			s.tasks.Add(1)
+			defer func() {
+				s.tasks.Add(-1)
+				<-workPool
+				if r := recover(); r != nil {
+					msg.Nack(false, true)
+				}
+			}()
+			// Execute business logic via the descriptor's handler.
+			// Success results in an Ack, failure results in an Nack
+			if _, err := method.Handler(&Context{Context: context.Background(), task: msg}, svc, s.options.Interceptor); err == nil {
+				msg.Ack(false)
+			} else {
+				s.retry(msg, method)
+			}
+		}(msg)
 	}
 }
 

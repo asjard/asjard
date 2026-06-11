@@ -135,14 +135,14 @@ func (s *RestServer) AddHandler(handler any) error {
 // Start launches the server listener (Unix, TLS, or Standard TCP) in a background routine.
 func (s *RestServer) Start(startErr chan error) error {
 	// Register system-level error handlers for the router.
-	s.router.NotFound = s.newHandler(_ErrorHandler_NotFound_RestHandler, s.errorHandler, DefaultWriterName)
-	s.router.MethodNotAllowed = s.newHandler(_ErrorHandler_MethodNotAllowed_RestHandler, s.errorHandler, DefaultWriterName)
+	s.router.NotFound = s.newNoInterceptorHandler(_ErrorHandler_NotFound_RestHandler, s.errorHandler, DefaultWriterName)
+	s.router.MethodNotAllowed = s.newNoInterceptorHandler(_ErrorHandler_MethodNotAllowed_RestHandler, s.errorHandler, DefaultWriterName)
 
 	// Custom error handler for low-level protocol errors.
 	s.server.ErrorHandler = func(ctx *fasthttp.RequestCtx, err error) {
 		logger.L(ctx).Error("request error", "method", string(ctx.Method()), "path", string(ctx.Path()), "err", err.Error())
 		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
-		cc.WriteData(_ErrorHandler_Error_RestHandler(cc, s.errorHandler, s.interceptor))
+		cc.WriteData(_ErrorHandler_Error_RestHandler(cc, s.errorHandler, s.emptyInterceptor))
 	}
 
 	// Optionally enable built-in OpenAPI and Route discovery services.
@@ -249,6 +249,22 @@ func (s *RestServer) newHandler(methodHandler methodHandler, svc Handler, writer
 		reply, err := methodHandler(cc, svc, s.interceptor)
 		cc.WriteData(reply, err)
 	}
+}
+
+// newNoInterceptorHandler wraps the business logic in a REST context and response writer without interceptor.
+func (s *RestServer) newNoInterceptorHandler(methodHandler methodHandler, svc Handler, writerName string) fasthttp.RequestHandler {
+	writer := GetWriter(writerName)
+	return func(ctx *fasthttp.RequestCtx) {
+		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage), WithWriter(writer))
+		reply, err := methodHandler(cc,
+			svc,
+			s.emptyInterceptor)
+		cc.WriteData(reply, err)
+	}
+}
+
+func (s *RestServer) emptyInterceptor(ctx context.Context, req any, _ *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
+	return handler(ctx, req)
 }
 
 // applyMiddleware chains multiple middleware functions into a single handler.

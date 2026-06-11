@@ -165,23 +165,20 @@ func (e *Etcd) Registe(instance *server.Service) error {
 
 	// Monitoring goroutine for the lease status.
 	go func() {
-		for {
-			select {
-			case resp := <-leaseChan:
-				// If leaseChan is closed or nil, the lease is lost.
-				if resp == nil {
-					logger.Error("keepalive fail")
-					// Attempt to re-register indefinitely every 3 seconds.
-					for {
-						logger.Debug("start keepalive instance")
-						if err := e.Registe(instance); err != nil {
-							logger.Error("keepalive instance fail", "err", err)
-						} else {
-							logger.Debug("rekeepalive instance success")
-							return
-						}
-						time.Sleep(3 * time.Second)
+		for resp := range leaseChan {
+			// If leaseChan is closed or nil, the lease is lost.
+			if resp == nil {
+				logger.Error("keepalive fail")
+				// Attempt to re-register indefinitely every 3 seconds.
+				for {
+					logger.Debug("start keepalive instance")
+					if err := e.Registe(instance); err != nil {
+						logger.Error("keepalive instance fail", "err", err)
+					} else {
+						logger.Debug("rekeepalive instance success")
+						return
 					}
+					time.Sleep(3 * time.Second)
 				}
 			}
 		}
