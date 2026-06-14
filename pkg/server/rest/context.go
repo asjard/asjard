@@ -18,11 +18,16 @@ import (
 )
 
 const (
-	MIME_XML      = "application/xml"
-	MIME_JSON     = "application/json"
-	MIME_ZIP      = "application/zip"
-	MIME_OCTET    = "application/octet-stream"
-	xForwardedFor = "X-Forwarded-For"
+	MIME_XML   = "application/xml"
+	MIME_JSON  = "application/json"
+	MIME_ZIP   = "application/zip"
+	MIME_OCTET = "application/octet-stream"
+)
+
+var (
+	headerXForwardedFor = []byte("X-Forwarded-For")
+	headerXRealIP       = []byte("X-Real-IP")
+	comma               = []byte(",")
 )
 
 // Context wraps fasthttp.RequestCtx to provide helper methods for parameter
@@ -130,11 +135,19 @@ func (c *Context) GetHeaderParam(key string) []string {
 	return s
 }
 
-func (c *Context) RemoteIP() string {
-	if remoteIp := c.GetHeaderParam(xForwardedFor); len(remoteIp) > 0 {
-		return remoteIp[0]
+func (c *Context) ClientIP() string {
+	xff := c.Request.Header.PeekBytes(headerXForwardedFor)
+	if len(xff) > 0 {
+		before, _, _ := bytes.Cut(xff, []byte(","))
+		return utils.SafeByte2String(bytes.TrimSpace(before))
 	}
-	return c.RequestCtx.RemoteIP().String()
+
+	xri := c.Request.Header.PeekBytes(headerXRealIP)
+	if len(xri) > 0 {
+		return utils.SafeByte2String(bytes.TrimSpace(xri))
+	}
+
+	return c.RemoteIP().String()
 }
 
 // GetQueryParam retrieves values for a specific URL query parameter.
