@@ -6,6 +6,7 @@ import (
 	"maps"
 	"math"
 	"reflect"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -31,10 +32,13 @@ type AmqpServer struct {
 
 	conn   *xamqp.ClientConn // Wrapped AMQP connection
 	ch     *amqp.Channel     // Active AMQP channel
-	closed chan *amqp.Error  // Listener for channel closure events
+	mu     sync.RWMutex
+	done   chan struct{}
+	reconn chan struct{}
 
-	svcs  []Handler    // Registered business logic handlers
-	tasks atomic.Int32 // Counter for active processing tasks (for graceful shutdown)
+	svcs     []Handler    // Registered business logic handlers
+	tasks    atomic.Int32 // Counter for active processing tasks (for graceful shutdown)
+	stopping atomic.Bool
 }
 
 var (
@@ -63,7 +67,8 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 	return &AmqpServer{
 		conf:    conf,
 		options: options,
-		closed:  make(chan *amqp.Error),
+		done:    make(chan struct{}),
+		reconn:  make(chan struct{}, 1),
 	}, nil
 }
 
@@ -87,12 +92,16 @@ func (s *AmqpServer) Start(startErr chan error) error {
 
 // Stop closes the channel and waits for active tasks to complete (graceful shutdown).
 func (s *AmqpServer) Stop() {
-	if s.ch != nil {
-		select {
-		case <-s.closed:
-		default:
-			s.ch.Close()
+	if s.stopping.CompareAndSwap(false, true) {
+		if s.done != nil {
+			close(s.done)
 		}
+	}
+	s.mu.RLock()
+	ch := s.ch
+	s.mu.RUnlock()
+	if ch != nil && !ch.IsClosed() {
+		ch.Close()
 	}
 	// Block until all in-flight messages are processed.
 	for {
@@ -130,9 +139,11 @@ func (s *AmqpServer) addHandler(handler Handler) error {
 // keepalive listens for unexpected channel closures and triggers reconnection.
 func (s *AmqpServer) keepalive() error {
 	go func() {
-		for err := range s.closed {
-			if err != nil {
-				logger.Error("channel exit, start reconnect", "err", err)
+		for {
+			select {
+			case <-s.done:
+				return
+			case <-s.reconn:
 				s.reconnect()
 			}
 		}
@@ -140,10 +151,23 @@ func (s *AmqpServer) keepalive() error {
 	return nil
 }
 
+func (s *AmqpServer) requestReconnect() {
+	if s.stopping.Load() || s.reconn == nil {
+		return
+	}
+	select {
+	case s.reconn <- struct{}{}:
+	default:
+	}
+}
+
 // reconnect implements an exponential backoff strategy to restore the connection.
 func (s *AmqpServer) reconnect() {
 	duration := time.Second
 	for {
+		if s.stopping.Load() {
+			return
+		}
 		if err := s.start(); err == nil {
 			logger.Info("server reconnect to amqp success")
 			return
@@ -164,16 +188,29 @@ func (s *AmqpServer) start() error {
 	if err != nil {
 		return err
 	}
-	s.conn = conn
-	ch, err := s.conn.Channel()
+	ch, err := conn.Channel()
 	if err != nil {
 		return err
 	}
 
+	s.mu.Lock()
+	oldCh := s.ch
+	s.conn = conn
 	s.ch = ch
-	s.closed = make(chan *amqp.Error)
-	// Register a listener for channel closure.
-	ch.NotifyClose(s.closed)
+	s.mu.Unlock()
+	if oldCh != nil && !oldCh.IsClosed() {
+		oldCh.Close()
+	}
+
+	channelClosed := ch.NotifyClose(make(chan *amqp.Error, 1))
+	consumerCancelled := ch.NotifyCancel(make(chan string, 1))
+	connectionClosed, err := conn.NotifyClose(make(chan *amqp.Error, 1))
+	if err != nil {
+		ch.Close()
+		return err
+	}
+	s.watch(ch, channelClosed, connectionClosed, consumerCancelled)
+
 	r := ch.NotifyReturn(make(chan amqp.Return))
 	go s.notifyReturn(r)
 
@@ -191,7 +228,7 @@ func (s *AmqpServer) start() error {
 			if method.Handler == nil {
 				continue
 			}
-			if err := s.declareAndRun(svc, method); err != nil {
+			if err := s.declareAndRun(ch, svc, method); err != nil {
 				return err
 			}
 		}
@@ -199,19 +236,62 @@ func (s *AmqpServer) start() error {
 	return nil
 }
 
-func (s *AmqpServer) declareAndRun(svc Handler, method MethodDesc) error {
+func (s *AmqpServer) watch(ch *amqp.Channel, channelClosed, connectionClosed chan *amqp.Error, consumerCancelled chan string) {
+	go func() {
+		select {
+		case <-s.done:
+			return
+		case err, ok := <-channelClosed:
+			if s.stopping.Load() || !s.isActiveChannel(ch) {
+				return
+			}
+			if ok && err != nil {
+				logger.Error("amqp channel closed, start reconnect", "err", err)
+			} else {
+				logger.Warn("amqp channel closed, start reconnect")
+			}
+		case err, ok := <-connectionClosed:
+			if s.stopping.Load() || !s.isActiveChannel(ch) {
+				return
+			}
+			if ok && err != nil {
+				logger.Error("amqp connection closed, start reconnect", "err", err)
+			} else {
+				logger.Warn("amqp connection closed, start reconnect")
+			}
+		case consumer, ok := <-consumerCancelled:
+			if s.stopping.Load() || !s.isActiveChannel(ch) {
+				return
+			}
+			if ok {
+				logger.Warn("amqp consumer cancelled, start reconnect", "consumer", consumer)
+			} else {
+				logger.Warn("amqp consumer cancelled, start reconnect")
+			}
+		}
+		s.requestReconnect()
+	}()
+}
+
+func (s *AmqpServer) isActiveChannel(ch *amqp.Channel) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.ch == ch
+}
+
+func (s *AmqpServer) declareAndRun(ch *amqp.Channel, svc Handler, method MethodDesc) error {
 	// Idempotently declare the queue.
-	queue, err := s.ch.QueueDeclare(method.Queue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, method.Table)
+	queue, err := ch.QueueDeclare(method.Queue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, method.Table)
 	if err != nil {
 		return err
 	}
 	// If an exchange is specified, declare it and bind the queue.
 	if method.Exchange != "" {
-		if err := s.ch.ExchangeDeclare(method.Exchange,
+		if err := ch.ExchangeDeclare(method.Exchange,
 			method.Kind, method.Durable, method.AutoDelete, method.Internal, method.NoWait, method.Table); err != nil {
 			return err
 		}
-		if err := s.ch.QueueBind(queue.Name, method.Route, method.Exchange, method.NoWait, method.Table); err != nil {
+		if err := ch.QueueBind(queue.Name, method.Route, method.Exchange, method.NoWait, method.Table); err != nil {
 			return err
 		}
 	}
@@ -219,16 +299,16 @@ func (s *AmqpServer) declareAndRun(svc Handler, method MethodDesc) error {
 		retryTable := amqp.Table{}
 		maps.Copy(retryTable, method.Table)
 		retryTable["x-delayed-type"] = "direct"
-		if err := s.ch.ExchangeDeclare(method.RetryExchange,
+		if err := ch.ExchangeDeclare(method.RetryExchange,
 			"x-delayed-message", method.Durable, method.AutoDelete, method.Internal, method.NoWait, retryTable); err != nil {
 			return err
 		}
-		if err := s.ch.QueueBind(queue.Name, method.RetryRoute, method.RetryExchange, method.NoWait, method.Table); err != nil {
+		if err := ch.QueueBind(queue.Name, method.RetryRoute, method.RetryExchange, method.NoWait, method.Table); err != nil {
 			return err
 		}
 	}
 	if method.DelayQueue != "" {
-		_, err := s.ch.QueueDeclare(method.DelayQueue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, amqp.Table{
+		_, err := ch.QueueDeclare(method.DelayQueue, method.Durable, method.AutoDelete, method.Exclusive, method.NoWait, amqp.Table{
 			"x-dead-letter-exchange":    method.Exchange,
 			"x-dead-letter-routing-key": method.Route,
 		})
@@ -237,24 +317,37 @@ func (s *AmqpServer) declareAndRun(svc Handler, method MethodDesc) error {
 		}
 	}
 	// Start the actual consumption process.
-	msgs, err := s.ch.Consume(queue.Name, method.Consumer, method.AutoAck, method.Exclusive, method.NoLocal, method.NoWait, method.Table)
+	msgs, err := ch.Consume(queue.Name, method.Consumer, method.AutoAck, method.Exclusive, method.NoLocal, method.NoWait, method.Table)
 	if err != nil {
 		return err
 	}
-	go s.run(msgs, svc, method)
+	go s.run(ch, msgs, svc, method)
 	return nil
 }
 
 // run processes the message delivery stream for a specific queue.
-func (s *AmqpServer) run(msgs <-chan amqp.Delivery, svc Handler, method MethodDesc) {
-	workPool := make(chan struct{}, s.conf.PrefetchCount)
+func (s *AmqpServer) run(ch *amqp.Channel, msgs <-chan amqp.Delivery, svc Handler, method MethodDesc) {
+	var workPool chan struct{}
+	if s.conf.PrefetchCount > 0 {
+		workPool = make(chan struct{}, s.conf.PrefetchCount)
+	}
+	defer func() {
+		if !s.stopping.Load() && s.isActiveChannel(ch) {
+			logger.Warn("amqp delivery channel closed, start reconnect")
+			s.requestReconnect()
+		}
+	}()
 	for msg := range msgs {
-		workPool <- struct{}{}
+		if workPool != nil {
+			workPool <- struct{}{}
+		}
 		go func(msg amqp.Delivery) {
 			s.tasks.Add(1)
 			defer func() {
 				s.tasks.Add(-1)
-				<-workPool
+				if workPool != nil {
+					<-workPool
+				}
 				if r := recover(); r != nil {
 					msg.Nack(false, true)
 				}
