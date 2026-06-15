@@ -141,6 +141,8 @@ func (g *amqpGenerator) genConstant(service *protogen.Service) {
 
 			g.gen.P(fmt.Sprintf("%s_%s_Queue", service.GoName, method.GoName), "=", strconv.Quote(string(method.Desc.FullName())))
 			g.gen.P(fmt.Sprintf("%s_%s_Queue_Retry", service.GoName, method.GoName), "=", strconv.Quote(string(method.Desc.FullName())+"_Retry"))
+			g.gen.P(fmt.Sprintf("%s_%s_Queue_Delay", service.GoName, method.GoName), "=", strconv.Quote(string(method.Desc.FullName())+"_Delay"))
+			g.gen.P(fmt.Sprintf("%s_%s_Route_Delay", service.GoName, method.GoName), "=", strconv.Quote(method.GoName+"_Delay"))
 		}
 	}
 	if hashMqOption {
@@ -215,7 +217,6 @@ func (g *amqpGenerator) genServiceDesc(service *protogen.Service, serverType str
 					g.gen.P("RetryRoute:", fmt.Sprintf("%s_%s_Route_Retry", service.GoName, method.GoName), ",")
 				}
 				if option.FixedRetry != nil {
-
 					retryDelays := make([]string, 0, len(option.FixedRetry.RetryDelays))
 					for _, item := range option.FixedRetry.RetryDelays {
 						retryDelays = append(retryDelays, strconv.Itoa(int(item)))
@@ -232,6 +233,10 @@ func (g *amqpGenerator) genServiceDesc(service *protogen.Service, serverType str
 					g.gen.P("MaxDelayMs:", option.BackoffRetry.MaxDelayMs, ",")
 					g.gen.P("MaxRetries:", option.BackoffRetry.MaxRetries, ",")
 					g.gen.P("},")
+				}
+				if option.IsDelayTask != nil && *option.IsDelayTask {
+					g.gen.P("DelayQueue:", fmt.Sprintf("%s_%s_Queue_Delay", service.GoName, method.GoName), ",")
+					g.gen.P("DelayRoute:", fmt.Sprintf("%s_%s_Route_Delay", service.GoName, method.GoName), ",")
 				}
 				switch option.DataFormat {
 				case "json":
@@ -405,7 +410,11 @@ func (g *amqpGenerator) genServiceMethodClient(service *protogen.Service, client
 	g.gen.P("if err != nil {")
 	g.gen.P("return err")
 	g.gen.P("}")
-	g.gen.P("ch, err := c.GetChannel()")
+	g.gen.P("conn, err := ", amqpStorePackage.Ident("Client"), "(", amqpStorePackage.Ident("WithClientName"), "(c.options.clientName)", ")")
+	g.gen.P("if err != nil {")
+	g.gen.P("return err")
+	g.gen.P("}")
+	g.gen.P("ch, err := conn.Channel()")
 	g.gen.P("if err != nil {")
 	g.gen.P("return err")
 	g.gen.P("}")
@@ -418,6 +427,16 @@ func (g *amqpGenerator) genServiceMethodClient(service *protogen.Service, client
 	default:
 		g.gen.P("ContentType:\"application/protobuf\",")
 	}
+	g.gen.P("Headers: options.Headers,")
+	g.gen.P("DeliveryMode: options.DeliveryMode,")
+	g.gen.P("Priority: options.Priority,")
+	g.gen.P("CorrelationId: options.CorrelationId,")
+	g.gen.P("ReplyTo: options.ReplyTo,")
+	g.gen.P("Expiration: options.Expiration,")
+	g.gen.P("MessageId: options.MessageId,")
+	g.gen.P("Type: options.Type,")
+	g.gen.P("UserId: options.UserId,")
+	g.gen.P("AppId: options.AppId,")
 	g.gen.P("Body:payload,")
 	g.gen.P("})")
 	g.gen.P("}")

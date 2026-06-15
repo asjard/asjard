@@ -56,6 +56,10 @@ func (m *Model) GetData(ctx context.Context, out any, cache Cacher, get func() (
 		// Cache Miss: Fetch from database using Singleflight to protect the DB.
 		result, err, _ := m.sg.Do(cache.Key(), get)
 		if err != nil {
+			// Not cache empty results if the error is a 500 Internal Error.
+			if cache.EmptySetStrict() && status.FromError(err).Status/100 == 5 {
+				return err
+			}
 			m.sg.Forget(cache.Key())
 			// DB Miss/Error: Cache the empty result for a short period (Negative Caching).
 			if rerr := cache.Set(ctx, cache.Key(), out, cache.EmptyExpiresIn()); rerr != nil {
@@ -99,10 +103,10 @@ func (m *Model) SetData(ctx context.Context, set func() error, caches ...Cacher)
 	}
 
 	return tools.DefaultTW.AddTask(100*time.Millisecond, func() {
-		ctx = context.WithoutCancel(ctx)
+		bgctx := context.WithoutCancel(ctx)
 		for _, cache := range caches {
-			if err := m.delCache(ctx, cache); err != nil {
-				logger.L(ctx).Error("delay delete cache fail", "err", err)
+			if err := m.delCache(bgctx, cache); err != nil {
+				logger.L(bgctx).Error("delay delete cache fail", "err", err)
 			}
 		}
 	})
@@ -156,7 +160,7 @@ func (m *Model) copy(ctx context.Context, from, to any) error {
 	fromVal := reflect.ValueOf(from)
 	toVal := reflect.ValueOf(to)
 	// Validation: 'to' must be a pointer so we can modify its value.
-	if toVal.Kind() != reflect.Ptr || toVal.IsNil() {
+	if toVal.Kind() != reflect.Pointer || toVal.IsNil() {
 		logger.L(ctx).Error("out must be a non-nil ptr")
 		return status.InternalServerError()
 	}

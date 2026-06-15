@@ -112,9 +112,10 @@ func (g *GwGenerator) genFileContent() {
 		g.gen.P("}")
 
 		g.gen.P("func (api *", service.GoName, "API)Start() error {")
-		serviceName := fmt.Sprintf("svc-%s-%s", serviceFullName[2], serviceFullName[0])
+		// api.v1.merchant.auth.App
+		serviceName := fmt.Sprintf("svc-%s-%s", serviceFullName[len(serviceFullName)-2], serviceFullName[0])
 		if *g.conf.WithoutApiType {
-			serviceName = fmt.Sprintf("svc-%s", serviceFullName[2])
+			serviceName = fmt.Sprintf("svc-%s", serviceFullName[len(serviceFullName)-2])
 		}
 		g.gen.P("conn, err := ", clientPackage.Ident("NewClient"), "(", grpcPackage.Ident("Protocol"),
 			",",

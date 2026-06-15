@@ -81,7 +81,7 @@ func (c ClientConn) Conn() grpc.ClientConnInterface {
 
 // NewConn establishes a new gRPC client connection to a target.
 // target format: asjard://grpc/{ServerName}
-func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (client.ClientConnInterface, error) {
+func (c Client) NewConn(target string) (client.ClientConnInterface, error) {
 	u, err := url.Parse(target)
 	if err != nil {
 		return nil, err
@@ -89,18 +89,12 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (client
 	serviceName := strings.Trim(u.Path, "/")
 	var options []grpc.DialOption
 
-	// 1. Configure Load Balancing
-	balanceName := c.balanceName
-	if clientOpts.Balancer != nil && balancer.Get(clientOpts.Balancer.Name()) == nil {
-		balancer.Register(clientOpts.Balancer)
-		balanceName = clientOpts.Balancer.Name()
-	}
-	options = append(options, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}]}`, balanceName)))
+	options = append(options, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}]}`, c.balanceName)))
 
-	// 2. Load gRPC specific configuration (Keepalive, TLS, etc.)
+	// Load gRPC specific configuration (Keepalive, TLS, etc.)
 	conf := serverConfig(serviceName)
 
-	// 3. Configure Security (TLS vs Insecure)
+	// Configure Security (TLS vs Insecure)
 	if conf.CertFile != "" {
 		conf.CertFile = filepath.Join(utils.GetCertDir(), conf.CertFile)
 		creds, err := credentials.NewClientTLSFromFile(conf.CertFile, serviceName)
@@ -112,28 +106,22 @@ func (c Client) NewConn(target string, clientOpts *client.ClientOptions) (client
 		options = append(options, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	// 4. Configure Keepalive parameters to maintain healthy long-lived connections.
+	// Configure Keepalive parameters to maintain healthy long-lived connections.
 	options = append(options, grpc.WithKeepaliveParams(keepalive.ClientParameters{
 		Time:                conf.Options.Keepalive.Time.Duration,
 		Timeout:             conf.Options.Keepalive.Timeout.Duration,
 		PermitWithoutStream: conf.Options.Keepalive.PermitWithoutStream,
 	}))
 
-	// 5. Setup Interceptor (Middleware) pipeline.
-	// This wraps the framework's generic interceptor into gRPC's specific UnaryClientInterceptor format.
-	interceptor := c.interceptor
-	if clientOpts.Interceptor != nil {
-		interceptor = clientOpts.Interceptor
-	}
-	if interceptor != nil {
+	if c.interceptor != nil {
 		options = append(options,
 			grpc.WithUnaryInterceptor(func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-				return interceptor(ctx, method, req, reply, &ClientConn{ClientConn: cc, serviceName: serviceName, protocol: Protocol}, func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface) error {
-					if conf.Timeout.Duration > 0 {
-						ctx, cancel := context.WithTimeout(ctx, conf.Timeout.Duration)
-						defer cancel()
-						return invoker(ctx, method, req, reply, cc.Conn().(*grpc.ClientConn))
-					}
+				return c.interceptor(ctx, method, req, reply, &ClientConn{ClientConn: cc, serviceName: serviceName, protocol: Protocol}, func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface) error {
+					// if conf.Timeout.Duration > 0 {
+					// 	ctx, cancel := context.WithTimeout(ctx, conf.Timeout.Duration)
+					// 	defer cancel()
+					// 	return invoker(ctx, method, req, reply, cc.Conn().(*grpc.ClientConn))
+					// }
 					return invoker(ctx, method, req, reply, cc.Conn().(*grpc.ClientConn))
 				})
 			}))

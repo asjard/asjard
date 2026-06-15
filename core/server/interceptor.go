@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"maps"
 	"sync"
 
 	"github.com/asjard/asjard/core/constant"
@@ -72,12 +73,8 @@ func getServerInterceptors(protocol string) ([]UnaryServerInterceptor, error) {
 
 	// Temporary map to collect relevant factory functions.
 	newInterceptors := make(map[string]NewServerInterceptor)
-	for name, newInterceptor := range newServerInterceptors[protocol] {
-		newInterceptors[name] = newInterceptor
-	}
-	for name, newInterceptor := range newServerInterceptors[constant.AllProtocol] {
-		newInterceptors[name] = newInterceptor
-	}
+	maps.Copy(newInterceptors, newServerInterceptors[protocol])
+	maps.Copy(newInterceptors, newServerInterceptors[constant.AllProtocol])
 
 	conf := GetConfigWithProtocol(protocol)
 	// Build the slice based on the order defined in the configuration.

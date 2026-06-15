@@ -65,7 +65,9 @@ func TestStrings(t *testing.T) {
 			{input: `"a,b,c"`, output: []string{"a", "b", "c"}, ok: true},
 			{input: `"`, ok: false},
 			{input: `"a`, ok: false},
+			{input: `"a,c`, ok: false},
 			{input: `""`, ok: true},
+			{input: `"a"`, output: []string{"a"}, ok: true},
 		}
 		for _, data := range datas {
 			var output JSONStrings
@@ -116,6 +118,7 @@ func TestStrings(t *testing.T) {
 			expect JSONStrings
 		}{
 			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"c"}, expect: JSONStrings{"a", "b", "c"}},
+			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-a"}, expect: JSONStrings{"b"}},
 			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-a", "c"}, expect: JSONStrings{"b", "c"}},
 			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-b", "a", "c"}, expect: JSONStrings{"a", "c"}},
 			{s: JSONStrings{"a", "b"}, cs: JSONStrings{"-b", "-a", "c"}, expect: JSONStrings{"c"}},

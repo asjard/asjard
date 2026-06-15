@@ -12,7 +12,7 @@ import (
 type ClientInterface interface {
 	// NewConn creates a new client connection.
 	// Target format follows: asjard://protocol/serviceName
-	NewConn(target string, options *ClientOptions) (ClientConnInterface, error)
+	NewConn(target string) (ClientConnInterface, error)
 }
 
 // ClientConnInterface extends gRPC's ClientConnInterface to provide
@@ -95,24 +95,11 @@ func (c Client) Conn(ops ...ConnOption) (grpc.ClientConnInterface, error) {
 		return nil, fmt.Errorf("protocol %s client not found", c.protocol)
 	}
 
-	// Fetch specific configuration for the target service to override defaults.
-	conf := serverConfig(c.protocol, c.serverName)
-	interceptor, err := getChainUnaryInterceptors(c.protocol, conf)
-	if err != nil {
-		return nil, err
-	}
-
-	// Prepare options with service-specific balancer and interceptor chains.
-	options := &ClientOptions{
-		Balancer:    NewBalanceBuilder(conf.Loadbalance),
-		Interceptor: interceptor,
-	}
-
 	// Construct the target URI: asjard://protocol/serviceName?instanceID=xxx
 	target := fmt.Sprintf("%s://%s/%s?%s",
 		constant.Framework, c.protocol, c.serverName, c.connOptions(ops...).queryString())
 
-	return cc.NewConn(target, options)
+	return cc.NewConn(target)
 }
 
 // connOptions merges multiple functional options into a single ConnOptions struct.

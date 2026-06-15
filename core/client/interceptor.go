@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"maps"
 	"sync"
 
 	"github.com/asjard/asjard/core/constant"
@@ -79,12 +80,8 @@ func getClientInterceptors(protocol string, conf Config) ([]UnaryClientIntercept
 
 	// Merge protocol-specific and global interceptor factories.
 	newInterceptors := make(map[string]NewClientInterceptor)
-	for name, newInterceptor := range newClientInterceptors[protocol] {
-		newInterceptors[name] = newInterceptor
-	}
-	for name, newInterceptor := range newClientInterceptors[constant.AllProtocol] {
-		newInterceptors[name] = newInterceptor
-	}
+	maps.Copy(newInterceptors, newClientInterceptors[protocol])
+	maps.Copy(newInterceptors, newClientInterceptors[constant.AllProtocol])
 
 	// Instantiate interceptors in the order specified in the configuration.
 	for _, interceptorName := range conf.Interceptors {

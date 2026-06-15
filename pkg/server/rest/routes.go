@@ -104,13 +104,13 @@ func (api RoutesAPI) List(ctx context.Context, in *emptypb.Empty) (*RouteList, e
 // Level 2: Version (e.g., "V1")
 // Level 3: Service & Methods (e.g., "UserService" -> "Login")
 func (api *RoutesAPI) genRoutes() {
-	serviceDescs := []ServiceDesc{}
+	serviceDescs := make([]*ServiceDesc, 0, len(api.handlers))
 	for _, handler := range api.handlers {
-		serviceDescs = append(serviceDescs, *handler.RestServiceDesc())
+		serviceDescs = append(serviceDescs, handler.RestServiceDesc())
 	}
 
 	// Sort services by name to ensure consistent output in the UI.
-	sort.Slice(serviceDescs, func(i, j int) bool {
+	sort.SliceStable(serviceDescs, func(i, j int) bool {
 		return serviceDescs[i].ServiceName < serviceDescs[j].ServiceName
 	})
 
@@ -122,95 +122,97 @@ func (api *RoutesAPI) genRoutes() {
 			continue
 		}
 
-		// 1. Handle API Type Level (e.g., "api")
-		tpIndex := api.routeIndex(keys[0], api.tree.Routes)
-		if tpIndex < 0 {
-			label := strings.ToUpper(keys[0])
-			if keyLen <= 1 {
-				label = desc.Name
-			}
-			api.tree.Routes = append(api.tree.Routes, &RouteInfo_Node{
-				Label:    label,
-				Value:    keys[0],
-				Children: []*RouteInfo_Node{},
-			})
-			tpIndex = len(api.tree.Routes) - 1
-		}
-		if keyLen <= 1 {
-			for _, method := range desc.Methods {
-				api.addMethod(api.tree.Routes[tpIndex], method)
-			}
-			continue
-		}
-
-		// 2. Handle Version Level (e.g., "v1")
-		vIndex := api.routeIndex(keys[1], api.tree.Routes[tpIndex].Children)
-		if vIndex < 0 {
-			label := strings.ToUpper(keys[1])
-			if len(keys) <= 2 {
-				label = desc.Name
-			}
-			api.addRoute(api.tree.Routes[tpIndex], label, keys[1])
-			vIndex = len(api.tree.Routes[tpIndex].Children) - 1
-		}
-		if len(keys) <= 2 {
-			for _, method := range desc.Methods {
-				api.addMethod(api.tree.Routes[tpIndex].Children[vIndex], method)
-			}
-			continue
-		}
-
-		// 3. Handle Service Name Level
-		sName := strings.ReplaceAll(strings.Join(keys[2:], "."), ".", "_")
-		sIndex := api.routeIndex(sName, api.tree.Routes[tpIndex].Children[vIndex].Children)
-		if sIndex < 0 {
-			api.addRoute(api.tree.Routes[tpIndex].Children[vIndex], desc.Name, sName)
-			sIndex = len(api.tree.Routes[tpIndex].Children[vIndex].Children) - 1
-		}
-
-		// 4. Add Methods as leaf nodes
 		for _, method := range desc.Methods {
-			api.addMethod(api.tree.Routes[tpIndex].Children[vIndex].Children[sIndex], method)
-			api.list = append(api.list, desc.ServiceName+"."+method.MethodName)
+			parts := make([]*nodePart, 0, len(keys)+1)
+			if keyLen > 4 {
+				for idx := range keyLen - 2 {
+					parts = append(parts, &nodePart{
+						key:   keys[idx],
+						value: strings.Join(keys[:idx+1], "."),
+					})
+				}
+				parts = append(parts, &nodePart{
+					key:   keys[keyLen-1],
+					value: strings.Join(keys, "."),
+				})
+			} else {
+				for idx, item := range keys {
+					parts = append(parts, &nodePart{
+						key:   item,
+						value: strings.Join(keys[:idx+1], "."),
+					})
+				}
+			}
+
+			parts = append(parts, &nodePart{key: method.MethodName, value: desc.ServiceName + "." + method.MethodName})
+			api.tree.Routes = api.addRoute(api.tree.Routes, 0, desc.Name, method.Name, parts)
 		}
 	}
 }
 
-// routeIndex is a helper to find a node in a slice by its 'Value' property.
-func (api *RoutesAPI) routeIndex(value string, nodes []*RouteInfo_Node) int {
-	for index, route := range nodes {
-		if route.Value == value {
-			return index
-		}
-	}
-	return -1
+// api.v1.service.module.subModule
+
+/*
+	[{
+		"key": "api",
+		"value": "api"
+		}, {
+		"key": "v1",
+		"value": "api.v1",
+	}, {
+
+		"key":"service",
+		"value": "api.v1.service",
+	}, {
+
+		"key": "module/subModule",
+	 "value": "api.v1.service.module/subModule"
+	}, {
+
+		"key": "method",
+	 	"method": "method"
+	}]
+*/
+type nodePart struct {
+	key   string
+	value string
 }
 
-// addMethod adds a method node to a parent route node.
-func (api *RoutesAPI) addMethod(node *RouteInfo_Node, method MethodDesc) {
-	label := method.Name
-	if label == "" {
-		label = method.MethodName
+func (api *RoutesAPI) addRoute(nodes []*RouteInfo_Node, index int, serviceName, methodName string, parts []*nodePart) []*RouteInfo_Node {
+	if index >= len(parts) {
+		return nodes
 	}
-	node.Children = append(node.Children, &RouteInfo_Node{
-		Label: label,
-		Value: method.MethodName,
-	})
-}
+	var target *RouteInfo_Node
+	label := parts[index].key
+	if index == len(parts)-1 {
+		label = methodName
+	} else if index == len(parts)-2 {
+		label = serviceName
+	}
 
-// addRoute adds a category or service node to a parent route node.
-func (api *RoutesAPI) addRoute(node *RouteInfo_Node, label, value string) {
-	if label == "" {
-		keys := strings.Split(value, ".")
-		if len(keys) > 0 {
-			label = keys[len(keys)-1]
+	value := parts[index].value
+	if index != len(parts)-1 {
+		value += ".*"
+	}
+
+	for _, node := range nodes {
+		if node.Value == value {
+			target = node
+			break
 		}
 	}
-	node.Children = append(node.Children, &RouteInfo_Node{
-		Label:    label,
-		Value:    value,
-		Children: []*RouteInfo_Node{},
-	})
+	if target == nil {
+		target = &RouteInfo_Node{
+			Label: label,
+			Value: value,
+		}
+		nodes = append(nodes, target)
+	}
+
+	if index < len(parts)-1 {
+		target.Children = api.addRoute(target.Children, index+1, serviceName, methodName, parts)
+	}
+	return nodes
 }
 
 // RestServiceDesc returns the service descriptor for the Routes introspection service.

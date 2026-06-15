@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"errors"
+	"slices"
 	"strings"
 	"time"
 
@@ -63,10 +64,11 @@ func (s *JSONStrings) UnmarshalJSON(b []byte) error {
 		return nil
 	}
 	// Case 1: Input is a string (e.g., "item1,item2")
-	if b[0] == '"' {
+	switch b[0] {
+	case '"':
 		*s = strings.Split(string(b[1:n-1]), ",")
 		return nil
-	} else if b[0] == '[' {
+	case '[':
 		// Case 2: Input is a standard JSON array (e.g., ["item1", "item2"])
 		var out []any
 		if err := json.Unmarshal(b, &out); err != nil {
@@ -80,17 +82,12 @@ func (s *JSONStrings) UnmarshalJSON(b []byte) error {
 		*s = result
 		return nil
 	}
-	return errors.New("invliad strings")
+	return errors.New("invliad strings, must start with '\"' or '[' ")
 }
 
 // Contains checks if a specific string exists within the slice.
 func (s JSONStrings) Contains(subStr string) bool {
-	for _, item := range s {
-		if item == subStr {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(s, subStr)
 }
 
 const (
@@ -130,20 +127,21 @@ func (s JSONStrings) Merge(cs JSONStrings) JSONStrings {
 				continue
 			}
 			// Handle appending before: +target:new
-			if strings.HasPrefix(v1, AppendFlag+v+SplitFlag) {
-				values = JSONStrings{strings.TrimPrefix(v1, AppendFlag+v+SplitFlag), v}
+			if after, ok := strings.CutPrefix(v1, AppendFlag+v+SplitFlag); ok {
+				values = JSONStrings{after, v}
 				continue
 			}
 			// Handle appending after: target+:new
-			if strings.HasPrefix(v1, v+AppendFlag+SplitFlag) {
-				values = JSONStrings{v, strings.TrimPrefix(v1, v+AppendFlag+SplitFlag)}
+			if after, ok := strings.CutPrefix(v1, v+AppendFlag+SplitFlag); ok {
+				values = JSONStrings{v, after}
 				continue
 			}
 			// Handle replacement: =target:new
-			if strings.HasPrefix(v1, ReplaceFlag+v+SplitFlag) {
-				values = JSONStrings{strings.TrimPrefix(v1, ReplaceFlag+v+SplitFlag)}
+			if after, ok := strings.CutPrefix(v1, ReplaceFlag+v+SplitFlag); ok {
+				values = JSONStrings{after}
 				continue
 			}
+
 		}
 		if len(values) != 0 {
 			ns = append(ns, values...)

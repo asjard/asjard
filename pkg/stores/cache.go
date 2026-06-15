@@ -35,6 +35,7 @@ type Cacher interface {
 	AutoRefresh() bool
 	ExpiresIn() time.Duration
 	EmptyExpiresIn() time.Duration
+	EmptySetStrict() bool
 }
 
 // CacheConfig defines the behavioral settings for a specific cache instance.
@@ -61,6 +62,8 @@ type CacheConfig struct {
 	// EmptyExpiresIn is the TTL for "Negative Caching" (caching the absence of data).
 	// Prevents "Cache Penetration" by caching null results from the DB.
 	EmptyExpiresIn utils.JSONDuration `json:"emptyExpiresIn"`
+	// EmptySetStrict enables strict validation; do not cache empty results if the error is a 500 Internal Error.
+	EmptySetStrict bool `json:"emptySetStrict"`
 }
 
 // Cache is the base implementation struct intended to be embedded in specific cache providers.
@@ -79,7 +82,8 @@ type Cache struct {
 var (
 	// DefaultCacheConfig provides a safe baseline: 10-minute TTL and version independence.
 	DefaultCacheConfig = CacheConfig{
-		ExpiresIn: utils.JSONDuration{Duration: 10 * time.Minute},
+		ExpiresIn:      utils.JSONDuration{Duration: 10 * time.Minute},
+		EmptySetStrict: true,
 	}
 )
 
@@ -161,4 +165,13 @@ func (c *Cache) EmptyExpiresIn() time.Duration {
 	}
 	// Also includes jitter for the same reasons as ExpiresIn.
 	return expiresIn + time.Duration(rand.Int63n(int64(expiresIn)))
+}
+
+// EmptySetStrict enables strict validation; do not cache empty results if the error is a 500 Internal Error.
+// if true, not cache empty result if error is a internal error
+// else always cache empty result
+func (c *Cache) EmptySetStrict() bool {
+	c.cm.RLock()
+	defer c.cm.RUnlock()
+	return c.conf.EmptySetStrict
 }

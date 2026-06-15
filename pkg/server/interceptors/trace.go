@@ -77,6 +77,7 @@ func (t *Trace) Interceptor() server.UnaryServerInterceptor {
 
 		// 5. Special handling for REST protocol to attach TraceID to the response.
 		if rtx, ok := ctx.(*rest.Context); ok {
+			rtx.SetContext(trace.ContextWithSpanContext(rtx.Context(), trace.SpanContextFromContext(tx)))
 			// Attach TraceID to REST user values so it can be sent back in HTTP headers.
 			rtx.SetUserValue(rest.HeaderResponseRequestID, span.SpanContext().TraceID().String())
 			rtx.SetUserValue(rest.HeaderResponseRequestMethod, info.FullMethod)

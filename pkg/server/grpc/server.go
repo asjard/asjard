@@ -114,7 +114,7 @@ func New(options *server.ServerOptions) (server.Server, error) {
 func (s *GrpcServer) AddHandler(handler any) error {
 	h, ok := handler.(Handler)
 	if !ok {
-		return fmt.Errorf("invalid handler %T, must implement *grpc.ServiceDesc", handler)
+		return fmt.Errorf("invalid handler %T, must implement *grpc.GrpcServiceDesc", handler)
 	}
 	s.server.RegisterService(h.GrpcServiceDesc(), handler)
 	return nil

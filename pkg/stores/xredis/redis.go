@@ -184,7 +184,7 @@ func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 		client, err := m.newClient(name, conf)
 		if err != nil {
 			logger.Error("connect to redis fail", "name", name, "conf", conf, "err", err)
-			return err
+			return fmt.Errorf("connect to redis '%s' fail: %v", name, err)
 		}
 		m.clients.Store(name, &ClientConn{
 			name:   name,

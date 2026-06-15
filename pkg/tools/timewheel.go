@@ -91,7 +91,7 @@ func NewTimeWheel(interval, maxInterval time.Duration, slotNum int) *TimeWheel {
 	}
 
 	// Initialize the doubly linked list for each slot
-	for i := 0; i < slotNum; i++ {
+	for i := range slotNum {
 		tw.slots[i] = list.New()
 	}
 
@@ -209,4 +209,18 @@ func (tw *TimeWheel) addTask(task *Task) {
 	pos := (tw.currentPos + ticks) % tw.slotNum
 
 	tw.slots[pos].PushBack(task)
+}
+
+func (tw *TimeWheel) flushAllTasks() {
+	for _, l := range tw.slots {
+		for e := l.Front(); e != nil; {
+			next := e.Next()
+
+			task := e.Value.(*Task)
+			tw.safeExcute(task.fn)
+
+			l.Remove(e)
+			e = next
+		}
+	}
 }

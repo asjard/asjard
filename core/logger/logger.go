@@ -3,11 +3,9 @@ package logger
 import (
 	"context"
 	"log/slog"
-	"path/filepath"
 	"runtime"
-	"strconv"
-	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/asjard/asjard/core/constant"
 	"go.opentelemetry.io/otel/trace"
@@ -67,7 +65,7 @@ func L(ctx context.Context) *Logger {
 func DefaultLogger(slogger *slog.Logger) *Logger {
 	return &Logger{
 		ctx:        context.TODO(),
-		callerSkip: 3, // Default skip level to find the user's code calling the logger
+		callerSkip: 4, // Default skip level to find the user's code calling the logger
 		slogger:    slogger,
 	}
 }
@@ -86,7 +84,8 @@ func NewSlogHandler(cfg *Config) slog.Handler {
 		MaxBackups: cfg.MaxBackups,
 	}
 	handlerOptions := &slog.HandlerOptions{
-		Level: getSlogLevel(cfg.Level),
+		Level:     getSlogLevel(cfg.Level),
+		AddSource: true,
 	}
 	switch cfg.Format {
 	case Text.String():
@@ -116,39 +115,33 @@ func (l *Logger) WithCallerSkip(skip int) *Logger {
 
 // log is the internal core method that gathers all metadata and writes the log.
 func (l Logger) log(level slog.Level, msg string, args ...any) {
-	// 1. Identify the source code location (file and line)
-	_, f, ln, ok := runtime.Caller(l.callerSkip)
-	if !ok {
-		f = "???"
-		ln = 0
-	} else {
-		// Trim the path to show only the last 3 directories for readability
-		if fl := strings.Split(f, string(filepath.Separator)); len(fl) >= 3 {
-			f = filepath.Join(fl[len(fl)-3:]...)
-		}
+	if !l.slogger.Enabled(l.ctx, level) {
+		return
 	}
+	var pcs [1]uintptr
+	runtime.Callers(l.callerSkip, pcs[:])
+	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
+	r.Add(args...)
 
-	// 2. Inject Framework Metadata (Environment, Region, App Name)
-	args = append(args, []any{
-		"app", constant.APP.Load(),
-		"region", constant.Region.Load(),
-		"az", constant.AZ.Load(),
-		"env", constant.Env.Load(),
-		"service", constant.ServiceName.Load(),
-		"source", f + ":" + strconv.Itoa(ln),
-	}...)
+	// Inject Framework Metadata (Environment, Region, App Name)
+	r.AddAttrs(
+		slog.Any("app", constant.APP.Load()),
+		slog.Any("region", constant.Region.Load()),
+		slog.Any("az", constant.AZ.Load()),
+		slog.Any("env", constant.Env.Load()),
+		slog.Any("service", constant.ServiceName.Load()),
+	)
 
-	// 3. Inject Distributed Tracing Information (TraceID and SpanID)
+	// Inject Distributed Tracing Information (TraceID and SpanID)
 	traceCtx := trace.SpanContextFromContext(l.ctx)
 	if traceCtx.TraceID().IsValid() {
-		args = append(args, []any{"trace", traceCtx.TraceID().String()}...)
+		r.Add(slog.String("trace", traceCtx.TraceID().String()))
 	}
 	if traceCtx.SpanID().IsValid() {
-		args = append(args, []any{"span", traceCtx.SpanID().String()}...)
+		r.Add(slog.String("span", traceCtx.SpanID().String()))
 	}
 
-	// 4. Final log output
-	l.slogger.Log(l.ctx, level, msg, args...)
+	l.slogger.Handler().Handle(l.ctx, r)
 }
 
 // L is a shorthand for withContext on an existing Logger instance.

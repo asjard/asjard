@@ -2,6 +2,7 @@ package interceptors
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/asjard/asjard/core/client"
@@ -67,14 +68,10 @@ func (s CycleChainInterceptor) Interceptor() client.UnaryClientInterceptor {
 
 		// 1. Detect Cycles:
 		// Check if the current method has already appeared in the upstream chain.
-		if requestChains, ok := md[HeaderRequestChain]; ok {
-			for _, requestMethod := range requestChains {
-				if requestMethod == currentRequestMethod {
-					// Found a match! Append it one last time for visibility and return an error.
-					requestChains = append(requestChains, currentRequestMethod)
-					return status.Errorf(codes.Canceled, "cycle call, chains: %s", strings.Join(requestChains, " -> "))
-				}
-			}
+		if requestChains, ok := md[HeaderRequestChain]; ok && slices.Contains(requestChains, currentRequestMethod) {
+			// Found a match! Append it one last time for visibility and return an error.
+			requestChains = append(requestChains, currentRequestMethod)
+			return status.Errorf(codes.Canceled, "cycle call, chains: %s", strings.Join(requestChains, " -> "))
 		}
 
 		// 2. Propagate Chain:

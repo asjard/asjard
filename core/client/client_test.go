@@ -6,14 +6,13 @@ import (
 
 // mockClient implements ClientInterface for testing URI generation and options.
 type mockClient struct {
-	lastTarget  string
-	lastOptions *ClientOptions
+	lastTarget string
 }
 
 // NewConn records the target and options passed by the orchestrator.
-func (m *mockClient) NewConn(target string, options *ClientOptions) (ClientConnInterface, error) {
+func (m *mockClient) NewConn(target string) (ClientConnInterface, error) {
 	m.lastTarget = target
-	m.lastOptions = options
+	// m.lastOptions = options
 	return nil, nil // Return nil for connection as we only test orchestration
 }
 
@@ -62,10 +61,6 @@ func TestClient_Conn(t *testing.T) {
 
 			if mock.lastTarget != tt.wantTarget {
 				t.Errorf("Target URI mismatch\ngot:  %s\nwant: %s", mock.lastTarget, tt.wantTarget)
-			}
-
-			if mock.lastOptions == nil {
-				t.Error("ClientOptions were not passed to NewConn")
 			}
 		})
 	}

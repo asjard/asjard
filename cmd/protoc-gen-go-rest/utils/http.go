@@ -129,12 +129,13 @@ func ParseMethodHttpOption(service *protogen.Service, h *httppb.Http) *HttpOptio
 		if methodOption.Version == "" {
 			methodOption.Version = serviceFullNameList[1]
 		}
+		// api.v1.merchant.auth.App
 		if len(serviceFullNameList) >= 3 {
-			methodOption.Service = serviceFullNameList[2]
+			methodOption.Service = serviceFullNameList[len(serviceFullNameList)-2]
 		}
 	}
 	if len(serviceFullNameList) > 4 {
-		methodOption.Classify = serviceFullNameList[3]
+		methodOption.Classify = serviceFullNameList[2]
 	}
 	if methodOption.Group == "" {
 		methodOption.Group = strings.ToLower(service.GoName)

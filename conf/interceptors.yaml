@@ -39,7 +39,7 @@ asjard:
         #   - traceparent
       ## error log client interceptor
       errLog:
-        ebaled: false
+        enabled: false
         skipMethods: ""
     ## server interceptor
     server:

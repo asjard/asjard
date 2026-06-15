@@ -79,7 +79,7 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 func (s *AsynqServer) AddHandler(handler any) error {
 	h, ok := handler.(Handler)
 	if !ok {
-		return fmt.Errorf("invalid handler, %T must implement *asynq.Handler", handler)
+		return fmt.Errorf("invalid handler, %T must implement *asynq.AsynqServiceDesc", handler)
 	}
 	return s.addHandler(h)
 }

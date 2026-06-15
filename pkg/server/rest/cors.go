@@ -2,6 +2,7 @@ package rest
 
 import (
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -23,7 +24,7 @@ func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
 
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
-			// 1. Get the Origin header from the request.
+			// Get the Origin header from the request.
 			origin := string(append([]byte(nil), ctx.Request.Header.Peek("Origin")...))
 
 			// If no Origin header is present, it's not a cross-origin request.
@@ -32,20 +33,20 @@ func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
 				return
 			}
 
-			// 2. Check if the origin matches the current host (Same-Origin).
+			// Check if the origin matches the current host (Same-Origin).
 			host := string(ctx.Host())
 			if origin == "http://"+host || origin == "https://"+host {
 				next(ctx)
 				return
 			}
 
-			// 3. Validate the origin against the allowed list in the configuration.
+			// Validate the origin against the allowed list in the configuration.
 			if !corsIsOriginValid(conf, origin) {
 				ctx.SetStatusCode(http.StatusForbidden)
 				return
 			}
 
-			// 4. Set standard CORS response headers.
+			// Set standard CORS response headers.
 			ctx.Response.Header.Set(fasthttp.HeaderAccessControlAllowOrigin, origin)
 
 			// If not allowing all, set 'Vary: Origin' to prevent cache poisoning.
@@ -53,18 +54,18 @@ func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
 				ctx.Response.Header.Set("Vary", "Origin")
 			}
 
-			// 5. Handle Preflight requests (OPTIONS method).
+			// Handle Preflight requests (OPTIONS method).
 			if string(ctx.Method()) == http.MethodOptions {
 				corsPreflight(ctx, conf)
 				return
 			}
 
-			// 6. Handle credentials (Cookies/Auth headers).
+			// Handle credentials (Cookies/Auth headers).
 			if conf.AllowCredentials {
 				ctx.Response.Header.Set(fasthttp.HeaderAccessControlAllowCredentials, "true")
 			}
 
-			// 7. Expose custom headers to the browser client.
+			// Expose custom headers to the browser client.
 			if len(conf.ExposeHeaders) > 0 {
 				ctx.Response.Header.Set(fasthttp.HeaderAccessControlExposeHeaders, strings.Join(conf.ExposeHeaders, ","))
 			}
@@ -111,10 +112,5 @@ func corsIsOriginValid(conf CorsConfig, origin string) bool {
 	if conf.allowAllOrigins {
 		return true
 	}
-	for _, value := range conf.AllowOrigins {
-		if value == origin {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(conf.AllowOrigins, origin)
 }

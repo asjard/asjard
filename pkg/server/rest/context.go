@@ -24,6 +24,12 @@ const (
 	MIME_OCTET = "application/octet-stream"
 )
 
+var (
+	headerXForwardedFor = []byte("X-Forwarded-For")
+	headerXRealIP       = []byte("X-Real-IP")
+	comma               = []byte(",")
+)
+
 // Context wraps fasthttp.RequestCtx to provide helper methods for parameter
 // extraction, data binding, and response writing.
 type Context struct {
@@ -31,6 +37,12 @@ type Context struct {
 	errPage string
 	write   Writer
 }
+
+type ctxKey int32
+
+const (
+	userContext ctxKey = 1
+)
 
 // contextPool implements Object Pooling to reduce GC overhead by reusing Context objects.
 var (
@@ -49,6 +61,25 @@ func NewContext(ctx *fasthttp.RequestCtx, options ...Option) *Context {
 		opt(c)
 	}
 	return c
+}
+
+func (c *Context) Context() context.Context {
+	if c.RequestCtx == nil {
+		return context.Background()
+	}
+	if ctx, ok := c.UserValue(userContext).(context.Context); ok {
+		return ctx
+	}
+	ctx := context.Background()
+	c.SetContext(ctx)
+	return ctx
+}
+
+func (c *Context) SetContext(ctx context.Context) {
+	if c.RequestCtx == nil {
+		return
+	}
+	c.SetUserValue(userContext, ctx)
 }
 
 // ReadEntity parses request parameters and serializes them into a Protobuf message.
@@ -102,6 +133,21 @@ func (c *Context) GetHeaderParam(key string) []string {
 		s[idx] = utils.SafeByte2String(b)
 	}
 	return s
+}
+
+func (c *Context) ClientIP() string {
+	xff := c.Request.Header.PeekBytes(headerXForwardedFor)
+	if len(xff) > 0 {
+		before, _, _ := bytes.Cut(xff, []byte(","))
+		return utils.SafeByte2String(bytes.TrimSpace(before))
+	}
+
+	xri := c.Request.Header.PeekBytes(headerXRealIP)
+	if len(xri) > 0 {
+		return utils.SafeByte2String(bytes.TrimSpace(xri))
+	}
+
+	return c.RemoteIP().String()
 }
 
 // GetQueryParam retrieves values for a specific URL query parameter.

@@ -22,7 +22,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/asjard/asjard/pkg/protobuf/validatepb"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -141,16 +143,44 @@ func (g *TsGenerator) protocVersion() string {
 func (g *TsGenerator) genMessage(message *protogen.Message) {
 	g.genComment(message.Comments)
 	g.gen.P("  type ", message.GoIdent, " = {")
+	hasValidateRule := g.hasValidateRule(message)
 	for _, field := range message.Fields {
 		g.genComment(field.Comments)
+		split := ": "
+		if hasValidateRule && !g.isRequiredField(field) {
+			split = "?: "
+		}
 		if field.Desc.IsList() {
-			g.gen.P(field.Desc.Name(), "?: ", g.tsKindString(field), "[];")
+			g.gen.P(field.Desc.Name(), split, g.tsKindString(field), "[];")
 		} else {
-			g.gen.P(field.Desc.Name(), "?: ", g.tsKindString(field), ";")
+			g.gen.P(field.Desc.Name(), split, g.tsKindString(field), ";")
 		}
 	}
 	g.gen.P("  };")
 	g.gen.P()
+	for _, msg := range message.Messages {
+		g.genMessage(msg)
+	}
+}
+
+func (g *TsGenerator) hasValidateRule(message *protogen.Message) bool {
+	for _, field := range message.Fields {
+		if validateRule, ok := proto.GetExtension(field.Desc.Options(), validatepb.E_Validate).(*validatepb.Validate); ok && validateRule != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *TsGenerator) isRequiredField(field *protogen.Field) bool {
+	if validateRule, ok := proto.GetExtension(field.Desc.Options(), validatepb.E_Validate).(*validatepb.Validate); ok && validateRule != nil {
+		for _, rule := range validateRule.Rules {
+			if strings.Contains(rule, "required") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (g *TsGenerator) genEnum(em *protogen.Enum, export bool) {

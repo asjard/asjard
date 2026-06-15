@@ -31,8 +31,6 @@ type Config struct {
 // defaultConfig provides the baseline settings for the RabbitMQ consumer.
 func defaultConfig() Config {
 	return Config{
-		// Defaulting to 1 ensures that the consumer only processes one
-		// message at a time, providing a safe "fair dispatch" model.
-		PrefetchCount: 1,
+		PrefetchCount: 30,
 	}
 }
