@@ -179,7 +179,7 @@ func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 		logger.Debug("connect to etcd", "name", name, "cfg", cfg)
 		client, err := m.newClient(name, cfg)
 		if err != nil {
-			return err
+			return fmt.Errorf("connect to etcd '%s' fail: %v", name, err)
 		}
 		m.clients.Store(name, &ClientConn{
 			name:   name,

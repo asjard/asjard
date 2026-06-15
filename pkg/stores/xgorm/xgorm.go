@@ -248,7 +248,7 @@ func (m *DBManager) connDBs(dbsConf map[string]*DBConnConfig) error {
 		db, err := m.connDB(dbName, cfg)
 		if err != nil {
 			logger.Error("connect to database fail", "database", dbName, "config", cfg, "err", err)
-			return err
+			return fmt.Errorf("connect to db '%s' fail: %v", dbName, err)
 		}
 		m.dbs.Store(dbName, &DBConn{
 			name:  dbName,

@@ -165,7 +165,7 @@ func (c *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 		conn, err := c.newClient(name, conf)
 		if err != nil {
 			logger.Error("connect to amqp fail", "name", name, "conf", conf, "err", err)
-			return err
+			return fmt.Errorf("connect to amqp '%s' fail: %v", name, err)
 		}
 
 		clientConn := &ClientConn{
