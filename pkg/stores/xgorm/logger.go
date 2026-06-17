@@ -162,7 +162,7 @@ func (l *xgormLogger) load() error {
 
 	// Initialize the structured logger. WithCallerSkip(5) is used to ensure the log
 	// shows the business logic file/line, not the logger's internal wrapper.
-	l.slogger = logger.DefaultLogger(slog.New(logger.NewSlogHandler(&conf.Config))).WithCallerSkip(5)
+	l.slogger = logger.DefaultLogger(slog.New(logger.NewSlogHandler(&conf.Config)))
 	l.ignoreRecordNotFoundError = conf.IgnoreRecordNotFoundError
 	l.slowThreshold = conf.SlowThreshold.Duration
 	return nil
