@@ -109,6 +109,7 @@ func GetAPP() APP {
 		constant.AZ.Store(app.AZ)
 		constant.Env.Store(app.Environment)
 		constant.ServiceName.Store(app.Instance.Name)
+		constant.Version.Store(app.Instance.Version)
 
 		logger.Debug("get app", "app", app)
 	})

@@ -40,6 +40,7 @@ var (
 	AZ          atomic.Value // Availability Zone (e.g., az-1)
 	Env         atomic.Value // Deployment Environment (e.g., prod, dev, staging)
 	ServiceName atomic.Value // Specific Microservice Name
+	Version     atomic.Value
 )
 
 const (

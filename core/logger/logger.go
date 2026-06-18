@@ -161,6 +161,7 @@ func (l Logger) log(level slog.Level, msg string, args ...any) {
 		slog.Any("az", constant.AZ.Load()),
 		slog.Any("env", constant.Env.Load()),
 		slog.Any("service", constant.ServiceName.Load()),
+		slog.Any("version", constant.Version.Load()),
 	)
 
 	// Inject Distributed Tracing Information (TraceID and SpanID)
