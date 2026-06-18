@@ -236,6 +236,7 @@ func (s *AmqpServer) start() error {
 	return nil
 }
 
+//gocyclo:ignore
 func (s *AmqpServer) watch(ch *amqp.Channel, channelClosed, connectionClosed chan *amqp.Error, consumerCancelled chan string) {
 	go func() {
 		select {
