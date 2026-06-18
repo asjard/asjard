@@ -100,6 +100,17 @@ func IsAvailable(opts ...Option) bool {
 	return registryManager.isAvailable(options)
 }
 
+// AddListener add a service-watch listener by name to receiving topology updates.
+func AddListener(opts ...Option) {
+	options := NewOptions(opts)
+	// If no options are provided, fallback to DefaultOptions to ensure
+	// a consistent baseline for the availability check.
+	if len(opts) == 0 {
+		options = DefaultOptions()
+	}
+	registryManager.addListener(options)
+}
+
 // RemoveListener unregisters a service-watch listener by name to stop receiving topology updates.
 func RemoveListener(name string) {
 	registryManager.removeListener(name)

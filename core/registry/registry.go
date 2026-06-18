@@ -189,6 +189,11 @@ func (r *RegistryManager) isAvailable(options *Options) bool {
 }
 
 // removeListener stops watching for changes under a specific listener ID.
+func (r *RegistryManager) addListener(options *Options) {
+	r.cache.addListener(options)
+}
+
+// removeListener stops watching for changes under a specific listener ID.
 func (r *RegistryManager) removeListener(name string) {
 	r.cache.removeListener(name)
 }

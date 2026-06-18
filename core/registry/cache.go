@@ -87,7 +87,7 @@ func (c *cache) pick(options *Options) []*Instance {
 		}
 	}
 	// Automatically register a watcher if the user provided watch criteria.
-	c.addListener(options)
+	// c.addListener(options)
 	return instances
 }
 
@@ -117,24 +117,22 @@ func (c *cache) addListener(options *Options) {
 // removeListener unregisters a watcher by its unique name.
 func (c *cache) removeListener(listenerName string) {
 	c.lm.Lock()
-	for name := range c.listeners {
-		if name == listenerName {
-			delete(c.listeners, name)
-		}
-	}
+	delete(c.listeners, listenerName)
 	c.lm.Unlock()
 }
 
 // update adds or refreshes service instances in the local cache and triggers notifications.
 func (c *cache) update(instances []*Instance) {
 	c.sm.Lock()
-	defer c.sm.Unlock()
 	for _, instance := range instances {
 		logger.Debug("update instance",
 			"instance_id", instance.Service.Instance.ID,
 			"instance_name", instance.Service.Instance.Name,
 			"registry", instance.DiscoverName)
 		c.services[instance.Service.Instance.ID] = instance
+	}
+	c.sm.Unlock()
+	for _, instance := range instances {
 		// Notify interested watchers about the update.
 		c.notify(EventTypeUpdate, instance)
 	}
@@ -147,37 +145,42 @@ func (c *cache) delete(instance *Instance) {
 		"instance_name", instance.Service.Instance.Name,
 		"registry", instance.DiscoverName)
 	c.sm.Lock()
-	if svc, ok := c.services[instance.Service.Instance.ID]; ok {
+	svc, ok := c.services[instance.Service.Instance.ID]
+	if ok {
 		delete(c.services, instance.Service.Instance.ID)
-		c.notify(EventTypeDelete, svc)
 	}
 	c.sm.Unlock()
+	if ok {
+		c.notify(EventTypeDelete, svc)
+
+	}
 }
 
 // notify iterates through all relevant listeners and executes their callbacks if the instance matches their filters.
 func (c *cache) notify(eventType EventType, instance *Instance) {
 	c.lm.RLock()
+	matchedListeners := make([]*listener, 0, len(c.listeners))
 	for _, listeners := range c.listeners {
 		for _, listener := range listeners {
 			if instance.canPick(listener.options) {
-				listener.options.watch(&Event{
-					Type:     eventType,
-					Instance: instance,
-				})
+				matchedListeners = append(matchedListeners, listener)
 			}
 		}
 	}
 	c.lm.RUnlock()
+	for _, listener := range matchedListeners {
+		listener.options.watch(&Event{
+			Type:     eventType,
+			Instance: instance,
+		})
+	}
 }
 
 // healthCheck is a loop that periodically triggers the health probe mechanism.
 func (c *cache) healthCheck() {
 	ticker := time.NewTicker(c.conf.HealthCheckInterval.Duration)
-	for {
-		select {
-		case <-ticker.C:
-			c.doHealthCheck()
-		}
+	for _ = range ticker.C {
+		c.doHealthCheck()
 	}
 }
 
