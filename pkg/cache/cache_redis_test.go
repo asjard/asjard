@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	_ "github.com/asjard/asjard/pkg/config/mem"
 	"github.com/asjard/asjard/pkg/stores/xredis"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testTable struct{}
@@ -88,24 +90,13 @@ func TestRedisCache(t *testing.T) {
 				assert.NotNil(t, keyExist.Err())
 			}
 		})
-		// t.Run("TestKeyOption", func(t *testing.T) {
-		// 	// default is ignore
-		// 	assert.NotContains(t, cache.WithKey("test_version").Key(), "1.0.0")
-		// 	done := make(chan struct{})
-		// 	config.AddListener("asjard.cache.redis.careVersionDiff", func(_ *config.Event) {
-		// 		time.Sleep(800 * time.Millisecond)
-		// 		assert.Contains(t, cache.WithKey("test_version").Key(), "1.0.0")
-		// 		done <- struct{}{}
-		// 	})
-		// 	config.Set("asjard.cache.redis.careVersionDiff", true)
-
-		// 	select {
-		// 	case <-done:
-		// 		break
-		// 	case <-time.After(time.Second):
-		// 		t.Error("after 1s config not changed")
-		// 		t.FailNow()
-		// 	}
-		// })
+		t.Run("TestKeyOption", func(t *testing.T) {
+			// default is ignore
+			assert.NotContains(t, cache.WithKey("test_without_version").Key(), "1.0.0")
+			require.NoError(t, config.Set("asjard.cache.redis.careVersionDiff", true))
+			require.Eventually(t, func() bool {
+				return strings.Contains(cache.WithKey("test_with_version").Key(), "1.0.0")
+			}, 3*time.Second, 20*time.Millisecond)
+		})
 	})
 }

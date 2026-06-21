@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/asjard/asjard/core/constant"
 )
@@ -14,6 +15,11 @@ import (
 type ConfigsWithSyncMap struct {
 	// cfgs stores map[string]*Value
 	cfgs sync.Map
+	// keys is a sorted index used to avoid a full sync.Map scan per prefix.
+	keys         []string
+	keysMu       sync.RWMutex
+	keysVersion  atomic.Uint64
+	indexVersion uint64
 }
 
 // Ensure interface compliance at compile time.
@@ -41,29 +47,65 @@ func (c *ConfigsWithSyncMap) GetAll() map[string]*Value {
 // GetAllWithPrefixs retrieves all configurations starting with specified prefixes.
 // It trims the prefix and the delimiter from the returned keys.
 func (c *ConfigsWithSyncMap) GetAllWithPrefixs(prefixs ...string) map[string]*Value {
-	cfgs := make(map[string]*Value)
+	c.ensureKeyIndex()
+	c.keysMu.RLock()
+	defer c.keysMu.RUnlock()
+	capacity := 0
+	for _, prefix := range prefixs {
+		start, end := prefixKeyRange(c.keys, prefix)
+		capacity += end - start
+	}
+	cfgs := make(map[string]*Value, capacity)
 	// Apply prefixes from general to specific so later chain entries win.
 	for _, prefix := range prefixs {
-		c.cfgs.Range(func(key, value any) bool {
-			k := key.(string)
-			if strings.HasPrefix(k, prefix) {
-				// Example: prefix "app", key "app.name" -> returns "name"
-				cfgs[strings.TrimPrefix(k, prefix+constant.ConfigDelimiter)] = value.(*Value)
+		start, end := prefixKeyRange(c.keys, prefix)
+		for _, key := range c.keys[start:end] {
+			if value, ok := c.cfgs.Load(key); ok {
+				cfgs[strings.TrimPrefix(key, prefix+constant.ConfigDelimiter)] = value.(*Value)
 			}
-			return true
-		})
+		}
 	}
 	return cfgs
 }
 
 // Set saves a configuration value to the map.
 func (c *ConfigsWithSyncMap) Set(key string, value *Value) {
-	c.cfgs.Store(key, value)
+	if _, loaded := c.cfgs.LoadOrStore(key, value); loaded {
+		c.cfgs.Store(key, value)
+	} else {
+		c.keysVersion.Add(1)
+	}
 }
 
 // Del removes a configuration entry from the map.
 func (c *ConfigsWithSyncMap) Del(key string) {
-	c.cfgs.Delete(key)
+	if _, loaded := c.cfgs.LoadAndDelete(key); loaded {
+		c.keysVersion.Add(1)
+	}
+}
+
+func (c *ConfigsWithSyncMap) ensureKeyIndex() {
+	version := c.keysVersion.Load()
+	c.keysMu.RLock()
+	current := c.indexVersion == version
+	c.keysMu.RUnlock()
+	if current {
+		return
+	}
+	c.keysMu.Lock()
+	defer c.keysMu.Unlock()
+	version = c.keysVersion.Load()
+	if c.indexVersion == version {
+		return
+	}
+	keys := make([]string, 0)
+	c.cfgs.Range(func(key, _ any) bool {
+		keys = append(keys, key.(string))
+		return true
+	})
+	sort.Strings(keys)
+	c.keys = keys
+	c.indexVersion = version
 }
 
 // SourcesConfigWithSyncMap manages configurations grouped by their source name.
@@ -89,10 +131,7 @@ func (c *SourcesConfigWithSyncMap) Get(sourceName, key string) (*Value, bool) {
 func (c *SourcesConfigWithSyncMap) Set(sourceName, key string, value *Value) bool {
 	sourceConfigs, ok := c.sources.Load(sourceName)
 	if !ok {
-		// Initialize the source-specific container if it doesn't exist yet.
-		n := &SourceConfigsWithSyncMap{}
-		c.sources.Store(sourceName, n)
-		return n.Set(key, value)
+		sourceConfigs, _ = c.sources.LoadOrStore(sourceName, &SourceConfigsWithSyncMap{})
 	}
 	return sourceConfigs.(SourceConfiger).Set(key, value)
 }
@@ -109,17 +148,28 @@ func (c *SourcesConfigWithSyncMap) Del(sourceName, key, ref string, priority int
 // Since a single source (like a file source) might have internal priorities,
 // it stores values in a sorted slice for each key.
 type SourceConfigsWithSyncMap struct {
-	// cfgs stores map[string][]*Value (sorted by priority descending)
+	// cfgs stores map[string]*sourceValues.
 	cfgs sync.Map
+	mu   sync.RWMutex
+}
+
+type sourceValues struct {
+	mu     sync.RWMutex
+	values []*Value
 }
 
 // Get retrieves the highest priority value for a key within this specific source.
 func (c *SourceConfigsWithSyncMap) Get(key string) (*Value, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	v, ok := c.cfgs.Load(key)
 	if !ok {
 		return nil, false
 	}
-	values := v.([]*Value)
+	entry := v.(*sourceValues)
+	entry.mu.RLock()
+	defer entry.mu.RUnlock()
+	values := entry.values
 	if len(values) == 0 {
 		return nil, false
 	}
@@ -130,42 +180,15 @@ func (c *SourceConfigsWithSyncMap) Get(key string) (*Value, bool) {
 // Set adds a value to the key's list and sorts it by priority.
 // Returns true if the new value becomes the highest priority (the first element).
 func (c *SourceConfigsWithSyncMap) Set(key string, value *Value) bool {
-	v, ok := c.cfgs.Load(key)
-	if !ok {
-		c.cfgs.Store(key, []*Value{value})
-		return true
-	}
-
-	values := v.([]*Value)
-	if len(values) == 0 {
-		c.cfgs.Store(key, []*Value{value})
-		return true
-	}
-
-	// Filter out existing values with the same priority to avoid duplicates.
-	newValues := make([]*Value, 0, len(values))
-	for _, vl := range values {
-		if vl.Priority != value.Priority {
-			newValues = append(newValues, vl)
-		}
-	}
-
-	if len(newValues) == 0 {
-		c.cfgs.Store(key, []*Value{value})
-		return true
-	}
-
-	// Determine if this new value will override the current leader.
-	setted := value.Priority > newValues[0].Priority
-	newValues = append(newValues, value)
-
-	// Keep values sorted: highest priority at the beginning.
-	sort.Slice(newValues, func(i, j int) bool {
-		return newValues[i].Priority > newValues[j].Priority
-	})
-
-	c.cfgs.Store(key, newValues)
-	return setted
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	loaded, _ := c.cfgs.LoadOrStore(key, &sourceValues{})
+	entry := loaded.(*sourceValues)
+	entry.mu.Lock()
+	defer entry.mu.Unlock()
+	values, loadedWinner := upsertSortedValue(entry.values, value)
+	entry.values = values
+	return loadedWinner
 }
 
 // Del removes values from this source.
@@ -173,15 +196,18 @@ func (c *SourceConfigsWithSyncMap) Set(key string, value *Value) bool {
 // If key is provided, it targets a specific configuration key.
 // If ref is provided, it targets all keys associated with a reference (e.g., a specific file).
 func (c *SourceConfigsWithSyncMap) Del(key, ref string, priority int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if key != "" {
 		v, ok := c.cfgs.Load(key)
 		if ok {
+			entry := v.(*sourceValues)
+			entry.mu.Lock()
 			if priority < 0 {
 				c.cfgs.Delete(key)
 			} else {
-				values := v.([]*Value)
-				newValues := make([]*Value, 0, len(values))
-				for _, vl := range values {
+				newValues := make([]*Value, 0, len(entry.values))
+				for _, vl := range entry.values {
 					// Keep values that DON'T match the priority being deleted.
 					if vl.Priority != priority {
 						newValues = append(newValues, vl)
@@ -190,18 +216,21 @@ func (c *SourceConfigsWithSyncMap) Del(key, ref string, priority int) {
 				if len(newValues) == 0 {
 					c.cfgs.Delete(key)
 				} else {
-					c.cfgs.Store(key, newValues)
+					entry.values = newValues
 				}
 			}
+			entry.mu.Unlock()
 		}
 	}
 
 	// Reference-based deletion: iterate through all keys to find matches.
 	if ref != "" {
 		c.cfgs.Range(func(key, value any) bool {
-			values := value.([]*Value)
-			newValues := make([]*Value, 0, len(values))
-			for _, vl := range values {
+			entry := value.(*sourceValues)
+			entry.mu.Lock()
+			defer entry.mu.Unlock()
+			newValues := make([]*Value, 0, len(entry.values))
+			for _, vl := range entry.values {
 				// Skip values that match the reference and priority.
 				if vl.Ref == ref && (priority < 0 || priority == vl.Priority) {
 					continue
@@ -212,7 +241,7 @@ func (c *SourceConfigsWithSyncMap) Del(key, ref string, priority int) {
 			if len(newValues) == 0 {
 				c.cfgs.Delete(key.(string))
 			} else {
-				c.cfgs.Store(key.(string), newValues)
+				entry.values = newValues
 			}
 			return true
 		})

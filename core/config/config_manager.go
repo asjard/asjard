@@ -61,6 +61,7 @@ type Source struct {
 	newSourceFunc NewSourceFunc
 	// Tracks if the source has been initialized.
 	loaded bool
+	mu     sync.Mutex
 }
 
 // ConfigManager is the central controller managing global and source-specific state.
@@ -106,7 +107,9 @@ func NewSourceOptions(opts ...SourceOption) *SourceOptions {
 var (
 	// Global registry of all available configuration sources.
 	sources       []*Source
+	sourcesMu     sync.RWMutex
 	configmanager *ConfigManager
+	readDefaults  = &Options{delimiter: constant.DefaultDelimiter}
 )
 
 // Initialize the global ConfigManager instance.
@@ -133,6 +136,8 @@ func IsLoaded() bool {
 
 // AddSource registers a new provider. Prevents duplicate names or priority levels.
 func AddSource(name string, priority int, newSourceFunc NewSourceFunc) error {
+	sourcesMu.Lock()
+	defer sourcesMu.Unlock()
 	for _, source := range sources {
 		if name == source.name {
 			return fmt.Errorf("source '%s' already exist", name)
@@ -161,17 +166,24 @@ func Disconnect() {
 
 // load executes the initialization of Sourcers based on the priority threshold.
 func (m *ConfigManager) load(priority int) error {
-	for _, source := range sources {
+	sourcesMu.RLock()
+	registered := append([]*Source(nil), sources...)
+	sourcesMu.RUnlock()
+	for _, source := range registered {
+		source.mu.Lock()
 		if source.loaded {
+			source.mu.Unlock()
 			continue
 		}
 
 		if priority >= 0 && source.priority > priority {
+			source.mu.Unlock()
 			break
 		}
 		logger.Debug("load source", "source", source.name)
 		newSourcer, err := source.newSourceFunc(NewSourceOptions(WithCallback(m.watch)))
 		if err != nil {
+			source.mu.Unlock()
 			return err
 		}
 		m.addSourcer(newSourcer)
@@ -184,6 +196,7 @@ func (m *ConfigManager) load(priority int) error {
 			})
 		}
 		source.loaded = true
+		source.mu.Unlock()
 	}
 	return nil
 }
@@ -241,12 +254,15 @@ func (m *ConfigManager) deleteByRef(event *Event) {
 
 // deleteAndFindNext performs a reverse-priority search to find a replacement for a deleted key.
 func (m *ConfigManager) deleteAndFindNext(key string) {
-	for i := len(sources) - 1; i >= 0; i-- {
-		value, ok := m.sourceCfgs.Get(sources[i].name, key)
+	sourcesMu.RLock()
+	registered := append([]*Source(nil), sources...)
+	sourcesMu.RUnlock()
+	for i := len(registered) - 1; i >= 0; i-- {
+		value, ok := m.sourceCfgs.Get(registered[i].name, key)
 		if !ok {
 			continue
 		}
-		m.setConfig(sources[i].name, key, value)
+		m.setConfig(registered[i].name, key, value)
 		return
 	}
 	m.delConfig(key)
@@ -279,15 +295,15 @@ func (m *ConfigManager) getConfig(key string) (*Value, bool) {
 	return m.globalCfgs.Get(key)
 }
 
-// getConfigByChain checks a slice of keys and returns the first one found.
-func (m *ConfigManager) getConfigByChain(keys []string) (value *Value, ok bool) {
+// getConfigByChain checks fallback keys from most to least specific.
+func (m *ConfigManager) getConfigByChain(key string, keys []string) (value *Value, ok bool) {
 	for i := len(keys) - 1; i >= 0; i-- {
 		value, ok = m.getConfig(keys[i])
 		if ok {
 			return
 		}
 	}
-	return
+	return m.getConfig(key)
 }
 
 // getConfigs returns all currently active configurations.
@@ -319,7 +335,7 @@ func (m *ConfigManager) getValue(key string, opts *Options) any {
 	if opts != nil && opts.watch != nil {
 		m.listener.watch(key, opts.watch)
 	}
-	value, ok := m.getConfigByChain(append([]string{key}, opts.keys...))
+	value, ok := m.getConfigByChain(key, opts.keys)
 	if !ok {
 		return nil
 	}
@@ -363,7 +379,16 @@ func (m *ConfigManager) getValueByPrefix(prefix string, opts *Options) map[strin
 // getValueWithPrefix recursively resolves values matching a prefix, including parameter redirection.
 func (m *ConfigManager) getValueWithPrefix(prefix string, opts *Options) map[string]any {
 	out := make(map[string]any)
-	for key, value := range m.getConfigsWithPrefixs(append([]string{prefix}, opts.keys...)...) {
+	var configs map[string]*Value
+	if len(opts.keys) == 0 {
+		configs = m.getConfigsWithPrefixs(prefix)
+	} else {
+		prefixes := make([]string, 1, len(opts.keys)+1)
+		prefixes[0] = prefix
+		prefixes = append(prefixes, opts.keys...)
+		configs = m.getConfigsWithPrefixs(prefixes...)
+	}
+	for key, value := range configs {
 		if ok, pv := m.valueIsParam(cast.ToString(value.Value)); ok && m.getValue(pv, opts) == nil {
 			for k, v := range m.getValueWithPrefix(pv, opts) {
 				out[key+"."+k] = v
@@ -459,17 +484,19 @@ func (m *ConfigManager) setValue(key string, value any, ops *Options) error {
 func (m *ConfigManager) setValueToSource(key, sourceName string, value any) error {
 	if sourceName == "" {
 		m.sm.RLock()
+		sourcers := make([]Sourcer, 0, len(m.sourcers))
 		for _, sourcer := range m.sourcers {
+			sourcers = append(sourcers, sourcer)
+		}
+		m.sm.RUnlock()
+		for _, sourcer := range sourcers {
 			logger.Debug("set key to source", "key", key, "source", sourcer.Name(), "value", value)
 			if err := sourcer.Set(key, value); err != nil {
 				return err
 			}
 		}
-		m.sm.RUnlock()
 	} else {
-		m.sm.RLock()
 		sourcer, ok := m.getSourcer(sourceName)
-		m.sm.RUnlock()
 		if !ok {
 			return fmt.Errorf("source '%s' not found", sourceName)
 		}
@@ -481,11 +508,22 @@ func (m *ConfigManager) setValueToSource(key, sourceName string, value any) erro
 // disconnect triggers shutdown for all registered configuration sources.
 func (m *ConfigManager) disconnect() {
 	m.sm.RLock()
-	defer m.sm.RUnlock()
+	sourcers := make(map[string]Sourcer, len(m.sourcers))
 	for name, sourcer := range m.sourcers {
+		sourcers[name] = sourcer
+	}
+	m.sm.RUnlock()
+	for name, sourcer := range sourcers {
 		logger.Debug("stop config source", "source", name)
 		sourcer.Disconnect()
 	}
+}
+
+func getReadOptions(opts []Option) *Options {
+	if len(opts) == 0 {
+		return readDefaults
+	}
+	return GetOptions(opts...)
 }
 
 // Set adds or updates a configuration in local memory or a remote config center.
@@ -500,12 +538,12 @@ func Get(key string, options *Options) any {
 
 // GetWithPrefix retrieves configurations by prefix. Keys in the resulting map are properties-formatted.
 func GetWithPrefix(prefixKey string, opts ...Option) map[string]any {
-	return configmanager.getValueByPrefix(prefixKey, GetOptions(opts...))
+	return configmanager.getValueByPrefix(prefixKey, getReadOptions(opts))
 }
 
 // GetString retrieves a string value with a fallback default. Supports case transformation via Options.
 func GetString(key string, defaultValue string, opts ...Option) string {
-	options := GetOptions(opts...)
+	options := getReadOptions(opts)
 	v := Get(key, options)
 	if v == nil {
 		return defaultValue
@@ -525,7 +563,7 @@ func GetString(key string, defaultValue string, opts ...Option) string {
 
 // GetStrings retrieves a slice of strings using a configurable delimiter (default is ',').
 func GetStrings(key string, defaultValue []string, opts ...Option) []string {
-	options := GetOptions(opts...)
+	options := getReadOptions(opts)
 	v := Get(key, options)
 	if v == nil {
 		return defaultValue
@@ -539,7 +577,7 @@ func GetStrings(key string, defaultValue []string, opts ...Option) []string {
 
 // GetByte retrieves a value as a byte slice.
 func GetByte(key string, defaultValue []byte, opts ...Option) []byte {
-	options := GetOptions(opts...)
+	options := getReadOptions(opts)
 	v := Get(key, options)
 	if v == nil {
 		return defaultValue
@@ -553,7 +591,7 @@ func GetByte(key string, defaultValue []byte, opts ...Option) []byte {
 
 // GetBool converts various representations (true, 1, yes, on) to a boolean.
 func GetBool(key string, defaultValue bool, opts ...Option) bool {
-	v := Get(key, GetOptions(opts...))
+	v := Get(key, getReadOptions(opts))
 	if v == nil {
 		return defaultValue
 	}
@@ -563,7 +601,7 @@ func GetBool(key string, defaultValue bool, opts ...Option) bool {
 
 // GetBools retrieves a slice of booleans from a delimited string.
 func GetBools(key string, defaultValue []bool, opts ...Option) []bool {
-	options := GetOptions(opts...)
+	options := getReadOptions(opts)
 	v := Get(key, options)
 	if v == nil {
 		return defaultValue
@@ -582,7 +620,7 @@ func GetBools(key string, defaultValue []bool, opts ...Option) []bool {
 
 // GetInt retrieves a value and casts it to an integer.
 func GetInt(key string, defaultValue int, opts ...Option) int {
-	v := Get(key, GetOptions(opts...))
+	v := Get(key, getReadOptions(opts))
 	if v == nil {
 		return defaultValue
 	}
@@ -595,7 +633,7 @@ func GetInt(key string, defaultValue int, opts ...Option) int {
 
 // GetInts retrieves a slice of integers from a delimited string.
 func GetInts(key string, defaultValue []int, opts ...Option) []int {
-	options := GetOptions(opts...)
+	options := getReadOptions(opts)
 	v := Get(key, options)
 	if v == nil {
 		return defaultValue
@@ -617,7 +655,7 @@ func GetInts(key string, defaultValue []int, opts ...Option) []int {
 
 // GetInt64 retrieves a value as an int64.
 func GetInt64(key string, defaultValue int64, opts ...Option) int64 {
-	v := Get(key, GetOptions(opts...))
+	v := Get(key, getReadOptions(opts))
 	if v == nil {
 		return defaultValue
 	}
@@ -630,7 +668,7 @@ func GetInt64(key string, defaultValue int64, opts ...Option) int64 {
 
 // GetInt64s retrieves a slice of int64s.
 func GetInt64s(key string, defaultValue []int64, opts ...Option) []int64 {
-	options := GetOptions(opts...)
+	options := getReadOptions(opts)
 	v := Get(key, options)
 	if v == nil {
 		return defaultValue
@@ -652,7 +690,7 @@ func GetInt64s(key string, defaultValue []int64, opts ...Option) []int64 {
 
 // GetInt32 retrieves a value as an int32.
 func GetInt32(key string, defaultValue int32, opts ...Option) int32 {
-	v := Get(key, GetOptions(opts...))
+	v := Get(key, getReadOptions(opts))
 	if v == nil {
 		return defaultValue
 	}
@@ -665,7 +703,7 @@ func GetInt32(key string, defaultValue int32, opts ...Option) int32 {
 
 // GetInt32s retrieves a slice of int32s.
 func GetInt32s(key string, defaultValue []int32, opts ...Option) []int32 {
-	options := GetOptions(opts...)
+	options := getReadOptions(opts)
 	v := Get(key, options)
 	if v == nil {
 		return defaultValue
@@ -687,7 +725,7 @@ func GetInt32s(key string, defaultValue []int32, opts ...Option) []int32 {
 
 // GetFloat64 retrieves a value as a float64.
 func GetFloat64(key string, defaultValue float64, opts ...Option) float64 {
-	v := Get(key, GetOptions(opts...))
+	v := Get(key, getReadOptions(opts))
 	if v == nil {
 		return defaultValue
 	}
@@ -700,7 +738,7 @@ func GetFloat64(key string, defaultValue float64, opts ...Option) float64 {
 
 // GetFloat64s retrieves a slice of float64s.
 func GetFloat64s(key string, defaultValue []float64, opts ...Option) []float64 {
-	options := GetOptions(opts...)
+	options := getReadOptions(opts)
 	v := Get(key, options)
 	if v == nil {
 		return defaultValue
@@ -722,7 +760,7 @@ func GetFloat64s(key string, defaultValue []float64, opts ...Option) []float64 {
 
 // GetFloat32 retrieves a value as a float32.
 func GetFloat32(key string, defaultValue float32, opts ...Option) float32 {
-	v := Get(key, GetOptions(opts...))
+	v := Get(key, getReadOptions(opts))
 	if v == nil {
 		return defaultValue
 	}
@@ -735,7 +773,7 @@ func GetFloat32(key string, defaultValue float32, opts ...Option) float32 {
 
 // GetFloat32s retrieves a slice of float32s.
 func GetFloat32s(key string, defaultValue []float32, opts ...Option) []float32 {
-	options := GetOptions(opts...)
+	options := getReadOptions(opts)
 	v := Get(key, options)
 	if v == nil {
 		return defaultValue
@@ -757,7 +795,7 @@ func GetFloat32s(key string, defaultValue []float32, opts ...Option) []float32 {
 
 // GetDuration parses a string representation of time (e.g., "1h", "30s") into a time.Duration.
 func GetDuration(key string, defaultValue time.Duration, opts ...Option) time.Duration {
-	v := Get(key, GetOptions(opts...))
+	v := Get(key, getReadOptions(opts))
 	if v == nil {
 		return defaultValue
 	}
@@ -771,7 +809,7 @@ func GetDuration(key string, defaultValue time.Duration, opts ...Option) time.Du
 
 // GetTime parses a value into time.Time using the specified location in Options.
 func GetTime(key string, defaultValue time.Time, opts ...Option) time.Time {
-	options := GetOptions(opts...)
+	options := getReadOptions(opts)
 	v := Get(key, options)
 	if v == nil {
 		return defaultValue
@@ -785,13 +823,12 @@ func GetTime(key string, defaultValue time.Time, opts ...Option) time.Time {
 
 // Exist checks if a configuration key exists in the global store.
 func Exist(key string) bool {
-	options := GetOptions()
-	return Get(key, options) != nil
+	return Get(key, readDefaults) != nil
 }
 
 // GetAndUnmarshal retrieves a configuration string and deserializes it into the target pointer.
 func GetAndUnmarshal(key string, outPtr any, opts ...Option) error {
-	options := GetOptions(opts...)
+	options := getReadOptions(opts)
 	if options.unmarshaler != nil {
 		return options.unmarshaler.Unmarshal([]byte(GetString(key, "", opts...)), outPtr)
 	}
@@ -810,7 +847,7 @@ func GetAndYamlUnmarshal(key string, outPtr any, opts ...Option) error {
 
 // GetWithUnmarshal retrieves configurations by prefix and unmarshals the resulting object.
 func GetWithUnmarshal(prefix string, outPtr any, opts ...Option) error {
-	options := GetOptions(opts...)
+	options := getReadOptions(opts)
 	if options.unmarshaler != nil {
 		outByte, err := json.Marshal(getConfigMap(GetWithPrefix(prefix, opts...)))
 		if err != nil {
