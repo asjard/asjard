@@ -117,17 +117,12 @@ func (c Client) NewConn(target string) (client.ClientConnInterface, error) {
 		options = append(options,
 			grpc.WithUnaryInterceptor(func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 				return c.interceptor(ctx, method, req, reply, &ClientConn{ClientConn: cc, serviceName: serviceName, protocol: Protocol}, func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface) error {
-					// if conf.Timeout.Duration > 0 {
-					// 	ctx, cancel := context.WithTimeout(ctx, conf.Timeout.Duration)
-					// 	defer cancel()
-					// 	return invoker(ctx, method, req, reply, cc.Conn().(*grpc.ClientConn))
-					// }
 					return invoker(ctx, method, req, reply, cc.Conn().(*grpc.ClientConn))
 				})
 			}))
 	}
 
-	// 6. Create the underlying gRPC client.
+	// Create the underlying gRPC client.
 	conn, err := grpc.NewClient(target, options...)
 	if err != nil {
 		return nil, err

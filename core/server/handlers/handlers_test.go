@@ -21,6 +21,9 @@ func TestMain(m *testing.M) {
 }
 
 func TestDefaultHandlers(t *testing.T) {
+	sdhm.Lock()
+	serverDefaultHandlers = make(map[string][]*serverHandler)
+	sdhm.Unlock()
 	t.Run("AddHandler", func(t *testing.T) {
 		datas := []struct {
 			name      string

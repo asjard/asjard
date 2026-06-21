@@ -7,7 +7,9 @@ import (
 
 	"github.com/asjard/asjard/core/config"
 	_ "github.com/asjard/asjard/pkg/config/mem"
+	"github.com/asjard/asjard/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMain(m *testing.M) {
@@ -66,4 +68,27 @@ func TestNewClients(t *testing.T) {
 		_, err := Client()
 		assert.NotNil(t, err)
 	})
+}
+
+func TestClientOptionsAndEtcdConfig(t *testing.T) {
+	opts := defaultClientOptions()
+	require.Equal(t, DefaultClientName, opts.clientName)
+	WithClientName("named")(opts)
+	require.Equal(t, "named", opts.clientName)
+
+	conf := &ClientConnConfig{Endpoints: utils.JSONStrings{"one:2379", "two:2379"}, Username: "user", Password: "pass", Options: Options{
+		DialTimeout: utils.JSONDuration{Duration: time.Second}, MaxUnaryRetries: 3,
+	}}
+	got, err := (&ClientManager{}).newClientConfig(conf)
+	require.NoError(t, err)
+	require.Equal(t, []string(conf.Endpoints), got.Endpoints)
+	require.Equal(t, "user", got.Username)
+	require.Equal(t, "pass", got.Password)
+	require.Equal(t, uint(3), got.MaxUnaryRetries)
+}
+
+func TestEtcdMissingTLSFiles(t *testing.T) {
+	conf := &ClientConnConfig{Options: Options{CAFile: "missing-ca", CertFile: "missing-cert", KeyFile: "missing-key"}}
+	_, err := (&ClientManager{}).newClientConfig(conf)
+	require.Error(t, err)
 }

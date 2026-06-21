@@ -75,8 +75,10 @@ func (c *Configs) GetAllWithPrefixs(prefixs ...string) map[string]*Value {
 	c.m.RLock()
 	defer c.m.RUnlock()
 	cfgs := make(map[string]*Value)
-	for key, value := range c.cfgs {
-		for _, p := range prefixs {
+	// Apply prefixes from general to specific so later chain entries
+	// deterministically override values normalized to the same key.
+	for _, p := range prefixs {
+		for key, value := range c.cfgs {
 			if strings.HasPrefix(key, p) {
 				// Trim the prefix and the delimiter to normalize the key.
 				cfgs[strings.TrimPrefix(key, p+constant.ConfigDelimiter)] = value

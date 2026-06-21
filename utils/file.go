@@ -61,11 +61,14 @@ func GetHomeDir() string {
 // GetConfDir returns the configuration directory path.
 // Priority: Environment Variable > {HomeDir}/conf.
 func GetConfDir() string {
+	// An explicit environment override is intentionally read on every call.
+	// This supports runtime test isolation and processes that update their
+	// mounted configuration location before reloading sources.
+	if dir := strings.TrimSpace(os.Getenv(CONF_DIR_ENV_NAME)); dir != "" {
+		return dir
+	}
 	cdonce.Do(func() {
-		confDir = strings.TrimSpace(os.Getenv(CONF_DIR_ENV_NAME))
-		if confDir == "" {
-			confDir = filepath.Join(GetHomeDir(), CONF_DIR)
-		}
+		confDir = filepath.Join(GetHomeDir(), CONF_DIR)
 	})
 	return confDir
 }

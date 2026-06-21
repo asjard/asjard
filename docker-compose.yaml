@@ -17,6 +17,11 @@ services:
       - example
     environment:
       ALLOW_NONE_AUTHENTICATION: yes
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
   mariadb:
     image: mariadb
     restart: always
@@ -33,6 +38,11 @@ services:
       MYSQL_ROOT_PASSWORD: my-secret-pw
       MYSQL_DATABASE: example-database
       TZ: "Asia/Shanghai"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
   amqp:
     image: rabbitmq:3.13.7-management-alpine
     restart: always
@@ -47,6 +57,11 @@ services:
       - 5672:5672
       - 15692:15692
       - 15672:15672
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
   # rabbitmq:
   #   image: rabbitmq:4.3-rc-management-delayed-message-plugin
   #   restart: always
@@ -73,6 +88,11 @@ services:
       - example
     ports:
       - 6379:6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
   jeager:
     image: jaegertracing/all-in-one:latest
     restart: always
@@ -114,6 +134,11 @@ services:
       - 9091:9091
     networks:
       - example
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9091/-/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
   consul:
     image: consul:1.15.4
     restart: always
@@ -128,3 +153,8 @@ services:
       CONSUL_BIND_INTERFACE: eth0
     networks:
       - example
+    healthcheck:
+      test: ["CMD", "consul", "members"]
+      interval: 5s
+      timeout: 3s
+      retries: 20

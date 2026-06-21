@@ -9,7 +9,9 @@ import (
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
 	_ "github.com/asjard/asjard/pkg/config/mem"
+	"github.com/asjard/asjard/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMain(m *testing.M) {
@@ -67,4 +69,30 @@ func TestNewClients(t *testing.T) {
 		assert.NotNil(t, err)
 		assert.Nil(t, client)
 	})
+}
+
+func TestClientOptionsAndRedisConfig(t *testing.T) {
+	opts := defaultClientOptions()
+	require.Equal(t, DefaultClientName, opts.clientName)
+	WithClientName("named")(opts)
+	require.Equal(t, "named", opts.clientName)
+	WithClientName("")(opts)
+	require.Equal(t, "named", opts.clientName)
+
+	conf := &ClientConnConfig{Address: "127.0.0.1:6379", UserName: "user", Password: "pass", DB: 2, Options: Options{
+		ClientName: "client", DialTimeout: utils.JSONDuration{Duration: time.Second}, PoolFIFO: true,
+	}}
+	got, err := (&ClientManager{}).newClientOptions(conf)
+	require.NoError(t, err)
+	require.Equal(t, conf.Address, got.Addr)
+	require.Equal(t, conf.UserName, got.Username)
+	require.Equal(t, conf.Password, got.Password)
+	require.Equal(t, conf.DB, got.DB)
+	require.True(t, got.PoolFIFO)
+}
+
+func TestRedisMissingTLSFiles(t *testing.T) {
+	conf := &ClientConnConfig{Options: Options{CAFile: "missing-ca", CertFile: "missing-cert", KeyFile: "missing-key"}}
+	_, err := (&ClientManager{}).newClientOptions(conf)
+	require.Error(t, err)
 }

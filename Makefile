@@ -55,13 +55,14 @@ gen_proto: clean ## Build protobuf
 
 .PHONY: github_workflows_dependices
 github_workflows_dependices: docker-compose.yaml ## Install github workflows environment
-	docker compose -p asjard up -d
+	docker compose -p asjard up -d --wait
 
 .PHONY: github_workflows_test
-github_workflows_test: update github_workflows_dependices test ## Run unit test in github workflow
+github_workflows_test: update github_workflows_dependices test ## Run all tests in github workflow
 
 .PHONY: test
-test: clean gocyclo govet ## Run unit test
+test: clean gocyclo govet ## Run race-enabled core and package unit tests
+	# export GOFLAGS="-ldflags=-extldflags=-w"
 	go test -race -cover -coverprofile=cover.out $$(go list ./...|grep -v cmd|grep -v 'protobuf/')
 	go test -benchmem -bench=. -run=^$$ $$(go list ./...|grep -v cmd|grep -v 'protobuf/')
 

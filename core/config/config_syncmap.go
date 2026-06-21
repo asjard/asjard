@@ -42,16 +42,17 @@ func (c *ConfigsWithSyncMap) GetAll() map[string]*Value {
 // It trims the prefix and the delimiter from the returned keys.
 func (c *ConfigsWithSyncMap) GetAllWithPrefixs(prefixs ...string) map[string]*Value {
 	cfgs := make(map[string]*Value)
-	c.cfgs.Range(func(key, value any) bool {
-		k := key.(string)
-		for _, prefix := range prefixs {
+	// Apply prefixes from general to specific so later chain entries win.
+	for _, prefix := range prefixs {
+		c.cfgs.Range(func(key, value any) bool {
+			k := key.(string)
 			if strings.HasPrefix(k, prefix) {
 				// Example: prefix "app", key "app.name" -> returns "name"
 				cfgs[strings.TrimPrefix(k, prefix+constant.ConfigDelimiter)] = value.(*Value)
 			}
-		}
-		return true
-	})
+			return true
+		})
+	}
 	return cfgs
 }
 

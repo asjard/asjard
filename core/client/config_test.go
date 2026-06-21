@@ -8,6 +8,7 @@ import (
 	"github.com/asjard/asjard/core/config"
 	_ "github.com/asjard/asjard/pkg/config/mem"
 	"github.com/asjard/asjard/utils"
+	"github.com/stretchr/testify/require"
 )
 
 // TestConfigHierarchy verifies that service-level configuration correctly overrides
@@ -29,25 +30,26 @@ func TestConfigHierarchy(t *testing.T) {
 	t.Run("ProtocolLevelOverride", func(t *testing.T) {
 		// Simulate setting protocol-level config
 		key := "asjard.clients." + protocol + ".loadbalance"
-		config.Set(key, protocolLB)
-		time.Sleep(200 * time.Millisecond)
-
-		conf := GetConfigWithProtocol(protocol)
-		if conf.Loadbalance != protocolLB {
-			t.Errorf("Expected protocol LB %s, got %s", protocolLB, conf.Loadbalance)
-		}
+		require.NoError(t, config.Set(key, protocolLB))
+		require.Eventually(t, func() bool {
+			return GetConfigWithProtocol(protocol).Loadbalance == protocolLB
+		}, 3*time.Second, 20*time.Millisecond)
 	})
 
 	t.Run("ServiceLevelOverride", func(t *testing.T) {
-		// Simulate setting service-level config
-		key := "asjard.clients." + protocol + "." + serviceName + ".loadbalance"
-		config.Set(key, serviceLB)
-		time.Sleep(500 * time.Millisecond)
+		serviceProtocol := "grpc-service-test"
+		protocolKey := "asjard.clients." + serviceProtocol + ".loadbalance"
+		require.NoError(t, config.Set(protocolKey, protocolLB))
+		require.Eventually(t, func() bool {
+			return GetConfigWithProtocol(serviceProtocol).Loadbalance == protocolLB
+		}, 3*time.Second, 20*time.Millisecond)
 
-		conf := serverConfig(protocol, serviceName)
-		if conf.Loadbalance != serviceLB {
-			t.Errorf("Expected service LB %s, got %s", serviceLB, conf.Loadbalance)
-		}
+		// Simulate setting service-level config
+		key := "asjard.clients." + serviceProtocol + "." + serviceName + ".loadbalance"
+		require.NoError(t, config.Set(key, serviceLB))
+		require.Eventually(t, func() bool {
+			return serverConfig(serviceProtocol, serviceName).Loadbalance == serviceLB
+		}, 3*time.Second, 20*time.Millisecond)
 	})
 }
 

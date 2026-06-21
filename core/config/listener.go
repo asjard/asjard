@@ -10,9 +10,9 @@ import (
 // Listener manages configuration change subscribers.
 // It maintains a registry of callbacks and matches incoming events against them.
 type Listener struct {
-	// callbacks stores direct key-to-callback mappings (map[string][]CallbackFunc).
+	// callbacks stores direct key-to-callback mappings (map[string]CallbackFunc).
 	callbacks sync.Map
-	// matchCallbacks stores regex-pattern-to-callback mappings (map[string][]CallbackFunc).
+	// matchCallbacks stores regex-pattern-to-callback mappings (map[string]CallbackFunc).
 	matchCallbacks sync.Map
 
 	// Internal slice for tracking watch relationships (reserved for future use).
@@ -42,22 +42,12 @@ func (l *Listener) watch(key string, opt *watchOptions) {
 
 	// Register as a pattern-based listener if a regex pattern is provided.
 	if opt.pattern != "" {
-		cfuncs, ok := l.matchCallbacks.Load(opt.pattern)
-		if !ok {
-			cfuncs = []CallbackFunc{}
-		}
-		cfuncs = append(cfuncs.([]CallbackFunc), opt.callback)
-		l.matchCallbacks.Store(opt.pattern, cfuncs)
+		l.matchCallbacks.LoadOrStore(opt.pattern, opt.callback)
 	}
 
 	// Register as a direct key listener if a specific key is provided.
 	if key != "" {
-		cfuncs, ok := l.callbacks.Load(key)
-		if !ok {
-			cfuncs = []CallbackFunc{}
-		}
-		cfuncs = append(cfuncs.([]CallbackFunc), opt.callback)
-		l.callbacks.Store(key, cfuncs)
+		l.callbacks.LoadOrStore(key, opt.callback)
 	}
 }
 
@@ -77,10 +67,10 @@ func (l *Listener) notify(event *Event) {
 
 // keyNotify finds and executes callbacks registered for the exact key found in the event.
 func (l *Listener) keyNotify(event *Event) {
-	callbacks, ok := l.callbacks.Load(event.Key)
-	if ok {
-		for _, callback := range callbacks.([]CallbackFunc) {
-			callback(event)
+	callback, found := l.callbacks.Load(event.Key)
+	if found {
+		if callbackFn, ok := callback.(CallbackFunc); ok {
+			callbackFn(event)
 		}
 	}
 }
@@ -90,9 +80,9 @@ func (l *Listener) keyNotify(event *Event) {
 func (l *Listener) matchNotify(event *Event) {
 	l.matchCallbacks.Range(func(key, value any) bool {
 		// key here is the regex pattern string.
-		if ok, err := regexp.MatchString(key.(string), event.Key); ok {
-			for _, callback := range value.([]CallbackFunc) {
-				callback(event)
+		if matched, err := regexp.MatchString(key.(string), event.Key); matched {
+			if callbackFn, ok := value.(CallbackFunc); ok {
+				callbackFn(event)
 			}
 		} else if err != nil {
 			logger.Error("regular expression fail",
