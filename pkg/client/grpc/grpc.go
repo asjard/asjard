@@ -81,10 +81,14 @@ func (c ClientConn) Conn() grpc.ClientConnInterface {
 
 // NewConn establishes a new gRPC client connection to a target.
 // target format: asjard://grpc/{ServerName}
-func (c Client) NewConn(target string) (client.ClientConnInterface, error) {
+func (c Client) NewConn(target string, opts ...client.ConnOption) (client.ClientConnInterface, error) {
 	u, err := url.Parse(target)
 	if err != nil {
 		return nil, err
+	}
+	connOptions := &client.ConnOptions{}
+	for _, opt := range opts {
+		opt(connOptions)
 	}
 	serviceName := strings.Trim(u.Path, "/")
 	var options []grpc.DialOption
@@ -113,10 +117,14 @@ func (c Client) NewConn(target string) (client.ClientConnInterface, error) {
 		PermitWithoutStream: conf.Options.Keepalive.PermitWithoutStream,
 	}))
 
-	if c.interceptor != nil {
+	interceptor := c.interceptor
+	if connOptions.Interceptor != nil {
+		interceptor = client.ChainUnaryInterceptors(c.interceptor, connOptions.Interceptor)
+	}
+	if interceptor != nil {
 		options = append(options,
 			grpc.WithUnaryInterceptor(func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-				return c.interceptor(ctx, method, req, reply, &ClientConn{ClientConn: cc, serviceName: serviceName, protocol: Protocol}, func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface) error {
+				return interceptor(ctx, method, req, reply, &ClientConn{ClientConn: cc, serviceName: serviceName, protocol: Protocol}, func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface) error {
 					return invoker(ctx, method, req, reply, cc.Conn().(*grpc.ClientConn))
 				})
 			}))
