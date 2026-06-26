@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"reflect"
+	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,7 +15,6 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	ajutils "github.com/asjard/asjard/utils"
 	gormLogger "gorm.io/gorm/logger"
-	"gorm.io/gorm/utils"
 )
 
 // xgormLogger implements gormLogger.Interface to intercept GORM's internal events
@@ -43,8 +45,18 @@ var (
 		IgnoreRecordNotFoundError: true, // Default to true to reduce noise in common logic
 	}
 	// Cache loggers by database name to prevent redundant initializations.
-	dbLoggers sync.Map
+	dbLoggers    sync.Map
+	loggerPrefix string
 )
+
+const (
+	maxCallerDepth   = 32
+	runtimeCallDepth = 3
+)
+
+func init() {
+	loggerPrefix = funcPrefix((*xgormLogger).Trace)
+}
 
 // NewLogger initializes a new GORM logger or returns an existing one.
 // It sets up the configuration watcher for real-time updates.
@@ -81,21 +93,21 @@ func (l *xgormLogger) LogMode(level gormLogger.LogLevel) gormLogger.Interface {
 func (l *xgormLogger) Info(ctx context.Context, format string, v ...any) {
 	l.m.RLock()
 	defer l.m.RUnlock()
-	l.slogger.L(ctx).Info(fmt.Sprintf(format, v...), "db", l.name)
+	l.slogger.L(ctx).WithSourcePC(callerPC()).Info(fmt.Sprintf(format, v...), "db", l.name)
 }
 
 // Warn logs database warning messages.
 func (l *xgormLogger) Warn(ctx context.Context, format string, v ...any) {
 	l.m.RLock()
 	defer l.m.RUnlock()
-	l.slogger.L(ctx).Warn(fmt.Sprintf(format, v...), "db", l.name)
+	l.slogger.L(ctx).WithSourcePC(callerPC()).Warn(fmt.Sprintf(format, v...), "db", l.name)
 }
 
 // Error logs database error messages.
 func (l *xgormLogger) Error(ctx context.Context, format string, v ...any) {
 	l.m.RLock()
 	defer l.m.RUnlock()
-	l.slogger.L(ctx).Error(fmt.Sprintf(format, v...), "db", l.name)
+	l.slogger.L(ctx).WithSourcePC(callerPC()).Error(fmt.Sprintf(format, v...), "db", l.name)
 }
 
 // Trace is the core method of GORM logging. It captures SQL execution details,
@@ -106,34 +118,57 @@ func (l *xgormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql
 
 	elapsed := time.Since(begin)
 	sql, rows := fc() // Execute the closure to get the SQL string and row count
+	pc := callerPC()
+	log := l.slogger.L(ctx).WithSourcePC(pc)
 
 	switch {
-	// 1. Log Errors: if an error occurred and it's not a suppressed 'Not Found' error.
+	// Log Errors: if an error occurred and it's not a suppressed 'Not Found' error.
 	case err != nil && l.logLevel >= gormLogger.Error && (!errors.Is(err, gormLogger.ErrRecordNotFound) || !l.ignoreRecordNotFoundError):
-		l.slogger.L(ctx).Error(err.Error(),
+		log.Error(err.Error(),
 			"sql", sql,
 			"row", rows,
-			"line", utils.FileWithLineNum(), // Path to the Go code that triggered this SQL
 			"cost", elapsed.String(),
 			"db", l.name)
 
-	// 2. Log Slow Queries: if the duration exceeds the configured threshold.
+	// Log Slow Queries: if the duration exceeds the configured threshold.
 	case elapsed > l.slowThreshold && l.slowThreshold != 0:
-		l.slogger.L(ctx).Warn(fmt.Sprintf("SLOW SQL >= %s", l.slowThreshold.String()),
+		log.Warn(fmt.Sprintf("SLOW SQL >= %s", l.slowThreshold.String()),
 			"sql", sql,
 			"row", rows,
-			"line", utils.FileWithLineNum(),
 			"cost", elapsed.String(),
 			"db", l.name)
 
-	// 3. Log Debug/Info: prints all SQL statements if the log level is set high enough.
+	// Log Debug/Info: prints all SQL statements if the log level is set high enough.
 	case l.logLevel == gormLogger.Info:
-		l.slogger.L(ctx).Debug(sql,
+		log.Debug(sql,
 			"row", rows,
-			"line", utils.FileWithLineNum(),
 			"cost", elapsed.String(),
 			"db", l.name)
 	}
+}
+
+//go:noinline
+func callerPC() uintptr {
+	var pcs [maxCallerDepth]uintptr
+	n := runtime.Callers(runtimeCallDepth, pcs[:])
+
+	for _, pc := range pcs[:n] {
+		fn := runtime.FuncForPC(pc)
+		if fn == nil || strings.HasPrefix(fn.Name(), loggerPrefix) || strings.HasPrefix(fn.Name(), "gorm.io/") {
+			continue
+		}
+		return pc
+	}
+	return 0
+}
+
+func funcPrefix(fn any) string {
+	name := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
+	dot := strings.LastIndexByte(name, '.')
+	if dot < 0 {
+		return name + "."
+	}
+	return name[:dot+1]
 }
 
 // loadAndWatch attaches a listener to the config center for "asjard.logger" changes.
@@ -160,8 +195,6 @@ func (l *xgormLogger) load() error {
 	l.m.Lock()
 	defer l.m.Unlock()
 
-	// Initialize the structured logger. WithCallerSkip(5) is used to ensure the log
-	// shows the business logic file/line, not the logger's internal wrapper.
 	l.slogger = logger.DefaultLogger(slog.New(logger.NewSlogHandler(&conf.Config)))
 	l.ignoreRecordNotFoundError = conf.IgnoreRecordNotFoundError
 	l.slowThreshold = conf.SlowThreshold.Duration

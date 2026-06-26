@@ -29,8 +29,8 @@ func TestMain(m *testing.M) {
 	config.Set("asjard.stores.gorm.dbs.auto_decrypt.dsn", "encrypted_base64:dGVzdF9jaXBoZXJlZC5kYg==")
 	config.Set("asjard.stores.gorm.dbs.auto_decrypt.driver", "sqlite")
 
-	config.Set("asjard.stores.gorm.dbs.lock.dsn", "root:my-secret-pw@tcp(127.0.0.1:3306)/example-database?charset=utf8&parseTime=True&loc=Local&timeout=5s&readTimeout=5s")
-	config.Set("asjard.stores.gorm.dbs.lock.driver", "mysql")
+	config.Set("asjard.stores.gorm.dbs.lock.dsn", "test_lock.db")
+	config.Set("asjard.stores.gorm.dbs.lock.driver", "sqlite")
 	time.Sleep(50 * time.Millisecond)
 	if err := dbManager.Start(); err != nil {
 		panic(err)

@@ -123,3 +123,19 @@ func TestLoggerCanSkipExternalWrapper(t *testing.T) {
 func wrappedInfo(l *logger.Logger) {
 	l.WithCallerSkip(1).Info("wrapped")
 }
+
+func TestLoggerCanUseSourcePC(t *testing.T) {
+	handler := &captureHandler{}
+	l := logger.DefaultLogger(slog.New(handler))
+
+	pc, wantFile, wantLine, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller failed")
+	}
+	l.WithSourcePC(pc).Info("source pc")
+
+	source := handler.source()
+	if source.File != wantFile || source.Line != wantLine {
+		t.Fatalf("source = %s:%d, want %s:%d", source.File, source.Line, wantFile, wantLine)
+	}
+}

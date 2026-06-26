@@ -19,6 +19,7 @@ import (
 type Logger struct {
 	ctx        context.Context
 	callerSkip int          // Number of external wrapper stack frames to skip
+	sourcePC   uintptr      // Explicit source program counter for wrappers that resolve callers themselves
 	slogger    *slog.Logger // The underlying structured logger
 }
 
@@ -80,6 +81,7 @@ func DefaultLogger(slogger *slog.Logger) *Logger {
 	return &Logger{
 		ctx:        context.TODO(),
 		callerSkip: 0,
+		sourcePC:   0,
 		slogger:    slogger,
 	}
 }
@@ -130,6 +132,7 @@ func (l *Logger) withContext(ctx context.Context) *Logger {
 	return &Logger{
 		ctx:        ctx,
 		callerSkip: l.callerSkip,
+		sourcePC:   l.sourcePC,
 		slogger:    l.slogger,
 	}
 }
@@ -142,6 +145,19 @@ func (l *Logger) withContext(ctx context.Context) *Logger {
 func (l *Logger) WithCallerSkip(skip int) *Logger {
 	l.callerSkip = skip
 	return l
+}
+
+// WithSourcePC returns a logger that uses pc as the slog source.
+// Wrappers can use this when they already resolved the external caller.
+//
+//go:noinline
+func (l *Logger) WithSourcePC(pc uintptr) *Logger {
+	return &Logger{
+		ctx:        l.ctx,
+		callerSkip: l.callerSkip,
+		sourcePC:   pc,
+		slogger:    l.slogger,
+	}
 }
 
 // log is the internal core method that gathers all metadata and writes the log.
@@ -178,6 +194,9 @@ func (l Logger) log(level slog.Level, msg string, args ...any) {
 
 //go:noinline
 func (l Logger) callerPC() uintptr {
+	if l.sourcePC != 0 {
+		return l.sourcePC
+	}
 	var pcs [maxCallerDepth]uintptr
 	n := runtime.Callers(runtimeCallDepth, pcs[:])
 	externalSkip := l.callerSkip
