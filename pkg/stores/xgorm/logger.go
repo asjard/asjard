@@ -194,6 +194,7 @@ func (l *xgormLogger) load() error {
 
 	l.m.Lock()
 	defer l.m.Unlock()
+	logger.Debug("reload xgorm logger", "conf", conf)
 
 	l.slogger = logger.DefaultLogger(slog.New(logger.NewSlogHandler(&conf.Config)))
 	l.ignoreRecordNotFoundError = conf.IgnoreRecordNotFoundError
