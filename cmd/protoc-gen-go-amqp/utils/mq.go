@@ -95,16 +95,16 @@ func parseMethodMqOption(h *mqpb.MQ, serviceOption *MQOption) *MQOption {
 	if option.BackoffRetry == nil {
 		option.BackoffRetry = serviceOption.BackoffRetry
 	}
-	// if option.FixedRetry != nil && len(option.FixedRetry.RetryDelays) == 0 {
-	// 	option.FixedRetry.RetryDelays = []int32{30000, 60000, 180000, 300000}
-	// }
-	// if option.BackoffRetry != nil && option.BackoffRetry.Multiplier == 0 {
-	// 	option.BackoffRetry = &mqpb.BackoffRetryPolicy{
-	// 		InitialDelayMs: 6000,
-	// 		Multiplier:     1,
-	// 		MaxRetries:     10,
-	// 	}
-	// }
+	if option.FixedRetry != nil && len(option.FixedRetry.RetryDelays) == 0 {
+		option.FixedRetry.RetryDelays = []int32{30000, 60000, 180000, 300000}
+	}
+	if option.BackoffRetry != nil && option.BackoffRetry.Multiplier == 0 {
+		option.BackoffRetry = &mqpb.BackoffRetryPolicy{
+			InitialDelayMs: 6000,
+			Multiplier:     1,
+			MaxRetries:     10,
+		}
+	}
 
 	if option.Internal == nil {
 		option.Internal = serviceOption.Internal
