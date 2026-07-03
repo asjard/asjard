@@ -52,21 +52,22 @@ func (m Metrics) Interceptor() server.UnaryServerInterceptor {
 
 		start := time.Now()
 
-		// 1. Execute the business logic handler.
+		// Execute the business logic handler.
 		resp, err = handler(ctx, req)
 
-		// 2. Extract the response status code (converts gRPC status to string).
+		// Extract the response status code (converts gRPC status to string).
 		st := status.FromError(err)
 		codeStr := strconv.Itoa(int(st.Code))
 
-		// 3. Record Golden Signals:
+		// Record Golden Signals:
 		// - Increment the counter for total requests.
 		m.requestTotal.Inc(codeStr, info.FullMethod, info.Protocol)
 
 		// - Record execution latency in seconds.
-		m.requestLatency.Observe(info.FullMethod, info.Protocol, float64(time.Now().Sub(start))/float64(time.Second))
+		// m.requestLatency.Observe(info.FullMethod, info.Protocol, float64(time.Now().Sub(start))/float64(time.Second))
+		m.requestLatency.Observe(info.FullMethod, info.Protocol, time.Since(start).Seconds())
 
-		// 4. Protocol-specific metrics (Size tracking for REST).
+		// Protocol-specific metrics (Size tracking for REST).
 		if rtx, ok := ctx.(*rest.Context); ok {
 			// Observe approximate size of the HTTP request.
 			m.requestSize.Observe(info.FullMethod, info.Protocol, float64(computeApproximateRequestSize(rtx)))

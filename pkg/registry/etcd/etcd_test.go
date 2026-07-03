@@ -37,6 +37,30 @@ func TestEtcdMetadataAndKeys(t *testing.T) {
 	require.Equal(t, prefix+"/api/instance", e.registerKey(service))
 }
 
+func TestWatchLeaseTriggersReregisteWhenChannelClosed(t *testing.T) {
+	leaseChan := make(chan *clientv3.LeaseKeepAliveResponse)
+	close(leaseChan)
+
+	triggered := make(chan struct{}, 1)
+	watchLease(leaseChan, func() {
+		triggered <- struct{}{}
+	})
+
+	require.Len(t, triggered, 1)
+}
+
+func TestWatchLeaseTriggersReregisteWhenResponseNil(t *testing.T) {
+	leaseChan := make(chan *clientv3.LeaseKeepAliveResponse, 1)
+	leaseChan <- nil
+
+	triggered := make(chan struct{}, 1)
+	watchLease(leaseChan, func() {
+		triggered <- struct{}{}
+	})
+
+	require.Len(t, triggered, 1)
+}
+
 func TestEtcdRegistryIntegration(t *testing.T) {
 	client, err := clientv3.New(clientv3.Config{Endpoints: []string{"127.0.0.1:2379"}, DialTimeout: 5 * time.Second})
 	require.NoError(t, err)
