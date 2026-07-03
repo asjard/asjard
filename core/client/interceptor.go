@@ -60,16 +60,8 @@ func getChainUnaryInterceptors(protocol string, conf Config) (UnaryClientInterce
 	if err != nil {
 		return nil, err
 	}
-	var chainedInt UnaryClientInterceptor
-	if len(interceptors) == 0 {
-		chainedInt = nil
-	} else if len(interceptors) == 1 {
-		chainedInt = interceptors[0]
-	} else {
-		// Create a single functional chain from the slice of interceptors.
-		chainedInt = chainUnaryInterceptors(interceptors)
-	}
-	return chainedInt, nil
+	// Create a single functional chain from the slice of interceptors.
+	return ChainUnaryInterceptors(interceptors...), nil
 }
 
 // getClientInterceptors builds an ordered slice of interceptors based on the Config.Interceptors list.
@@ -96,12 +88,21 @@ func getClientInterceptors(protocol string, conf Config) ([]UnaryClientIntercept
 	return interceptors, nil
 }
 
-// chainUnaryInterceptors creates a single interceptor out of a chain of many interceptors.
+// ChainUnaryInterceptors creates a single interceptor out of a chain of many interceptors.
 // This implements the recursive onion model for middleware execution.
-func chainUnaryInterceptors(interceptors []UnaryClientInterceptor) UnaryClientInterceptor {
+func ChainUnaryInterceptors(interceptors ...UnaryClientInterceptor) UnaryClientInterceptor {
+	chains := make([]UnaryClientInterceptor, 0, len(interceptors))
+	for _, item := range interceptors {
+		if item != nil {
+			chains = append(chains, item)
+		}
+	}
+	if len(chains) == 0 {
+		return nil
+	}
 	return func(ctx context.Context, method string, req, reply any, cc ClientConnInterface, invoker UnaryInvoker) error {
 		// Start the execution at index 0.
-		return interceptors[0](ctx, method, req, reply, cc, getChainUnaryInvoker(interceptors, 0, invoker))
+		return chains[0](ctx, method, req, reply, cc, getChainUnaryInvoker(chains, 0, invoker))
 	}
 }
 

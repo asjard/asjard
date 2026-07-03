@@ -117,6 +117,16 @@ func (c *ClientConn) Channel() (*amqp.Channel, error) {
 	return ch, nil
 }
 
+// NotifyClose registers a listener on the current physical AMQP connection.
+func (c *ClientConn) NotifyClose(receiver chan *amqp.Error) (chan *amqp.Error, error) {
+	c.cm.RLock()
+	defer c.cm.RUnlock()
+	if c.conn == nil || c.conn.IsClosed() {
+		return nil, status.DatabaseNotFoundError()
+	}
+	return c.conn.NotifyClose(receiver), nil
+}
+
 // Client retrieves a managed ClientConn from the global manager.
 func Client(opts ...Option) (*ClientConn, error) {
 	options := defaultClientOptions()

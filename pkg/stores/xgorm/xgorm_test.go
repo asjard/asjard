@@ -8,6 +8,7 @@ import (
 	"github.com/asjard/asjard/core/config"
 	_ "github.com/asjard/asjard/pkg/config/mem"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
 
@@ -28,8 +29,8 @@ func TestMain(m *testing.M) {
 	config.Set("asjard.stores.gorm.dbs.auto_decrypt.dsn", "encrypted_base64:dGVzdF9jaXBoZXJlZC5kYg==")
 	config.Set("asjard.stores.gorm.dbs.auto_decrypt.driver", "sqlite")
 
-	config.Set("asjard.stores.gorm.dbs.lock.dsn", "root:my-secret-pw@tcp(127.0.0.1:3306)/example-database?charset=utf8&parseTime=True&loc=Local&timeout=5s&readTimeout=5s")
-	config.Set("asjard.stores.gorm.dbs.lock.driver", "mysql")
+	config.Set("asjard.stores.gorm.dbs.lock.dsn", "test_lock.db")
+	config.Set("asjard.stores.gorm.dbs.lock.driver", "sqlite")
 	time.Sleep(50 * time.Millisecond)
 	if err := dbManager.Start(); err != nil {
 		panic(err)
@@ -150,4 +151,32 @@ func TestConnDBs(t *testing.T) {
 		_, err := DB(context.TODO())
 		assert.NotNil(t, err)
 	})
+}
+
+func TestDatabaseOptionsAndContext(t *testing.T) {
+	opts := defaultOptions()
+	require.Equal(t, DefaultConnectName, opts.connName)
+	WithConnName("named")(opts)
+	require.Equal(t, "named", opts.connName)
+	WithConnName("")(opts)
+	require.Equal(t, "named", opts.connName)
+
+	want := &gorm.DB{}
+	got, err := DB(WithDB(context.Background(), want))
+	require.NoError(t, err)
+	require.Same(t, want, got)
+}
+
+func TestDialectorSelection(t *testing.T) {
+	m := &DBManager{}
+	for driver, want := range map[string]string{
+		postgresDefaultDriverName: "postgres", sqliteDefaultDriverName: "sqlite",
+		sqlserverDefaultDrierName: "sqlserver", mysqlDefaultDriverName: "mysql", "unknown": "mysql",
+	} {
+		t.Run(driver, func(t *testing.T) {
+			dialector, err := m.dialector(&DBConnConfig{Driver: driver, Dsn: "test"})
+			require.NoError(t, err)
+			require.Equal(t, want, dialector.Name())
+		})
+	}
 }

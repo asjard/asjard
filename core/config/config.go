@@ -1,6 +1,7 @@
 package config
 
 import (
+	"maps"
 	"sort"
 	"strings"
 	"sync"
@@ -46,6 +47,7 @@ type SourceConfiger interface {
 // Configs represents the final, flattened global configuration state.
 type Configs struct {
 	cfgs map[string]*Value
+	keys []string
 	m    sync.RWMutex
 }
 
@@ -64,23 +66,27 @@ func (c *Configs) GetAll() map[string]*Value {
 	c.m.RLock()
 	defer c.m.RUnlock()
 	cfgs := make(map[string]*Value, len(c.cfgs))
-	for key, value := range c.cfgs {
-		cfgs[key] = value
-	}
+	maps.Copy(cfgs, c.cfgs)
 	return cfgs
 }
 
 // GetAllWithPrefixs filters global configurations by prefix and strips the prefix from keys.
 func (c *Configs) GetAllWithPrefixs(prefixs ...string) map[string]*Value {
+	c.ensureKeyIndex()
 	c.m.RLock()
 	defer c.m.RUnlock()
-	cfgs := make(map[string]*Value)
-	for key, value := range c.cfgs {
-		for _, p := range prefixs {
-			if strings.HasPrefix(key, p) {
-				// Trim the prefix and the delimiter to normalize the key.
-				cfgs[strings.TrimPrefix(key, p+constant.ConfigDelimiter)] = value
-			}
+	capacity := 0
+	for _, prefix := range prefixs {
+		start, end := prefixKeyRange(c.keys, prefix)
+		capacity += end - start
+	}
+	cfgs := make(map[string]*Value, capacity)
+	// Apply prefixes from general to specific so later chain entries
+	// deterministically override values normalized to the same key.
+	for _, p := range prefixs {
+		start, end := prefixKeyRange(c.keys, p)
+		for _, key := range c.keys[start:end] {
+			cfgs[strings.TrimPrefix(key, p+constant.ConfigDelimiter)] = c.cfgs[key]
 		}
 	}
 	return cfgs
@@ -90,6 +96,9 @@ func (c *Configs) GetAllWithPrefixs(prefixs ...string) map[string]*Value {
 func (c *Configs) Set(key string, value *Value) {
 	c.m.Lock()
 	defer c.m.Unlock()
+	if _, ok := c.cfgs[key]; !ok {
+		c.keys = insertSortedKey(c.keys, key)
+	}
 	c.cfgs[key] = value
 }
 
@@ -97,7 +106,28 @@ func (c *Configs) Set(key string, value *Value) {
 func (c *Configs) Del(key string) {
 	c.m.Lock()
 	defer c.m.Unlock()
+	if _, ok := c.cfgs[key]; ok {
+		c.keys = removeSortedKey(c.keys, key)
+	}
 	delete(c.cfgs, key)
+}
+
+func (c *Configs) ensureKeyIndex() {
+	c.m.RLock()
+	indexed := len(c.keys) == len(c.cfgs)
+	c.m.RUnlock()
+	if indexed {
+		return
+	}
+	c.m.Lock()
+	if len(c.keys) != len(c.cfgs) {
+		c.keys = c.keys[:0]
+		for key := range c.cfgs {
+			c.keys = append(c.keys, key)
+		}
+		sort.Strings(c.keys)
+	}
+	c.m.Unlock()
 }
 
 // SourcesConfig manages a collection of named configuration sources (e.g., file, env, consul).
@@ -121,23 +151,26 @@ func (c *SourcesConfig) Get(sourceName, key string) (*Value, bool) {
 
 // Set updates a configuration in a specific source. If the source doesn't exist, it is initialized.
 func (c *SourcesConfig) Set(sourceName, key string, value *Value) bool {
-	c.m.Lock()
-	defer c.m.Unlock()
+	c.m.RLock()
 	configs, ok := c.sources[sourceName]
+	c.m.RUnlock()
 	if !ok {
-		c.sources[sourceName] = &SourceConfigs{
-			cfgs: map[string][]*Value{key: {value}},
+		c.m.Lock()
+		configs, ok = c.sources[sourceName]
+		if !ok {
+			configs = &SourceConfigs{cfgs: make(map[string][]*Value)}
+			c.sources[sourceName] = configs
 		}
-		return true
+		c.m.Unlock()
 	}
 	return configs.Set(key, value)
 }
 
 // Del removes a configuration from the specified source.
 func (c *SourcesConfig) Del(sourceName, key, ref string, priority int) {
-	c.m.Lock()
-	defer c.m.Unlock()
+	c.m.RLock()
 	configs, ok := c.sources[sourceName]
+	c.m.RUnlock()
 	if ok {
 		configs.Del(key, ref, priority)
 	}
@@ -172,26 +205,7 @@ func (c *SourceConfigs) Set(key string, value *Value) bool {
 		c.cfgs[key] = []*Value{value}
 		return true
 	}
-	// Remove existing values with the same priority to allow override.
-	newValues := make([]*Value, 0, len(values))
-	for _, v := range values {
-		if v.Priority != value.Priority {
-			newValues = append(newValues, v)
-		}
-	}
-	if len(newValues) == 0 {
-		c.cfgs[key] = []*Value{value}
-		return true
-	}
-
-	// Check if this new value will take precedence.
-	setted := value.Priority > newValues[0].Priority
-	newValues = append(newValues, value)
-
-	// Sort from highest to lowest priority.
-	sort.Slice(newValues, func(i, j int) bool {
-		return newValues[i].Priority > newValues[j].Priority
-	})
+	newValues, setted := upsertSortedValue(values, value)
 	c.cfgs[key] = newValues
 	return setted
 }
@@ -241,4 +255,47 @@ func (c *SourceConfigs) Del(key, ref string, priority int) {
 			}
 		}
 	}
+}
+
+func prefixKeyRange(keys []string, prefix string) (int, int) {
+	start := sort.SearchStrings(keys, prefix)
+	end := start + sort.Search(len(keys)-start, func(i int) bool {
+		return !strings.HasPrefix(keys[start+i], prefix)
+	})
+	return start, end
+}
+
+func insertSortedKey(keys []string, key string) []string {
+	index := sort.SearchStrings(keys, key)
+	keys = append(keys, "")
+	copy(keys[index+1:], keys[index:])
+	keys[index] = key
+	return keys
+}
+
+func removeSortedKey(keys []string, key string) []string {
+	index := sort.SearchStrings(keys, key)
+	if index == len(keys) || keys[index] != key {
+		return keys
+	}
+	copy(keys[index:], keys[index+1:])
+	keys[len(keys)-1] = ""
+	return keys[:len(keys)-1]
+}
+
+func upsertSortedValue(values []*Value, value *Value) ([]*Value, bool) {
+	winnerChanged := len(values) == 0 || value.Priority >= values[0].Priority
+	result := make([]*Value, 0, len(values)+1)
+	for _, current := range values {
+		if current.Priority != value.Priority {
+			result = append(result, current)
+		}
+	}
+	index := sort.Search(len(result), func(i int) bool {
+		return result[i].Priority < value.Priority
+	})
+	result = append(result, nil)
+	copy(result[index+1:], result[index:])
+	result[index] = value
+	return result, winnerChanged
 }

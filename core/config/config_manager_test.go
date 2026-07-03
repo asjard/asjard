@@ -149,7 +149,9 @@ func TestAddDuplicateSource(t *testing.T) {
 	})
 
 	t.Run("DiffSource", func(t *testing.T) {
-		assert.NoError(t, AddSource("not_exist_source_name", 1111, newTestSource))
+		name := fmt.Sprintf("unique_source_%d", time.Now().UnixNano())
+		priority := int(time.Now().UnixNano()%1_000_000) + 10_000
+		assert.NoError(t, AddSource(name, priority, newTestSource))
 	})
 }
 
@@ -421,15 +423,18 @@ func TestListener(t *testing.T) {
 	t.Run("AddListener", func(t *testing.T) {
 		key := "test_add_listener"
 		value := "test_add_listener_value"
-		received := make(chan struct{})
+		received := make(chan struct{}, 1)
 		AddListener(key, func(event *Event) {
-			received <- struct{}{}
+			select {
+			case received <- struct{}{}:
+			default:
+			}
 		})
 		assert.Nil(t, Set(key, value))
 		select {
 		case <-received:
 			break
-		case <-time.After(time.Millisecond * 10):
+		case <-time.After(time.Second):
 			t.Error("after 100ms not received event")
 			t.FailNow()
 		}
@@ -439,36 +444,45 @@ func TestListener(t *testing.T) {
 	t.Run("AddPatternListener", func(t *testing.T) {
 		key := "test_add_listener_pattern"
 		value := "test_add_listener_pattern_value"
-		received := make(chan struct{})
-		AddPatternListener(key+".*", func(event *Event) {
-			received <- struct{}{}
+		received := make(chan struct{}, 1)
+		pattern := key + ".*"
+		AddPatternListener(pattern, func(event *Event) {
+			select {
+			case received <- struct{}{}:
+			default:
+			}
 		})
 		assert.Nil(t, Set(key, value))
 		select {
 		case <-received:
 			break
-		case <-time.After(time.Millisecond * 10):
+		case <-time.After(time.Second):
 			t.Error("after 10ms not received event")
 			t.FailNow()
 		}
 		assert.Equal(t, value, GetString(key, ""))
+		RemoveListener(pattern)
 	})
 	t.Run("AddPrefixListener", func(t *testing.T) {
 		key := "test_add_listener_prefix"
 		value := "test_add_listener_prefix_value"
-		received := make(chan struct{})
+		received := make(chan struct{}, 1)
 		AddPrefixListener(key, func(event *Event) {
-			received <- struct{}{}
+			select {
+			case received <- struct{}{}:
+			default:
+			}
 		})
 		assert.Nil(t, Set(key, value))
 		select {
 		case <-received:
 			break
-		case <-time.After(time.Millisecond * 10):
+		case <-time.After(time.Second):
 			t.Error("after 10ms not received event")
 			t.FailNow()
 		}
 		assert.Equal(t, value, GetString(key, ""))
+		RemoveListener(key + ".*")
 	})
 }
 

@@ -9,14 +9,10 @@
 package config
 
 import (
-	context "context"
 	bootstrap "github.com/asjard/asjard/core/bootstrap"
-	server "github.com/asjard/asjard/core/server"
 	xamqp1 "github.com/asjard/asjard/pkg/server/xamqp"
 	xamqp "github.com/asjard/asjard/pkg/stores/xamqp"
-	amqp "github.com/streadway/amqp"
-	proto "google.golang.org/protobuf/proto"
-	common "protos-repo/common/common"
+	amqp091_go "github.com/rabbitmq/amqp091-go"
 	sync "sync"
 )
 
@@ -89,97 +85,11 @@ func (c *ConfigAmqpClient) Start() error {
 	return nil
 }
 func (c *ConfigAmqpClient) Stop() {}
-func (c *ConfigAmqpClient) GetChannel() (*amqp.Channel, error) {
+func (c *ConfigAmqpClient) GetChannel() (*amqp091_go.Channel, error) {
 	return c.ClientConn.Channel()
 }
 
-// Simple Get
-// Retrieves the current configuration.
-// Asjard generates both a gRPC method and a REST endpoint.
-func (c *ConfigAmqpClient) Get(ctx context.Context, in *ConfigGetReq, opts ...xamqp1.PublishOption) error {
-	options := &xamqp1.PublishOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
-	payload, err := proto.Marshal(in)
-	if err != nil {
-		return err
-	}
-	ch, err := c.GetChannel()
-	if err != nil {
-		return err
-	}
-	defer ch.Close()
-	return ch.Publish(options.Exchange, options.Key, options.Mandatory, options.Immediate, amqp.Publishing{
-		ContentType: "application/protobuf",
-		Body:        payload,
-	})
-}
-
-// GetAndDecrypt: Retrieves an encrypted configuration and returns it in plain text.
-// Demonstrates handling specialized business logic through the same framework.
-func (c *ConfigAmqpClient) GetAndDecrypt(ctx context.Context, in *common.Empty, opts ...xamqp1.PublishOption) error {
-	options := &xamqp1.PublishOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
-	payload, err := proto.Marshal(in)
-	if err != nil {
-		return err
-	}
-	ch, err := c.GetChannel()
-	if err != nil {
-		return err
-	}
-	defer ch.Close()
-	return ch.Publish(options.Exchange, options.Key, options.Mandatory, options.Immediate, amqp.Publishing{
-		ContentType: "application/protobuf",
-		Body:        payload,
-	})
-}
-
-// Simple Get
-// Retrieves the current configuration.
-// Asjard generates both a gRPC method and a REST endpoint.
-func _Config_Get_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
-	in := new(ConfigGetReq)
-	if err := proto.Unmarshal(ctx.Body(), in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ConfigServer).Get(ctx, in)
-	}
-	info := &server.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Config_Get_FullMethodName,
-		Protocol:   xamqp1.Protocol,
-	}
-	handler := func(ctx context.Context, req any) (any, error) {
-		return srv.(ConfigServer).Get(ctx, in)
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// GetAndDecrypt: Retrieves an encrypted configuration and returns it in plain text.
-// Demonstrates handling specialized business logic through the same framework.
-func _Config_GetAndDecrypt_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
-	in := new(common.Empty)
-	if err := proto.Unmarshal(ctx.Body(), in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ConfigServer).GetAndDecrypt(ctx, in)
-	}
-	info := &server.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Config_GetAndDecrypt_FullMethodName,
-		Protocol:   xamqp1.Protocol,
-	}
-	handler := func(ctx context.Context, req any) (any, error) {
-		return srv.(ConfigServer).GetAndDecrypt(ctx, in)
-	}
-	return interceptor(ctx, in, info, handler)
-}
+const ()
 
 // ConfigAmqpServiceDesc is the xamqp1.ServiceDesc for Config service.
 // It's only intended for direct use with xamqp1.AddHandler,

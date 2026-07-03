@@ -21,7 +21,7 @@ import (
 	server "github.com/asjard/asjard/core/server"
 	xamqp1 "github.com/asjard/asjard/pkg/server/xamqp"
 	xamqp "github.com/asjard/asjard/pkg/stores/xamqp"
-	amqp "github.com/streadway/amqp"
+	amqp091_go "github.com/rabbitmq/amqp091-go"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
@@ -95,7 +95,7 @@ func (c *HelloAmqpClient) Start() error {
 	return nil
 }
 func (c *HelloAmqpClient) Stop() {}
-func (c *HelloAmqpClient) GetChannel() (*amqp.Channel, error) {
+func (c *HelloAmqpClient) GetChannel() (*amqp091_go.Channel, error) {
 	return c.ClientConn.Channel()
 }
 
@@ -114,14 +114,28 @@ func (c *HelloAmqpClient) Say(ctx context.Context, in *SayReq, opts ...xamqp1.Pu
 	if err != nil {
 		return err
 	}
-	ch, err := c.GetChannel()
+	conn, err := xamqp.Client(xamqp.WithClientName(c.options.clientName))
+	if err != nil {
+		return err
+	}
+	ch, err := conn.Channel()
 	if err != nil {
 		return err
 	}
 	defer ch.Close()
-	return ch.Publish(options.Exchange, options.Key, options.Mandatory, options.Immediate, amqp.Publishing{
-		ContentType: "application/protobuf",
-		Body:        payload,
+	return ch.Publish(options.Exchange, options.Key, options.Mandatory, options.Immediate, amqp091_go.Publishing{
+		ContentType:   "application/protobuf",
+		Headers:       options.Headers,
+		DeliveryMode:  options.DeliveryMode,
+		Priority:      options.Priority,
+		CorrelationId: options.CorrelationId,
+		ReplyTo:       options.ReplyTo,
+		Expiration:    options.Expiration,
+		MessageId:     options.MessageId,
+		Type:          options.Type,
+		UserId:        options.UserId,
+		AppId:         options.AppId,
+		Body:          payload,
 	})
 }
 
@@ -150,6 +164,17 @@ func _Hello_Say_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor server.Una
 	return interceptor(ctx, in, info, handler)
 }
 
+const (
+	Hello_Say_Route       = "Say"
+	Hello_Say_Route_Retry = "Say_Retry"
+	Hello_Say_Queue       = "api.v1.example.docs.Hello.Say"
+	Hello_Say_Queue_Retry = "api.v1.example.docs.Hello.Say_Retry"
+	Hello_Say_Queue_Delay = "api.v1.example.docs.Hello.Say_Delay"
+	Hello_Say_Route_Delay = "Say_Delay"
+	Hello_Exchange        = "api.v1.example.docs.Hello"
+	Hello_Exchange_Retry  = "api.v1.example.docs.Hello_Retry"
+)
+
 // HelloAmqpServiceDesc is the xamqp1.ServiceDesc for Hello service.
 // It's only intended for direct use with xamqp1.AddHandler,
 // and not to be introspected or modified (even as a copy)
@@ -162,8 +187,12 @@ var HelloAmqpServiceDesc = xamqp1.ServiceDesc{
 	HandlerType: (*HelloServer)(nil),
 	Methods: []xamqp1.MethodDesc{
 		{
-			Queue:   Hello_Say_FullMethodName,
-			Handler: _Hello_Say_AmqpHandler,
+			Queue:       Hello_Say_Queue,
+			Handler:     _Hello_Say_AmqpHandler,
+			Kind:        "direct",
+			Exchange:    Hello_Exchange,
+			Route:       Hello_Say_Route,
+			ContentType: "application/protobuf",
 		},
 	},
 }

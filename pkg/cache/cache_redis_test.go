@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	_ "github.com/asjard/asjard/pkg/config/mem"
 	"github.com/asjard/asjard/pkg/stores/xredis"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testTable struct{}
@@ -20,20 +22,18 @@ func (testTable) ModelName() string {
 	return "test_local_cache_model"
 }
 
-func TestMain(m *testing.M) {
-	if err := config.Load(-1); err != nil {
-		panic(err)
-	}
+func setupRedisIntegration(t *testing.T) {
+	t.Helper()
 	config.Set("asjard.stores.redis.clients.default.address", "127.0.0.1:6379")
 	config.Set("asjard.cache.redis.enabled", true)
 
 	if err := bootstrap.Bootstrap(); err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
-	m.Run()
 }
 
 func TestRedisCache(t *testing.T) {
+	setupRedisIntegration(t)
 	client, err := xredis.Client()
 	assert.Nil(t, err)
 	assert.NotNil(t, client)
@@ -43,7 +43,7 @@ func TestRedisCache(t *testing.T) {
 		testKey := "test_redis_key"
 		testValue := "test_redis_value"
 		t.Run("TestKey", func(t *testing.T) {
-			for i := 0; i < 100; i++ {
+			for i := range 100 {
 				key := fmt.Sprintf("%s_%d", testKey, i)
 				value := fmt.Sprintf("%s_%d", testValue, i)
 				assert.Nil(t, cache.Set(context.Background(), key, value, 5*time.Minute))
@@ -75,7 +75,7 @@ func TestRedisCache(t *testing.T) {
 		t.Run("TestWithGroup", func(t *testing.T) {
 			testGroup := "test_redis_group"
 			cache = cache.WithGroup(testGroup)
-			for i := 0; i < 100; i++ {
+			for i := range 100 {
 				key := fmt.Sprintf("%s_%d", testKey, i)
 				value := fmt.Sprintf("%s_%d", testValue, i)
 				assert.Nil(t, cache.Set(context.Background(), key, value, 5*time.Minute))
@@ -90,12 +90,13 @@ func TestRedisCache(t *testing.T) {
 				assert.NotNil(t, keyExist.Err())
 			}
 		})
-		t.Run("TestKey", func(t *testing.T) {
+		t.Run("TestKeyOption", func(t *testing.T) {
 			// default is ignore
-			assert.NotContains(t, cache.WithKey("test_version").Key(), "1.0.0")
-			config.Set("asjard.cache.redis.careVersionDiff", true)
-			time.Sleep(500 * time.Millisecond)
-			assert.Contains(t, cache.WithKey("test_version").Key(), "1.0.0")
+			assert.NotContains(t, cache.WithKey("test_without_version").Key(), "1.0.0")
+			require.NoError(t, config.Set("asjard.cache.redis.careVersionDiff", true))
+			require.Eventually(t, func() bool {
+				return strings.Contains(cache.WithKey("test_with_version").Key(), "1.0.0")
+			}, 3*time.Second, 20*time.Millisecond)
 		})
 	})
 }

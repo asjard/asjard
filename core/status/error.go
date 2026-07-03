@@ -80,13 +80,9 @@ func Errorf(c codes.Code, format string, a ...any) error {
 func newCode(c codes.Code) codes.Code {
 	var httpCode, errCode uint32
 
-	if c < 100 {
+	if c < 200_0 {
 		// Standard gRPC codes (0-16): infer HTTP mapping.
 		httpCode = httpStatusCode(c)
-		errCode = uint32(c)
-	} else if c < 1000 {
-		// Bare HTTP status codes (1xx-5xx).
-		httpCode = http.StatusInternalServerError
 		errCode = uint32(c)
 	} else {
 		// Custom composite codes: extract the embedded HTTP code part.
@@ -105,12 +101,8 @@ func newCode(c codes.Code) codes.Code {
 
 // parseCode decomposes a structured code back into its constituent parts.
 func parseCode(c codes.Code) (systemCode, httpCode, errCode uint32) {
-	if c < 10 {
+	if c < 100_000_0 {
 		httpCode = httpStatusCode(c)
-		errCode = uint32(c)
-		return
-	} else if c < 100_000_0 {
-		httpCode = http.StatusInternalServerError
 		errCode = uint32(c)
 	} else {
 		// Complex parsing for 7+ digit codes.

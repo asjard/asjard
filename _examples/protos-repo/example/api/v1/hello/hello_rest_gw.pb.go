@@ -43,7 +43,7 @@ func NewHelloAPI() *HelloAPI {
 	return helloAPI
 }
 func (api *HelloAPI) Start() error {
-	conn, err := client.NewClient(grpc.Protocol, config.GetString("asjard.topology.services.example.name", "svc-example-api")).Conn()
+	conn, err := client.NewClient(grpc.Protocol, config.GetString("asjard.topology.services.example.api.name", "svc-docs-api")).Conn()
 	if err != nil {
 		return err
 	}

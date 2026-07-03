@@ -164,26 +164,40 @@ func (e *Etcd) Registe(instance *server.Service) error {
 	}
 
 	// Monitoring goroutine for the lease status.
-	go func() {
-		for resp := range leaseChan {
-			// If leaseChan is closed or nil, the lease is lost.
-			if resp == nil {
-				logger.Error("keepalive fail")
-				// Attempt to re-register indefinitely every 3 seconds.
-				for {
-					logger.Debug("start keepalive instance")
-					if err := e.Registe(instance); err != nil {
-						logger.Error("keepalive instance fail", "err", err)
-					} else {
-						logger.Debug("rekeepalive instance success")
-						return
-					}
-					time.Sleep(3 * time.Second)
-				}
-			}
-		}
-	}()
+	go e.watchLease(instance, leaseChan)
 	return nil
+}
+
+func (e *Etcd) watchLease(instance *server.Service, leaseChan <-chan *clientv3.LeaseKeepAliveResponse) {
+	watchLease(leaseChan, func() {
+		e.reregiste(instance)
+	})
+}
+
+func watchLease(leaseChan <-chan *clientv3.LeaseKeepAliveResponse, onLost func()) {
+	for resp := range leaseChan {
+		if resp == nil {
+			logger.Error("keepalive fail")
+			onLost()
+			return
+		}
+	}
+	logger.Error("keepalive channel closed")
+	onLost()
+}
+
+func (e *Etcd) reregiste(instance *server.Service) {
+	// Attempt to re-register indefinitely every 3 seconds.
+	for {
+		logger.Debug("start keepalive instance")
+		if err := e.Registe(instance); err != nil {
+			logger.Error("keepalive instance fail", "err", err)
+		} else {
+			logger.Debug("rekeepalive instance success")
+			return
+		}
+		time.Sleep(3 * time.Second)
+	}
 }
 
 // Remove manually deletes the instance key from ETCD (e.g., during graceful shutdown).

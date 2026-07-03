@@ -2,7 +2,6 @@ package client
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
@@ -34,16 +33,45 @@ var _ resolver.Builder = &ClientBuilder{}
 // The target URL format is: asjard://[protocol]/[serviceName]?instanceID=[id]&registryName=[name]
 func (c *ClientBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	query := target.URL.Query()
+
+	protocol := target.URL.Host
+	serviceName := target.Endpoint()
+	instanceID := query.Get("instanceID")
+	registryName := query.Get("registryName")
+
+	app := runtime.GetAPP()
+	listenerName := fmt.Sprintf("%s_clientResolver_%s_%s",
+		constant.Framework,
+		protocol,
+		serviceName)
+	options := []registry.Option{
+		registry.WithServiceName(serviceName),
+		registry.WithProtocol(protocol),
+		registry.WithEnvironment(app.Environment),
+		registry.WithApp(app.App),
+	}
+	if instanceID != "" {
+		options = append(options, registry.WithInstanceID(instanceID))
+	}
+	if registryName != "" {
+		options = append(options, registry.WithRegistryName(registryName))
+	}
 	cr := &clientResolver{
 		cc:           cc,
-		protocol:     target.URL.Host,
-		serviceName:  target.Endpoint(),
-		instanceID:   query.Get("instanceID"),
-		registryName: query.Get("registryName"),
+		protocol:     protocol,
+		serviceName:  serviceName,
+		instanceID:   instanceID,
+		registryName: registryName,
+		listenerName: listenerName,
+		options:      options,
 	}
+
+	// Watch enables real-time updates when instances join or leave.
+	registry.AddListener(append(options, registry.WithWatch(listenerName, cr.watch))...)
 
 	// Trigger initial resolution immediately upon building.
 	cr.ResolveNow(resolver.ResolveNowOptions{})
+
 	return cr, nil
 }
 
@@ -64,43 +92,23 @@ type clientResolver struct {
 	instanceID string
 	// registryName optionally specifies which discovery backend to query.
 	registryName string
-	// instanceId -> instance
-	instances sync.Map
+	// // instanceId -> instance
+	// instances sync.Map
+
+	listenerName string
+
+	options []registry.Option
 }
 
 // Close cleans up the resolver by removing the listener from the registry.
 func (r *clientResolver) Close() {
-	registry.RemoveListener(r.listenerName())
+	registry.RemoveListener(r.listenerName)
 }
 
 // ResolveNow fetches the latest service list from the discovery center.
 // It configures registry options based on the current application runtime and target parameters.
 func (r *clientResolver) ResolveNow(_ resolver.ResolveNowOptions) {
-	app := runtime.GetAPP()
-	options := []registry.Option{
-		registry.WithServiceName(r.serviceName),
-		registry.WithProtocol(r.protocol),
-		registry.WithEnvironment(app.Environment),
-		registry.WithApp(app.App),
-		// Watch enables real-time updates when instances join or leave.
-		registry.WithWatch(r.listenerName(), r.watch),
-	}
-	if r.instanceID != "" {
-		options = append(options, registry.WithInstanceID(r.instanceID))
-	}
-	if r.registryName != "" {
-		options = append(options, registry.WithRegistryName(r.registryName))
-	}
-	instances := registry.PickServices(options...)
-	r.update(instances)
-}
-
-// listenerName generates a unique identifier for the registry watch event.
-func (r *clientResolver) listenerName() string {
-	return fmt.Sprintf("%s_clientResolver_%s_%s",
-		constant.Framework,
-		r.protocol,
-		r.serviceName)
+	r.update(registry.PickServices(r.options...))
 }
 
 // update transforms registry instances into gRPC-compatible resolver addresses
@@ -152,20 +160,8 @@ func (r *clientResolver) update(instances []*registry.Instance) {
 }
 
 // watch is the callback function triggered by the registry when service instances change.
-func (r *clientResolver) watch(event *registry.Event) {
-	logger.Debug("receive changed event", "type", event.Type, "instance", event.Instance)
-	if event.Type == registry.EventTypeDelete {
-		// When an instance is deleted, we refresh to get the latest valid set.
-		r.instances.Delete(event.Instance.Service.Instance.ID)
-	} else {
-		r.instances.Store(event.Instance.Service.Instance.ID, event.Instance)
-	}
-	instances := []*registry.Instance{}
-	r.instances.Range(func(key, value any) bool {
-		instances = append(instances, value.(*registry.Instance))
-		return true
-	})
-	if len(instances) != 0 {
-		r.update(instances)
-	}
+func (r *clientResolver) watch(_ *registry.Event) {
+	go func() {
+		r.update(registry.PickServices(r.options...))
+	}()
 }

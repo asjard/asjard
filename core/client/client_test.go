@@ -10,7 +10,7 @@ type mockClient struct {
 }
 
 // NewConn records the target and options passed by the orchestrator.
-func (m *mockClient) NewConn(target string) (ClientConnInterface, error) {
+func (m *mockClient) NewConn(target string, opts ...ConnOption) (ClientConnInterface, error) {
 	m.lastTarget = target
 	// m.lastOptions = options
 	return nil, nil // Return nil for connection as we only test orchestration

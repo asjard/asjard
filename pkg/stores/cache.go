@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/asjard/asjard/core/runtime"
@@ -71,7 +72,7 @@ type CacheConfig struct {
 type Cache struct {
 	// cm protects access to the conf field for thread-safe runtime configuration updates.
 	cm   sync.RWMutex
-	conf *CacheConfig
+	conf atomic.Pointer[CacheConfig]
 
 	// model provides metadata about the data being cached (e.g., Table Name).
 	model Modeler
@@ -89,49 +90,43 @@ var (
 
 // NewCache initializes a basic cache structure with a reference to the data model.
 func NewCache(model Modeler) *Cache {
-	return &Cache{
+	c := &Cache{
 		model: model,
 		app:   runtime.GetAPP(),
-		conf:  &DefaultCacheConfig,
 	}
+	c.conf.Store(&DefaultCacheConfig)
+	return c
 }
 
 // WithConf allows for fluent-style configuration of the cache instance.
 func (c *Cache) WithConf(conf *CacheConfig) *Cache {
-	c.cm.Lock()
-	defer c.cm.Unlock()
-	c.conf = conf
+	c.conf.Store(conf)
 	return c
 }
 
 // Enabled checks if caching is currently active.
 func (c *Cache) Enabled() bool {
-	c.cm.RLock()
-	defer c.cm.RUnlock()
-	return c.conf.Enabled
+	return c.conf.Load().Enabled
 }
 
 // AutoRefresh checks if the TTL should be renewed on every Get.
 func (c *Cache) AutoRefresh() bool {
-	c.cm.RLock()
-	defer c.cm.RUnlock()
-	return c.conf.AutoRefresh
+	return c.conf.Load().AutoRefresh
 }
 
 // NewKey generates a fully qualified, namespaced cache key.
 // It combines the application identity (App, Env, Region) with the model key.
 func (c *Cache) NewKey(key string) string {
-	c.cm.RLock()
-	defer c.cm.RUnlock()
+	conf := c.conf.Load()
 	// Uses the runtime ResourceKey builder to ensure consistent naming conventions.
 	return c.app.ResourceKey("caches", c.ModelKey(key),
 		runtime.WithDelimiter(":"),
-		runtime.WithVersion(c.conf.CareVersionDiff),
-		runtime.WithoutApp(c.conf.IgnoreAppDiff),
-		runtime.WithoutEnv(c.conf.IgnoreEnvDiff),
-		runtime.WithoutService(c.conf.IgnoreServiceDiff),
-		runtime.WithoutRegion(c.conf.IgnoreRegionDiff),
-		runtime.WithoutApp(c.conf.IgnoreAzDiff))
+		runtime.WithVersion(conf.CareVersionDiff),
+		runtime.WithoutApp(conf.IgnoreAppDiff),
+		runtime.WithoutEnv(conf.IgnoreEnvDiff),
+		runtime.WithoutService(conf.IgnoreServiceDiff),
+		runtime.WithoutRegion(conf.IgnoreRegionDiff),
+		runtime.WithoutApp(conf.IgnoreAzDiff))
 }
 
 // App returns the runtime application information.
@@ -148,20 +143,24 @@ func (c *Cache) ModelKey(key string) string {
 // JITTER: It adds a random duration up to 100% of the config value to prevent "Cache Avalanche"
 // (where many keys expire at the exact same time, overwhelming the database).
 func (c *Cache) ExpiresIn() time.Duration {
-	c.cm.RLock()
-	defer c.cm.RUnlock()
+	conf := c.conf.Load()
+	if conf.ExpiresIn.Duration == 0 {
+		return 0
+	}
 	// Total TTL = Configured TTL + Random(0, Configured TTL)
-	return c.conf.ExpiresIn.Duration + time.Duration(rand.Int63n(int64(c.conf.ExpiresIn.Duration)))
+	return conf.ExpiresIn.Duration + time.Duration(rand.Int63n(int64(conf.ExpiresIn.Duration)))
 }
 
 // EmptyExpiresIn calculates the TTL for null/empty results.
 // If not explicitly set, it defaults to 50% of the standard ExpiresIn.
 func (c *Cache) EmptyExpiresIn() time.Duration {
-	c.cm.RLock()
-	defer c.cm.RUnlock()
-	expiresIn := c.conf.EmptyExpiresIn.Duration
+	conf := c.conf.Load()
+	expiresIn := conf.EmptyExpiresIn.Duration
 	if expiresIn == 0 {
-		expiresIn = c.conf.ExpiresIn.Duration / 2
+		expiresIn = conf.ExpiresIn.Duration / 2
+	}
+	if expiresIn == 0 {
+		return 0
 	}
 	// Also includes jitter for the same reasons as ExpiresIn.
 	return expiresIn + time.Duration(rand.Int63n(int64(expiresIn)))
@@ -171,7 +170,5 @@ func (c *Cache) EmptyExpiresIn() time.Duration {
 // if true, not cache empty result if error is a internal error
 // else always cache empty result
 func (c *Cache) EmptySetStrict() bool {
-	c.cm.RLock()
-	defer c.cm.RUnlock()
-	return c.conf.EmptySetStrict
+	return c.conf.Load().EmptySetStrict
 }

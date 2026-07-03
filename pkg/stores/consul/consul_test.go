@@ -6,7 +6,9 @@ import (
 
 	"github.com/asjard/asjard/core/config"
 	_ "github.com/asjard/asjard/pkg/config/mem"
+	"github.com/asjard/asjard/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMain(m *testing.M) {
@@ -52,4 +54,25 @@ func TestClient(t *testing.T) {
 		_, err = client.Status().Leader()
 		assert.Nil(t, err)
 	})
+}
+
+func TestClientOptionsAndAPIConfig(t *testing.T) {
+	opts := defaultClientOptions()
+	require.Equal(t, DefaultClientName, opts.clientName)
+	WithClientName("named")(opts)
+	require.Equal(t, "named", opts.clientName)
+
+	conf := &ClientConnConfig{
+		Address: "127.0.0.1:8500", Scheme: "http", PathPrefix: "/v1", Datacenter: "dc1",
+		Username: "user", Password: "pass", Token: "token", WaitTime: utils.JSONDuration{Duration: time.Second},
+	}
+	got, err := (&ClientManager{}).newApiConfig(conf)
+	require.NoError(t, err)
+	require.Equal(t, conf.Address, got.Address)
+	require.Equal(t, conf.Scheme, got.Scheme)
+	require.Equal(t, conf.PathPrefix, got.PathPrefix)
+	require.Equal(t, conf.Datacenter, got.Datacenter)
+	require.Equal(t, conf.Token, got.Token)
+	require.Equal(t, conf.Username, got.HttpAuth.Username)
+	require.Equal(t, conf.Password, got.HttpAuth.Password)
 }

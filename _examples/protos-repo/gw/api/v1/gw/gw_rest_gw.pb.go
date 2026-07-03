@@ -34,7 +34,7 @@ func NewGwAPI() *GwAPI {
 	return gwAPI
 }
 func (api *GwAPI) Start() error {
-	conn, err := client.NewClient(grpc.Protocol, config.GetString("asjard.topology.services.gw.name", "svc-gw-api")).Conn()
+	conn, err := client.NewClient(grpc.Protocol, config.GetString("asjard.topology.services.gw.api.name", "svc-gw-api")).Conn()
 	if err != nil {
 		return err
 	}

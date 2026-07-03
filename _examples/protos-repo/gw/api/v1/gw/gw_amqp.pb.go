@@ -7,13 +7,10 @@
 package gw
 
 import (
-	context "context"
 	bootstrap "github.com/asjard/asjard/core/bootstrap"
-	server "github.com/asjard/asjard/core/server"
 	xamqp1 "github.com/asjard/asjard/pkg/server/xamqp"
 	xamqp "github.com/asjard/asjard/pkg/stores/xamqp"
-	amqp "github.com/streadway/amqp"
-	proto "google.golang.org/protobuf/proto"
+	amqp091_go "github.com/rabbitmq/amqp091-go"
 	sync "sync"
 )
 
@@ -86,52 +83,11 @@ func (c *GwAmqpClient) Start() error {
 	return nil
 }
 func (c *GwAmqpClient) Stop() {}
-func (c *GwAmqpClient) GetChannel() (*amqp.Channel, error) {
+func (c *GwAmqpClient) GetChannel() (*amqp091_go.Channel, error) {
 	return c.ClientConn.Channel()
 }
 
-// Get all service instances
-// This is a example that how to get service instances from registry
-func (c *GwAmqpClient) GetServiceInstances(ctx context.Context, in *ServiceInstancesReq, opts ...xamqp1.PublishOption) error {
-	options := &xamqp1.PublishOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
-	payload, err := proto.Marshal(in)
-	if err != nil {
-		return err
-	}
-	ch, err := c.GetChannel()
-	if err != nil {
-		return err
-	}
-	defer ch.Close()
-	return ch.Publish(options.Exchange, options.Key, options.Mandatory, options.Immediate, amqp.Publishing{
-		ContentType: "application/protobuf",
-		Body:        payload,
-	})
-}
-
-// Get all service instances
-// This is a example that how to get service instances from registry
-func _Gw_GetServiceInstances_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
-	in := new(ServiceInstancesReq)
-	if err := proto.Unmarshal(ctx.Body(), in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GwServer).GetServiceInstances(ctx, in)
-	}
-	info := &server.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Gw_GetServiceInstances_FullMethodName,
-		Protocol:   xamqp1.Protocol,
-	}
-	handler := func(ctx context.Context, req any) (any, error) {
-		return srv.(GwServer).GetServiceInstances(ctx, in)
-	}
-	return interceptor(ctx, in, info, handler)
-}
+const ()
 
 // GwAmqpServiceDesc is the xamqp1.ServiceDesc for Gw service.
 // It's only intended for direct use with xamqp1.AddHandler,

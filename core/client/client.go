@@ -12,7 +12,7 @@ import (
 type ClientInterface interface {
 	// NewConn creates a new client connection.
 	// Target format follows: asjard://protocol/serviceName
-	NewConn(target string) (ClientConnInterface, error)
+	NewConn(target string, opts ...ConnOption) (ClientConnInterface, error)
 }
 
 // ClientConnInterface extends gRPC's ClientConnInterface to provide
@@ -33,6 +33,10 @@ type ConnOptions struct {
 	InstanceID string
 	// RegistryName specifies which service discovery registry to use.
 	RegistryName string
+	// Interceptor defines a single unary interceptor or a chained interceptor
+	// that wraps the RPC call to provide cross-cutting concerns like logging,
+	// tracing, and security.
+	Interceptor UnaryClientInterceptor
 }
 
 // ConnOption is a functional option pattern for configuring ConnOptions.
@@ -99,7 +103,7 @@ func (c Client) Conn(ops ...ConnOption) (grpc.ClientConnInterface, error) {
 	target := fmt.Sprintf("%s://%s/%s?%s",
 		constant.Framework, c.protocol, c.serverName, c.connOptions(ops...).queryString())
 
-	return cc.NewConn(target)
+	return cc.NewConn(target, ops...)
 }
 
 // connOptions merges multiple functional options into a single ConnOptions struct.
@@ -130,5 +134,11 @@ func WithInstanceID(instanceID string) func(opts *ConnOptions) {
 func WithRegistryName(registryName string) func(opts *ConnOptions) {
 	return func(opts *ConnOptions) {
 		opts.RegistryName = registryName
+	}
+}
+
+func WithUnaryClientInterceptor(interceptor UnaryClientInterceptor) func(opts *ConnOptions) {
+	return func(opts *ConnOptions) {
+		opts.Interceptor = interceptor
 	}
 }

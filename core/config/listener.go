@@ -10,13 +10,31 @@ import (
 // Listener manages configuration change subscribers.
 // It maintains a registry of callbacks and matches incoming events against them.
 type Listener struct {
-	// callbacks stores direct key-to-callback mappings (map[string][]CallbackFunc).
+	// callbacks stores direct key-to-callback groups.
 	callbacks sync.Map
-	// matchCallbacks stores regex-pattern-to-callback mappings (map[string][]CallbackFunc).
+	// matchCallbacks stores regex-pattern-to-callback groups.
 	matchCallbacks sync.Map
 
 	// Internal slice for tracking watch relationships (reserved for future use).
 	watchs []*watch
+}
+
+type callbackGroup struct {
+	mu        sync.RWMutex
+	callbacks []CallbackFunc
+}
+
+func (g *callbackGroup) add(callback CallbackFunc) {
+	g.mu.Lock()
+	g.callbacks = append(g.callbacks, callback)
+	g.mu.Unlock()
+}
+
+func (g *callbackGroup) snapshot() []CallbackFunc {
+	g.mu.RLock()
+	callbacks := append([]CallbackFunc(nil), g.callbacks...)
+	g.mu.RUnlock()
+	return callbacks
 }
 
 // watch represents the relationship between a listening function and its callback.
@@ -42,22 +60,14 @@ func (l *Listener) watch(key string, opt *watchOptions) {
 
 	// Register as a pattern-based listener if a regex pattern is provided.
 	if opt.pattern != "" {
-		cfuncs, ok := l.matchCallbacks.Load(opt.pattern)
-		if !ok {
-			cfuncs = []CallbackFunc{}
-		}
-		cfuncs = append(cfuncs.([]CallbackFunc), opt.callback)
-		l.matchCallbacks.Store(opt.pattern, cfuncs)
+		group, _ := l.matchCallbacks.LoadOrStore(opt.pattern, &callbackGroup{})
+		group.(*callbackGroup).add(opt.callback)
 	}
 
 	// Register as a direct key listener if a specific key is provided.
 	if key != "" {
-		cfuncs, ok := l.callbacks.Load(key)
-		if !ok {
-			cfuncs = []CallbackFunc{}
-		}
-		cfuncs = append(cfuncs.([]CallbackFunc), opt.callback)
-		l.callbacks.Store(key, cfuncs)
+		group, _ := l.callbacks.LoadOrStore(key, &callbackGroup{})
+		group.(*callbackGroup).add(opt.callback)
 	}
 }
 
@@ -77,9 +87,9 @@ func (l *Listener) notify(event *Event) {
 
 // keyNotify finds and executes callbacks registered for the exact key found in the event.
 func (l *Listener) keyNotify(event *Event) {
-	callbacks, ok := l.callbacks.Load(event.Key)
-	if ok {
-		for _, callback := range callbacks.([]CallbackFunc) {
+	group, found := l.callbacks.Load(event.Key)
+	if found {
+		for _, callback := range group.(*callbackGroup).snapshot() {
 			callback(event)
 		}
 	}
@@ -90,8 +100,8 @@ func (l *Listener) keyNotify(event *Event) {
 func (l *Listener) matchNotify(event *Event) {
 	l.matchCallbacks.Range(func(key, value any) bool {
 		// key here is the regex pattern string.
-		if ok, err := regexp.MatchString(key.(string), event.Key); ok {
-			for _, callback := range value.([]CallbackFunc) {
+		if matched, err := regexp.MatchString(key.(string), event.Key); matched {
+			for _, callback := range value.(*callbackGroup).snapshot() {
 				callback(event)
 			}
 		} else if err != nil {

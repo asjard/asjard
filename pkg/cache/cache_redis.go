@@ -478,6 +478,7 @@ func (c *CacheRedis) load() error {
 }
 
 func (c *CacheRedis) watch(event *config.Event) {
+	logger.Info("cache redis config changed")
 	if err := c.load(); err != nil {
 		logger.Error("redis cache watch config fail", "err", err)
 	}
