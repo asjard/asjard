@@ -7,13 +7,10 @@
 package sample
 
 import (
-	context "context"
 	bootstrap "github.com/asjard/asjard/core/bootstrap"
-	server "github.com/asjard/asjard/core/server"
 	xamqp1 "github.com/asjard/asjard/pkg/server/xamqp"
 	xamqp "github.com/asjard/asjard/pkg/stores/xamqp"
-	amqp "github.com/streadway/amqp"
-	proto "google.golang.org/protobuf/proto"
+	amqp091_go "github.com/rabbitmq/amqp091-go"
 	sync "sync"
 )
 
@@ -86,52 +83,11 @@ func (c *SampleAmqpClient) Start() error {
 	return nil
 }
 func (c *SampleAmqpClient) Stop() {}
-func (c *SampleAmqpClient) GetChannel() (*amqp.Channel, error) {
+func (c *SampleAmqpClient) GetChannel() (*amqp091_go.Channel, error) {
 	return c.ClientConn.Channel()
 }
 
-// SayHello returns a greeting message based on the provided name.
-// It supports multiple HTTP GET entrypoints for compatibility and routing flexibility.
-func (c *SampleAmqpClient) SayHello(ctx context.Context, in *HelloRequest, opts ...xamqp1.PublishOption) error {
-	options := &xamqp1.PublishOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
-	payload, err := proto.Marshal(in)
-	if err != nil {
-		return err
-	}
-	ch, err := c.GetChannel()
-	if err != nil {
-		return err
-	}
-	defer ch.Close()
-	return ch.Publish(options.Exchange, options.Key, options.Mandatory, options.Immediate, amqp.Publishing{
-		ContentType: "application/protobuf",
-		Body:        payload,
-	})
-}
-
-// SayHello returns a greeting message based on the provided name.
-// It supports multiple HTTP GET entrypoints for compatibility and routing flexibility.
-func _Sample_SayHello_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
-	in := new(HelloRequest)
-	if err := proto.Unmarshal(ctx.Body(), in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SampleServer).SayHello(ctx, in)
-	}
-	info := &server.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Sample_SayHello_FullMethodName,
-		Protocol:   xamqp1.Protocol,
-	}
-	handler := func(ctx context.Context, req any) (any, error) {
-		return srv.(SampleServer).SayHello(ctx, in)
-	}
-	return interceptor(ctx, in, info, handler)
-}
+const ()
 
 // SampleAmqpServiceDesc is the xamqp1.ServiceDesc for Sample service.
 // It's only intended for direct use with xamqp1.AddHandler,
