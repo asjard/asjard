@@ -131,7 +131,8 @@ func (ccb *CircuitBreaker) do(ctx context.Context, commandName, method string, r
 		return status.Error(codes.Unavailable, "circuit breaker is open")
 	}
 
-	subCtx, cancel := context.WithCancel(ctx)
+	subCtx := ctx
+	var cancel context.CancelFunc
 
 	if hasCfg && cfg.Timeout.Duration > 0 {
 		if deadline, hasDeadline := ctx.Deadline(); hasDeadline {
@@ -152,7 +153,9 @@ func (ccb *CircuitBreaker) do(ctx context.Context, commandName, method string, r
 	} else {
 		subCtx, cancel = context.WithCancel(ctx)
 	}
-	defer cancel()
+	if cancel != nil {
+		defer cancel()
+	}
 
 	// 执行真正的 RPC 调用
 	invokeErr := invoker(subCtx, method, req, reply, cc)
@@ -161,7 +164,7 @@ func (ccb *CircuitBreaker) do(ctx context.Context, commandName, method string, r
 	if invokeErr != nil {
 		es := status.FromError(invokeErr)
 		// 校验状态码：如果是网络超时、5xx 服务端崩溃，或者 context 层面超时，判定为失败
-		if es.Status%100 == 5 || errors.Is(invokeErr, context.DeadlineExceeded) {
+		if es.Status/100 == 5 || errors.Is(invokeErr, context.DeadlineExceeded) {
 			success(false) // 触发熔断计数
 		} else {
 			success(true) // 4xx 等业务客户端错误，依然视作当前通道健康，不计入失败率
@@ -197,6 +200,7 @@ func (ccb *CircuitBreaker) match(protocol, service, method string) string {
 		ccb.buildKey("//", service, "/", method),
 		ccb.buildKey("///", method),
 		ccb.buildKey("//", service),
+		DefaultCommandConfigName,
 	)
 	defer prioritiesPool.Put(priorities)
 
