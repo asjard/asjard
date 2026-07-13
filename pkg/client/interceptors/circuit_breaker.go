@@ -136,7 +136,7 @@ func (ccb *CircuitBreaker) do(ctx context.Context, commandName, method string, r
 
 	if hasCfg && cfg.Timeout.Duration > 0 {
 		if deadline, hasDeadline := ctx.Deadline(); hasDeadline {
-			// 如果上游有时限，计算上游还剩多少时间完蛋
+			// 如果上游有时限，计算上游还剩多少时间
 			remaining := time.Until(deadline)
 
 			// 如果熔断器配置的超时时间，比上游剩下的时间还要短，说明上游宽裕，我们应该用更短的来保护系统

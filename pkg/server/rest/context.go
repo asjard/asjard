@@ -192,7 +192,7 @@ func (c *Context) Close() {
 
 // JSONBodyParams returns the raw body if the Content-Type is application/json.
 func (c *Context) JSONBodyParams() []byte {
-	if bytes.Equal(c.Request.Header.ContentType(), []byte(MIME_JSON)) {
+	if bytes.Contains(c.Request.Header.ContentType(), []byte(MIME_JSON)) {
 		return c.Request.Body()
 	}
 	logger.L(c).Warn("request contentType not json", "content_type", utils.SafeByte2String(c.Request.Header.ContentType()))
