@@ -38,11 +38,14 @@ type GobreakerConfig struct {
 
 // CircuitBreaker manages fault tolerance for outgoing client calls using sony/gobreaker.
 type CircuitBreaker struct {
-	//存储具体实例映射，不再是单纯的配置项
-	breakers map[string]*gobreaker.TwoStepCircuitBreaker
-	configs  map[string]GobreakerConfig
+	//存储具体实例映射
+	breakers map[string]*Breaker
 	cm       sync.RWMutex
-	cache    sync.Map
+}
+
+type Breaker struct {
+	breaker *gobreaker.TwoStepCircuitBreaker
+	conf    GobreakerConfig
 }
 
 // CircuitBreakerConfig represents the global and method-specific configuration.
@@ -88,8 +91,7 @@ func init() {
 // NewCircuitBreaker initializes the interceptor and starts watching for config changes.
 func NewCircuitBreaker() (client.ClientInterceptor, error) {
 	circuitBreaker := &CircuitBreaker{
-		breakers: make(map[string]*gobreaker.TwoStepCircuitBreaker),
-		configs:  make(map[string]GobreakerConfig),
+		breakers: make(map[string]*Breaker),
 	}
 	if err := circuitBreaker.loadAndWatch(); err != nil {
 		return nil, err
@@ -105,28 +107,21 @@ func (ccb *CircuitBreaker) Name() string {
 // Interceptor returns the actual middleware function for client requests.
 func (ccb *CircuitBreaker) Interceptor() client.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
-		commandName := ccb.match(cc.Protocol(), cc.ServiceName(), method)
-		return ccb.do(ctx, commandName, method, req, reply, cc, invoker)
+		breaker := ccb.getBreaker(cc.Protocol(), cc.ServiceName(), method)
+		if breaker == nil {
+			return invoker(ctx, method, req, reply, cc)
+		}
+		return ccb.do(ctx, breaker, method, req, reply, cc, invoker)
 	}
 }
 
 // do executes the request within a Gobreaker context.
-func (ccb *CircuitBreaker) do(ctx context.Context, commandName, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
-	ccb.cm.RLock()
-	breaker, hasBreaker := ccb.breakers[commandName]
-	cfg, hasCfg := ccb.configs[commandName]
-	ccb.cm.RUnlock()
-
-	if !hasBreaker {
-		// 如果没有对应的熔断器，直接裸跑调用链
-		return invoker(ctx, method, req, reply, cc)
-	}
-
+func (ccb *CircuitBreaker) do(ctx context.Context, breaker *Breaker, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
 	// 熔断前置拦截判断（Allow）
 	// TwoStepCircuitBreaker 的 Allow() 比 Execute() 更加适合 RPC 拦截器模式，因为它不需要包裹整个闭包
-	success, err := breaker.Allow()
+	success, err := breaker.breaker.Allow()
 	if err != nil {
-		logger.L(ctx).Error("circuit breaker open", "command_name", commandName, "err", err)
+		logger.L(ctx).Error("circuit breaker open", "method", method, "err", err)
 		// gobreaker 会在熔断时返回 gobreaker.ErrCircuitOpen
 		return status.Error(codes.Unavailable, "circuit breaker is open")
 	}
@@ -134,21 +129,21 @@ func (ccb *CircuitBreaker) do(ctx context.Context, commandName, method string, r
 	subCtx := ctx
 	var cancel context.CancelFunc
 
-	if hasCfg && cfg.Timeout.Duration > 0 {
+	if breaker.conf.Timeout.Duration > 0 {
 		if deadline, hasDeadline := ctx.Deadline(); hasDeadline {
 			// 如果上游有时限，计算上游还剩多少时间
 			remaining := time.Until(deadline)
 
 			// 如果熔断器配置的超时时间，比上游剩下的时间还要短，说明上游宽裕，我们应该用更短的来保护系统
-			if cfg.Timeout.Duration < remaining {
-				subCtx, cancel = context.WithTimeout(ctx, cfg.Timeout.Duration)
+			if breaker.conf.Timeout.Duration < remaining {
+				subCtx, cancel = context.WithTimeout(ctx, breaker.conf.Timeout.Duration)
 			}
 			// 反之，如果上游剩下的时间（比如还剩 200ms）比熔断器配置（1500ms）还要短，
 			// 那就没必要瞎派生了，直接沿用原有的 subCtx/cancel（即随上游 200ms 后一起爆炸）
 
 		} else {
 			// 上游没有时限，无脑使用熔断器自身的超时配置
-			subCtx, cancel = context.WithTimeout(ctx, cfg.Timeout.Duration)
+			subCtx, cancel = context.WithTimeout(ctx, breaker.conf.Timeout.Duration)
 		}
 	} else {
 		subCtx, cancel = context.WithCancel(ctx)
@@ -165,6 +160,7 @@ func (ccb *CircuitBreaker) do(ctx context.Context, commandName, method string, r
 		es := status.FromError(invokeErr)
 		// 校验状态码：如果是网络超时、5xx 服务端崩溃，或者 context 层面超时，判定为失败
 		if es.Status/100 == 5 || errors.Is(invokeErr, context.DeadlineExceeded) {
+			logger.L(ctx).Error("remote invoke server failed or timeout", "method", method, "err", invokeErr)
 			success(false) // 触发熔断计数
 		} else {
 			success(true) // 4xx 等业务客户端错误，依然视作当前通道健康，不计入失败率
@@ -172,7 +168,7 @@ func (ccb *CircuitBreaker) do(ctx context.Context, commandName, method string, r
 
 		// 如果是因为我们主动设置的超时引起的，包装错误码
 		if errors.Is(invokeErr, context.DeadlineExceeded) && subCtx.Err() != nil && ctx.Err() == nil {
-			logger.L(ctx).Error("client call timeout", "method", method, "timeout", cfg.Timeout.Duration)
+			logger.L(ctx).Error("client call timeout", "method", method, "timeout", breaker.conf.Timeout.Duration)
 			return status.Error(codes.DeadlineExceeded, "invoke timeout")
 		}
 		return invokeErr
@@ -184,10 +180,13 @@ func (ccb *CircuitBreaker) do(ctx context.Context, commandName, method string, r
 }
 
 // match identifies which Hystrix command configuration should be applied to the request.
-func (ccb *CircuitBreaker) match(protocol, service, method string) string {
+func (ccb *CircuitBreaker) getBreaker(protocol, service, method string) *Breaker {
 	fullName := ccb.buildKey(protocol, "//", service, "/", method)
-	if name, ok := ccb.cache.Load(fullName); ok {
-		return name.(string)
+	ccb.cm.RLock()
+	breaker, ok := ccb.breakers[fullName]
+	ccb.cm.RUnlock()
+	if ok {
+		return breaker
 	}
 
 	priorities := prioritiesPool.Get().([]string)
@@ -204,15 +203,28 @@ func (ccb *CircuitBreaker) match(protocol, service, method string) string {
 	)
 	defer prioritiesPool.Put(priorities)
 
+	var alias *Breaker
+
 	ccb.cm.RLock()
-	defer ccb.cm.RUnlock()
 	for _, name := range priorities {
-		if _, ok := ccb.breakers[name]; ok {
-			ccb.cache.Store(fullName, name)
-			return name
+		if breaker, ok := ccb.breakers[name]; ok {
+			if strings.EqualFold(name, fullName) {
+				alias = breaker
+			} else {
+				alias = ccb.newBreaker(fullName, breaker.conf)
+			}
+			continue
 		}
 	}
-	return DefaultCommandConfigName
+	ccb.cm.RUnlock()
+
+	if alias == nil {
+		return nil
+	}
+	ccb.cm.Lock()
+	ccb.breakers[fullName] = alias
+	ccb.cm.Unlock()
+	return alias
 }
 
 // buildKey efficiently joins string parts using a pool.
@@ -260,39 +272,40 @@ func (ccb *CircuitBreaker) load() error {
 	}
 
 	// 动态构建、增量更新状态机实例，防止每次热加载都把线上正在处于熔断状态的数据给洗掉
+	newBreakers := map[string]*Breaker{
+		DefaultCommandConfigName: ccb.newBreaker(DefaultCommandConfigName, defaultConfig),
+	}
 	ccb.cm.Lock()
-	newBreakers := make(map[string]*gobreaker.TwoStepCircuitBreaker)
 	for name, itemCfg := range rawConfigs {
 		// 如果之前的实例存在，直接沿用，保留其熔断计数器状态！
 		if oldBreaker, exist := ccb.breakers[name]; exist {
 			newBreakers[name] = oldBreaker
 		} else {
-			// 如果是新加的方法路由，创建全新的状态机
-			targetCfg := itemCfg // 逃逸局部变量
-			sb := gobreaker.Settings{
-				Name:        name,
-				MaxRequests: targetCfg.MaxConcurrentRequests,
-				Interval:    targetCfg.Interval.Duration,
-				Timeout:     targetCfg.SleepWindow.Duration,
-				ReadyToTrip: func(counts gobreaker.Counts) bool {
-					// 判定连续失败次数是否触线
-					return counts.ConsecutiveFailures >= targetCfg.ConsecutiveFailures
-				},
-				OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
-					logger.Warn("circuit breaker changed state", "command", name, "from", from.String(), "to", to.String())
-				},
-			}
-			newBreakers[name] = gobreaker.NewTwoStepCircuitBreaker(sb)
+			newBreakers[name] = ccb.newBreaker(name, itemCfg)
 		}
 	}
-
 	ccb.breakers = newBreakers
-	ccb.configs = rawConfigs
 	ccb.cm.Unlock()
 
-	// 清空匹配缓存，让下一次请求重新执行优先级匹配
-	ccb.cache.Clear()
 	return nil
+}
+
+func (ccb *CircuitBreaker) newBreaker(name string, targetCfg GobreakerConfig) *Breaker {
+	return &Breaker{
+		breaker: gobreaker.NewTwoStepCircuitBreaker(gobreaker.Settings{
+			Name:        name,
+			MaxRequests: targetCfg.MaxConcurrentRequests,
+			Interval:    targetCfg.Interval.Duration,
+			Timeout:     targetCfg.SleepWindow.Duration,
+			ReadyToTrip: func(counts gobreaker.Counts) bool {
+				return counts.Requests >= 10 && counts.ConsecutiveFailures >= targetCfg.ConsecutiveFailures
+			},
+			OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+				logger.Warn("circuit breaker changed state", "command", name, "from", from.String(), "to", to.String())
+			},
+		}),
+		conf: targetCfg,
+	}
 }
 
 func (ccb *CircuitBreaker) watch(_ *config.Event) {
