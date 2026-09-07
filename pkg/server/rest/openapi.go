@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 
@@ -133,19 +134,10 @@ func (api *OpenAPI) scalarOptions() []scalargo.Option {
 		options = append(options, scalargo.WithDarkMode())
 	}
 
-	if len(api.conf.Scalar.HideClients) != 0 {
-		allClients := false
-		for _, client := range api.conf.Scalar.HideClients {
-			if client == "*" {
-				allClients = true
-				break
-			}
-		}
-		if allClients {
-			options = append(options, scalargo.WithHideAllClients())
-		} else {
-			options = append(options, scalargo.WithHiddenClients(api.conf.Scalar.HideClients...))
-		}
+	if slices.Contains(api.conf.Scalar.HideClients, "*") {
+		options = append(options, scalargo.WithHideAllClients())
+	} else {
+		options = append(options, scalargo.WithHiddenClients(api.conf.Scalar.HideClients...))
 	}
 
 	if api.conf.Scalar.Authentication != "" {

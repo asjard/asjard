@@ -34,7 +34,7 @@ const (
 	// UnsupportProtocolCode error when the requested protocol is not handled.
 	UnsupportProtocolCode = 404_30
 	// MethodNotAllowedCode error for mismatched HTTP methods (e.g., POST instead of GET).
-	MethodNotAllowedCode = 400_31
+	MethodNotAllowedCode = 405_31
 )
 
 var (
