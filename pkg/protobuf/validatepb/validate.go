@@ -3,8 +3,11 @@ package validatepb
 import (
 	"fmt"
 	reflect "reflect"
+	"regexp"
+	"slices"
 	"strconv"
 	"strings"
+	sync "sync"
 
 	"github.com/asjard/asjard/core/status"
 	"github.com/go-playground/validator/v10"
@@ -16,7 +19,23 @@ const (
 	// 降序
 	sortDesc = "-"
 	// 升序
-	sortAsc = "+"
+	sortAsc                          = "+"
+	alphaNumericUnderlineRegexString = "^[a-zA-Z0-9_]+$"
+)
+
+func lazyRegexCompile(str string) func() *regexp.Regexp {
+	var regex *regexp.Regexp
+	var once sync.Once
+	return func() *regexp.Regexp {
+		once.Do(func() {
+			regex = regexp.MustCompile(str)
+		})
+		return regex
+	}
+}
+
+var (
+	alphaNumericUnderlineRegex = lazyRegexCompile(alphaNumericUnderlineRegexString)
 )
 
 // Validater 参数校验需要实现的方法
@@ -34,6 +53,9 @@ func init() {
 	if err := DefaultValidator.RegisterValidation("country_code", isCountryCode); err != nil {
 		panic(err)
 	}
+	if err := DefaultValidator.RegisterValidation("alphanumunderline", isAlphaNumericUnderline); err != nil {
+		panic(err)
+	}
 }
 
 func isSortField(fl validator.FieldLevel) bool {
@@ -44,15 +66,9 @@ func isSortValid(sort string, supportSortFields []string) error {
 	if sort == "" {
 		return nil
 	}
-	for _, sortField := range strings.Split(sort, sortDelimiter) {
-		supported := false
+	for sortField := range strings.SplitSeq(sort, sortDelimiter) {
 		sf := strings.TrimPrefix(strings.TrimPrefix(strings.TrimSpace(sortField), sortDesc), sortAsc)
-		for _, ssf := range supportSortFields {
-			if ssf == sf {
-				supported = true
-				break
-			}
-		}
+		supported := slices.Contains(supportSortFields, sf)
 		if !supported {
 			return status.Error(codes.InvalidArgument, fmt.Sprintf("invalid sort field %s", sortField))
 		}
@@ -65,6 +81,10 @@ func ValidateFieldName(parentFieldName, fieldName string) string {
 		return fieldName
 	}
 	return parentFieldName + "." + fieldName
+}
+
+func isAlphaNumericUnderline(fl validator.FieldLevel) bool {
+	return alphaNumericUnderlineRegex().MatchString(fl.Field().String())
 }
 
 var (
