@@ -147,7 +147,7 @@ func (g *TsGenerator) genMessage(message *protogen.Message) {
 	for _, field := range message.Fields {
 		g.genComment(field.Comments)
 		split := ": "
-		if hasValidateRule && !g.isRequiredField(field) {
+		if (hasValidateRule && !g.isRequiredField(field)) || field.Oneof != nil {
 			split = "?: "
 		}
 		if field.Desc.IsList() {

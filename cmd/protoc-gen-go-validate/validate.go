@@ -74,7 +74,9 @@ func (g *ValidateGenerator) Run() *protogen.GeneratedFile {
 
 func (g *ValidateGenerator) genFileContent() {
 	for _, message := range g.file.Messages {
-		g.genMessage(message)
+		if message.Desc.ParentFile().Path() == g.file.Desc.Path() {
+			g.genMessage(message)
+		}
 	}
 }
 
@@ -228,7 +230,7 @@ func (g *ValidateGenerator) genLeadingComments(loc protoreflect.SourceLocation) 
 func (g *ValidateGenerator) genComment(comments protogen.CommentSet) {
 	if comments.Leading != "" {
 		g.gen.P("// IsValid Params validate")
-		g.gen.P(strings.TrimSpace(comments.Leading.String()))
+		// g.gen.P(strings.TrimSpace(comments.Leading.String()))
 	}
 }
 
