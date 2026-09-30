@@ -49,9 +49,15 @@ var (
 		"json":       jsonDecodeFunc,
 		"props":      propsDecodeFunc,
 		"properties": propsDecodeFunc,
+		"prop":       propsDecodeFunc,
 		"toml":       tomlDecodeFunc,
 	}
 )
+
+func HasDecoder(ext string) bool {
+	_, ok := propsDecodes[strings.ToLower(strings.Trim(ext, "."))]
+	return ok
+}
 
 // ConvertToProperties converts content from a supported format (YAML, JSON, etc.)
 // into a flattened properties-style map.

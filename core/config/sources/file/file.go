@@ -133,6 +133,12 @@ func (s *File) read(file string) (map[string]*config.Value, error) {
 	if strings.HasPrefix(baseName, ".") {
 		return map[string]*config.Value{}, nil
 	}
+	ext := filepath.Ext(file)
+	// ignore unsupport ext file
+	if !config.HasDecoder(ext) {
+		return map[string]*config.Value{}, nil
+	}
+
 	content, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
@@ -149,7 +155,7 @@ func (s *File) read(file string) (map[string]*config.Value, error) {
 		}
 		content = []byte(decryptContent)
 	}
-	contentMap, err := config.ConvertToProperties(filepath.Ext(file), content)
+	contentMap, err := config.ConvertToProperties(ext, content)
 	if err != nil {
 		return nil, err
 	}
