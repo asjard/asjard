@@ -13,6 +13,8 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
+type WriteKey int
+
 const (
 	// QueryParamNeedStatusCode: If this query parameter (e.g., ?nsc=1) is present,
 	// the HTTP status code will be mapped from the business status code.
@@ -23,6 +25,9 @@ const (
 	HeaderResponseRequestID = "x-request-id"
 	// DefaultWriterName is the identifier for the standard JSON output handler.
 	DefaultWriterName = "default"
+
+	// If response err not nil and this key setted in ctx will return data in response
+	WriteDataInErr WriteKey = 1
 )
 
 // Writer defines the function signature for outputting results to the client.
@@ -88,15 +93,16 @@ func DefaultWriter(c *Context, data any, err error) {
 	c.Response.Header.Set(HeaderResponseRequestID, st.RequestId)
 	c.Response.Header.Set(HeaderResponseRequestMethod, st.RequestMethod)
 
-	// If successful, wrap the business data in a Protobuf 'Any' type.
-	if err == nil {
-		if d, err := anypb.New(data.(proto.Message)); err == nil {
-			st.Data = d
-		} else {
-			logger.Error("can not create anypb.Any", "data", data, "err", err)
+	if (err == nil || c.Value(WriteDataInErr) != nil) && data != nil {
+		// wrap the business data in a Protobuf 'Any' type.
+		if msg, ok := data.(proto.Message); ok {
+			if d, err := anypb.New(msg); err == nil {
+				st.Data = d
+			} else {
+				logger.Error("can not create anypb.Any", "data", data, "err", err)
+			}
 		}
 	}
-
 	// Finalize by writing the status object as JSON.
 	if err := writeJSON(c, int(statusCode), st); err != nil {
 		logger.Error("write json fail", "err", err)
