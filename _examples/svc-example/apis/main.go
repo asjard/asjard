@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	apiv1 "svc-example/apis/api/v1"
 	openapiv1 "svc-example/apis/openapi/v1"
 	"svc-example/services"
 
@@ -17,6 +18,10 @@ func main() {
 	svcCtx := services.NewServiceContext()
 
 	if err := server.AddHandler(openapiv1.NewUserAPI(svcCtx), grpc.Protocol, rest.Protocol); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := server.AddHandler(apiv1.NewUserAPI(svcCtx), grpc.Protocol, rest.Protocol); err != nil {
 		log.Fatal(err)
 	}
 

@@ -3,11 +3,8 @@ package datas
 import (
 	"context"
 	"errors"
-	"time"
 
-	cpb "protos-repo/common/common"
 	"protos-repo/common/xcodes"
-	"protos-repo/example/api/v1/user"
 
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
@@ -17,18 +14,15 @@ import (
 )
 
 type UserCreditCard struct {
-	Id        int64 `gorm:"type:BIGINT(20);primayKey"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Model
 
 	Username string `gorm:"type:VARCHAR(50);index;uniqueIndex:user_credit_card"`
 	Number   string `gorm:"type:VARCHAR(100);index;uniqueIndex:user_credit_card"`
 }
 
 func (t *UserCreditCard) TableName() string { return "user_creditcard" }
-func (t *UserCreditCard) ModelName() string { return t.TableName() }
 
-func (t *UserCreditCard) Add(ctx context.Context, in *user.UserCreditCardReq) error {
+func (t *UserCreditCard) Add(ctx context.Context, in *UserCreditCard) error {
 	db, err := xgorm.DB(ctx)
 	if err != nil {
 		return err
@@ -43,7 +37,7 @@ func (t *UserCreditCard) Add(ctx context.Context, in *user.UserCreditCardReq) er
 	return nil
 }
 
-func (t *UserCreditCard) Remove(ctx context.Context, in *user.UserCreditCardReq) error {
+func (t *UserCreditCard) Remove(ctx context.Context, in *UserCreditCard) error {
 	db, err := xgorm.DB(ctx)
 	if err != nil {
 		return err
@@ -57,19 +51,19 @@ func (t *UserCreditCard) Remove(ctx context.Context, in *user.UserCreditCardReq)
 	return nil
 }
 
-func (t *UserCreditCard) RemoveByUser(ctx context.Context, in *cpb.ReqWithName) error {
+func (t *UserCreditCard) RemoveByUser(ctx context.Context, username string) error {
 	db, err := xgorm.DB(ctx)
 	if err != nil {
 		return err
 	}
-	if err := db.Where("username=?", in.Name).Delete(&UserCreditCard{}).Error; err != nil {
-		logger.L(ctx).Error("remove user cards fail", "req", in, "err", err)
+	if err := db.Where("username=?", username).Delete(&UserCreditCard{}).Error; err != nil {
+		logger.L(ctx).Error("remove user cards fail", "username", username, "err", err)
 		return status.InternalServerError()
 	}
 	return nil
 }
 
-func (t *UserCreditCard) Get(ctx context.Context, in *user.UserCreditCardReq) (*user.UserCreditCardInfo, error) {
+func (t *UserCreditCard) Get(ctx context.Context, in *UserCreditCard) (*UserCreditCard, error) {
 	db, err := xgorm.DB(ctx)
 	if err != nil {
 		return nil, err
@@ -85,34 +79,21 @@ func (t *UserCreditCard) Get(ctx context.Context, in *user.UserCreditCardReq) (*
 		logger.L(ctx).Error("get user credit card fail", "req", in, "err", err)
 		return nil, status.InternalServerError()
 	}
-	return record.Info(), nil
+	return &record, nil
 }
 
-func (t *UserCreditCard) Search(ctx context.Context, in *cpb.ReqWithName) (*user.UserCreditCardList, error) {
+func (t *UserCreditCard) Search(ctx context.Context, username string) (int32, []*UserCreditCard, error) {
 	db, err := xgorm.DB(ctx)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
-	var records []UserCreditCard
+	var records []*UserCreditCard
 	var total int64
-	if err := db.Model(&UserCreditCard{}).Where("username=?", in.Name).
+	if err := db.Model(&UserCreditCard{}).Where("username=?", username).
 		Count(&total).
 		Find(&records).Error; err != nil {
-		logger.L(ctx).Error("search user credit card fail", "req", in, "err", err)
-		return nil, status.InternalServerError()
+		logger.L(ctx).Error("search user credit card fail", "username", username, "err", err)
+		return 0, nil, status.InternalServerError()
 	}
-	list := make([]*user.UserCreditCardInfo, len(records))
-	for idx, item := range records {
-		list[idx] = item.Info()
-	}
-	return &user.UserCreditCardList{
-		Total: int32(total),
-		List:  list,
-	}, nil
-}
-
-func (t *UserCreditCard) Info() *user.UserCreditCardInfo {
-	return &user.UserCreditCardInfo{
-		Number: t.Number,
-	}
+	return int32(total), records, nil
 }

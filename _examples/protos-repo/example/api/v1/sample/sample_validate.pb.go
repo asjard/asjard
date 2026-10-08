@@ -13,7 +13,6 @@ import (
 )
 
 // IsValid Params validate
-// HelloRequest defines the input payload for the SayHello method.
 func (m *HelloRequest) IsValid(parentFieldName, fullMethod string) error {
 	v := validatepb.DefaultValidator
 	if err := v.Var(m.Name, "required,max=20"); err != nil {
@@ -23,7 +22,6 @@ func (m *HelloRequest) IsValid(parentFieldName, fullMethod string) error {
 }
 
 // IsValid Params validate
-// HelloReply defines the output payload containing the greeting result.
 func (m *HelloReply) IsValid(parentFieldName, fullMethod string) error {
 	return nil
 }

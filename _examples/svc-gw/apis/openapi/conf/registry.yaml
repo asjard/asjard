@@ -1,0 +1,5 @@
+asjard:
+  registry:
+    localDiscover:
+      svc-example-api:
+        - grpc://127.0.0.1:9100

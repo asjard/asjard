@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-amqp v1.0.0
 // - protoc             v5.27.0
-// source: protos-repo/example/api/v1/user.proto
+// source: protos-repo/example/openapi/v1/user.proto
 
 package user
 
@@ -92,13 +92,8 @@ const ()
 // UserAmqpServiceDesc is the xamqp1.ServiceDesc for User service.
 // It's only intended for direct use with xamqp1.AddHandler,
 // and not to be introspected or modified (even as a copy)
-//
-// User example
-// User service handles lifecycle management and data retrieval for User entities.
-// It integrates with the Asjard Store layer to provide transparent caching
-// and high-concurrency protection (Singleflight).
 var UserAmqpServiceDesc = xamqp1.ServiceDesc{
-	ServiceName: "api.v1.docs.example.User",
+	ServiceName: "openapi.v1.docs.example.User",
 	HandlerType: (*UserServer)(nil),
 	Methods:     []xamqp1.MethodDesc{},
 }

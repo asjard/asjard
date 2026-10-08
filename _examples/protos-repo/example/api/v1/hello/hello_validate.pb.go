@@ -22,7 +22,6 @@ import (
 )
 
 // IsValid Params validate
-// 请求参数
 func (m *SayReq) IsValid(parentFieldName, fullMethod string) error {
 	v := validatepb.DefaultValidator
 	if err := v.Var(m.Name, "required,max=20"); err != nil {
@@ -32,7 +31,6 @@ func (m *SayReq) IsValid(parentFieldName, fullMethod string) error {
 }
 
 // IsValid Params validate
-// 请求返回
 func (m *SayResp) IsValid(parentFieldName, fullMethod string) error {
 	return nil
 }

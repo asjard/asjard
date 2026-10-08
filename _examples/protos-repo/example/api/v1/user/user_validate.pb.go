@@ -37,8 +37,6 @@ func (m *UserCreditCardList) IsValid(parentFieldName, fullMethod string) error {
 }
 
 // IsValid Params validate
-// UserReq represents the input payload for creating or updating a user.
-// Validation is enforced by the Asjard Validation Interceptor before reaching the handler.
 func (m *UserReq) IsValid(parentFieldName, fullMethod string) error {
 	v := validatepb.DefaultValidator
 	if err := v.Var(m.Username, "required,max=50"); err != nil {
@@ -51,13 +49,11 @@ func (m *UserReq) IsValid(parentFieldName, fullMethod string) error {
 }
 
 // IsValid Params validate
-// UserInfo represents the data structure returned for single or list queries.
 func (m *UserInfo) IsValid(parentFieldName, fullMethod string) error {
 	return nil
 }
 
 // IsValid Params validate
-// UserSearchReq provides parameters for complex queries.
 func (m *UserSearchReq) IsValid(parentFieldName, fullMethod string) error {
 	v := validatepb.DefaultValidator
 	if err := v.Var(m.Page, "min=0"); err != nil {
@@ -73,7 +69,6 @@ func (m *UserSearchReq) IsValid(parentFieldName, fullMethod string) error {
 }
 
 // IsValid Params validate
-// UserList is the standard response envelope for paginated Search results.
 func (m *UserList) IsValid(parentFieldName, fullMethod string) error {
 	for _, fm := range m.List {
 		if err := fm.IsValid(validatepb.ValidateFieldName(parentFieldName, "list"), fullMethod); err != nil {
