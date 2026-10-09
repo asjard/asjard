@@ -155,7 +155,6 @@ func (app APP) ResourceKey(resource, key string, opts ...Option) string {
 	if !options.withoutApp {
 		write(app.App)
 	}
-	write(resource)
 	if !options.withoutEnv {
 		write(app.Environment)
 	}
@@ -175,8 +174,9 @@ func (app APP) ResourceKey(resource, key string, opts ...Option) string {
 	if !options.withoutAz {
 		write(app.AZ)
 	}
+	write(resource)
 	if key != "" {
-		write(key)
+		write("{" + key + "}")
 	}
 
 	// Clean up trailing delimiters.
