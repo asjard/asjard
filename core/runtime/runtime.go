@@ -176,7 +176,7 @@ func (app APP) ResourceKey(resource, key string, opts ...Option) string {
 	}
 	write(resource)
 	if key != "" {
-		write("{" + key + "}")
+		write(key)
 	}
 
 	// Clean up trailing delimiters.
