@@ -22,7 +22,7 @@
 
 import （
 	"github.com/asjard/asjard/core/status"
-	"github.com/asjard/asjard/pkg/database/mysql"
+	"github.com/asjard/asjard/pkg/database/xgorm"
 ）
 
 const (
@@ -43,7 +43,7 @@ func(api XXXAPI) YYY(ctx context, in *pb.Req) (*pb.Resp, error) {
 		return nil, status.Error(codes.InvalidArgument, "name is must")
 	}
 
-	db, err := mysql.DB(ctx)
+	db, err := xgorm.DB(ctx)
 	if err != nil {
 		// 此处返回的是框架保留的错误码
 		// 同 status.DatabaseNotFoundError
