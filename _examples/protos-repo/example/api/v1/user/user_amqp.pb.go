@@ -98,7 +98,7 @@ const ()
 // It integrates with the Asjard Store layer to provide transparent caching
 // and high-concurrency protection (Singleflight).
 var UserAmqpServiceDesc = xamqp1.ServiceDesc{
-	ServiceName: "api.v1.example.docs.User",
+	ServiceName: "api.v1.docs.example.User",
 	HandlerType: (*UserServer)(nil),
 	Methods:     []xamqp1.MethodDesc{},
 }

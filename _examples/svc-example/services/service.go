@@ -2,39 +2,30 @@ package services
 
 import (
 	"context"
-	"sync"
 
 	"svc-example/datas"
-	"svc-example/models"
 
 	"github.com/asjard/asjard/core/bootstrap"
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/pkg/stores/xgorm"
 )
 
-type Models struct {
-	UserModel           *models.UserModel
-	UserCreditCardModel *models.UserCreditCardModel
+type Svcs struct {
+	UserSvc           *UserSvc
+	UserCreditCardSvc *datas.UserCreditCard
 }
 type ServiceContext struct {
-	Models *Models
+	*Svcs
 }
 
-var (
-	serviceContext     *ServiceContext
-	serviceContextOnce sync.Once
-)
-
 func NewServiceContext() *ServiceContext {
-	serviceContextOnce.Do(func() {
-		serviceContext = &ServiceContext{}
-		bootstrap.AddBootstrap(serviceContext)
-		serviceContext.Models = &Models{
-			UserModel:           models.NewUserModel(),
-			UserCreditCardModel: models.NewUserCreditCardModel(),
-		}
-	})
-	return serviceContext
+	s := &ServiceContext{}
+	bootstrap.AddBootstrap(s)
+	s.Svcs = &Svcs{
+		UserSvc:           NewUserSvc(),
+		UserCreditCardSvc: &datas.UserCreditCard{},
+	}
+	return s
 }
 
 func (s *ServiceContext) Start() error {

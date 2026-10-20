@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package api.v1.example.docs;
+package api.v1.docs.example;
 
 // Go package path for the generated code.
 // Follows the internal repository structure for consistent dependency management.

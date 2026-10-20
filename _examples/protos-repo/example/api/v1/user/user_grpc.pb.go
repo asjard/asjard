@@ -20,15 +20,15 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	User_Create_FullMethodName           = "/api.v1.example.docs.User/Create"
-	User_Get_FullMethodName              = "/api.v1.example.docs.User/Get"
-	User_Update_FullMethodName           = "/api.v1.example.docs.User/Update"
-	User_Del_FullMethodName              = "/api.v1.example.docs.User/Del"
-	User_Search_FullMethodName           = "/api.v1.example.docs.User/Search"
-	User_AddCreditCard_FullMethodName    = "/api.v1.example.docs.User/AddCreditCard"
-	User_RemoveCreditCard_FullMethodName = "/api.v1.example.docs.User/RemoveCreditCard"
-	User_GetCreditCard_FullMethodName    = "/api.v1.example.docs.User/GetCreditCard"
-	User_SearchCreditCard_FullMethodName = "/api.v1.example.docs.User/SearchCreditCard"
+	User_Create_FullMethodName           = "/api.v1.docs.example.User/Create"
+	User_Get_FullMethodName              = "/api.v1.docs.example.User/Get"
+	User_Update_FullMethodName           = "/api.v1.docs.example.User/Update"
+	User_Del_FullMethodName              = "/api.v1.docs.example.User/Del"
+	User_Search_FullMethodName           = "/api.v1.docs.example.User/Search"
+	User_AddCreditCard_FullMethodName    = "/api.v1.docs.example.User/AddCreditCard"
+	User_RemoveCreditCard_FullMethodName = "/api.v1.docs.example.User/RemoveCreditCard"
+	User_GetCreditCard_FullMethodName    = "/api.v1.docs.example.User/GetCreditCard"
+	User_SearchCreditCard_FullMethodName = "/api.v1.docs.example.User/SearchCreditCard"
 )
 
 // UserClient is the client API for User service.
@@ -403,7 +403,7 @@ func _User_SearchCreditCard_Handler(srv interface{}, ctx context.Context, dec fu
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var User_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "api.v1.example.docs.User",
+	ServiceName: "api.v1.docs.example.User",
 	HandlerType: (*UserServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

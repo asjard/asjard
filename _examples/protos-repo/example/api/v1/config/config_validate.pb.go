@@ -29,26 +29,21 @@ func (m *ConfigGetReq) IsValid(parentFieldName, fullMethod string) error {
 }
 
 // IsValid Params validate
-// Sub-object for structured configuration fields
 func (m *ConfigGetResp_Obj) IsValid(parentFieldName, fullMethod string) error {
 	return nil
 }
 
 // IsValid Params validate
-// Configs group: Illustrates Asjard's "Configuration Aggregation" capability.
 func (m *ConfigGetResp_Configs) IsValid(parentFieldName, fullMethod string) error {
 	return nil
 }
 
 // IsValid Params validate
-// Instance metadata: Used for service discovery and runtime inspection.
 func (m *ConfigGetResp_Instance) IsValid(parentFieldName, fullMethod string) error {
 	return nil
 }
 
 // IsValid Params validate
-// ConfigGetResp defines a comprehensive configuration response structure.
-// This message showcases Asjard's ability to handle complex nested data.
 func (m *ConfigGetResp) IsValid(parentFieldName, fullMethod string) error {
 	if m.Obj != nil {
 		if err := m.Obj.IsValid(validatepb.ValidateFieldName(parentFieldName, "obj"), fullMethod); err != nil {
@@ -77,7 +72,6 @@ func (m *ConfigGetResp) IsValid(parentFieldName, fullMethod string) error {
 }
 
 // IsValid Params validate
-// Response structure for decryption requests
 func (m *ConfigDecryptResp) IsValid(parentFieldName, fullMethod string) error {
 	return nil
 }

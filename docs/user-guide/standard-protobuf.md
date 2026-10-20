@@ -10,15 +10,15 @@
 ```proto
 syntax = "proto3";
 
-// 约定此处格式为: {接口类型}.{接口版本}.{服务分类}[.服务名称]
-// 其中{接口类型},{接口版本},[服务分类]会在rest服务中用来生成路由前缀
+// 约定此处格式为: {接口类型}.{接口版本}[.业务模块].{服务名称}
+// 其中{接口类型},{接口版本},[业务模块]会在rest服务中用来生成路由前缀
 // 可在ajard.api.http中通过api,和version字段修改
 // 例如如下package名称生成的路由前缀为/api/v1/docs
 //
-// {服务名称}会在生成gw代码时用以确定客户端名称, 例如:
+// {服务名称}会在生成client代码时用以确定客户端名称, 例如:
 // conn, err := client.NewClient(grpc.Protocol, config.GetString("asjard.topology.services.{hello}.name", "{hello}")).Conn()
 // 如果修改了asjard.service.instance.name 则可以通过asjard.topology.service.hello.name修改
-package api.v1.example.docs;
+package api.v1.docs.example;
 
 option go_package = "protos-repo/example/api/v1/hello";
 
