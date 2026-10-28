@@ -1,4 +1,4 @@
-package rest
+package xfasthttp
 
 import (
 	"net/http"
@@ -8,19 +8,15 @@ import (
 	"time"
 
 	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/valyala/fasthttp"
 )
 
 // NewCorsMiddleware creates a new middleware to handle Cross-Origin Resource Sharing.
-func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
+func NewCorsMiddleware(conf rest.CorsConfig) MiddlewareFunc {
 	logger.Debug("new cors middleware", "conf", conf)
 
-	// Pre-calculate if all origins are allowed to optimize runtime checks.
-	for _, origin := range conf.AllowOrigins {
-		if origin == "*" {
-			conf.allowAllOrigins = true
-		}
-	}
+	allowAllOrigins := slices.Contains(conf.AllowOrigins, "*")
 
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
@@ -41,7 +37,7 @@ func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
 			}
 
 			// Validate the origin against the allowed list in the configuration.
-			if !corsIsOriginValid(conf, origin) {
+			if !allowAllOrigins && !slices.Contains(conf.AllowOrigins, origin) {
 				ctx.SetStatusCode(http.StatusForbidden)
 				return
 			}
@@ -50,13 +46,13 @@ func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
 			ctx.Response.Header.Set(fasthttp.HeaderAccessControlAllowOrigin, origin)
 
 			// If not allowing all, set 'Vary: Origin' to prevent cache poisoning.
-			if !conf.allowAllOrigins {
+			if !allowAllOrigins {
 				ctx.Response.Header.Set("Vary", "Origin")
 			}
 
 			// Handle Preflight requests (OPTIONS method).
 			if string(ctx.Method()) == http.MethodOptions {
-				corsPreflight(ctx, conf)
+				corsPreflight(ctx, conf, allowAllOrigins)
 				return
 			}
 
@@ -77,7 +73,7 @@ func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
 }
 
 // corsPreflight handles the OPTIONS request sent by browsers before a "non-simple" request.
-func corsPreflight(ctx *fasthttp.RequestCtx, conf CorsConfig) {
+func corsPreflight(ctx *fasthttp.RequestCtx, conf rest.CorsConfig, allowAllOrigins bool) {
 	if conf.AllowCredentials {
 		ctx.Response.Header.Set(fasthttp.HeaderAccessControlAllowCredentials, "true")
 	}
@@ -98,19 +94,11 @@ func corsPreflight(ctx *fasthttp.RequestCtx, conf CorsConfig) {
 	}
 
 	// Tell proxies that the response varies based on these request headers.
-	if !conf.allowAllOrigins {
+	if !allowAllOrigins {
 		ctx.Response.Header.Add(fasthttp.HeaderVary, fasthttp.HeaderAccessControlRequestMethod)
 		ctx.Response.Header.Add(fasthttp.HeaderVary, fasthttp.HeaderAccessControlRequestHeaders)
 	}
 
 	// Preflight requests return 204 No Content.
 	ctx.SetStatusCode(http.StatusNoContent)
-}
-
-// corsIsOriginValid checks if the provided origin is permitted by the configuration.
-func corsIsOriginValid(conf CorsConfig, origin string) bool {
-	if conf.allowAllOrigins {
-		return true
-	}
-	return slices.Contains(conf.AllowOrigins, origin)
 }

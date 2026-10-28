@@ -9,19 +9,14 @@ import (
 	"github.com/asjard/asjard/utils"
 )
 
-const (
-	defaultReadBufferSize  = 4096
-	defaultWriteBufferSize = 4096
-)
-
-// Config represents the complete set of configuration options for the REST server.
+// Config represents the protocol-level REST/HTTP server options shared by engines.
 type Config struct {
 	server.Config               // Base server configuration (enabled, address, etc.)
 	Routes        RoutesConfig  `json:"routes"`  // Custom route management settings
 	Doc           DocConfig     `json:"doc"`     // Documentation and error page settings
 	Openapi       OpenapiConfig `json:"openapi"` // OpenAPI/Swagger generation and UI settings
 	Cors          CorsConfig    `json:"cors"`    // Cross-Origin Resource Sharing settings
-	Options       OptionsConfig `json:"options"` // Low-level fasthttp server tuning options
+	I18n          I18nConfig    `json:"i18n"`    // Internationalization settings
 }
 
 // RoutesConfig determines if route-related features are enabled.
@@ -65,7 +60,6 @@ type OpenapiLicenseConfig struct {
 
 // CorsConfig defines the security policy for browsers accessing the API from different origins.
 type CorsConfig struct {
-	allowAllOrigins  bool               // Internal flag for "*"
 	AllowOrigins     []string           `json:"allowOrigins"`
 	AllowMethods     []string           `json:"allowMethods"`
 	AllowHeaders     []string           `json:"allowHeaders"`
@@ -74,40 +68,15 @@ type CorsConfig struct {
 	MaxAge           utils.JSONDuration `json:"maxAge"` // How long the browser caches the preflight response
 }
 
-// OptionsConfig contains low-level performance and timeout settings for the fasthttp server.
-type OptionsConfig struct {
-	Concurrency                        int                `json:"concurrency"` // Max simultaneous requests
-	ReadBufferSize                     int                `json:"readBufferSize"`
-	WriteBufferSize                    int                `json:"writeBufferSize"`
-	ReadTimeout                        utils.JSONDuration `json:"readTimeout"`
-	WriteTimeout                       utils.JSONDuration `json:"writeTimeout"`
-	IdleTimeout                        utils.JSONDuration `json:"idleTimeout"`
-	MaxConnsPerIP                      int                `json:"maxConnsPerIP"`
-	MaxRequestsPerConn                 int                `json:"maxRequestsPerConn"`
-	MaxIdleWorkerDuration              utils.JSONDuration `json:"maxIdleWorkerDuration"`
-	TCPKeepalivePeriod                 utils.JSONDuration `json:"tCPKeepalivePeriod"`
-	MaxRequestBodySize                 int                `json:"maxRequestBodySize"` // Max size of POST body (e.g., 20MB)
-	DisableKeepalive                   bool               `json:"disableKeepalive"`
-	TCPKeepalive                       bool               `json:"tcpKeepalive"`
-	ReduceMemoryUsage                  bool               `json:"reduceMemoryUsage"`
-	GetOnly                            bool               `json:"getOnly"`
-	DisablePreParseMultipartForm       bool               `json:"disablePreParseMultipartForm"`
-	LogAllErrors                       bool               `json:"logAllErrors"`
-	SecureErrorLogMessage              bool               `json:"secureErrorLogMessage"`
-	DisableHeaderNamesNormalizing      bool               `json:"disableHeaderNamesNormalizing"`
-	SleepWhenConcurrencyLimitsExceeded utils.JSONDuration `json:"sleepWhenConcurrencyLimitsExceeded"`
-	NoDefaultServerHeader              bool               `json:"noDefaultServerHeader"`
-	NoDefaultDate                      bool               `json:"noDefaultDate"`
-	NoDefaultContentType               bool               `json:"noDefaultContentType"`
-	KeepHijackedConns                  bool               `json:"keepHijackedConns"`
-	CloseOnShutdown                    bool               `json:"closeOnShutdown"`
-	StreamRequestBody                  bool               `json:"streamRequestBody"`
+// I18nConfig manages whether internationalized error responses are enabled.
+type I18nConfig struct {
+	Enabled bool `json:"enabled"`
 }
 
-// defaultConfig initializes the REST server with safe, production-ready default values.
-func defaultConfig() Config {
+// DefaultConfig initializes shared REST/HTTP protocol defaults.
+func DefaultConfig(protocol string) Config {
 	return Config{
-		Config: server.GetConfigWithProtocol(Protocol),
+		Config: server.GetConfigWithProtocol(protocol),
 		Doc: DocConfig{
 			ErrPage: config.GetString("asjard.service.website", ""),
 		},
@@ -127,10 +96,6 @@ func defaultConfig() Config {
 			AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type"},
 			AllowCredentials: false,
 			MaxAge:           utils.JSONDuration{Duration: 12 * time.Hour},
-		},
-		Options: OptionsConfig{
-			// Default maximum request body size is 20MB.
-			MaxRequestBodySize: 20 * 1024 * 1024,
 		},
 	}
 }

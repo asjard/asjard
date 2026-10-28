@@ -1,4 +1,4 @@
-> 可以通过暴露rest服务对外提供HTTP服务
+> 可以通过暴露rest服务对外提供HTTP服务。协议类型在 `pkg/server/rest`，fasthttp 引擎在 `pkg/server/rest/xfasthttp`，启用时需导入该包以完成服务注册。
 
 详细示例参考[这里](https://github.com/asjard/asjard/blob/develop/_examples/svc-example/apis/api/v1/sample.go)
 
@@ -331,6 +331,7 @@ import (
 
 	"github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
+	_ "github.com/asjard/asjard/pkg/server/rest/xfasthttp"
 )
 
 type SampleAPI struct {
@@ -378,6 +379,8 @@ service Server {
 代码中添加`writer`以便在加载路由时能找到自定义writer
 
 ```go
+import "github.com/asjard/asjard/pkg/server/rest/xfasthttp"
+
 // Response 自定义rest输出
 type Response struct {
 	Err  error `json:"err"`
@@ -386,11 +389,11 @@ type Response struct {
 
 func init() {
 	// 添加自定义输出
-	rest.AddWriter("custome_writer", CustomeWriter)
+	xfasthttp.AddWriter("custome_writer", CustomeWriter)
 }
 
 // CustomeWriter 自定义输出
-func CustomeWriter(c *rest.Context, data any, err error) {
+func CustomeWriter(c *xfasthttp.Context, data any, err error) {
 	b, err := json.Marshal(&Response{
 		Err:  err,
 		Data: data,

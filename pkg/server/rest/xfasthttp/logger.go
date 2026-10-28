@@ -1,4 +1,4 @@
-package rest
+package xfasthttp
 
 import (
 	"fmt"

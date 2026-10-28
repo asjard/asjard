@@ -15,7 +15,7 @@ asjard:
         options:
           channelMax: 0
           frameSize: 0
-          heartBeat: 1s
+          heartbeat: 10s
 ```
 
 

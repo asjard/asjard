@@ -3,13 +3,17 @@ package interceptors
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/asjard/asjard/core/client"
 	"github.com/asjard/asjard/core/config"
 	clientgrpc "github.com/asjard/asjard/pkg/client/grpc"
 	_ "github.com/asjard/asjard/pkg/config/mem"
+	"github.com/asjard/asjard/pkg/server/rest/xhttp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -56,6 +60,38 @@ func TestPanicInterceptor(t *testing.T) {
 		func(context.Context, string, any, any, client.ClientConnInterface) error { panic("boom") })
 	require.Error(t, err)
 	require.Equal(t, PanicInterceptorName, (&Panic{}).Name())
+}
+
+func TestRest2RpcContextPreservesCancel(t *testing.T) {
+	interceptor := (&Rest2Rpc{cfg: defaultRest2RpcConfig.complete()}).Interceptor()
+	parent, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil).WithContext(parent)
+	req.Header.Set("x-request-id", "from-header")
+	htx := xhttp.NewContext(xhttp.NewRequestCtx(httptest.NewRecorder(), req))
+	t.Cleanup(htx.Close)
+
+	var outCtx context.Context
+	err := interceptor(htx, "/svc/Method", nil, nil, fakeConn{protocol: clientgrpc.Protocol},
+		func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface) error {
+			outCtx = ctx
+			return nil
+		})
+	require.NoError(t, err)
+	require.NotNil(t, outCtx)
+	md, ok := metadata.FromOutgoingContext(outCtx)
+	require.True(t, ok)
+	require.Equal(t, []string{"from-header"}, md["x-request-id"])
+
+	require.Nil(t, outCtx.Err())
+	cancel()
+	select {
+	case <-outCtx.Done():
+		require.ErrorIs(t, outCtx.Err(), context.Canceled)
+	case <-time.After(time.Second):
+		t.Fatal("gRPC outgoing context did not observe client cancel")
+	}
 }
 
 func TestCycleChainInterceptor(t *testing.T) {

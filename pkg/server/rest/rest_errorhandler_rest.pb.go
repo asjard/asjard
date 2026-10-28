@@ -13,7 +13,7 @@ import (
 )
 
 // Page not found handler
-func _ErrorHandler_NotFound_RestHandler(ctx *Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _ErrorHandler_NotFound_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(emptypb.Empty)
 	if interceptor == nil {
 		return srv.(ErrorHandlerServer).NotFound(ctx, in)
@@ -30,7 +30,7 @@ func _ErrorHandler_NotFound_RestHandler(ctx *Context, srv any, interceptor serve
 }
 
 // Method not allowed handler
-func _ErrorHandler_MethodNotAllowed_RestHandler(ctx *Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _ErrorHandler_MethodNotAllowed_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(emptypb.Empty)
 	if interceptor == nil {
 		return srv.(ErrorHandlerServer).MethodNotAllowed(ctx, in)
@@ -47,7 +47,7 @@ func _ErrorHandler_MethodNotAllowed_RestHandler(ctx *Context, srv any, intercept
 }
 
 // Panic handler.
-func _ErrorHandler_Panic_RestHandler(ctx *Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _ErrorHandler_Panic_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(emptypb.Empty)
 	if interceptor == nil {
 		return srv.(ErrorHandlerServer).Panic(ctx, in)
@@ -64,7 +64,7 @@ func _ErrorHandler_Panic_RestHandler(ctx *Context, srv any, interceptor server.U
 }
 
 // Error handler.
-func _ErrorHandler_Error_RestHandler(ctx *Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _ErrorHandler_Error_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(emptypb.Empty)
 	if interceptor == nil {
 		return srv.(ErrorHandlerServer).Error(ctx, in)

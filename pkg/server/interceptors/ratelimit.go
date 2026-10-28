@@ -78,7 +78,7 @@ func (rl *RateLimiter) Interceptor() server.UnaryServerInterceptor {
 			return handler(ctx, req)
 		}
 
-		// 1. Identify the most specific limiter available for this request.
+		// Identify the most specific limiter available for this request.
 		limiter := rl.getLimiter(info.Protocol, info.FullMethod)
 
 		logger.L(ctx).Debug("start ratelimiter interceptor",
@@ -86,12 +86,12 @@ func (rl *RateLimiter) Interceptor() server.UnaryServerInterceptor {
 			"limit", limiter.Limit(),
 			"burst", limiter.Burst())
 
-		// 2. Check if the bucket has available tokens.
+		// Check if the bucket has available tokens.
 		if limiter.Allow() {
 			return handler(ctx, req)
 		}
 
-		// 3. Drop the request and return 429 (REST) or ResourceExhausted (gRPC).
+		// Drop the request and return 429 (REST) or ResourceExhausted (gRPC).
 		return nil, status.TooManyRequest()
 	}
 }

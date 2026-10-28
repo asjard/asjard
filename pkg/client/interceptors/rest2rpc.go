@@ -2,6 +2,7 @@ package interceptors
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/asjard/asjard/core/client"
@@ -11,24 +12,25 @@ import (
 	"github.com/asjard/asjard/pkg/client/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/asjard/asjard/utils"
+	"github.com/spf13/cast"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/metadata"
 )
 
 const (
-	// Rest2RpcContextInterceptorName is the unique identifier for this bridging interceptor.
-	Rest2RpcContextInterceptorName = "rest2RpcContext"
+	// Rest2RpcInterceptorName is the unique identifier for this bridging interceptor.
+	Rest2RpcInterceptorName = "rest2Rpc"
 )
 
-// Rest2RpcContext handles the conversion of a REST-based context into a gRPC-compatible context.
+// Rest2Rpc handles the conversion of a REST-based context into a gRPC-compatible context.
 // This should typically be positioned at the very beginning of the interceptor chain.
-type Rest2RpcContext struct {
-	cfg rest2RpcContextConfig
+type Rest2Rpc struct {
+	cfg rest2RpcConfig
 	cm  sync.RWMutex // Protects the configuration during dynamic updates.
 }
 
 // rest2RpcContextConfig defines which headers are allowed to pass through the bridge.
-type rest2RpcContextConfig struct {
+type rest2RpcConfig struct {
 	allowAllHeaders bool
 	// AllowHeaders contains user-defined headers to be forwarded.
 	AllowHeaders utils.JSONStrings `json:"allowHeaders"`
@@ -36,7 +38,7 @@ type rest2RpcContextConfig struct {
 	BuiltInAllowHeaders utils.JSONStrings `json:"builtInAllowHeaders"`
 }
 
-var defaultRest2RpcContextConfig = rest2RpcContextConfig{
+var defaultRest2RpcConfig = rest2RpcConfig{
 	BuiltInAllowHeaders: utils.JSONStrings{
 		"x-request-region",
 		"x-request-az",
@@ -49,74 +51,80 @@ var defaultRest2RpcContextConfig = rest2RpcContextConfig{
 }
 
 // complete merges built-in defaults with user-provided configuration.
-func (r rest2RpcContextConfig) complete() rest2RpcContextConfig {
+func (r rest2RpcConfig) complete() rest2RpcConfig {
 	r.AllowHeaders = r.BuiltInAllowHeaders.Merge(r.AllowHeaders)
 	return r
 }
 
 func init() {
 	// Register the interceptor specifically for gRPC client protocols.
-	client.AddInterceptor(Rest2RpcContextInterceptorName, NewRest2RpcContext, grpc.Protocol)
+	client.AddInterceptor(Rest2RpcInterceptorName, NewRest2Rpc, grpc.Protocol)
 }
 
-// NewRest2RpcContext initializes the interceptor and starts a configuration watcher.
-func NewRest2RpcContext() (client.ClientInterceptor, error) {
-	rest2RpcContext := Rest2RpcContext{
-		cfg: defaultRest2RpcContextConfig,
+// NewRest2Rpc initializes the interceptor and starts a configuration watcher.
+func NewRest2Rpc() (client.ClientInterceptor, error) {
+	rest2Rpc := Rest2Rpc{
+		cfg: defaultRest2RpcConfig,
 	}
 	// Fetch configuration from the provider and attach a reload listener.
 	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientRest2RpcContextPrefix,
-		&rest2RpcContext.cfg,
-		config.WithWatch(rest2RpcContext.watch)); err != nil {
-		logger.Error("get interceptor config fail", "interceptor", "rest2RpcContext", "err", err)
+		&rest2Rpc.cfg,
+		config.WithWatch(rest2Rpc.watch)); err != nil {
+		logger.Error("get interceptor config fail", "interceptor", Rest2RpcInterceptorName, "err", err)
 		return nil, err
 	}
-	rest2RpcContext.cfg = rest2RpcContext.cfg.complete()
-	return &rest2RpcContext, nil
+	rest2Rpc.cfg = rest2Rpc.cfg.complete()
+	return &rest2Rpc, nil
 }
 
 // Name returns the interceptor's registration name.
-func (*Rest2RpcContext) Name() string {
-	return Rest2RpcContextInterceptorName
+func (*Rest2Rpc) Name() string {
+	return Rest2RpcInterceptorName
 }
 
 // Interceptor provides the translation logic from HTTP headers to gRPC metadata.
-func (r *Rest2RpcContext) Interceptor() client.UnaryClientInterceptor {
+func (r *Rest2Rpc) Interceptor() client.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc client.ClientConnInterface, invoker client.UnaryInvoker) error {
-		// Attempt to type-assert the context to a REST context.
-		// If the source is not REST (e.g., RPC to RPC), skip this logic.
-		rtx, ok := ctx.(*rest.Context)
+		// Attempt to type-assert the context to an HTTP context.
+		rtx, ok := ctx.(rest.RestContext)
 		if !ok {
 			return invoker(ctx, method, req, reply, cc)
 		}
 
 		// Initialize gRPC Metadata.
-		md := make(metadata.MD)
+		var md metadata.MD
+		if existMd, ok := metadata.FromOutgoingContext(ctx); ok {
+			md = existMd.Copy()
+		} else {
+			md = make(metadata.MD)
+		}
 		r.cm.RLock()
 		defer r.cm.RUnlock()
 
 		// Map allowed HTTP headers/params to gRPC metadata.
 		for _, k := range r.cfg.AllowHeaders {
-			// First, check standard HTTP headers.
-			md[k] = rtx.GetHeaderParam(k)
+			key := strings.ToLower(k)
+			// First, check standard headers.
+			if v := rtx.Header(key); v != "" {
+				md.Set(key, v)
+			}
 			// Then, check user-defined context parameters (overrides header if present).
-			v := rtx.GetUserParam(k)
-			if len(v) != 0 {
-				md[k] = v
+			if v := rtx.UserValue(key); v != nil {
+				md.Set(key, cast.ToString(v))
 			}
 		}
 
-		// Create a new gRPC outgoing context and continue the invocation chain.
-		// Note: context.Background() is used here to reset the context type to standard
-		// while carrying the new metadata.
-		return invoker(metadata.NewOutgoingContext(rtx.Context(), md),
+		// Attach outgoing metadata to the incoming context so cancel/deadline
+		// still propagate to the gRPC transport. Using rtx.Context() here would
+		// drop cancel when it is context.Background() (REST default).
+		return invoker(metadata.NewOutgoingContext(ctx, md),
 			method, req, reply, cc)
 	}
 }
 
 // watch handles dynamic configuration updates (e.g., adding a new allowed header at runtime).
-func (r *Rest2RpcContext) watch(event *config.Event) {
-	conf := defaultRest2RpcContextConfig
+func (r *Rest2Rpc) watch(event *config.Event) {
+	conf := defaultRest2RpcConfig
 	if err := config.GetWithUnmarshal(constant.ConfigInterceptorClientRest2RpcContextPrefix, &conf); err == nil {
 		r.cm.Lock()
 		r.cfg = conf.complete()

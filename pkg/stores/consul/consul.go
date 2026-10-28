@@ -2,6 +2,7 @@ package consul
 
 import (
 	"fmt"
+	"reflect"
 	"sync"
 
 	"github.com/asjard/asjard/core/bootstrap"
@@ -134,11 +135,26 @@ func (m *ClientManager) Start() error {
 	return m.newClients(clients)
 }
 
-func (m *ClientManager) Stop() {}
+func (m *ClientManager) Stop() {
+	m.clients.Range(func(key, _ any) bool {
+		m.clients.Delete(key)
+		return true
+	})
+}
 
 // newClients initializes multiple clients and stores them in the registry.
+// Unchanged clients are reused to avoid leaking idle HTTP connections.
 func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
+	m.cm.RLock()
+	prev := m.configs
+	m.cm.RUnlock()
+
 	for name, conf := range clients {
+		if oldConf, ok := prev[name]; ok && reflect.DeepEqual(oldConf, conf) {
+			if _, exists := m.clients.Load(name); exists {
+				continue
+			}
+		}
 		logger.Debug("connect to consul", "name", name, "conf", conf)
 		client, err := m.newClient(name, conf)
 		if err != nil {
@@ -149,6 +165,21 @@ func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 			client: client,
 		})
 	}
+
+	m.clients.Range(func(key, _ any) bool {
+		name, ok := key.(string)
+		if !ok {
+			return true
+		}
+		if _, exist := clients[name]; !exist {
+			m.clients.Delete(key)
+		}
+		return true
+	})
+
+	m.cm.Lock()
+	m.configs = clients
+	m.cm.Unlock()
 	return nil
 }
 
@@ -245,9 +276,6 @@ func (m *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 		}
 	}
 
-	m.cm.Lock()
-	m.configs = clients
-	m.cm.Unlock()
 	return clients, nil
 }
 
@@ -258,7 +286,9 @@ func (m *ClientManager) watch(event *config.Event) {
 		logger.Error("load consul config fail", "err", err)
 		return
 	}
-	// Re-initialize clients with new settings.
+	if len(clients) == 0 {
+		return
+	}
 	if err := m.newClients(clients); err != nil {
 		logger.Error("new consul clients fail", "err", err)
 	}

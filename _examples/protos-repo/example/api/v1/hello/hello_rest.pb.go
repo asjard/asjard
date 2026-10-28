@@ -27,7 +27,7 @@ import (
 // 支持markdown
 // 可渲染在openapi文档的接口描述中
 // 渲染在rest服务的路由描述中
-func _Hello_Say_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _Hello_Say_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(SayReq)
 	if interceptor == nil {
 		return srv.(HelloServer).Say(ctx, in)

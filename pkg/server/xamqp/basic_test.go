@@ -24,6 +24,23 @@ func TestPublishOptions(t *testing.T) {
 	require.Equal(t, uint8(2), opts.DeliveryMode)
 }
 
+func TestDrainReconnectAndInactiveChannel(t *testing.T) {
+	s := &AmqpServer{reconn: make(chan struct{}, 1)}
+	s.requestReconnect()
+	s.drainReconnect()
+	select {
+	case <-s.reconn:
+		t.Fatal("reconnect signal should be drained after a successful start")
+	default:
+	}
+
+	ch := &amqp091.Channel{}
+	s.ch = ch
+	require.True(t, s.isActiveChannel(ch))
+	s.ch = nil
+	require.False(t, s.isActiveChannel(ch))
+}
+
 func TestContextBody(t *testing.T) {
 	c := Context{Context: context.Background(), task: amqp091.Delivery{Body: []byte("payload")}}
 	require.Equal(t, []byte("payload"), c.Body())

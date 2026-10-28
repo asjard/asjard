@@ -24,6 +24,21 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestDefaultLeaseTTL(t *testing.T) {
+	require.Equal(t, 30*time.Second, defaultConfig.TTL.Duration)
+	require.Equal(t, int64(30), (&Etcd{}).ttlSeconds())
+	require.Equal(t, int64(45), (&Etcd{conf: &Config{TTL: utils.JSONDuration{Duration: 45 * time.Second}}}).ttlSeconds())
+}
+
+func TestStopLeaseSkipsReregister(t *testing.T) {
+	e := &Etcd{}
+	key := "/app/instances/dev/api/id"
+	gen := e.nextLeaseGen(key)
+	require.True(t, e.shouldReregister(key, gen))
+	e.stopLease(key)
+	require.False(t, e.shouldReregister(key, gen))
+}
+
 func TestEtcdMetadataAndKeys(t *testing.T) {
 	e := &Etcd{}
 	require.Equal(t, NAME, e.Name())
@@ -72,7 +87,7 @@ func TestEtcdRegistryIntegration(t *testing.T) {
 		return err == nil
 	}, 30*time.Second, 500*time.Millisecond)
 
-	provider := &Etcd{client: client, conf: &Config{Timeout: utils.JSONDuration{Duration: 5 * time.Second}}}
+	provider := &Etcd{conf: &Config{Timeout: utils.JSONDuration{Duration: 5 * time.Second}}}
 	service := &server.Service{APP: runtime.GetAPP(), Endpoints: map[string]*server.Endpoint{"grpc": {Advertise: []string{"127.0.0.1:9000"}}}}
 	service.Instance.ID = fmt.Sprintf("asjard-test-%d", time.Now().UnixNano())
 	require.NoError(t, provider.Registe(service))

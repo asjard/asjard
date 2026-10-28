@@ -106,6 +106,15 @@ func (c Client) Conn(ops ...ConnOption) (grpc.ClientConnInterface, error) {
 	return cc.NewConn(target, ops...)
 }
 
+// Close releases cached connections held by protocol clients.
+func Close() {
+	for _, cc := range clients {
+		if closer, ok := cc.(interface{ Close() }); ok {
+			closer.Close()
+		}
+	}
+}
+
 // connOptions merges multiple functional options into a single ConnOptions struct.
 func (c Client) connOptions(ops ...ConnOption) *ConnOptions {
 	options := &ConnOptions{}

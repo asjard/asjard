@@ -16,7 +16,7 @@ import (
 // Create persists a new user record.
 // In Asjard, this method typically uses 'SetData' to pre-allocate IDs
 // and initialize the cache state to prevent early cache-miss storms.
-func _User_Create_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _User_Create_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(UserReq)
 	if interceptor == nil {
 		return srv.(UserServer).Create(ctx, in)
@@ -35,7 +35,7 @@ func _User_Create_RestHandler(ctx *rest.Context, srv any, interceptor server.Una
 // Get retrieves a single user by their primary identifier (username/key).
 // Workflow: LocalCache -> Redis -> Database.
 // Failure to find a record results in a gRPC NOT_FOUND (HTTP 404).
-func _User_Get_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _User_Get_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(common.ReqWithName)
 	if interceptor == nil {
 		return srv.(UserServer).Get(ctx, in)
@@ -54,7 +54,7 @@ func _User_Get_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryS
 // Update modifies an existing user profile.
 // Triggers the 'Delayed Double Delete' strategy via Asjard's Time Wheel
 // to ensure consistency across distributed LocalCache nodes.
-func _User_Update_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _User_Update_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(UserReq)
 	if interceptor == nil {
 		return srv.(UserServer).Update(ctx, in)
@@ -72,7 +72,7 @@ func _User_Update_RestHandler(ctx *rest.Context, srv any, interceptor server.Una
 
 // Del removes the user record from the persistent store and
 // synchronously purges associated entries from all cache levels.
-func _User_Del_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _User_Del_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(common.ReqWithName)
 	if interceptor == nil {
 		return srv.(UserServer).Del(ctx, in)
@@ -91,7 +91,7 @@ func _User_Del_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryS
 // Search filters users with pagination support.
 // Note: Search results are typically cached at the 'Group' level
 // with shorter TTLs compared to individual 'Get' records.
-func _User_Search_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _User_Search_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(UserSearchReq)
 	if interceptor == nil {
 		return srv.(UserServer).Search(ctx, in)
@@ -111,7 +111,7 @@ func _User_Search_RestHandler(ctx *rest.Context, srv any, interceptor server.Una
 // Add a credit card and update user's card count
 // This implementation demonstrates how to use xgorm.WithDB(ctx, tx) to maintain
 // transactional integrity across multiple table updates.
-func _User_AddCreditCard_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _User_AddCreditCard_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(UserCreditCardReq)
 	if interceptor == nil {
 		return srv.(UserServer).AddCreditCard(ctx, in)
@@ -128,7 +128,7 @@ func _User_AddCreditCard_RestHandler(ctx *rest.Context, srv any, interceptor ser
 }
 
 // User remove a credit card
-func _User_RemoveCreditCard_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _User_RemoveCreditCard_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(UserCreditCardReq)
 	if interceptor == nil {
 		return srv.(UserServer).RemoveCreditCard(ctx, in)
@@ -145,7 +145,7 @@ func _User_RemoveCreditCard_RestHandler(ctx *rest.Context, srv any, interceptor 
 }
 
 // Get user specify credit card info
-func _User_GetCreditCard_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _User_GetCreditCard_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(UserCreditCardReq)
 	if interceptor == nil {
 		return srv.(UserServer).GetCreditCard(ctx, in)
@@ -162,7 +162,7 @@ func _User_GetCreditCard_RestHandler(ctx *rest.Context, srv any, interceptor ser
 }
 
 // Get all credit cards under user
-func _User_SearchCreditCard_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _User_SearchCreditCard_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(common.ReqWithName)
 	if interceptor == nil {
 		return srv.(UserServer).SearchCreditCard(ctx, in)

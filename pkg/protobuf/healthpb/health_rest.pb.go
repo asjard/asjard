@@ -13,7 +13,7 @@ import (
 )
 
 // HealthCheck.
-func _Health_Check_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _Health_Check_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(HealthCheckRequest)
 	if interceptor == nil {
 		return srv.(HealthServer).Check(ctx, in)

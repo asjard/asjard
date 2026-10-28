@@ -14,7 +14,7 @@ import (
 
 // SayHello returns a greeting message based on the provided name.
 // It supports multiple HTTP GET entrypoints for compatibility and routing flexibility.
-func _Sample_SayHello_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _Sample_SayHello_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(HelloRequest)
 	if interceptor == nil {
 		return srv.(SampleServer).SayHello(ctx, in)

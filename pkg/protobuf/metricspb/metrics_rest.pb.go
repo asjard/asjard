@@ -14,7 +14,7 @@ import (
 )
 
 // Get metrics.
-func _Metrics_Fetch_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _Metrics_Fetch_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(emptypb.Empty)
 	if interceptor == nil {
 		return srv.(MetricsServer).Fetch(ctx, in)

@@ -31,15 +31,24 @@ const (
 
 // Etcd represents the ETCD registration and discovery engine.
 type Etcd struct {
-	client           *clientv3.Client
 	conf             *Config
 	discoveryOptions *registry.DiscoveryOptions
+
+	mu     sync.Mutex
+	leases map[string]*instanceLease
+}
+
+type instanceLease struct {
+	cancel context.CancelFunc
+	id     clientv3.LeaseID
+	gen    uint64
 }
 
 // Config holds the parameters for the ETCD client and operation timeouts.
 type Config struct {
 	Client  string             `json:"client"`  // Name of the ETCD client in stores.
 	Timeout utils.JSONDuration `json:"timeout"` // Global timeout for ETCD operations.
+	TTL     utils.JSONDuration `json:"ttl"`     // Lease TTL used by KeepAlive.
 }
 
 var (
@@ -51,6 +60,7 @@ var (
 	defaultConfig = Config{
 		Client:  xetcd.DefaultClientName,
 		Timeout: utils.JSONDuration{Duration: 5 * time.Second},
+		TTL:     utils.JSONDuration{Duration: 30 * time.Second},
 	}
 	newEtcd *Etcd
 	newOnce sync.Once
@@ -88,7 +98,7 @@ func New(options *registry.DiscoveryOptions) (*Etcd, error) {
 			return
 		}
 		// Initialize the low-level ETCD client.
-		etcdRegistry.client, err = xetcd.Client(xetcd.WithClientName(etcdRegistry.conf.Client))
+		_, err = xetcd.Client(xetcd.WithClientName(etcdRegistry.conf.Client))
 		if err != nil {
 			return
 		}
@@ -100,13 +110,43 @@ func New(options *registry.DiscoveryOptions) (*Etcd, error) {
 	return newEtcd, err
 }
 
+func (e *Etcd) etcdClient() (*clientv3.Client, error) {
+	client, err := xetcd.Client(xetcd.WithClientName(e.conf.Client))
+	if err != nil {
+		return nil, nil
+	}
+	return client, nil
+}
+
+func (e *Etcd) opTimeout() time.Duration {
+	if e.conf == nil || e.conf.Timeout.Duration <= 0 {
+		return 5 * time.Second
+	}
+	return e.conf.Timeout.Duration
+}
+
+func (e *Etcd) ttlSeconds() int64 {
+	if e.conf == nil || e.conf.TTL.Duration <= 0 {
+		return int64(defaultConfig.TTL.Duration.Seconds())
+	}
+	sec := int64(e.conf.TTL.Duration.Seconds())
+	if sec < 1 {
+		return 1
+	}
+	return sec
+}
+
 // GetAll retrieves a full snapshot of all active service instances currently in ETCD.
 func (e *Etcd) GetAll() ([]*registry.Instance, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), e.conf.Timeout.Duration)
+	client, err := e.etcdClient()
+	if err != nil {
+		return []*registry.Instance{}, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), e.opTimeout())
 	defer cancel()
 
 	// Fetch all keys under the application prefix.
-	resp, err := e.client.Get(ctx, e.prefix(), clientv3.WithPrefix())
+	resp, err := client.Get(ctx, e.prefix(), clientv3.WithPrefix())
 	if err != nil {
 		return []*registry.Instance{}, err
 	}
@@ -130,46 +170,52 @@ func (e *Etcd) Name() string {
 	return NAME
 }
 
-// Registe uploads the service instance details to ETCD with a 5-second TTL lease.
+// Registe uploads the service instance details to ETCD with a TTL lease.
 // It also manages the KeepAlive heartbeats to maintain the registration.
 func (e *Etcd) Registe(instance *server.Service) error {
 	logger.Debug("register instance into etcd", "instance", instance)
+	client, err := e.etcdClient()
+	if err != nil {
+		return err
+	}
 	b, err := json.Marshal(instance)
 	if err != nil {
 		return fmt.Errorf("register instance fail[%s]", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	key := e.registerKey(instance)
+	gen := e.nextLeaseGen(key)
+
+	ctx, cancel := context.WithTimeout(context.Background(), e.opTimeout())
 	defer cancel()
 
-	// Create a lease with 5 seconds of life.
-	lease := clientv3.NewLease(e.client)
-	grant, err := lease.Grant(ctx, 5)
+	grant, err := client.Grant(ctx, e.ttlSeconds())
 	if err != nil {
 		return err
 	}
 
-	// Put the instance JSON into ETCD attached to the lease.
-	if _, err := e.client.Put(ctx,
-		e.registerKey(instance),
-		string(b),
-		clientv3.WithLease(grant.ID)); err != nil {
+	if _, err := client.Put(ctx, key, string(b), clientv3.WithLease(grant.ID)); err != nil {
 		return fmt.Errorf("register instance fail[%s]", err)
 	}
 
-	// Start automatic heartbeat.
-	leaseChan, err := lease.KeepAlive(context.Background(), grant.ID)
+	kaCtx, kaCancel := context.WithCancel(context.Background())
+	leaseChan, err := client.KeepAlive(kaCtx, grant.ID)
 	if err != nil {
+		kaCancel()
 		return err
 	}
 
-	// Monitoring goroutine for the lease status.
-	go e.watchLease(instance, leaseChan)
+	e.storeLease(key, &instanceLease{cancel: kaCancel, id: grant.ID, gen: gen})
+	go e.watchLease(instance, key, gen, leaseChan)
 	return nil
 }
 
-func (e *Etcd) watchLease(instance *server.Service, leaseChan <-chan *clientv3.LeaseKeepAliveResponse) {
+func (e *Etcd) watchLease(instance *server.Service, key string, gen uint64, leaseChan <-chan *clientv3.LeaseKeepAliveResponse) {
 	watchLease(leaseChan, func() {
+		if !e.shouldReregister(key, gen) {
+			return
+		}
+		logger.Error("keepalive channel closed")
 		e.reregiste(instance)
 	})
 }
@@ -177,12 +223,10 @@ func (e *Etcd) watchLease(instance *server.Service, leaseChan <-chan *clientv3.L
 func watchLease(leaseChan <-chan *clientv3.LeaseKeepAliveResponse, onLost func()) {
 	for resp := range leaseChan {
 		if resp == nil {
-			logger.Error("keepalive fail")
 			onLost()
 			return
 		}
 	}
-	logger.Error("keepalive channel closed")
 	onLost()
 }
 
@@ -202,17 +246,83 @@ func (e *Etcd) reregiste(instance *server.Service) {
 
 // Remove manually deletes the instance key from ETCD (e.g., during graceful shutdown).
 func (e *Etcd) Remove(instance *server.Service) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if _, err := e.client.Delete(ctx, e.registerKey(instance)); err != nil {
+	key := e.registerKey(instance)
+	e.stopLease(key)
+	client, err := e.etcdClient()
+	if err != nil {
 		logger.Error("delete instance fail", "err", err)
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), e.opTimeout())
+	defer cancel()
+	if _, err := client.Delete(ctx, key); err != nil {
+		logger.Error("delete instance fail", "err", err)
+	}
+}
+
+func (e *Etcd) nextLeaseGen(key string) uint64 {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.leases == nil {
+		e.leases = make(map[string]*instanceLease)
+	}
+	gen := uint64(1)
+	if old, ok := e.leases[key]; ok {
+		gen = old.gen + 1
+		if old.cancel != nil {
+			old.cancel()
+		}
+	}
+	e.leases[key] = &instanceLease{gen: gen}
+	return gen
+}
+
+func (e *Etcd) storeLease(key string, lease *instanceLease) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.leases == nil {
+		e.leases = make(map[string]*instanceLease)
+	}
+	e.leases[key] = lease
+}
+
+func (e *Etcd) shouldReregister(key string, gen uint64) bool {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	lease, ok := e.leases[key]
+	return ok && lease.gen == gen
+}
+
+func (e *Etcd) stopLease(key string) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if lease, ok := e.leases[key]; ok {
+		if lease.cancel != nil {
+			lease.cancel()
+		}
+		delete(e.leases, key)
 	}
 }
 
 // watch listens for ETCD events (PUT/DELETE) and triggers callbacks for the load balancer.
 func (e *Etcd) watch() {
 	logger.Debug("watch instance from etcd")
-	watchChan := e.client.Watch(context.Background(), e.prefix(), clientv3.WithPrefix())
+	for {
+		client, err := e.etcdClient()
+		if err != nil {
+			logger.Error("watch instance from etcd fail", "err", err)
+			time.Sleep(time.Second)
+			continue
+		}
+		ctx, cancel := context.WithCancel(context.Background())
+		e.consumeWatch(client.Watch(ctx, e.prefix(), clientv3.WithPrefix()))
+		cancel()
+		logger.Warn("watch instance from etcd closed, restarting")
+		time.Sleep(time.Second)
+	}
+}
+
+func (e *Etcd) consumeWatch(watchChan clientv3.WatchChan) {
 	for resp := range watchChan {
 		for _, event := range resp.Events {
 			logger.Debug("instance from etcd updated",

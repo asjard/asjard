@@ -10,9 +10,9 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-// protoForm maps a map of string slices (e.g., URL queries or form data)
+// ProtoForm maps a map of string slices (e.g., URL queries or form data)
 // to a Protobuf message using reflection.
-func protoForm(ptr proto.Message, form map[string][]string) error {
+func ProtoForm(ptr proto.Message, form map[string][]string) error {
 	// Use Protobuf reflection to access the message's internal structure.
 	msg := ptr.ProtoReflect()
 	fields := msg.Descriptor().Fields()

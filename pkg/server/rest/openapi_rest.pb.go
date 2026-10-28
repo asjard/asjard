@@ -13,7 +13,7 @@ import (
 )
 
 // Get openapi yaml file.
-func _OpenAPI_Yaml_RestHandler(ctx *Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _OpenAPI_Yaml_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(emptypb.Empty)
 	if interceptor == nil {
 		return srv.(OpenAPIServer).Yaml(ctx, in)
@@ -30,7 +30,7 @@ func _OpenAPI_Yaml_RestHandler(ctx *Context, srv any, interceptor server.UnarySe
 }
 
 // Get openapi json file.
-func _OpenAPI_Json_RestHandler(ctx *Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _OpenAPI_Json_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(emptypb.Empty)
 	if interceptor == nil {
 		return srv.(OpenAPIServer).Json(ctx, in)
@@ -47,7 +47,7 @@ func _OpenAPI_Json_RestHandler(ctx *Context, srv any, interceptor server.UnarySe
 }
 
 // Redict to configured openapi page.
-func _OpenAPI_Page_RestHandler(ctx *Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _OpenAPI_Page_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(emptypb.Empty)
 	if interceptor == nil {
 		return srv.(OpenAPIServer).Page(ctx, in)
@@ -64,7 +64,7 @@ func _OpenAPI_Page_RestHandler(ctx *Context, srv any, interceptor server.UnarySe
 }
 
 // Show a scalar openapi page.
-func _OpenAPI_ScalarPage_RestHandler(ctx *Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _OpenAPI_ScalarPage_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(emptypb.Empty)
 	if interceptor == nil {
 		return srv.(OpenAPIServer).ScalarPage(ctx, in)

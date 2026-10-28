@@ -14,7 +14,7 @@ import (
 
 // Get all service instances
 // This is a example that how to get service instances from registry
-func _Gw_GetServiceInstances_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _Gw_GetServiceInstances_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(ServiceInstancesReq)
 	if interceptor == nil {
 		return srv.(GwServer).GetServiceInstances(ctx, in)

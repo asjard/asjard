@@ -57,6 +57,7 @@
 - [服务/协议](user-guide/server.md)
   - [grpc](user-guide/server-grpc.md)
   - [http](user-guide/server-rest.md)
+  - [mcp](user-guide/server-mcp.md)
   - [asynq](user-guide/server-asynq.md)
   - [rabbitmq](user-guide/server-rabbitmq.md)
 - [客户端](user-guide/client.md)

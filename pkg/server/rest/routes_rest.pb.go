@@ -13,7 +13,7 @@ import (
 )
 
 // Return route tree
-func _Routes_Tree_RestHandler(ctx *Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _Routes_Tree_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(emptypb.Empty)
 	if interceptor == nil {
 		return srv.(RoutesServer).Tree(ctx, in)
@@ -28,7 +28,7 @@ func _Routes_Tree_RestHandler(ctx *Context, srv any, interceptor server.UnarySer
 	}
 	return interceptor(ctx, in, info, handler)
 }
-func _Routes_List_RestHandler(ctx *Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _Routes_List_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(emptypb.Empty)
 	if interceptor == nil {
 		return srv.(RoutesServer).List(ctx, in)

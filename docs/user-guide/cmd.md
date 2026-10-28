@@ -13,6 +13,10 @@ go install github.com/asjard/asjard/cmd/protoc-gen-go-asynq@latest
 go install github.com/asjard/asjard/cmd/protoc-gen-go-rest@latest
 ## 生成_rest_gw.pb.go文件, http协议转grpc协议
 go install github.com/asjard/asjard/cmd/protoc-gen-go-rest2grpc-gw@latest
+## 生成_mcp.pb.go文件, mcp服务端
+go install github.com/asjard/asjard/cmd/protoc-gen-go-mcp@latest
+## 生成_mcp_gw.pb.go文件, mcp协议转grpc协议
+go install github.com/asjard/asjard/cmd/protoc-gen-go-mcp2grpc@latest
 ## 生成_validate.pb.go文件,参数校验
 go install github.com/asjard/asjard/cmd/protoc-gen-go-validate@latest
 ## 生成enum.pb.ts文件，typescript枚举生成

@@ -258,30 +258,40 @@ func (s *Etcd) watch() error {
 
 // watchPrefix performs a long-running etcd Watch on a specific directory.
 func (s *Etcd) watchPrefix(prefix string, priority int) {
-	watchChan := s.client.Watch(context.Background(), prefix, clientv3.WithPrefix())
-	for resp := range watchChan {
-		for _, event := range resp.Events {
-			key := s.configKey(prefix, event.Kv.Key)
-			ref := string(event.Kv.Key)
-			logger.Debug("etcd config event", "event", event.Type.String(), "key", key, "prefix", prefix)
-			switch event.Type {
-			case mvccpb.PUT:
-				// Push events to the framework for updates/creates.
-				for _, event := range s.getUpdateEvents(ref, key, priority, event.Kv.Value) {
-					s.options.Callback(event)
+	for {
+		ctx, cancel := context.WithCancel(context.Background())
+		watchChan := s.client.Watch(ctx, prefix, clientv3.WithPrefix())
+		alive := false
+		for resp := range watchChan {
+			alive = true
+			for _, event := range resp.Events {
+				key := s.configKey(prefix, event.Kv.Key)
+				ref := string(event.Kv.Key)
+				logger.Debug("etcd config event", "event", event.Type.String(), "key", key, "prefix", prefix)
+				switch event.Type {
+				case mvccpb.PUT:
+					// Push events to the framework for updates/creates.
+					for _, event := range s.getUpdateEvents(ref, key, priority, event.Kv.Value) {
+						s.options.Callback(event)
+					}
+				case mvccpb.DELETE:
+					s.options.Callback(&config.Event{
+						Type: config.EventTypeDelete,
+						Key:  key,
+						Value: &config.Value{
+							Sourcer:  s,
+							Ref:      ref,
+							Priority: priority,
+						},
+					})
 				}
-			case mvccpb.DELETE:
-				s.options.Callback(&config.Event{
-					Type: config.EventTypeDelete,
-					Key:  key,
-					Value: &config.Value{
-						Sourcer:  s,
-						Ref:      ref,
-						Priority: priority,
-					},
-				})
 			}
 		}
+		cancel()
+		if alive {
+			logger.Warn("etcd config watch closed, restarting", "prefix", prefix)
+		}
+		time.Sleep(time.Second)
 	}
 }
 

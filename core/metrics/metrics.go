@@ -8,6 +8,7 @@ import (
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server/handlers"
 	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/pkg/server/rest/xhttp"
 	"github.com/asjard/asjard/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -58,7 +59,7 @@ func Init() error {
 			}
 		}
 		// Adds a default "/metrics" endpoint to the REST server.
-		handlers.AddServerDefaultHandler("metrics", handlers.NewMetricsAPI(registry), rest.Protocol)
+		handlers.AddServerDefaultHandler("metrics", handlers.NewMetricsAPI(registry), rest.Protocol, xhttp.Protocol)
 	}
 	metricsManager.conf = conf
 	// Start the background push service if configured.

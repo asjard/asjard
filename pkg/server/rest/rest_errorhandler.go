@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 
+	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/core/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -33,6 +34,16 @@ func (ErrorHandlerAPI) MethodNotAllowed(ctx context.Context, in *emptypb.Empty) 
 // ensures the client receives a valid Internal Server Error response.
 func (ErrorHandlerAPI) Panic(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
 	return &emptypb.Empty{}, status.InternalServerError()
+}
+
+func ErrorHandler_NotFound_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+	return _ErrorHandler_NotFound_RestHandler(ctx, srv, interceptor)
+}
+func ErrorHandler_MethodNotAllowed_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+	return _ErrorHandler_MethodNotAllowed_RestHandler(ctx, srv, interceptor)
+}
+func ErrorHandler_Error_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+	return _ErrorHandler_Error_RestHandler(ctx, srv, interceptor)
 }
 
 // RestServiceDesc returns the RESTful service description used to register

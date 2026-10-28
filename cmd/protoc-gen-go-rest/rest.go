@@ -206,7 +206,7 @@ func (g *RestGenerator) genServiceMethod(service *protogen.Service, serverType s
 	}
 	hname := fmt.Sprintf("_%s_%s_RestHandler", service.GoName, method.GoName)
 	g.genComment(method.Comments)
-	g.gen.P("func ", hname, "(ctx *", restPackage.Ident("Context"), ", srv any, interceptor ", serverPackage.Ident("UnaryServerInterceptor"), ") (any, error) {")
+	g.gen.P("func ", hname, "(ctx ", contextPackage.Ident("Context"), ", srv any, interceptor ", serverPackage.Ident("UnaryServerInterceptor"), ") (any, error) {")
 	g.gen.P("in := new(", method.Input.GoIdent, ")")
 	g.gen.P("if interceptor == nil {")
 	g.gen.P("return srv.(", serverType, ").", method.GoName, "(ctx, in)")

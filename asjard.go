@@ -255,12 +255,12 @@ func (asd *Asjard) startServers() error {
 // 1. Deregister from discovery 2. Close servers 3. Disconnect config 4. Final cleanup.
 func (asd *Asjard) stop() {
 	logger.Debug("start remove instance from registry")
-	// Step 1: Tell the registry this instance is gone so it stops receiving traffic.
+	// Tell the registry this instance is gone so it stops receiving traffic.
 	if err := registry.Unregiste(); err != nil {
 		logger.Error("unregiste from registry fail", "error", err.Error())
 	}
 
-	// Step 2: Shut down all active servers.
+	// Shut down all active servers.
 	for _, server := range asd.servers {
 		if server.Enabled() {
 			logger.Debug("start stop server", "protocol", server.Protocol())
@@ -271,6 +271,7 @@ func (asd *Asjard) stop() {
 
 	time.Sleep(time.Second)
 	// Finalize component shutdowns.
+	client.Close()
 	config.Disconnect()
 	bootstrap.Shutdown()
 	logger.Info("system exited")

@@ -46,8 +46,10 @@ var (
 const (
 	// Server Configuration Namespaces
 	ConfigServerRestPrefix  = "asjard.servers.rest"
+	ConfigServerHttpPrefix  = "asjard.servers.http"
 	ConfigServerGrpcPrefix  = "asjard.servers.grpc"
 	ConfigServerPporfPrefix = "asjard.servers.pprof"
+	ConfigServerMcpPrefix   = "asjard.servers.mcp"
 	ConfigServicePrefix     = "asjard.service"
 
 	// Dynamic Server/Protocol Key Generators

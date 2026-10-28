@@ -63,6 +63,14 @@ func TestNewClients(t *testing.T) {
 		}
 		assert.Nil(t, err)
 	})
+	t.Run("reuse_unchanged", func(t *testing.T) {
+		c1, err := Client()
+		require.NoError(t, err)
+		clientManager.watch(&config.Event{Key: "asjard.stores.etcd.clients.default.endpoints"})
+		c2, err := Client()
+		require.NoError(t, err)
+		require.Same(t, c1, c2)
+	})
 	t.Run("shutdown", func(t *testing.T) {
 		clientManager.Stop()
 		_, err := Client()

@@ -24,8 +24,8 @@ func (r RedisConn) MakeRedisClient() interface{} {
 // This allows the Asynq server to share the same Redis connection pool
 // as the rest of the application.
 func NewRedisConn(clientName string) (*RedisConn, error) {
-	// Request a client from the central xredis store using functional options.
-	client, err := xredis.NewClient(xredis.WithClientName(clientName))
+	// Share the managed Redis pool instead of opening a second one.
+	client, err := xredis.Client(xredis.WithClientName(clientName))
 	if err != nil {
 		return nil, err
 	}

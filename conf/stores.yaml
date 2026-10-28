@@ -107,7 +107,8 @@ asjard:
         options:
           channelMax: 0
           frameSize: 0
-          heartBeat: 1s
+          # 1s 太短，GC/调度抖动会误判掉线。amqp091 默认 10s。
+          heartbeat: 10s
     ## redis client configuration.
     redis:
       clients:

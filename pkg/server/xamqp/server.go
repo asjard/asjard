@@ -30,11 +30,12 @@ type AmqpServer struct {
 	options *server.ServerOptions
 	app     runtime.APP
 
-	conn   *xamqp.ClientConn // Wrapped AMQP connection
-	ch     *amqp.Channel     // Active AMQP channel
-	mu     sync.RWMutex
-	done   chan struct{}
-	reconn chan struct{}
+	conn    *xamqp.ClientConn // Wrapped AMQP connection
+	ch      *amqp.Channel     // Active AMQP channel
+	mu      sync.RWMutex
+	startMu sync.Mutex
+	done    chan struct{}
+	reconn  chan struct{}
 
 	svcs     []Handler    // Registered business logic handlers
 	tasks    atomic.Int32 // Counter for active processing tasks (for graceful shutdown)
@@ -184,6 +185,9 @@ func (s *AmqpServer) reconnect() {
 
 // start performs the heavy lifting: declaring queues, exchanges, and bindings.
 func (s *AmqpServer) start() error {
+	s.startMu.Lock()
+	defer s.startMu.Unlock()
+
 	conn, err := xamqp.Client(xamqp.WithClientName(s.conf.ClientName))
 	if err != nil {
 		return err
@@ -193,20 +197,33 @@ func (s *AmqpServer) start() error {
 		return err
 	}
 
+	// Detach the old channel first so its close does not enqueue another reconnect.
 	s.mu.Lock()
 	oldCh := s.ch
+	s.ch = nil
+	s.mu.Unlock()
+	if oldCh != nil && !oldCh.IsClosed() {
+		_ = oldCh.Close()
+	}
+
+	if err := s.setupConsumers(conn, ch); err != nil {
+		_ = ch.Close()
+		return err
+	}
+
+	s.mu.Lock()
 	s.conn = conn
 	s.ch = ch
 	s.mu.Unlock()
-	if oldCh != nil && !oldCh.IsClosed() {
-		oldCh.Close()
-	}
+	s.drainReconnect()
+	return nil
+}
 
+func (s *AmqpServer) setupConsumers(conn *xamqp.ClientConn, ch *amqp.Channel) error {
 	channelClosed := ch.NotifyClose(make(chan *amqp.Error, 1))
 	consumerCancelled := ch.NotifyCancel(make(chan string, 1))
 	connectionClosed, err := conn.NotifyClose(make(chan *amqp.Error, 1))
 	if err != nil {
-		ch.Close()
 		return err
 	}
 	s.watch(ch, channelClosed, connectionClosed, consumerCancelled)
@@ -214,7 +231,6 @@ func (s *AmqpServer) start() error {
 	r := ch.NotifyReturn(make(chan amqp.Return))
 	go s.notifyReturn(r)
 
-	// Apply Quality of Service (QoS) settings like PrefetchCount.
 	if err := ch.Qos(s.conf.PrefetchCount, s.conf.PrefetchSize, s.conf.Global); err != nil {
 		return err
 	}
@@ -234,6 +250,16 @@ func (s *AmqpServer) start() error {
 		}
 	}
 	return nil
+}
+
+func (s *AmqpServer) drainReconnect() {
+	if s.reconn == nil {
+		return
+	}
+	select {
+	case <-s.reconn:
+	default:
+	}
 }
 
 //gocyclo:ignore
@@ -317,11 +343,13 @@ func (s *AmqpServer) declareAndRun(ch *amqp.Channel, svc Handler, method MethodD
 			return err
 		}
 	}
-	// Start the actual consumption process.
-	msgs, err := ch.Consume(queue.Name, method.Consumer, method.AutoAck, method.Exclusive, method.NoLocal, method.NoWait, method.Table)
+	// Empty consumer tag lets the broker allocate a unique one.
+	// Queue declare args must not be forwarded to Consume.
+	msgs, err := ch.Consume(queue.Name, method.Consumer, method.AutoAck, method.Exclusive, method.NoLocal, method.NoWait, nil)
 	if err != nil {
 		return err
 	}
+	logger.Info("amqp consumer started", "queue", queue.Name, "consumer", method.Consumer)
 	go s.run(ch, msgs, svc, method)
 	return nil
 }
@@ -334,7 +362,7 @@ func (s *AmqpServer) run(ch *amqp.Channel, msgs <-chan amqp.Delivery, svc Handle
 	}
 	defer func() {
 		if !s.stopping.Load() && s.isActiveChannel(ch) {
-			logger.Warn("amqp delivery channel closed, start reconnect")
+			logger.Warn("amqp delivery channel closed, start reconnect", "queue", method.Queue, "consumer", method.Consumer)
 			s.requestReconnect()
 		}
 	}()
@@ -429,7 +457,22 @@ func (s *AmqpServer) backoffRetry(msg amqp.Delivery, method MethodDesc) {
 }
 
 func (s *AmqpServer) retryPublish(msg amqp.Delivery, method MethodDesc, count, delay int32) {
-	if err := s.ch.Publish(method.RetryExchange, method.RetryRoute, false, false, amqp.Publishing{
+	s.mu.RLock()
+	conn := s.conn
+	s.mu.RUnlock()
+	if conn == nil {
+		msg.Nack(false, true)
+		return
+	}
+	ch, err := conn.Channel()
+	if err != nil {
+		logger.Error("open retry publish channel fail",
+			"retry_exchange", method.RetryExchange, "retry_queue", method.RetryQueue, "err", err)
+		msg.Nack(false, true)
+		return
+	}
+	defer ch.Close()
+	if err := ch.Publish(method.RetryExchange, method.RetryRoute, false, false, amqp.Publishing{
 		Headers: amqp.Table{
 			"x-delay":      int64(delay),
 			retryHeaderKey: count + 1,

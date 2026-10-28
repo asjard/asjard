@@ -18,7 +18,7 @@ import (
 // Simple Get
 // Retrieves the current configuration.
 // Asjard generates both a gRPC method and a REST endpoint.
-func _Config_Get_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _Config_Get_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(ConfigGetReq)
 	if interceptor == nil {
 		return srv.(ConfigServer).Get(ctx, in)
@@ -36,7 +36,7 @@ func _Config_Get_RestHandler(ctx *rest.Context, srv any, interceptor server.Unar
 
 // GetAndDecrypt: Retrieves an encrypted configuration and returns it in plain text.
 // Demonstrates handling specialized business logic through the same framework.
-func _Config_GetAndDecrypt_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _Config_GetAndDecrypt_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(common.Empty)
 	if interceptor == nil {
 		return srv.(ConfigServer).GetAndDecrypt(ctx, in)

@@ -5,6 +5,7 @@ package openapi.v1.docs.example;
 option go_package = "protos-repo/example/openapi/v1/user";
 
 import "github.com/asjard/protobuf/http.proto";
+import "github.com/asjard/protobuf/mcp.proto";
 
 import "protos-repo/common/common.proto";
 
@@ -18,6 +19,8 @@ service User {
         };
         option (asjard.api.http) = {
             get : '/{name}'
+        };
+        option (asjard.api.mcp_tool) = {
         };
     };
 }

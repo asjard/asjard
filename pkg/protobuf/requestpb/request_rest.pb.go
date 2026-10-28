@@ -14,7 +14,7 @@ import (
 )
 
 // Favicon returns the site icon typically requested by web browsers.
-func _DefaultHandlers_Favicon_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _DefaultHandlers_Favicon_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(emptypb.Empty)
 	if interceptor == nil {
 		return srv.(DefaultHandlersServer).Favicon(ctx, in)

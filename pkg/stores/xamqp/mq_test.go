@@ -21,6 +21,10 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestDefaultHeartbeat(t *testing.T) {
+	require.Equal(t, 10*time.Second, defaultOptions.HeartBeat.Duration)
+}
+
 func TestClientOptions(t *testing.T) {
 	opts := defaultClientOptions()
 	require.Equal(t, DefaultClientName, opts.clientName)

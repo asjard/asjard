@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/pkg/server/rest/xfasthttp"
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
 	grpcmetadata "google.golang.org/grpc/metadata"
@@ -18,7 +18,7 @@ func TestGet(t *testing.T) {
 
 	requestCtx := &fasthttp.RequestCtx{}
 	requestCtx.Request.Header.Add("id", "7")
-	restCtx := rest.NewContext(requestCtx)
+	restCtx := xfasthttp.NewContext(requestCtx)
 	t.Cleanup(restCtx.Close)
 	require.Equal(t, Val("7"), Get(restCtx, "id"))
 	require.Empty(t, Get(restCtx, "missing"))

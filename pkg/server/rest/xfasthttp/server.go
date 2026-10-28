@@ -1,4 +1,4 @@
-package rest
+package xfasthttp
 
 import (
 	"context"
@@ -15,22 +15,13 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/asjard/asjard/utils"
 	"github.com/fasthttp/router"
 	openapi_v3 "github.com/google/gnostic/openapiv3"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/protobuf/proto"
 )
-
-const (
-	// Protocol is the identifier for the REST server implementation.
-	Protocol = "rest"
-)
-
-// Handler defines the interface for services that provide REST descriptors.
-type Handler interface {
-	RestServiceDesc() *ServiceDesc
-}
 
 // MiddlewareFunc defines the standard signature for REST middleware.
 type MiddlewareFunc func(next fasthttp.RequestHandler) fasthttp.RequestHandler
@@ -43,8 +34,8 @@ type RestServer struct {
 	interceptor  server.UnaryServerInterceptor // Global interceptor for processing logic.
 	conf         Config                        // Server-specific configurations.
 	middlewares  []MiddlewareFunc              // Chain of global middlewares.
-	errorHandler *ErrorHandlerAPI              // Standardized error response handler.
-	handlers     []Handler                     // List of registered service handlers.
+	errorHandler *rest.ErrorHandlerAPI         // Standardized error response handler.
+	handlers     []rest.Handler                // List of registered service handlers.
 }
 
 // Ensure RestServer satisfies the core server interface.
@@ -52,16 +43,21 @@ var _ server.Server = &RestServer{}
 
 func init() {
 	// Register the REST protocol to the framework's server registry.
-	server.AddServer(Protocol, New)
+	server.AddServer(rest.Protocol, New)
 }
 
 // New initializes the REST server by loading configurations and setting up certificates.
 func New(options *server.ServerOptions) (server.Server, error) {
-	conf := defaultConfig()
+	conf := DefaultConfig(rest.Protocol)
 	// Fetch configuration from the central config store.
 	if err := config.GetWithUnmarshal(constant.ConfigServerRestPrefix, &conf); err != nil {
 		return nil, err
 	}
+	return MustNew(conf, options)
+}
+
+// MustNew performs the low-level setup of the fasthttp engine and global CORS middleware.
+func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) {
 	// Resolve certificate paths relative to the system's cert directory.
 	if conf.CertFile != "" {
 		conf.CertFile = filepath.Join(utils.GetCertDir(), conf.CertFile)
@@ -69,11 +65,6 @@ func New(options *server.ServerOptions) (server.Server, error) {
 	if conf.KeyFile != "" {
 		conf.KeyFile = filepath.Join(utils.GetCertDir(), conf.KeyFile)
 	}
-	return MustNew(conf, options)
-}
-
-// MustNew performs the low-level setup of the fasthttp engine and global CORS middleware.
-func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) {
 	r := router.New()
 	r.SaveMatchedRoutePath = true
 	corsMiddleware := NewCorsMiddleware(conf.Cors)
@@ -87,7 +78,7 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 		interceptor:  options.Interceptor,
 		conf:         conf,
 		middlewares:  []MiddlewareFunc{corsMiddleware},
-		errorHandler: &ErrorHandlerAPI{},
+		errorHandler: &rest.ErrorHandlerAPI{},
 		server: fasthttp.Server{
 			// Extensive performance tuning parameters mapped from configuration.
 			Name:                               runtime.GetAPP().App,
@@ -124,7 +115,7 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 
 // AddHandler registers a service to the server and populates the router.
 func (s *RestServer) AddHandler(handler any) error {
-	h, ok := handler.(Handler)
+	h, ok := handler.(rest.Handler)
 	if !ok {
 		return fmt.Errorf("invlaid handler %T, must implement *rest.RestServiceDesc", handler)
 	}
@@ -135,21 +126,21 @@ func (s *RestServer) AddHandler(handler any) error {
 // Start launches the server listener (Unix, TLS, or Standard TCP) in a background routine.
 func (s *RestServer) Start(startErr chan error) error {
 	// Register system-level error handlers for the router.
-	s.router.NotFound = s.newNoInterceptorHandler(_ErrorHandler_NotFound_RestHandler, s.errorHandler, DefaultWriterName)
-	s.router.MethodNotAllowed = s.newNoInterceptorHandler(_ErrorHandler_MethodNotAllowed_RestHandler, s.errorHandler, DefaultWriterName)
+	s.router.NotFound = s.newNoInterceptorHandler(rest.ErrorHandler_NotFound_RestHandler, s.errorHandler, DefaultWriterName)
+	s.router.MethodNotAllowed = s.newNoInterceptorHandler(rest.ErrorHandler_MethodNotAllowed_RestHandler, s.errorHandler, DefaultWriterName)
 
 	// Custom error handler for low-level protocol errors.
 	s.server.ErrorHandler = func(ctx *fasthttp.RequestCtx, err error) {
 		logger.L(ctx).Error("request error", "method", string(ctx.Method()), "path", string(ctx.Path()), "err", err.Error())
-		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
-		cc.WriteData(_ErrorHandler_Error_RestHandler(cc, s.errorHandler, s.emptyInterceptor))
+		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage), WithI18n(s.conf.I18n.Enabled))
+		cc.WriteData(rest.ErrorHandler_Error_RestHandler(cc, s.errorHandler, s.emptyInterceptor))
 	}
 
 	// Optionally enable built-in OpenAPI and Route discovery services.
 	if s.conf.Openapi.Enabled {
-		s.AddHandler(NewOpenAPI(s.conf.Openapi, s.openapi))
+		s.AddHandler(rest.NewOpenAPI(s.conf.Openapi, s.openapi))
 	}
-	routesAPI := NewRoutesAPI(s.handlers)
+	routesAPI := rest.NewRoutesAPI(s.handlers)
 	if s.conf.Routes.Enabled {
 		s.AddHandler(routesAPI)
 	}
@@ -192,7 +183,7 @@ func (s *RestServer) Stop() {
 
 // Protocol returns the server protocol name.
 func (s *RestServer) Protocol() string {
-	return Protocol
+	return rest.Protocol
 }
 
 // Enabled checks if the REST server is enabled in config.
@@ -206,7 +197,7 @@ func (s *RestServer) ListenAddresses() server.AddressConfig {
 }
 
 // addRouter parses the service descriptor to register paths and merge OpenAPI docs.
-func (s *RestServer) addRouter(handler Handler) error {
+func (s *RestServer) addRouter(handler rest.Handler) error {
 	desc := handler.RestServiceDesc()
 	if desc == nil {
 		return nil
@@ -235,27 +226,27 @@ func (s *RestServer) addRouter(handler Handler) error {
 }
 
 // addRouterHandler applies middleware and registers a handler to a specific route.
-func (s *RestServer) addRouterHandler(method string, methodDesc MethodDesc, svc Handler, writerName string) {
+func (s *RestServer) addRouterHandler(method string, methodDesc rest.MethodDesc, svc rest.Handler, writerName string) {
 	s.router.Handle(method, methodDesc.Path,
 		s.applyMiddleware(s.newHandler(methodDesc.Handler, svc, writerName),
 			s.middlewares...))
 }
 
 // newHandler wraps the business logic in a REST context and response writer.
-func (s *RestServer) newHandler(methodHandler methodHandler, svc Handler, writerName string) fasthttp.RequestHandler {
+func (s *RestServer) newHandler(methodHandler rest.MethodHandler, svc rest.Handler, writerName string) fasthttp.RequestHandler {
 	writer := GetWriter(writerName)
 	return func(ctx *fasthttp.RequestCtx) {
-		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage), WithWriter(writer))
+		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage), WithI18n(s.conf.I18n.Enabled), WithWriter(writer))
 		reply, err := methodHandler(cc, svc, s.interceptor)
 		cc.WriteData(reply, err)
 	}
 }
 
 // newNoInterceptorHandler wraps the business logic in a REST context and response writer without interceptor.
-func (s *RestServer) newNoInterceptorHandler(methodHandler methodHandler, svc Handler, writerName string) fasthttp.RequestHandler {
+func (s *RestServer) newNoInterceptorHandler(methodHandler rest.MethodHandler, svc rest.Handler, writerName string) fasthttp.RequestHandler {
 	writer := GetWriter(writerName)
 	return func(ctx *fasthttp.RequestCtx) {
-		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage), WithWriter(writer))
+		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage), WithI18n(s.conf.I18n.Enabled), WithWriter(writer))
 		reply, err := methodHandler(cc,
 			svc,
 			s.emptyInterceptor)

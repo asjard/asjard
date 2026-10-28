@@ -1,4 +1,4 @@
-package rest
+package xfasthttp
 
 // Option defines a function type that modifies a Context instance.
 // This is used to implement the functional options pattern for flexible configuration.
@@ -23,5 +23,12 @@ func WithErrPage(errPage string) func(ctx *Context) {
 		if errPage != "" {
 			ctx.errPage = errPage
 		}
+	}
+}
+
+// WithI18n sets whether internationalized error responses are enabled for this request.
+func WithI18n(enabled bool) func(ctx *Context) {
+	return func(ctx *Context) {
+		ctx.i18nEnabled = enabled
 	}
 }

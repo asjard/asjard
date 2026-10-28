@@ -9,6 +9,7 @@ import (
 	"github.com/asjard/asjard"
 	"github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
+	_ "github.com/asjard/asjard/pkg/server/rest/xfasthttp"
 )
 
 func main() {

@@ -16,7 +16,7 @@ import (
 // Get retrieves a single user by their primary identifier (username/key).
 // Workflow: LocalCache -> Redis -> Database.
 // Failure to find a record results in a gRPC NOT_FOUND (HTTP 404).
-func _User_Get_RestHandler(ctx *rest.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
+func _User_Get_RestHandler(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error) {
 	in := new(common.ReqWithName)
 	if interceptor == nil {
 		return srv.(UserServer).Get(ctx, in)

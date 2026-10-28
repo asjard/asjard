@@ -12,6 +12,8 @@ asjard:
       # client: default
       ## 超时时间
       # timeout: 5s
+      ## 注册租约 TTL，过短会导致 keepalive 通道被关闭后反复重注册
+      # ttl: 30s
 ```
 
 ## 使用

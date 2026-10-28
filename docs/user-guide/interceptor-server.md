@@ -33,6 +33,8 @@ type ServerInterceptor interface {
 
 ```
 
+HTTP 请求上下文（`pkg/server/rest/xfasthttp` / `pkg/server/rest/xhttp`）需实现 `pkg/server/rest.RestContext`。需要读 Header、Method、Path、链路上下文等方法时，对 `ctx` 断言该接口即可。
+
 ## 已支持的实现
 
 - [accessLog](interceptor-server-accessLog.md)

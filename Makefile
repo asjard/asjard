@@ -37,6 +37,14 @@ build_gen_go_amqp: ## build command protoc-gen-go-amqp
 build_gen_go_rest2grpc_gw: ## Build command protoc-gen-go-rest2grpc-gw
 	go build -o $(GOPATH)/bin/protoc-gen-go-rest2grpc-gw -ldflags '-w -s' ./cmd/protoc-gen-go-rest2grpc-gw/*.go
 
+.PHONY: build_gen_go_mcp
+build_gen_go_mcp: ## Build command protoc-gen-go-mcp
+	go build -o $(GOPATH)/bin/protoc-gen-go-mcp -ldflags '-w -s' ./cmd/protoc-gen-go-mcp/*.go
+
+.PHONY: build_gen_go_mcp2grpc
+build_gen_go_mcp2grpc: ## Build command protoc-gen-go-mcp2grpc
+	go build -o $(GOPATH)/bin/protoc-gen-go-mcp2grpc -ldflags '-w -s' ./cmd/protoc-gen-go-mcp2grpc/*.go
+
 .PHONY: build_gen_ts
 build_gen_ts: ## Build command protoc-gen-ts
 	go build -o $(GOPATH)/bin/protoc-gen-ts -ldflags '-w -s' ./cmd/protoc-gen-ts/*.go

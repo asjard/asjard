@@ -13,6 +13,8 @@ import (
 	"github.com/asjard/asjard/pkg/protobuf/healthpb"
 	"github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
+	_ "github.com/asjard/asjard/pkg/server/rest/xfasthttp"
+	"github.com/asjard/asjard/pkg/server/rest/xhttp"
 )
 
 // Health implements the healthpb.HealthServer interface.
@@ -23,7 +25,7 @@ type Health struct {
 func init() {
 	// Automatically register the health handler for both gRPC and REST protocols.
 	// This ensures the service is discoverable by load balancers and monitoring tools.
-	handlers.AddServerDefaultHandler("health", &Health{}, grpc.Protocol, rest.Protocol)
+	handlers.AddServerDefaultHandler("health", &Health{}, grpc.Protocol, rest.Protocol, xhttp.Protocol)
 }
 
 // Check performs a health check on the current service or a specified downstream service.

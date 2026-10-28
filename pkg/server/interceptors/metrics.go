@@ -67,25 +67,11 @@ func (m Metrics) Interceptor() server.UnaryServerInterceptor {
 		// m.requestLatency.Observe(info.FullMethod, info.Protocol, float64(time.Now().Sub(start))/float64(time.Second))
 		m.requestLatency.Observe(info.FullMethod, info.Protocol, time.Since(start).Seconds())
 
-		// Protocol-specific metrics (Size tracking for REST).
-		if rtx, ok := ctx.(*rest.Context); ok {
-			// Observe approximate size of the HTTP request.
-			m.requestSize.Observe(info.FullMethod, info.Protocol, float64(computeApproximateRequestSize(rtx)))
-			// Observe the exact content length of the HTTP response.
-			m.responseSize.Observe(info.FullMethod, info.Protocol, float64(rtx.Response.Header.ContentLength()))
+		if mtx, ok := ctx.(rest.RestContext); ok {
+			m.requestSize.Observe(info.FullMethod, info.Protocol, float64(mtx.RequestSize()))
+			m.responseSize.Observe(info.FullMethod, info.Protocol, float64(mtx.ResponseSize()))
 		}
 
 		return resp, err
 	}
-}
-
-// computeApproximateRequestSize calculates the total byte size of an HTTP request
-// including URI, Method, Protocol version, and Headers.
-func computeApproximateRequestSize(r *rest.Context) int {
-	s := len(r.RequestURI())
-	s += len(r.Method())
-	s += len(r.Request.Header.Protocol())
-	s += r.Request.Header.Len()
-	s += r.Request.Header.ContentLength()
-	return s
 }

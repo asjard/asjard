@@ -63,12 +63,50 @@ func TestNewClients(t *testing.T) {
 		assert.Nil(t, delResult.Err())
 		s.Close()
 	})
+	t.Run("reuse_unchanged", func(t *testing.T) {
+		c1, err := Client()
+		require.NoError(t, err)
+		clientManager.watch(&config.Event{Key: "asjard.stores.redis.clients.default.address"})
+		c2, err := Client()
+		require.NoError(t, err)
+		require.Same(t, c1, c2)
+	})
 	t.Run("shudown", func(t *testing.T) {
 		clientManager.Stop()
 		client, err := Client()
 		assert.NotNil(t, err)
 		assert.Nil(t, client)
 	})
+}
+
+func TestNewClientsReuseAndReplace(t *testing.T) {
+	s := miniredis.RunT(t)
+	m := &ClientManager{configs: make(map[string]*ClientConnConfig)}
+	conf := &ClientConnConfig{
+		Address: s.Addr(),
+		Options: Options{DisableCheckStatus: true},
+	}
+	require.NoError(t, m.newClients(map[string]*ClientConnConfig{"default": conf}))
+	first, ok := m.clients.Load("default")
+	require.True(t, ok)
+
+	require.NoError(t, m.newClients(map[string]*ClientConnConfig{"default": {
+		Address: s.Addr(),
+		Options: Options{DisableCheckStatus: true},
+	}}))
+	second, ok := m.clients.Load("default")
+	require.True(t, ok)
+	require.Same(t, first, second)
+
+	s2 := miniredis.RunT(t)
+	require.NoError(t, m.newClients(map[string]*ClientConnConfig{"default": {
+		Address: s2.Addr(),
+		Options: Options{DisableCheckStatus: true},
+	}}))
+	replaced, ok := m.clients.Load("default")
+	require.True(t, ok)
+	require.NotSame(t, first, replaced)
+	m.Stop()
 }
 
 func TestClientOptionsAndRedisConfig(t *testing.T) {

@@ -71,6 +71,80 @@ asjard:
       # enabled: false
       # addresses:
       # listen: 127.0.0.1:7020
+    mcp:
+      enabled: false
+      # path: /mcp
+      cors:
+        # allowOrigins: "*"
+        # allowMethods:
+        #   - GET
+        #   - HEAD
+        #   - PUT
+        #   - PATCH
+        #   - POST
+        #   - DELETE
+        # allowHeaders:
+        #   - Origin
+        #   - Content-Length
+        #   - Content-Type
+        #   - Mcp-Session-Id
+        #   - Last-Event-ID
+        #   - MCP-Protocol-Version
+      addresses:
+        # listen: 127.0.0.1:7050
+        # advertise: 127.0.0.1:7050
+      options:
+        # readTimeout: !!str 0s
+        # readHeaderTimeout: !!str 0s
+        # writeTimeout: !!str 0s
+        # idleTimeout: !!str 0s
+        # maxHeaderBytes: !!int 0
+        # maxRequestBodySize: !!int 20971520
+        # disableKeepalive: !!bool false
+    http:
+      enabled: false
+      doc:
+        ## Error page address. If an error is returned, the default document address that can resolve the error is used.
+        ## If not configured, the website configuration is used.
+        # errPage: ${asjard.service.website}
+      openapi:
+        # enabled: false
+        # endpoint: https://example.com
+        # page: https://petstore.swagger.io/?url=http://%s/openapi.yml
+        license:
+          # name: "Apache 2.0"
+          # url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+        scalar:
+          # theme: alternate
+      routes:
+        enabled: true
+      i18n:
+        # enabled: false
+      cors:
+        # allowOrigins: "*"
+        # allowMethods:
+        #   - GET
+        #   - HEAD
+        #   - PUT
+        #   - PATCH
+        #   - POST
+        #   - DELETE
+        # allowHeaders:
+        #   - Origin
+        #   - Content-Length
+        #   - Content-Type
+        # allowCredentials: false
+      addresses:
+        # listen: 127.0.0.1:7040
+        # advertise: 127.0.0.1:7040
+      options:
+        # readTimeout: !!str 30s
+        # readHeaderTimeout: !!str 10s
+        # writeTimeout: !!str 0s
+        # idleTimeout: !!str 60s
+        # maxHeaderBytes: !!int 0
+        # maxRequestBodySize: !!int 20971520
+        # disableKeepalive: !!bool false
     rest:
       enabled: true
       doc:
@@ -152,8 +226,8 @@ asjard:
       #   ## deadline is reset when the connection opens, or for
       #   ## keep-alive connections after the first byte has been read.
       #   ##
-      #   ## By default request read timeout is unlimited.
-      #   readTimeout: !!str 3s
+      #   ## Default read timeout is 30s.
+      #   readTimeout: !!str 30s
 
       #   ## WriteTimeout is the maximum duration before timing out
       #   ## writes of the response. It is reset after the request handler
@@ -164,7 +238,7 @@ asjard:
       #   ## IdleTimeout is the maximum amount of time to wait for the
       #   ## next request when keep-alive is enabled. If IdleTimeout
       #   ## is zero, the value of ReadTimeout is used.
-      #   idleTimeout: !!str 0s
+      #   idleTimeout: !!str 60s
 
       #   ## Maximum number of concurrent client connections allowed per IP.
       #   ##

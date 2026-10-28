@@ -15,7 +15,6 @@ import (
 	scalargo "github.com/bdpiprava/scalar-go"
 	"github.com/ghodss/yaml"
 	openapi_v3 "github.com/google/gnostic/openapiv3"
-	"github.com/valyala/fasthttp"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -40,68 +39,66 @@ func NewOpenAPI(conf OpenapiConfig, document *openapi_v3.Document) *OpenAPI {
 // Yaml returns the OpenAPI specification in YAML format.
 func (api *OpenAPI) Yaml(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
 	api.mergeOnce.Do(func() { api.merge() })
-	rtx, ok := ctx.(*Context)
-	if ok {
-		// Generate YAML with a framework-specific header comment.
-		b, err := api.document.YAMLValue(fmt.Sprintf("Generated with %s(%s) \n %s",
-			constant.Framework, constant.FrameworkVersion, constant.FrameworkGithub))
-		if err != nil {
-			logger.Error("openapi yaml value fail", "err", err)
-			return nil, status.InternalServerError()
-		}
-		rtx.RequestCtx.Write(b)
-		return nil, nil
+	htx, ok := ctx.(RestContext)
+	if !ok {
+		return &emptypb.Empty{}, nil
 	}
-	return &emptypb.Empty{}, nil
+	b, err := api.document.YAMLValue(fmt.Sprintf("Generated with %s(%s) \n %s",
+		constant.Framework, constant.FrameworkVersion, constant.FrameworkGithub))
+	if err != nil {
+		logger.Error("openapi yaml value fail", "err", err)
+		return nil, status.InternalServerError()
+	}
+	_, _ = htx.Write(b)
+	return nil, nil
 }
 
 // Json returns the OpenAPI specification in JSON format.
 func (api *OpenAPI) Json(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
 	api.mergeOnce.Do(func() { api.merge() })
-	rtx, ok := ctx.(*Context)
-	if ok {
-		b, err := api.document.YAMLValue(fmt.Sprintf("Generated with %s(%s) \n %s",
-			constant.Framework, constant.FrameworkVersion, constant.FrameworkGithub))
-		if err != nil {
-			logger.Error("openapi yaml value fail", "err", err)
-			return nil, status.InternalServerError()
-		}
-		// Convert the YAML representation to JSON.
-		jb, err := yaml.YAMLToJSON(b)
-		if err != nil {
-			logger.Error("convert openapi yaml to json fail", "err", err)
-			return nil, status.InternalServerError()
-		}
-		rtx.RequestCtx.Write(jb)
-		return nil, nil
+	htx, ok := ctx.(RestContext)
+	if !ok {
+		return &emptypb.Empty{}, nil
 	}
-	return &emptypb.Empty{}, nil
+	b, err := api.document.YAMLValue(fmt.Sprintf("Generated with %s(%s) \n %s",
+		constant.Framework, constant.FrameworkVersion, constant.FrameworkGithub))
+	if err != nil {
+		logger.Error("openapi yaml value fail", "err", err)
+		return nil, status.InternalServerError()
+	}
+	jb, err := yaml.YAMLToJSON(b)
+	if err != nil {
+		logger.Error("convert openapi yaml to json fail", "err", err)
+		return nil, status.InternalServerError()
+	}
+	_, _ = htx.Write(jb)
+	return nil, nil
 }
 
 // Page redirects users to the external Swagger UI page defined in the config.
 func (api *OpenAPI) Page(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
-	rtx, ok := ctx.(*Context)
-	if ok {
-		rtx.Redirect(fmt.Sprintf(api.conf.Page, api.listenAddress()), http.StatusMovedPermanently)
-		return nil, nil
+	htx, ok := ctx.(RestContext)
+	if !ok {
+		return &emptypb.Empty{}, nil
 	}
-	return &emptypb.Empty{}, nil
+	htx.Redirect(fmt.Sprintf(api.conf.Page, api.listenAddress()), http.StatusMovedPermanently)
+	return nil, nil
 }
 
 // ScalarPage renders an embedded, high-performance Scalar API Reference page.
 func (api *OpenAPI) ScalarPage(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
-	rtx, ok := ctx.(*Context)
-	if ok {
-		content, err := scalargo.NewV2(api.scalarOptions()...)
-		if err != nil {
-			logger.Error("new scalargo fail", "err", err)
-			return &emptypb.Empty{}, status.InternalServerError()
-		}
-		rtx.Response.Header.Set(fasthttp.HeaderContentType, "text/html")
-		rtx.WriteString(content)
-		return nil, nil
+	htx, ok := ctx.(RestContext)
+	if !ok {
+		return &emptypb.Empty{}, nil
 	}
-	return &emptypb.Empty{}, nil
+	content, err := scalargo.NewV2(api.scalarOptions()...)
+	if err != nil {
+		logger.Error("new scalargo fail", "err", err)
+		return &emptypb.Empty{}, status.InternalServerError()
+	}
+	htx.SetContentType("text/html")
+	_, _ = htx.Write([]byte(content))
+	return nil, nil
 }
 
 // scalarOptions builds the UI configuration for the Scalar reference tool.

@@ -13,7 +13,8 @@ export GEN_PROTO_GO_VALIDATE_OPT ?= validate_enum=true
 -include $(BIFROST_DIR)/Makefile_build
 
 services ?= svc-example/apis/api \
-			svc-gw/apis/api
+			svc-gw/apis/api \
+			svc-gw/apis/openapi
 
 .PHONY: run_dev
 run_dev: ## 本地运行服务

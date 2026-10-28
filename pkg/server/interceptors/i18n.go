@@ -3,19 +3,19 @@ package interceptors
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 
-	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/pkg/protobuf/statuspb"
+	"github.com/asjard/asjard/pkg/server/metadata"
 	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/pkg/server/rest/xhttp"
 	"github.com/asjard/asjard/utils"
 	"github.com/fsnotify/fsnotify"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
@@ -36,7 +36,6 @@ const (
 
 // I18n handles the translation of error responses.
 type I18n struct {
-	enabled bool
 	watcher *fsnotify.Watcher
 	// locals stores mapping: [language_code][error_code] -> TranslationConfig
 	locals map[string]map[uint32]*I18nConfig
@@ -51,16 +50,12 @@ type I18nConfig struct {
 
 func init() {
 	// Register i18n support specifically for the REST protocol.
-	server.AddInterceptor(I18nInterceptorName, NewI18nInterceptor, rest.Protocol)
+	server.AddInterceptor(I18nInterceptorName, NewI18nInterceptor, rest.Protocol, xhttp.Protocol)
 }
 
 // NewI18nInterceptor initializes the translation engine and starts the file watcher.
 func NewI18nInterceptor() (server.ServerInterceptor, error) {
 	logger.Debug("new i18 interceptor")
-	// Only initialize if enabled in the configuration.
-	if !config.GetBool("asjard.servers.rest.i18n.enabled", false) {
-		return &I18n{}, nil
-	}
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -68,14 +63,16 @@ func NewI18nInterceptor() (server.ServerInterceptor, error) {
 	}
 
 	i18n := &I18n{
-		enabled: true,
 		watcher: watcher,
 		locals:  make(map[string]map[uint32]*I18nConfig),
 	}
 
 	confDir := getI18nDir()
 	if !utils.IsPathExists(confDir) {
-		return nil, fmt.Errorf("path %s not exist", confDir)
+		logger.Debug("i18n dir not found, skip loading translations", "dir", confDir)
+		_ = watcher.Close()
+		i18n.watcher = nil
+		return i18n, nil
 	}
 
 	// Start background watcher for hot-reloading JSON files.
@@ -102,42 +99,36 @@ func (*I18n) Name() string {
 func (m *I18n) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
 		logger.L(ctx).Debug("start server interceptor", "interceptor", m.Name(), "full_method", info.FullMethod, "protocol", info.Protocol)
-		// 1. Execute the handler logic first.
+		// Execute the handler logic first.
 		resp, err = handler(ctx, req)
 		if err == nil {
 			return resp, err // No error, no translation needed.
 		}
 
-		if !m.enabled {
+		rtx, ok := ctx.(rest.RestContext)
+		if !ok || !rtx.IsI18nEnabled() {
 			return resp, err
 		}
 
-		// 2. Identify the protocol. Currently only REST supports this i18n flow.
-		rtx, ok := ctx.(*rest.Context)
-		if !ok {
+		lang := metadata.Get(ctx, HeaderLang).String()
+		if len(lang) == 0 {
 			return resp, err
 		}
 
-		// 3. Extract the 'lang' header from the request.
-		lang := string(rtx.Request.Header.Peek(HeaderLang))
-		if lang == "" {
-			return resp, err
-		}
-
-		// 4. Convert the error to an Asjard Status to get the internal Error Code.
+		// Convert the error to an Asjard Status to get the internal Error Code.
 		stts := status.FromError(err)
 		conf, ok := m.getConf(lang, stts.ErrCode)
 		if !ok {
 			return resp, err
 		}
 
-		// 5. Wrap the localized prompt and doc into a protobuf Any detail.
+		// Wrap the localized prompt and doc into a protobuf Any detail.
 		detail, _ := anypb.New(&statuspb.Status{
 			Doc:    conf.Doc,
 			Prompt: conf.Prompt,
 		})
 
-		// 6. Return a new gRPC-compatible status with the localized details attached.
+		// Return a new gRPC-compatible status with the localized details attached.
 		return resp, grpcstatus.ErrorProto(&spb.Status{
 			Code:    int32(stts.Code),
 			Message: stts.Message,
@@ -207,6 +198,9 @@ func (m *I18n) remove(path string) {
 
 // watch listens for file system events (Create, Write, Delete) to enable hot-reloading.
 func (m *I18n) watch() {
+	if m.watcher == nil {
+		return
+	}
 	for {
 		select {
 		case event, ok := <-m.watcher.Events:

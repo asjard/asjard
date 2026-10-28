@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"time"
 
@@ -162,32 +163,67 @@ func (m *ClientManager) Start() error {
 // Stop gracefully closes all active etcd clients.
 func (m *ClientManager) Stop() {
 	m.clients.Range(func(key, value any) bool {
-		conn, ok := value.(*ClientConn)
-		if ok {
-			if err := conn.client.Close(); err != nil {
-				logger.Error("close etcd client fail", "client", conn.name, "err", err)
-			}
-			m.clients.Delete(key)
-		}
+		m.closeConn(value)
+		m.clients.Delete(key)
 		return true
 	})
 }
 
 // newClients establishes new physical connections for each configuration provided.
+// Unchanged clients are reused; replaced or removed clients are closed.
 func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
+	m.cm.RLock()
+	prev := m.configs
+	m.cm.RUnlock()
+
 	for name, cfg := range clients {
+		if oldConf, ok := prev[name]; ok && reflect.DeepEqual(oldConf, cfg) {
+			if _, exists := m.clients.Load(name); exists {
+				continue
+			}
+		}
 		logger.Debug("connect to etcd", "name", name, "cfg", cfg)
 		client, err := m.newClient(name, cfg)
 		if err != nil {
 			return fmt.Errorf("connect to etcd '%s' fail: %v", name, err)
 		}
-		m.clients.Store(name, &ClientConn{
+		old, loaded := m.clients.Swap(name, &ClientConn{
 			name:   name,
 			client: client,
 		})
+		if loaded {
+			m.closeConn(old)
+		}
 		logger.Debug("connect to etcd success", "name", name)
 	}
+
+	m.clients.Range(func(key, value any) bool {
+		name, ok := key.(string)
+		if !ok {
+			return true
+		}
+		if _, exist := clients[name]; !exist {
+			logger.Debug("delete etcd client", "client", key)
+			m.closeConn(value)
+			m.clients.Delete(key)
+		}
+		return true
+	})
+
+	m.cm.Lock()
+	m.configs = clients
+	m.cm.Unlock()
 	return nil
+}
+
+func (m *ClientManager) closeConn(value any) {
+	conn, ok := value.(*ClientConn)
+	if !ok || conn == nil || conn.client == nil {
+		return
+	}
+	if err := conn.client.Close(); err != nil {
+		logger.Error("close etcd client fail", "client", conn.name, "err", err)
+	}
 }
 
 // newClientConfig converts the framework config into the official etcd client configuration.
@@ -310,9 +346,6 @@ func (m *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 			return clients, err
 		}
 	}
-	m.cm.Lock()
-	m.configs = clients
-	m.cm.Unlock()
 	return clients, nil
 }
 
@@ -323,19 +356,13 @@ func (m *ClientManager) watch(event *config.Event) {
 		logger.Error("load etcd config fail", "err", err)
 		return
 	}
-	// Update or create new clients.
+	if len(clients) == 0 {
+		return
+	}
 	if err := m.newClients(clients); err != nil {
 		logger.Error("new clients fail", "err", err)
 		return
 	}
-	// Remove clients that are no longer present in the updated configuration.
-	m.clients.Range(func(key, value any) bool {
-		if _, ok := clients[key.(string)]; !ok {
-			logger.Debug("delete etcd client", "client", key)
-			m.clients.Delete(key)
-		}
-		return true
-	})
 }
 
 func defaultClientOptions() *ClientOptions {

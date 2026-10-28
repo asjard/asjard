@@ -88,22 +88,16 @@ func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 		fields = append(fields, []any{"protocol", info.Protocol}...)
 		fields = append(fields, []any{"full_method", info.FullMethod}...)
 
-		rtx, ok := ctx.(*rest.Context)
-		if ok {
-			fields = append(fields, []any{"header", rtx.ReadHeaderParams()}...)
-			fields = append(fields, []any{"method", string(rtx.Method())}...)
-			fields = append(fields, []any{"path", string(rtx.Path())}...)
+		if htx, ok := ctx.(rest.RestContext); ok {
+			fields = append(fields, []any{"header", htx.Headers()}...)
+			fields = append(fields, []any{"method", htx.Method()}...)
+			fields = append(fields, []any{"path", htx.Path()}...)
 		}
 
-		//  Record post-execution metrics (latency, success, error details).
 		fields = append(fields, []any{"cost", time.Since(start).String()}...)
 		fields = append(fields, []any{"req", req}...)
 		fields = append(fields, []any{"success", err == nil}...)
 		fields = append(fields, []any{"err", err}...)
-
-		if ok {
-			ctx = rtx.Context()
-		}
 
 		//  Output to log. Errors use Error level; successful requests use Info level.
 		if err != nil {

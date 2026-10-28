@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"time"
 
@@ -77,7 +78,9 @@ type Option func(*ClientOptions)
 var (
 	clientManager  *ClientManager
 	defaultOptions = Options{
-		HeartBeat: utils.JSONDuration{Duration: time.Second},
+		// 1s is too aggressive: any GC pause or scheduler delay misses 2 heartbeats
+		// and the client drops a healthy broker connection.
+		HeartBeat: utils.JSONDuration{Duration: 10 * time.Second},
 	}
 )
 
@@ -158,12 +161,11 @@ func (c *ClientManager) Start() error {
 // Stop gracefully shuts down all managed connections.
 func (c *ClientManager) Stop() {
 	c.clients.Range(func(key, value any) bool {
-		conn, ok := value.(*ClientConn)
-		if ok && !conn.conn.IsClosed() {
+		if conn, ok := value.(*ClientConn); ok {
 			logger.Debug("amqp close", "client", conn.name)
-			close(conn.done) // Stop the keepalive goroutine
-			c.clients.Delete(key)
+			conn.close()
 		}
+		c.clients.Delete(key)
 		return true
 	})
 }
@@ -172,36 +174,74 @@ func (c *ClientManager) Stop() {
 func (c *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	logger.Debug("new clients", "clients", clients)
 	for name, conf := range clients {
-		conn, err := c.newClient(name, conf)
-		if err != nil {
-			logger.Error("connect to amqp fail", "name", name, "conf", conf, "err", err)
-			return fmt.Errorf("connect to amqp '%s' fail: %v", name, err)
+		if err := c.upsertClient(name, conf, true); err != nil {
+			return err
 		}
-
-		clientConn := &ClientConn{
-			name: name,
-			conn: conn,
-			conf: conf,
-			done: make(chan struct{}),
-		}
-
-		// If the client already exists (reloading), update the internal connection.
-		v, ok := c.clients.Load(name)
-		if ok {
-			clientConn = v.(*ClientConn)
-			clientConn.cm.Lock()
-			clientConn.conn.Close() // Close old physical connection
-			clientConn.name = name
-			clientConn.conn = conn
-			clientConn.conf = conf
-			clientConn.cm.Unlock()
-		} else {
-			// Start the health check/reconnection loop for new clients.
-			clientConn.keepalive()
-		}
-		c.clients.Store(name, clientConn)
-		logger.Debug("connect to amqp success", "name", name, "conf", conf)
 	}
+
+	c.clients.Range(func(key, value any) bool {
+		name, ok := key.(string)
+		if !ok {
+			return true
+		}
+		if _, exist := clients[name]; !exist {
+			if conn, ok := value.(*ClientConn); ok {
+				conn.close()
+			}
+			c.clients.Delete(key)
+		}
+		return true
+	})
+
+	c.cm.Lock()
+	c.configs = clients
+	c.cm.Unlock()
+	return nil
+}
+
+func (c *ClientManager) upsertClient(name string, conf *ClientConnConfig, skipIfSame bool) error {
+	if skipIfSame {
+		c.cm.RLock()
+		oldConf := c.configs[name]
+		c.cm.RUnlock()
+		if reflect.DeepEqual(oldConf, conf) {
+			if v, exists := c.clients.Load(name); exists {
+				if conn, ok := v.(*ClientConn); ok && conn.conn != nil && !conn.conn.IsClosed() {
+					return nil
+				}
+			}
+		}
+	}
+
+	conn, err := c.newClient(name, conf)
+	if err != nil {
+		logger.Error("connect to amqp fail", "name", name, "conf", conf, "err", err)
+		return fmt.Errorf("connect to amqp '%s' fail: %v", name, err)
+	}
+
+	clientConn := &ClientConn{
+		name: name,
+		conn: conn,
+		conf: conf,
+		done: make(chan struct{}),
+	}
+
+	v, ok := c.clients.Load(name)
+	if ok {
+		clientConn = v.(*ClientConn)
+		clientConn.cm.Lock()
+		if clientConn.conn != nil && !clientConn.conn.IsClosed() {
+			clientConn.conn.Close()
+		}
+		clientConn.name = name
+		clientConn.conn = conn
+		clientConn.conf = conf
+		clientConn.cm.Unlock()
+	} else {
+		clientConn.keepalive()
+	}
+	c.clients.Store(name, clientConn)
+	logger.Debug("connect to amqp success", "name", name, "conf", conf)
 	return nil
 }
 
@@ -286,9 +326,6 @@ func (c *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 		}
 	}
 
-	c.cm.Lock()
-	c.configs = clients
-	c.cm.Unlock()
 	return clients, nil
 }
 
@@ -299,25 +336,31 @@ func (c *ClientManager) watch(event *config.Event) {
 		logger.Error("load amqp config fail", "err", err)
 		return
 	}
+	if len(clients) == 0 {
+		return
+	}
 	if err := c.newClients(clients); err != nil {
 		logger.Error("new clients fail", "err", err)
 		return
 	}
-	c.clients.Range(func(key, value any) bool {
-		exist := false
-		for clientName := range clients {
-			if key.(string) == clientName {
-				exist = true
-				break
-			}
+}
+
+func (c *ClientConn) close() {
+	if c == nil {
+		return
+	}
+	c.cm.Lock()
+	defer c.cm.Unlock()
+	if c.done != nil {
+		select {
+		case <-c.done:
+		default:
+			close(c.done)
 		}
-		if !exist {
-			conn := value.(*ClientConn)
-			close(conn.done)
-			c.clients.Delete(key)
-		}
-		return true
-	})
+	}
+	if c.conn != nil && !c.conn.IsClosed() {
+		_ = c.conn.Close()
+	}
 }
 
 // keepalive is a background goroutine that monitors connection health.
@@ -330,21 +373,28 @@ func (c *ClientConn) keepalive() {
 			case <-c.done:
 				return
 			default:
-				if c.conn.IsClosed() {
-					logger.Debug("amqp disconnect, start to reconnect", "name", c.name)
-					if err := clientManager.newClients(map[string]*ClientConnConfig{
-						c.name: c.conf,
-					}); err == nil {
-						logger.Info("reconnect to amqp success", "name", c.name)
-						duration = time.Second // Reset backoff on success
-					} else {
-						// Increase backoff delay on failure, capped at 10s.
-						duration += time.Second
-						if duration >= time.Second*10 {
-							duration = time.Second * 10
-						}
+			}
+			c.cm.RLock()
+			conn := c.conn
+			c.cm.RUnlock()
+			if conn != nil && conn.IsClosed() {
+				select {
+				case <-c.done:
+					return
+				default:
+				}
+				logger.Debug("amqp disconnect, start to reconnect", "name", c.name)
+				if err := clientManager.upsertClient(c.name, c.conf, false); err == nil {
+					logger.Info("reconnect to amqp success", "name", c.name)
+					duration = time.Second
+				} else {
+					duration += time.Second
+					if duration >= time.Second*10 {
+						duration = time.Second * 10
 					}
 				}
+			} else {
+				duration = time.Second
 			}
 			time.Sleep(duration)
 		}

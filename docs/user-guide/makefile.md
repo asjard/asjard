@@ -63,6 +63,10 @@ Envs:
   GEN_PROTO_GO_REST_OPT      生成*_rest.pb.go所需要的参数                   默认:                        当前:
   GEN_PROTO_GO_REST_GW       是否根据protobuf文件生成*_rest_gw.pb.go文件    默认: true                   当前: true
   GEN_PROTO_GO_REST_GW_OPT   生成*_rest_gw.pb.go所需要的参数                默认:                        当前:
+  GEN_PROTO_GO_MCP           是否根据protobuf文件生成*_mcp.pb.go文件        默认: false                  当前: false
+  GEN_PROTO_GO_MCP_OPT       生成*_mcp.pb.go所需要的参数                    默认:                        当前:
+  GEN_PROTO_GO_MCP2GRPC      是否根据protobuf文件生成*_mcp_gw.pb.go文件     默认: false                  当前: false
+  GEN_PROTO_GO_MCP2GRPC_OPT  生成*_mcp_gw.pb.go所需要的参数                 默认:                        当前:
   GEN_PROTO_TS               是否根据protobuf文件生成*.d.tsx文件            默认: false                  当前: false
   GEN_PROTO_TS_OPT           生成*.d.tsx所需要的参数                        默认:                        当前:
   GEN_PROTO_TS_ENUM          是否根据protobuf文件生成*.enum.tsx文件         默认: false                  当前: false

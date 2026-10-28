@@ -7,6 +7,7 @@
 - [x] [rest](./server-rest.md)
 - [x] [grpc](./server-grpc.md)
 - [x] [pprof](./server-pprof.md)
+- [x] [mcp](./server-mcp.md)
 
 ## 公共配置
 
@@ -73,6 +74,8 @@ type Server interface {
 type NewServerFunc func(options *ServerOptions) (Server, error)
 ```
 
+HTTP 协议（fasthttp 的 `pkg/server/rest/xfasthttp` 与 net/http 的 `pkg/server/rest/xhttp`）的请求上下文还需实现 `rest.RestContext`。拦截器、链路追踪、metadata 等通用逻辑通过该接口断言，不依赖具体 HTTP 引擎。启用 fasthttp REST 服务时需导入 `pkg/server/rest/xfasthttp`。
+
 - 然后通过`AddServer`添加服务
 
 ```go
@@ -81,7 +84,7 @@ func init() {
 }
 ```
 
-- 具体实现可参考`pkg/server/rest`,`pkg/server/grpc`,`pkg/server/pprof`
+- 具体实现可参考`pkg/server/rest/xfasthttp`,`pkg/server/rest/xhttp`,`pkg/server/grpc`,`pkg/server/pprof`
 
 ### 使用
 
@@ -151,6 +154,7 @@ import (
 
 	"github.com/asjard/asjard/pkg/server/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
+	_ "github.com/asjard/asjard/pkg/server/rest/xfasthttp"
 )
 
 type SampleAPI struct {

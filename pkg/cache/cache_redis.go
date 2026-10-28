@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"sync/atomic"
 	"time"
 
 	"github.com/asjard/asjard/core/config"
@@ -54,11 +53,9 @@ type CacheRedis struct {
 	tp     CacheRedisType
 	groups []string // List of groups this cache belongs to for mass invalidation.
 
-	modelName string
-	// client uses atomic.Pointer to support thread-safe hot-swapping
-	// of Redis connections during runtime configuration updates.
-	client  atomic.Pointer[redis.Client]
-	options *CacheRedisOptions
+	modelName  string
+	clientName string
+	options    *CacheRedisOptions
 }
 
 // CacheRedisOptions defines extra behaviors like L1 local caching.
@@ -134,77 +131,60 @@ func NewRedisCache(model stores.Modeler, options ...CacheRedisOption) (*CacheRed
 // WithGroup adds the current cache to a logical group.
 // When the group is deleted, all member keys are also purged.
 func (c *CacheRedis) WithGroup(group string) *CacheRedis {
-	cr := &CacheRedis{
-		Cache:   c.Cache,
-		key:     c.key,
-		keyFunc: c.keyFunc,
-		field:   c.field,
-		tp:      c.tp,
-		groups:  append(c.groups, c.Group(group)),
-		options: c.options,
-	}
-	cr.client.Store(c.client.Load())
+	cr := c.clone()
+	cr.groups = append(cr.groups, c.Group(group))
 	return cr
 }
 
 // WithKey clones the cache handler with a specific key.
 func (c *CacheRedis) WithKey(key string) *CacheRedis {
-	cr := &CacheRedis{
-		Cache:   c.Cache,
-		key:     c.NewKey(key),
-		keyFunc: c.keyFunc,
-		field:   c.field,
-		tp:      c.tp,
-		groups:  c.groups,
-		options: c.options,
-	}
-	cr.client.Store(c.client.Load())
+	cr := c.clone()
+	cr.key = c.NewKey(key)
 	return cr
 }
 
 // WithKeyFunc clones the cache handler with a dynamic key generator.
 func (c *CacheRedis) WithKeyFunc(keyFunc func() string) *CacheRedis {
-	cr := &CacheRedis{
-		Cache:   c.Cache,
-		key:     c.key,
-		keyFunc: keyFunc,
-		field:   c.field,
-		tp:      c.tp,
-		groups:  c.groups,
-		options: c.options,
-	}
-	cr.client.Store(c.client.Load())
+	cr := c.clone()
+	cr.keyFunc = keyFunc
 	return cr
 }
 
 // WithField clones the cache handler for a specific Hash field or Set member.
 func (c *CacheRedis) WithField(field string) *CacheRedis {
-	cr := &CacheRedis{
-		Cache:   c.Cache,
-		key:     c.key,
-		keyFunc: c.keyFunc,
-		field:   field,
-		tp:      c.tp,
-		groups:  c.groups,
-		options: c.options,
-	}
-	cr.client.Store(c.client.Load())
+	cr := c.clone()
+	cr.field = field
 	return cr
 }
 
 // WithType clones the cache handler with a different storage strategy.
 func (c *CacheRedis) WithType(tp CacheRedisType) *CacheRedis {
-	cr := &CacheRedis{
-		Cache:   c.Cache,
-		key:     c.key,
-		keyFunc: c.keyFunc,
-		field:   c.field,
-		tp:      tp,
-		groups:  c.groups,
-		options: c.options,
-	}
-	cr.client.Store(c.client.Load())
+	cr := c.clone()
+	cr.tp = tp
 	return cr
+}
+
+func (c *CacheRedis) clone() *CacheRedis {
+	cr := &CacheRedis{
+		Cache:      c.Cache,
+		key:        c.key,
+		keyFunc:    c.keyFunc,
+		field:      c.field,
+		tp:         c.tp,
+		groups:     c.groups,
+		modelName:  c.modelName,
+		clientName: c.clientName,
+		options:    c.options,
+	}
+	return cr
+}
+
+func (c *CacheRedis) redisClient() (*redis.Client, error) {
+	client, err := xredis.Client(xredis.WithClientName(c.clientName))
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }
 
 // Get attempts to find data in L1 local cache first, then fails over to Redis.
@@ -212,7 +192,10 @@ func (c *CacheRedis) Get(ctx context.Context, key string, out any) (bool, error)
 	if key == "" {
 		return true, nil
 	}
-	client := c.client.Load()
+	client, err := c.redisClient()
+	if err != nil {
+		return true, err
+	}
 	switch c.tp {
 	case CacheRedisTypeKeyValue:
 		// Attempt L1 read.
@@ -249,7 +232,10 @@ func (c *CacheRedis) Get(ctx context.Context, key string, out any) (bool, error)
 // Del invalidates keys in Redis and Local cache, then cleans up group indexes.
 func (c *CacheRedis) Del(ctx context.Context, keys ...string) error {
 	if len(keys) != 0 {
-		client := c.client.Load()
+		client, err := c.redisClient()
+		if err != nil {
+			return err
+		}
 		switch c.tp {
 		case CacheRedisTypeKeyValue:
 			if err := c.delKeys(ctx, client, keys...); err != nil {
@@ -284,7 +270,10 @@ func (c *CacheRedis) Set(ctx context.Context, key string, in any, expiresIn time
 	if key == "" {
 		return nil
 	}
-	client := c.client.Load()
+	client, err := c.redisClient()
+	if err != nil {
+		return err
+	}
 	switch c.tp {
 	case CacheRedisTypeKeyValue:
 		if c.options.localCache != nil && c.options.localCache.Enabled() {
@@ -326,7 +315,10 @@ func (c *CacheRedis) Refresh(ctx context.Context, key string, in any, expiresIn 
 	if key == "" {
 		return nil
 	}
-	client := c.client.Load()
+	client, err := c.redisClient()
+	if err != nil {
+		return err
+	}
 	switch c.tp {
 	case CacheRedisTypeKeyValue:
 		if c.options.localCache != nil && c.options.localCache.Enabled() {
@@ -361,28 +353,25 @@ func (c *CacheRedis) Group(group string) string {
 		runtime.WithDelimiter(":"))
 }
 
-// Close gracefully shuts down the Redis connection.
-func (c *CacheRedis) Close() {
-	if client := c.client.Load(); client != nil {
-		client.Close()
-	}
-}
-
 // Enabed checks if caching is currently active and redis was connect.
 func (c *CacheRedis) Enabled() bool {
-	return c.Cache.Enabled() && c.client.Load() != nil
+	return c.Cache.Enabled()
 }
 
 // addGroup links a specific key to one or more groups for bulk management.
 func (c *CacheRedis) addGroup(ctx context.Context, key string) error {
-	client := c.client.Load()
-	if len(c.groups) != 0 {
-		for _, group := range c.groups {
-			logger.L(ctx).Debug("add group", "group", group, "key", key)
-			// Store key-type mapping in the group index (a Redis Hash).
-			if err := client.HSet(ctx, group, key, c.tp.String()).Err(); err != nil {
-				return err
-			}
+	if len(c.groups) == 0 {
+		return nil
+	}
+	client, err := c.redisClient()
+	if err != nil {
+		return err
+	}
+	for _, group := range c.groups {
+		logger.L(ctx).Debug("add group", "group", group, "key", key)
+		// Store key-type mapping in the group index (a Redis Hash).
+		if err := client.HSet(ctx, group, key, c.tp.String()).Err(); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -390,7 +379,13 @@ func (c *CacheRedis) addGroup(ctx context.Context, key string) error {
 
 // delGroup finds all keys associated with a group and purges them from all layers.
 func (c *CacheRedis) delGroup(ctx context.Context) error {
-	client := c.client.Load()
+	if len(c.groups) == 0 {
+		return nil
+	}
+	client, err := c.redisClient()
+	if err != nil {
+		return err
+	}
 	if len(c.groups) != 0 {
 		for _, group := range c.groups {
 			logger.L(ctx).Debug("delete group", "group", group)
@@ -465,14 +460,12 @@ func (c *CacheRedis) load() error {
 	}
 	logger.Debug("load redis cache", "conf", conf)
 	c.Cache.WithConf(&conf.CacheConfig)
+	c.clientName = conf.Client
 	if conf.Enabled {
-		client, err := xredis.NewClient(xredis.WithClientName(conf.Client))
-		if err != nil {
+		if _, err := c.redisClient(); err != nil {
 			logger.Error("redis cache get redis client fail", "err", err)
 			return err
 		}
-		// Safely update the connection pointer.
-		c.client.Store(client)
 	}
 	return nil
 }

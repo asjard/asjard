@@ -8,6 +8,7 @@ import (
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/pkg/server/rest/xhttp"
 	"github.com/asjard/asjard/utils"
 	"google.golang.org/protobuf/proto"
 )
@@ -20,13 +21,19 @@ const (
 func init() {
 	// Register the interceptor specifically for the REST protocol.
 	// This ensures that gRPC calls (which handle serialization natively) bypass this logic.
-	server.AddInterceptor(RestReadEntityInterceptorName, NewReadEntityInterceptor, rest.Protocol)
+	server.AddInterceptor(RestReadEntityInterceptorName, NewReadEntityInterceptor, rest.Protocol, xhttp.Protocol)
 }
 
 // ReadEntity manages the logic for unmarshaling request data into Protobuf messages.
 type ReadEntity struct {
 	cm   sync.RWMutex
 	conf ReadEntityConfig
+}
+
+// ReadEntityContext binds HTTP request data into a protobuf message.
+// It is HTTP-specific serialization, kept separate from rest.RestContext.
+type ReadEntityContext interface {
+	ReadEntity(msg proto.Message) error
 }
 
 // ReadEntityConfig defines which methods should bypass automatic parameter parsing.
@@ -69,17 +76,19 @@ func NewReadEntityInterceptor() (server.ServerInterceptor, error) {
 func (r *ReadEntity) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
 		logger.L(ctx).Debug("start server interceptor", "interceptor", r.Name(), "full_method", info.FullMethod, "protocol", info.Protocol)
-		// 1. Verify that we are within a REST context and the method isn't skipped.
-		rtx, ok := ctx.(*rest.Context)
+		//  Verify that we are within a REST/HTTP context and the method isn't skipped.
+		rtx, ok := ctx.(ReadEntityContext)
 		if ok && !r.isSkipped(info.FullMethod) {
-			// 2. Automagically parse JSON/Form/Query data into the 'req' proto.Message.
+			// Automagically parse JSON/Form/Query data into the 'req' proto.Message.
 			// This populates the request object that the business handler expects.
-			if err := rtx.ReadEntity(req.(proto.Message)); err != nil {
-				return nil, err
+			if msg, ok := req.(proto.Message); ok {
+				if err := rtx.ReadEntity(msg); err != nil {
+					return nil, err
+				}
 			}
 		}
 
-		// 3. Pass the populated request object to the next handler in the chain.
+		// Pass the populated request object to the next handler in the chain.
 		return handler(ctx, req)
 	}
 }

@@ -9,7 +9,7 @@ This repository is a Go module (`github.com/asjard/asjard`) targeting Go 1.25.6.
 - `go test ./...` runs the full Go test suite during local iteration.
 - `make test` runs the repository's CI-style checks: cleanup, cyclomatic-complexity validation, `go vet`, race-enabled tests with coverage, and benchmarks. It creates `cover.out`.
 - `go tool cover -html=cover.out` opens the generated coverage report.
-- `make build_gen_go_rest` builds one generator into `$GOPATH/bin`; equivalent `build_gen_*` targets cover the other generators.
+- `make build_gen_go_rest` builds one generator into `$GOPATH/bin`; equivalent `build_gen_*` targets cover the other generators, including `build_gen_go_mcp` and `build_gen_go_mcp2grpc`.
 - `make gen_proto` regenerates protobuf outputs through the vendored build script.
 - `make github_workflows_dependices` starts the Docker services used by integration tests. Docker Compose is required.
 

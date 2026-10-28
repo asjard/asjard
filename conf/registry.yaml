@@ -27,6 +27,7 @@ asjard:
       ## etcd client name
       # client: default
       # timeout: 5s
+      # ttl: 30s
 
     ## consul service disconver configuration.
     consul:

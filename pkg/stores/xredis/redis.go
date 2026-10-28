@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"time"
 
@@ -165,34 +166,68 @@ func (m *ClientManager) Start() error {
 // Stop gracefully closes all active Redis connections.
 func (m *ClientManager) Stop() {
 	m.clients.Range(func(key, value any) bool {
-		conn, ok := value.(*ClientConn)
-		if ok {
-			logger.Debug("redis close", "client", conn.name)
-			if err := conn.client.Close(); err != nil {
-				logger.Error("close redis client fail", "name", conn.name, "err", err)
-			}
-			m.clients.Delete(key)
-		}
+		m.closeConn(value)
+		m.clients.Delete(key)
 		return true
 	})
 }
 
 // newClients populates the client registry from a map of configurations.
+// Unchanged clients are reused; replaced or removed clients are closed.
 func (m *ClientManager) newClients(clients map[string]*ClientConnConfig) error {
 	logger.Debug("new clients", "clients", clients)
+	m.cm.RLock()
+	prev := m.configs
+	m.cm.RUnlock()
+
 	for name, conf := range clients {
+		if oldConf, ok := prev[name]; ok && reflect.DeepEqual(oldConf, conf) {
+			if _, exists := m.clients.Load(name); exists {
+				continue
+			}
+		}
 		client, err := m.newClient(name, conf)
 		if err != nil {
 			logger.Error("connect to redis fail", "name", name, "conf", conf, "err", err)
 			return fmt.Errorf("connect to redis '%s' fail: %v", name, err)
 		}
-		m.clients.Store(name, &ClientConn{
+		old, loaded := m.clients.Swap(name, &ClientConn{
 			name:   name,
 			client: client,
 		})
+		if loaded {
+			m.closeConn(old)
+		}
 		logger.Debug("connect to redis success", "name", name, "conf", conf)
 	}
+
+	m.clients.Range(func(key, value any) bool {
+		name, ok := key.(string)
+		if !ok {
+			return true
+		}
+		if _, exist := clients[name]; !exist {
+			m.closeConn(value)
+			m.clients.Delete(key)
+		}
+		return true
+	})
+
+	m.cm.Lock()
+	m.configs = clients
+	m.cm.Unlock()
 	return nil
+}
+
+func (m *ClientManager) closeConn(value any) {
+	conn, ok := value.(*ClientConn)
+	if !ok || conn == nil || conn.client == nil {
+		return
+	}
+	logger.Debug("redis close", "client", conn.name)
+	if err := conn.client.Close(); err != nil {
+		logger.Error("close redis client fail", "name", conn.name, "err", err)
+	}
 }
 
 // newClientOptions transforms framework config into native go-redis options.
@@ -327,9 +362,6 @@ func (m *ClientManager) loadConfig() (map[string]*ClientConnConfig, error) {
 			return clients, err
 		}
 	}
-	m.cm.Lock()
-	m.configs = clients
-	m.cm.Unlock()
 	return clients, nil
 }
 
@@ -340,24 +372,13 @@ func (m *ClientManager) watch(event *config.Event) {
 		logger.Error("load redis config fail", "err", err)
 		return
 	}
+	if len(clients) == 0 {
+		return
+	}
 	if err := m.newClients(clients); err != nil {
 		logger.Error("new clients fail", "err", err)
 		return
 	}
-	// Clean up connections that are no longer present in the updated configuration.
-	m.clients.Range(func(key, value any) bool {
-		exist := false
-		for clientName := range clients {
-			if key.(string) == clientName {
-				exist = true
-				break
-			}
-		}
-		if !exist {
-			m.clients.Delete(key)
-		}
-		return true
-	})
 }
 
 func defaultClientOptions() *ClientOptions {

@@ -1,13 +1,30 @@
 package rest
 
 import (
+	"context"
+
 	"github.com/asjard/asjard/core/server"
 )
 
-// methodHandler defines the standard signature for a REST request handler.
+const (
+	// Protocol is the identifier for REST. The fasthttp engine lives in xfasthttp.
+	Protocol = "rest"
+
+	MIME_XML   = "application/xml"
+	MIME_JSON  = "application/json"
+	MIME_ZIP   = "application/zip"
+	MIME_OCTET = "application/octet-stream"
+)
+
+// Handler defines the interface for services that provide REST descriptors.
+type Handler interface {
+	RestServiceDesc() *ServiceDesc
+}
+
+// MethodHandler defines the standard signature for a REST request handler.
 // It wraps the business logic with an Asjard Context and supports Unary Interceptors
 // for cross-cutting concerns like logging, tracing, or authentication.
-type methodHandler func(ctx *Context, srv any, interceptor server.UnaryServerInterceptor) (any, error)
+type MethodHandler func(ctx context.Context, srv any, interceptor server.UnaryServerInterceptor) (any, error)
 
 // ServiceDesc represents an RPC service's specification in the REST world.
 // It contains the metadata necessary to register a full service (e.g., "UserService").
@@ -17,7 +34,6 @@ type ServiceDesc struct {
 	Desc        string       // Brief description of the service's purpose.
 	HandlerType any          // A pointer to the interface type, used for reflection validation.
 	ErrPage     string       // Optional custom error page URL for this specific service.
-	Writer      Writer       // Custom response writer (e.g., for specialized XML or binary outputs).
 	OpenAPI     []byte       // Marshaled OpenAPI v3 specification data for this service.
 	Methods     []MethodDesc // The list of individual endpoints (methods) within this service.
 }
@@ -32,7 +48,7 @@ type MethodDesc struct {
 	// Path is the URL pattern for the endpoint (e.g., "/api/v1/user/:id").
 	Path string
 	// Handler is the actual function that executes the request logic.
-	Handler methodHandler
+	Handler MethodHandler
 	// Name is a human-friendly name for this specific endpoint.
 	Name string
 	// Desc provides a detailed description of what this endpoint does.

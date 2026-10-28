@@ -10,8 +10,10 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/asjard/asjard/core/client"
+	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
@@ -32,6 +34,9 @@ type Client struct {
 	balanceName string
 	// Global interceptor for all connections created by this client.
 	interceptor client.UnaryClientInterceptor
+
+	conns  sync.Map
+	dialMu sync.Map
 }
 
 // ClientConn wraps a standard grpc.ClientConn to satisfy the framework's ClientConnInterface.
@@ -79,9 +84,43 @@ func (c ClientConn) Conn() grpc.ClientConnInterface {
 	return c.ClientConn
 }
 
-// NewConn establishes a new gRPC client connection to a target.
+// NewConn returns a shared gRPC client connection for the target.
 // target format: asjard://grpc/{ServerName}
-func (c Client) NewConn(target string, opts ...client.ConnOption) (client.ClientConnInterface, error) {
+func (c *Client) NewConn(target string, opts ...client.ConnOption) (client.ClientConnInterface, error) {
+	if conn, ok := c.conns.Load(target); ok {
+		return conn.(*ClientConn), nil
+	}
+	muI, _ := c.dialMu.LoadOrStore(target, &sync.Mutex{})
+	mu := muI.(*sync.Mutex)
+	mu.Lock()
+	defer mu.Unlock()
+	if conn, ok := c.conns.Load(target); ok {
+		return conn.(*ClientConn), nil
+	}
+
+	conn, err := c.dial(target, opts...)
+	if err != nil {
+		return nil, err
+	}
+	c.conns.Store(target, conn)
+	return conn, nil
+}
+
+// Close releases all cached gRPC connections.
+func (c *Client) Close() {
+	c.conns.Range(func(key, value any) bool {
+		if conn, ok := value.(*ClientConn); ok && conn.ClientConn != nil {
+			if err := conn.ClientConn.Close(); err != nil {
+				logger.Error("close grpc client fail", "target", key, "err", err)
+			}
+		}
+		c.conns.Delete(key)
+		c.dialMu.Delete(key)
+		return true
+	})
+}
+
+func (c *Client) dial(target string, opts ...client.ConnOption) (*ClientConn, error) {
 	u, err := url.Parse(target)
 	if err != nil {
 		return nil, err
