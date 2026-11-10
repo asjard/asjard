@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Sample_SayHello_FullMethodName = "/api.v1.example.docs.Sample/SayHello"
+	Sample_SayHello_FullMethodName = "/api.v1.docs.example.Sample/SayHello"
 )
 
 // SampleClient is the client API for Sample service.
@@ -100,7 +100,7 @@ func _Sample_SayHello_Handler(srv interface{}, ctx context.Context, dec func(int
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Sample_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "api.v1.example.docs.Sample",
+	ServiceName: "api.v1.docs.example.Sample",
 	HandlerType: (*SampleServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

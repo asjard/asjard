@@ -7,8 +7,34 @@
 package sample
 
 import (
+	context "context"
+	json "encoding/json"
+	server "github.com/asjard/asjard/core/server"
 	mcp "github.com/asjard/asjard/pkg/server/mcp"
 )
+
+// SayHello returns a greeting message based on the provided name.
+// It supports multiple HTTP GET entrypoints for compatibility and routing flexibility.
+func _Sample_SayHello_McpHandler(ctx context.Context, req *mcp.CallToolRequest, srv any, interceptor server.UnaryServerInterceptor) (*mcp.CallToolResult, error) {
+	in := new(HelloRequest)
+	if err := mcp.UnmarshalToolArguments(req, in); err != nil {
+		return mcp.NewProtoToolResult(nil, err)
+	}
+	if interceptor == nil {
+		out, err := srv.(SampleServer).SayHello(ctx, in)
+		return mcp.NewProtoToolResult(out, err)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sample_SayHello_FullMethodName,
+		Protocol:   mcp.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(SampleServer).SayHello(ctx, in)
+	}
+	resp, err := interceptor(ctx, in, info, handler)
+	return mcp.NewProtoToolResultFromAny(resp, err)
+}
 
 // SampleMcpServiceDesc is the mcp.ServiceDesc for Sample service.
 // It's only intended for direct use with mcp.AddHandler,
@@ -16,8 +42,17 @@ import (
 // Sample service provides basic greeting operations.
 var SampleMcpServiceDesc = mcp.ServiceDesc{
 	Name:        "Sample service provides basic greeting operations.",
-	ServiceName: "api.v1.example.docs.Sample",
+	ServiceName: "api.v1.docs.example.Sample",
 	Desc:        "Sample service provides basic greeting operations..",
 	HandlerType: (*SampleServer)(nil),
-	Tools:       []mcp.ToolDesc{},
+	Tools: []mcp.ToolDesc{
+		{
+			Name:         Sample_SayHello_FullMethodName,
+			Title:        "SayHello returns a greeting message based on the provided name.",
+			Description:  "It supports multiple HTTP GET entrypoints for compatibility and routing flexibility.",
+			InputSchema:  json.RawMessage("{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\",\"description\":\"The name of the person to greet. Validation: Must be provided (required) and no longer than 20 characters. [required,max=20]\"}},\"required\":[\"name\"]}"),
+			OutputSchema: json.RawMessage("{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\",\"description\":\"The formatted greeting string (e.g., \\\"Hello, name!\\\").\"}}}"),
+			Handler:      _Sample_SayHello_McpHandler,
+		},
+	},
 }

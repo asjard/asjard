@@ -123,7 +123,7 @@ func (s *RestServer) Start(startErr chan error) error {
 	s.server.Handler = s.applyMiddleware(router, s.middlewares...)
 
 	if s.conf.Addresses.Listen == "" {
-		return errors.New("config servces.rest.addresses.listen not found")
+		return errors.New("config addresses.listen not found")
 	}
 
 	go func() {
@@ -248,7 +248,7 @@ type router struct {
 }
 
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	h, pattern := r.mux.Handler(req)
+	_, pattern := r.mux.Handler(req)
 	if pattern == "" {
 		r.notFound.ServeHTTP(w, req)
 		return
@@ -257,7 +257,9 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		r.methodNotAllowed.ServeHTTP(w, req)
 		return
 	}
-	h.ServeHTTP(w, req)
+	// ServeMux.Handler does not populate named path wildcards.
+	// ServeHTTP fills Request.Pattern and PathValue for {param} matches.
+	r.mux.ServeHTTP(w, req)
 }
 func (r *router) isMethodNotAllowed(pattern, method string) bool {
 	routeMethod, _, found := strings.Cut(pattern, " ")

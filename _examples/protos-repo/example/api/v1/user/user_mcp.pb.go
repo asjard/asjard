@@ -7,8 +7,222 @@
 package user
 
 import (
+	context "context"
+	json "encoding/json"
+	server "github.com/asjard/asjard/core/server"
 	mcp "github.com/asjard/asjard/pkg/server/mcp"
+	common "protos-repo/common/common"
 )
+
+// Create persists a new user record.
+// In Asjard, this method typically uses 'SetData' to pre-allocate IDs
+// and initialize the cache state to prevent early cache-miss storms.
+func _User_Create_McpHandler(ctx context.Context, req *mcp.CallToolRequest, srv any, interceptor server.UnaryServerInterceptor) (*mcp.CallToolResult, error) {
+	in := new(UserReq)
+	if err := mcp.UnmarshalToolArguments(req, in); err != nil {
+		return mcp.NewProtoToolResult(nil, err)
+	}
+	if interceptor == nil {
+		out, err := srv.(UserServer).Create(ctx, in)
+		return mcp.NewProtoToolResult(out, err)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_Create_FullMethodName,
+		Protocol:   mcp.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(UserServer).Create(ctx, in)
+	}
+	resp, err := interceptor(ctx, in, info, handler)
+	return mcp.NewProtoToolResultFromAny(resp, err)
+}
+
+// Get retrieves a single user by their primary identifier (username/key).
+// Workflow: LocalCache -> Redis -> Database.
+// Failure to find a record results in a gRPC NOT_FOUND (HTTP 404).
+func _User_Get_McpHandler(ctx context.Context, req *mcp.CallToolRequest, srv any, interceptor server.UnaryServerInterceptor) (*mcp.CallToolResult, error) {
+	in := new(common.ReqWithName)
+	if err := mcp.UnmarshalToolArguments(req, in); err != nil {
+		return mcp.NewProtoToolResult(nil, err)
+	}
+	if interceptor == nil {
+		out, err := srv.(UserServer).Get(ctx, in)
+		return mcp.NewProtoToolResult(out, err)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_Get_FullMethodName,
+		Protocol:   mcp.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(UserServer).Get(ctx, in)
+	}
+	resp, err := interceptor(ctx, in, info, handler)
+	return mcp.NewProtoToolResultFromAny(resp, err)
+}
+
+// Update modifies an existing user profile.
+// Triggers the 'Delayed Double Delete' strategy via Asjard's Time Wheel
+// to ensure consistency across distributed LocalCache nodes.
+func _User_Update_McpHandler(ctx context.Context, req *mcp.CallToolRequest, srv any, interceptor server.UnaryServerInterceptor) (*mcp.CallToolResult, error) {
+	in := new(UserReq)
+	if err := mcp.UnmarshalToolArguments(req, in); err != nil {
+		return mcp.NewProtoToolResult(nil, err)
+	}
+	if interceptor == nil {
+		out, err := srv.(UserServer).Update(ctx, in)
+		return mcp.NewProtoToolResult(out, err)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_Update_FullMethodName,
+		Protocol:   mcp.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(UserServer).Update(ctx, in)
+	}
+	resp, err := interceptor(ctx, in, info, handler)
+	return mcp.NewProtoToolResultFromAny(resp, err)
+}
+
+// Del removes the user record from the persistent store and
+// synchronously purges associated entries from all cache levels.
+func _User_Del_McpHandler(ctx context.Context, req *mcp.CallToolRequest, srv any, interceptor server.UnaryServerInterceptor) (*mcp.CallToolResult, error) {
+	in := new(common.ReqWithName)
+	if err := mcp.UnmarshalToolArguments(req, in); err != nil {
+		return mcp.NewProtoToolResult(nil, err)
+	}
+	if interceptor == nil {
+		out, err := srv.(UserServer).Del(ctx, in)
+		return mcp.NewProtoToolResult(out, err)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_Del_FullMethodName,
+		Protocol:   mcp.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(UserServer).Del(ctx, in)
+	}
+	resp, err := interceptor(ctx, in, info, handler)
+	return mcp.NewProtoToolResultFromAny(resp, err)
+}
+
+// Search filters users with pagination support.
+// Note: Search results are typically cached at the 'Group' level
+// with shorter TTLs compared to individual 'Get' records.
+func _User_Search_McpHandler(ctx context.Context, req *mcp.CallToolRequest, srv any, interceptor server.UnaryServerInterceptor) (*mcp.CallToolResult, error) {
+	in := new(UserSearchReq)
+	if err := mcp.UnmarshalToolArguments(req, in); err != nil {
+		return mcp.NewProtoToolResult(nil, err)
+	}
+	if interceptor == nil {
+		out, err := srv.(UserServer).Search(ctx, in)
+		return mcp.NewProtoToolResult(out, err)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_Search_FullMethodName,
+		Protocol:   mcp.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(UserServer).Search(ctx, in)
+	}
+	resp, err := interceptor(ctx, in, info, handler)
+	return mcp.NewProtoToolResultFromAny(resp, err)
+}
+
+// User add a credit card
+// Add a credit card and update user's card count
+// This implementation demonstrates how to use xgorm.WithDB(ctx, tx) to maintain
+// transactional integrity across multiple table updates.
+func _User_AddCreditCard_McpHandler(ctx context.Context, req *mcp.CallToolRequest, srv any, interceptor server.UnaryServerInterceptor) (*mcp.CallToolResult, error) {
+	in := new(UserCreditCardReq)
+	if err := mcp.UnmarshalToolArguments(req, in); err != nil {
+		return mcp.NewProtoToolResult(nil, err)
+	}
+	if interceptor == nil {
+		out, err := srv.(UserServer).AddCreditCard(ctx, in)
+		return mcp.NewProtoToolResult(out, err)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_AddCreditCard_FullMethodName,
+		Protocol:   mcp.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(UserServer).AddCreditCard(ctx, in)
+	}
+	resp, err := interceptor(ctx, in, info, handler)
+	return mcp.NewProtoToolResultFromAny(resp, err)
+}
+
+// User remove a credit card
+func _User_RemoveCreditCard_McpHandler(ctx context.Context, req *mcp.CallToolRequest, srv any, interceptor server.UnaryServerInterceptor) (*mcp.CallToolResult, error) {
+	in := new(UserCreditCardReq)
+	if err := mcp.UnmarshalToolArguments(req, in); err != nil {
+		return mcp.NewProtoToolResult(nil, err)
+	}
+	if interceptor == nil {
+		out, err := srv.(UserServer).RemoveCreditCard(ctx, in)
+		return mcp.NewProtoToolResult(out, err)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_RemoveCreditCard_FullMethodName,
+		Protocol:   mcp.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(UserServer).RemoveCreditCard(ctx, in)
+	}
+	resp, err := interceptor(ctx, in, info, handler)
+	return mcp.NewProtoToolResultFromAny(resp, err)
+}
+
+// Get user specify credit card info
+func _User_GetCreditCard_McpHandler(ctx context.Context, req *mcp.CallToolRequest, srv any, interceptor server.UnaryServerInterceptor) (*mcp.CallToolResult, error) {
+	in := new(UserCreditCardReq)
+	if err := mcp.UnmarshalToolArguments(req, in); err != nil {
+		return mcp.NewProtoToolResult(nil, err)
+	}
+	if interceptor == nil {
+		out, err := srv.(UserServer).GetCreditCard(ctx, in)
+		return mcp.NewProtoToolResult(out, err)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_GetCreditCard_FullMethodName,
+		Protocol:   mcp.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(UserServer).GetCreditCard(ctx, in)
+	}
+	resp, err := interceptor(ctx, in, info, handler)
+	return mcp.NewProtoToolResultFromAny(resp, err)
+}
+
+// Get all credit cards under user
+func _User_SearchCreditCard_McpHandler(ctx context.Context, req *mcp.CallToolRequest, srv any, interceptor server.UnaryServerInterceptor) (*mcp.CallToolResult, error) {
+	in := new(common.ReqWithName)
+	if err := mcp.UnmarshalToolArguments(req, in); err != nil {
+		return mcp.NewProtoToolResult(nil, err)
+	}
+	if interceptor == nil {
+		out, err := srv.(UserServer).SearchCreditCard(ctx, in)
+		return mcp.NewProtoToolResult(out, err)
+	}
+	info := &server.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_SearchCreditCard_FullMethodName,
+		Protocol:   mcp.Protocol,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(UserServer).SearchCreditCard(ctx, in)
+	}
+	resp, err := interceptor(ctx, in, info, handler)
+	return mcp.NewProtoToolResultFromAny(resp, err)
+}
 
 // UserMcpServiceDesc is the mcp.ServiceDesc for User service.
 // It's only intended for direct use with mcp.AddHandler,
@@ -22,5 +236,78 @@ var UserMcpServiceDesc = mcp.ServiceDesc{
 	ServiceName: "api.v1.docs.example.User",
 	Desc:        "User example, User service handles lifecycle management and data retrieval for User entities., It integrates with the Asjard Store layer to provide transparent caching, and high-concurrency protection (Singleflight)..",
 	HandlerType: (*UserServer)(nil),
-	Tools:       []mcp.ToolDesc{},
+	Tools: []mcp.ToolDesc{
+		{
+			Name:         User_Create_FullMethodName,
+			Title:        "Create persists a new user record.",
+			Description:  "In Asjard, this method typically uses 'SetData' to pre-allocate IDs\nand initialize the cache state to prevent early cache-miss storms.",
+			InputSchema:  json.RawMessage("{\"type\":\"object\",\"properties\":{\"username\":{\"type\":\"string\",\"description\":\"Required field. Must be unique in the system. [required,max=50]\"},\"age\":{\"type\":\"number\",\"description\":\"User age for demographic filtering. Range restricted to human-realistic values. [min=0,max=200]\"}},\"required\":[\"username\"]}"),
+			OutputSchema: json.RawMessage("{\"type\":\"object\",\"properties\":{}}"),
+			Handler:      _User_Create_McpHandler,
+		},
+		{
+			Name:         User_Get_FullMethodName,
+			Title:        "Get retrieves a single user by their primary identifier (username/key).",
+			Description:  "Workflow: LocalCache -> Redis -> Database.\nFailure to find a record results in a gRPC NOT_FOUND (HTTP 404).",
+			InputSchema:  json.RawMessage("{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\",\"description\":\"required\"}},\"required\":[\"name\"]}"),
+			OutputSchema: json.RawMessage("{\"type\":\"object\",\"properties\":{\"user_id\":{\"type\":\"number\",\"description\":\"Unique internal system identifier (Snowflake or Auto-increment).\"},\"username\":{\"type\":\"string\"},\"age\":{\"type\":\"number\"},\"card_nums\":{\"type\":\"number\"}}}"),
+			Handler:      _User_Get_McpHandler,
+		},
+		{
+			Name:         User_Update_FullMethodName,
+			Title:        "Update modifies an existing user profile.",
+			Description:  "Triggers the 'Delayed Double Delete' strategy via Asjard's Time Wheel\nto ensure consistency across distributed LocalCache nodes.",
+			InputSchema:  json.RawMessage("{\"type\":\"object\",\"properties\":{\"username\":{\"type\":\"string\",\"description\":\"Required field. Must be unique in the system. [required,max=50]\"},\"age\":{\"type\":\"number\",\"description\":\"User age for demographic filtering. Range restricted to human-realistic values. [min=0,max=200]\"}},\"required\":[\"username\"]}"),
+			OutputSchema: json.RawMessage("{\"type\":\"object\",\"properties\":{}}"),
+			Handler:      _User_Update_McpHandler,
+		},
+		{
+			Name:         User_Del_FullMethodName,
+			Title:        "Del removes the user record from the persistent store and",
+			Description:  "synchronously purges associated entries from all cache levels.",
+			InputSchema:  json.RawMessage("{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\",\"description\":\"required\"}},\"required\":[\"name\"]}"),
+			OutputSchema: json.RawMessage("{\"type\":\"object\",\"properties\":{}}"),
+			Handler:      _User_Del_McpHandler,
+		},
+		{
+			Name:         User_Search_FullMethodName,
+			Title:        "Search filters users with pagination support.",
+			Description:  "Note: Search results are typically cached at the 'Group' level\nwith shorter TTLs compared to individual 'Get' records.",
+			InputSchema:  json.RawMessage("{\"type\":\"object\",\"properties\":{\"page\":{\"type\":\"number\",\"description\":\"Page index (0-based). If negative, the validation interceptor returns INVALID_ARGUMENT. [min=0]\"},\"size\":{\"type\":\"number\",\"description\":\"Page size. Minimum 5 enforced to prevent excessive small-page queries. [min=5]\"},\"sort\":{\"type\":\"string\",\"description\":\"Sorting directive. Strict validation ensures only indexed fields like 'created_at' are used. [sortFields=created_at]\"},\"keywords\":{\"type\":\"string\",\"description\":\"Full-text or partial match search string for usernames.\"}}}"),
+			OutputSchema: json.RawMessage("{\"type\":\"object\",\"properties\":{\"total\":{\"type\":\"number\",\"description\":\"The total count of records matching the filter, regardless of pagination size.\"},\"list\":{\"type\":\"array\",\"items\":{\"type\":\"object\"},\"description\":\"The slice of users for the requested page.\"}}}"),
+			Handler:      _User_Search_McpHandler,
+		},
+		{
+			Name:         User_AddCreditCard_FullMethodName,
+			Title:        "User add a credit card",
+			Description:  "Add a credit card and update user's card count\nThis implementation demonstrates how to use xgorm.WithDB(ctx, tx) to maintain\ntransactional integrity across multiple table updates.",
+			InputSchema:  json.RawMessage("{\"type\":\"object\",\"properties\":{\"username\":{\"type\":\"string\",\"description\":\"required\"},\"number\":{\"type\":\"string\",\"description\":\"required,max=100\"}},\"required\":[\"username\",\"number\"]}"),
+			OutputSchema: json.RawMessage("{\"type\":\"object\",\"properties\":{}}"),
+			Handler:      _User_AddCreditCard_McpHandler,
+		},
+		{
+			Name:         User_RemoveCreditCard_FullMethodName,
+			Title:        "User remove a credit card",
+			Description:  "User remove a credit card",
+			InputSchema:  json.RawMessage("{\"type\":\"object\",\"properties\":{\"username\":{\"type\":\"string\",\"description\":\"required\"},\"number\":{\"type\":\"string\",\"description\":\"required,max=100\"}},\"required\":[\"username\",\"number\"]}"),
+			OutputSchema: json.RawMessage("{\"type\":\"object\",\"properties\":{}}"),
+			Handler:      _User_RemoveCreditCard_McpHandler,
+		},
+		{
+			Name:         User_GetCreditCard_FullMethodName,
+			Title:        "Get user specify credit card info",
+			Description:  "Get user specify credit card info",
+			InputSchema:  json.RawMessage("{\"type\":\"object\",\"properties\":{\"username\":{\"type\":\"string\",\"description\":\"required\"},\"number\":{\"type\":\"string\",\"description\":\"required,max=100\"}},\"required\":[\"username\",\"number\"]}"),
+			OutputSchema: json.RawMessage("{\"type\":\"object\",\"properties\":{\"number\":{\"type\":\"string\"}}}"),
+			Handler:      _User_GetCreditCard_McpHandler,
+		},
+		{
+			Name:         User_SearchCreditCard_FullMethodName,
+			Title:        "Get all credit cards under user",
+			Description:  "Get all credit cards under user",
+			InputSchema:  json.RawMessage("{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\",\"description\":\"required\"}},\"required\":[\"name\"]}"),
+			OutputSchema: json.RawMessage("{\"type\":\"object\",\"properties\":{\"total\":{\"type\":\"number\"},\"list\":{\"type\":\"array\",\"items\":{\"type\":\"object\"}}}}"),
+			Handler:      _User_SearchCreditCard_McpHandler,
+		},
+	},
 }

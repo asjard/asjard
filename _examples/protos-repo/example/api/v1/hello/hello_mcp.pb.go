@@ -57,7 +57,7 @@ func _Hello_Say_McpHandler(ctx context.Context, req *mcp.CallToolRequest, srv an
 // 如果在rest中没有配置group字段，则service名称为group字段的值
 var HelloMcpServiceDesc = mcp.ServiceDesc{
 	Name:        "需要实现的功能",
-	ServiceName: "api.v1.example.docs.Hello",
+	ServiceName: "api.v1.docs.example.Hello",
 	Desc:        "需要实现的功能, 一个proto文件中只写一个service, 如果在rest中没有配置group字段，则service名称为group字段的值.",
 	HandlerType: (*HelloServer)(nil),
 	Tools: []mcp.ToolDesc{

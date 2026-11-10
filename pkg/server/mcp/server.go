@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
@@ -84,13 +85,25 @@ func (s *McpServer) Start(startErr chan error) error {
 	if s.httpServer == nil {
 		return errors.New("mcp http server not initialized")
 	}
-	opts := &mcpsdk.StreamableHTTPOptions{}
+	opts := &mcpsdk.StreamableHTTPOptions{
+		DisableLocalhostProtection: s.conf.Streamable.DisableLocalhostProtection,
+		JSONResponse:               s.conf.Streamable.JSONResponse,
+		Stateless:                  s.conf.Streamable.Stateless,
+	}
 	if s.conf.Options.MaxRequestBodySize > 0 {
 		opts.MaxRequestBodyBytes = int64(s.conf.Options.MaxRequestBodySize)
 	}
-	s.httpServer.Handle(s.conf.Path, mcpsdk.NewStreamableHTTPHandler(func(*http.Request) *mcpsdk.Server {
+	handler := withMcpCORS(mcpsdk.NewStreamableHTTPHandler(func(*http.Request) *mcpsdk.Server {
 		return s.mcpServer
 	}, opts))
+	path := s.conf.Path
+	if path == "" {
+		path = DefaultPath
+	}
+	s.httpServer.Handle(path, handler)
+	if !strings.HasSuffix(path, "/") {
+		s.httpServer.Handle(path+"/", handler)
+	}
 	if err := s.httpServer.Start(startErr); err != nil {
 		return err
 	}
@@ -138,6 +151,26 @@ func (s *McpServer) addTools(handler Handler) error {
 		s.addTool(tool, handler)
 	}
 	return nil
+}
+
+func withMcpCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+		} else {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Accept, Authorization, MCP-Protocol-Version, Mcp-Session-Id, Last-Event-ID")
+		w.Header().Set("Access-Control-Expose-Headers", "Mcp-Session-Id, MCP-Protocol-Version")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *McpServer) addTool(tool ToolDesc, svc Handler) {

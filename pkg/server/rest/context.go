@@ -1,9 +1,11 @@
 package rest
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"maps"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -59,6 +61,11 @@ func NewContext(r *http.Request, w http.ResponseWriter, options ...Option) *Cont
 	c := contextPool.Get().(*Context)
 	c.r = r
 	c.w = w
+	if c.userValues == nil {
+		c.userValues = make(map[any]any)
+	} else {
+		clear(c.userValues)
+	}
 	for _, opt := range options {
 		opt(c)
 	}
@@ -74,6 +81,9 @@ func (c *Context) Response() http.ResponseWriter {
 }
 
 func (c *Context) Context() context.Context {
+	if c.r == nil {
+		return context.Background()
+	}
 	return c.r.Context()
 }
 
@@ -83,8 +93,11 @@ func (c *Context) WithContext(ctx context.Context) {
 
 func (c *Context) SetUserValue(key, val any) {
 	c.um.Lock()
+	defer c.um.Unlock()
+	if c.userValues == nil {
+		c.userValues = make(map[any]any)
+	}
 	c.userValues[key] = val
-	c.um.Unlock()
 }
 
 func (c *Context) GetUserValue(key any) any {
@@ -110,7 +123,13 @@ func (c *Context) Err() error {
 }
 
 func (c *Context) Value(key any) any {
-	return c.GetUserValue(key)
+	if v := c.GetUserValue(key); v != nil {
+		return v
+	}
+	if c.r != nil {
+		return c.r.Context().Value(key)
+	}
+	return nil
 }
 
 func (c *Context) GetUserValues() map[any]any {
@@ -144,13 +163,16 @@ func (c *Context) PathValue(key string) string {
 
 func (c *Context) PathValues() map[string][]string {
 	res := make(map[string][]string)
-	for _, param := range pathParamNames(c.r.URL.Path) {
-		val := c.PathValue(param)
-		if _, ok := res[param]; ok {
-			res[param] = append(res[param], val)
-		} else {
-			res[param] = []string{val}
+	if c.r == nil {
+		return res
+	}
+	// Named wildcards live on the matched ServeMux pattern (e.g. "GET /hello/{name}"),
+	// not on the request URL path (e.g. "/hello/world").
+	for _, param := range pathParamNames(c.r.Pattern) {
+		if param == "" || param == "$" {
+			continue
 		}
+		res[param] = []string{c.PathValue(param)}
 	}
 	return res
 }
@@ -216,7 +238,11 @@ func (c *Context) ClientIP() string {
 	if len(xri) > 0 {
 		return xri
 	}
-	return c.r.RemoteAddr
+	ip, _, err := net.SplitHostPort(c.r.RemoteAddr)
+	if err != nil {
+		return c.r.RemoteAddr
+	}
+	return ip
 }
 
 // WriteData finalizes the request by sending data or an error back to the client.
@@ -240,10 +266,13 @@ func (c *Context) SetWriter(writer Writer) {
 
 // Close cleans up the context and returns it to the pool for reuse.
 func (c *Context) Close() {
+	c.um.Lock()
 	c.writer = nil
 	c.r = nil
 	c.w = nil
-	c.userValues = nil
+	c.errPage = ""
+	clear(c.userValues)
+	c.um.Unlock()
 	contextPool.Put(c)
 }
 
@@ -309,6 +338,8 @@ func (c *Context) ReadJsonBodyToEntity(entity proto.Message) error {
 	if len(b) == 0 {
 		return nil
 	}
+	c.r.Body.Close()
+	c.r.Body = io.NopCloser(bytes.NewReader(b))
 	if err := protojson.Unmarshal(b, entity); err != nil {
 		return status.Errorf(codes.InvalidArgument, "read body params to entity fail: %v", err)
 	}

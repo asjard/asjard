@@ -65,7 +65,10 @@ type OpenapiLicenseConfig struct {
 
 // CorsConfig defines the security policy for browsers accessing the API from different origins.
 type CorsConfig struct {
-	allowAllOrigins  bool               // Internal flag for "*"
+	allowAllOrigins bool // Internal flag for "*"
+	// Disabled skips CORS handling entirely. Used by protocols such as MCP
+	// that must not reject handshake requests with HTTP 403.
+	Disabled         bool               `json:"disabled"`
 	AllowOrigins     []string           `json:"allowOrigins"`
 	AllowMethods     []string           `json:"allowMethods"`
 	AllowHeaders     []string           `json:"allowHeaders"`

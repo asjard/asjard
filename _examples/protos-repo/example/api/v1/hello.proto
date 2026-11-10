@@ -8,7 +8,7 @@ syntax = "proto3";
 // {服务名称}会在生成gw代码时用以确定客户端名称, 例如:
 // conn, err := client.NewClient(grpc.Protocol, config.GetString("asjard.topology.services.{hello}.name", "{hello}")).Conn()
 // 如果修改了asjard.service.instance.name 则可以通过asjard.topology.service.hello.name修改
-package api.v1.example.docs;
+package api.v1.docs.example;
 
 option go_package = "protos-repo/example/api/v1/hello";
 

@@ -22,8 +22,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Config_Get_FullMethodName           = "/api.v1.example.docs.Config/Get"
-	Config_GetAndDecrypt_FullMethodName = "/api.v1.example.docs.Config/GetAndDecrypt"
+	Config_Get_FullMethodName           = "/api.v1.docs.example.Config/Get"
+	Config_GetAndDecrypt_FullMethodName = "/api.v1.docs.example.Config/GetAndDecrypt"
 )
 
 // ConfigClient is the client API for Config service.
@@ -142,7 +142,7 @@ func _Config_GetAndDecrypt_Handler(srv interface{}, ctx context.Context, dec fun
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Config_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "api.v1.example.docs.Config",
+	ServiceName: "api.v1.docs.example.Config",
 	HandlerType: (*ConfigServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

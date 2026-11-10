@@ -19,7 +19,7 @@ import (
 // Config service handles application configuration retrieval and management.
 var ConfigMcpServiceDesc = mcp.ServiceDesc{
 	Name:        "Config Example",
-	ServiceName: "api.v1.example.docs.Config",
+	ServiceName: "api.v1.docs.example.Config",
 	Desc:        "Config Example, Config service handles application configuration retrieval and management..",
 	HandlerType: (*ConfigServer)(nil),
 	Tools:       []mcp.ToolDesc{},

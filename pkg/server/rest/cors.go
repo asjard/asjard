@@ -15,6 +15,12 @@ import (
 func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
 	logger.Debug("new cors middleware", "conf", conf)
 
+	if conf.Disabled {
+		return func(next http.Handler) http.Handler {
+			return next
+		}
+	}
+
 	// Pre-calculate if all origins are allowed to optimize runtime checks.
 	for _, origin := range conf.AllowOrigins {
 		if origin == "*" {
