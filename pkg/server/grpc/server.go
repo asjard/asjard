@@ -54,7 +54,7 @@ func init() {
 func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) {
 	var opts []grpc.ServerOption
 
-	// 1. Configure TLS Credentials if certificate and key files are provided.
+	// Configure TLS Credentials if certificate and key files are provided.
 	if conf.CertFile != "" && conf.KeyFile != "" {
 		creds, err := credentials.NewServerTLSFromFile(conf.CertFile, conf.KeyFile)
 		if err != nil {
@@ -63,14 +63,14 @@ func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) 
 		opts = append(opts, grpc.Creds(creds))
 	}
 
-	// 2. Apply Keepalive parameters to manage connection health and lifecycle.
+	// Apply Keepalive parameters to manage connection health and lifecycle.
 	opts = append(opts, grpc.KeepaliveParams(keepalive.ServerParameters{
 		MaxConnectionIdle: conf.Options.KeepaliveParams.MaxConnectionIdle.Duration,
 		Time:              conf.Options.KeepaliveParams.Time.Duration,
 		Timeout:           conf.Options.KeepaliveParams.Timeout.Duration,
 	}))
 
-	// 3. Register a Unary Interceptor to wrap gRPC calls with framework-level logic.
+	// Register a Unary Interceptor to wrap gRPC calls with framework-level logic.
 	opts = append(opts, grpc.ChainUnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		if options.Interceptor != nil {
 			// Adapt framework's generic interceptor to the gRPC specific handler.

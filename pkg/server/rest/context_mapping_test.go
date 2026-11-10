@@ -1,38 +1,11 @@
 package rest
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/valyala/fasthttp"
 )
-
-func TestContextParametersAndLifecycle(t *testing.T) {
-	raw := &fasthttp.RequestCtx{}
-	raw.Request.SetRequestURI("/users?id=1&id=2")
-	raw.Request.Header.SetMethod("POST")
-	raw.Request.Header.SetContentType(MIME_JSON)
-	raw.Request.Header.Add("X-Test", "one")
-	raw.Request.SetBodyString(`{"name":"codex"}`)
-	raw.SetUserValue("user", "42")
-	raw.Request.Header.Set("X-Forwarded-For", "10.0.0.1, 10.0.0.2")
-	c := NewContext(raw)
-	require.Equal(t, []string{"1", "2"}, c.GetQueryParam("id"))
-	require.Equal(t, []string{"one"}, c.GetHeaderParam("X-Test"))
-	require.Equal(t, []string{"42"}, c.GetUserParam("user"))
-	require.Equal(t, "10.0.0.1", c.ClientIP())
-	require.JSONEq(t, `{"name":"codex"}`, string(c.JSONBodyParams()))
-	require.Equal(t, []string{"1", "2"}, c.ReadQueryParams()["id"])
-	require.Equal(t, []string{"42"}, c.ReadPathParams()["user"])
-	require.Contains(t, c.ReadHeaderParams(), "X-Test")
-
-	ctx := context.WithValue(context.Background(), struct{}{}, "value")
-	c.SetContext(ctx)
-	require.Same(t, ctx, c.Context())
-	c.Close()
-}
 
 func TestMapForm(t *testing.T) {
 	type form struct {

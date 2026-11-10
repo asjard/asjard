@@ -13,6 +13,7 @@ package api.v1.example.docs;
 option go_package = "protos-repo/example/api/v1/hello";
 
 import "github.com/asjard/protobuf/http.proto";
+import "github.com/asjard/protobuf/mcp.proto";
 import "github.com/asjard/protobuf/validate.proto";
 import "github.com/asjard/protobuf/mq.proto";
 
@@ -63,8 +64,11 @@ service Hello {
             api : "openapi"
             version : "v2"
         };
-        // 提供MQ服务
+        // mq protocol
         option (asjard.api.mq) = {
+        };
+        // MCP protocol
+        option (asjard.api.mcp_tool) = {
         };
     };
 }

@@ -36,7 +36,7 @@ func (api *DefaultHandlersAPI) Favicon(ctx context.Context, in *emptypb.Empty) (
 
 		// If the file exists on disk, set the correct Content-Type and stream the file.
 		if utils.IsPathExists(faviconFile) {
-			rtx.Response.Header.Set(fasthttp.HeaderContentType, "image/x-icon")
+			rtx.Response().Header().Set(fasthttp.HeaderContentType, "image/x-icon")
 			rtx.SendFile(faviconFile)
 			// Returning nil, nil prevents the standard gRPC response from being sent.
 			return nil, nil

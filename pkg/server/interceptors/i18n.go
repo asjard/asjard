@@ -102,7 +102,7 @@ func (*I18n) Name() string {
 func (m *I18n) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
 		logger.L(ctx).Debug("start server interceptor", "interceptor", m.Name(), "full_method", info.FullMethod, "protocol", info.Protocol)
-		// 1. Execute the handler logic first.
+		// Execute the handler logic first.
 		resp, err = handler(ctx, req)
 		if err == nil {
 			return resp, err // No error, no translation needed.
@@ -112,32 +112,32 @@ func (m *I18n) Interceptor() server.UnaryServerInterceptor {
 			return resp, err
 		}
 
-		// 2. Identify the protocol. Currently only REST supports this i18n flow.
+		// Identify the protocol. Currently only REST supports this i18n flow.
 		rtx, ok := ctx.(*rest.Context)
 		if !ok {
 			return resp, err
 		}
 
-		// 3. Extract the 'lang' header from the request.
-		lang := string(rtx.Request.Header.Peek(HeaderLang))
+		// Extract the 'lang' header from the request.
+		lang := string(rtx.Header(HeaderLang))
 		if lang == "" {
 			return resp, err
 		}
 
-		// 4. Convert the error to an Asjard Status to get the internal Error Code.
+		// Convert the error to an Asjard Status to get the internal Error Code.
 		stts := status.FromError(err)
 		conf, ok := m.getConf(lang, stts.ErrCode)
 		if !ok {
 			return resp, err
 		}
 
-		// 5. Wrap the localized prompt and doc into a protobuf Any detail.
+		// Wrap the localized prompt and doc into a protobuf Any detail.
 		detail, _ := anypb.New(&statuspb.Status{
 			Doc:    conf.Doc,
 			Prompt: conf.Prompt,
 		})
 
-		// 6. Return a new gRPC-compatible status with the localized details attached.
+		// Return a new gRPC-compatible status with the localized details attached.
 		return resp, grpcstatus.ErrorProto(&spb.Status{
 			Code:    int32(stts.Code),
 			Message: stts.Message,

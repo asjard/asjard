@@ -2,6 +2,8 @@ package trace
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/asjard/asjard/pkg/server/rest"
@@ -30,7 +32,7 @@ func TestNewTraceCarrier(t *testing.T) {
 
 	requestCtx := &fasthttp.RequestCtx{}
 	requestCtx.Request.Header.Add("traceparent", "rest")
-	restCtx := rest.NewContext(requestCtx)
+	restCtx := rest.NewContext(httptest.NewRequest(http.MethodGet, "/test", nil), httptest.NewRecorder())
 	t.Cleanup(restCtx.Close)
 	carrier := NewTraceCarrier(restCtx)
 	require.IsType(t, &HeaderCarrier{}, carrier)

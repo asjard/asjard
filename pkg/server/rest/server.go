@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
+	"log"
+	"net/http"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -13,12 +14,9 @@ import (
 	"github.com/asjard/asjard/core/config"
 	"github.com/asjard/asjard/core/constant"
 	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/runtime"
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/utils"
-	"github.com/fasthttp/router"
 	openapi_v3 "github.com/google/gnostic/openapiv3"
-	"github.com/valyala/fasthttp"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -33,12 +31,12 @@ type Handler interface {
 }
 
 // MiddlewareFunc defines the standard signature for REST middleware.
-type MiddlewareFunc func(next fasthttp.RequestHandler) fasthttp.RequestHandler
+type MiddlewareFunc func(next http.Handler) http.Handler
 
 // RestServer manages the fasthttp instance, routing, and server lifecycle.
 type RestServer struct {
-	router       *router.Router                // Handles request multiplexing.
-	server       fasthttp.Server               // The high-performance HTTP engine.
+	mux          *http.ServeMux                // Handles request multiplexing.
+	server       *http.Server                  // The high-performance HTTP engine.
 	openapi      *openapi_v3.Document          // Aggregated API documentation.
 	interceptor  server.UnaryServerInterceptor // Global interceptor for processing logic.
 	conf         Config                        // Server-specific configurations.
@@ -57,69 +55,44 @@ func init() {
 
 // New initializes the REST server by loading configurations and setting up certificates.
 func New(options *server.ServerOptions) (server.Server, error) {
-	conf := defaultConfig()
+	conf := DefaultConfig(Protocol)
 	// Fetch configuration from the central config store.
 	if err := config.GetWithUnmarshal(constant.ConfigServerRestPrefix, &conf); err != nil {
 		return nil, err
-	}
-	// Resolve certificate paths relative to the system's cert directory.
-	if conf.CertFile != "" {
-		conf.CertFile = filepath.Join(utils.GetCertDir(), conf.CertFile)
-	}
-	if conf.KeyFile != "" {
-		conf.KeyFile = filepath.Join(utils.GetCertDir(), conf.KeyFile)
 	}
 	return MustNew(conf, options)
 }
 
 // MustNew performs the low-level setup of the fasthttp engine and global CORS middleware.
 func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) {
-	r := router.New()
-	r.SaveMatchedRoutePath = true
-	corsMiddleware := NewCorsMiddleware(conf.Cors)
+	if conf.CertFile != "" {
+		conf.CertFile = filepath.Join(utils.GetCertDir(), conf.CertFile)
+	}
+	if conf.KeyFile != "" {
+		conf.KeyFile = filepath.Join(utils.GetCertDir(), conf.KeyFile)
+	}
 
-	// Ensure GlobalOPTIONS handles preflight requests via CORS middleware.
-	r.GlobalOPTIONS = corsMiddleware(func(ctx *fasthttp.RequestCtx) {})
-
-	return &RestServer{
-		router:       r,
+	s := &RestServer{
+		mux:          http.NewServeMux(),
 		openapi:      &openapi_v3.Document{},
 		interceptor:  options.Interceptor,
 		conf:         conf,
-		middlewares:  []MiddlewareFunc{corsMiddleware},
+		middlewares:  []MiddlewareFunc{NewCorsMiddleware(conf.Cors)},
 		errorHandler: &ErrorHandlerAPI{},
-		server: fasthttp.Server{
-			// Extensive performance tuning parameters mapped from configuration.
-			Name:                               runtime.GetAPP().App,
-			Concurrency:                        conf.Options.Concurrency,
-			ReadBufferSize:                     conf.Options.ReadBufferSize,
-			WriteBufferSize:                    conf.Options.WriteBufferSize,
-			ReadTimeout:                        conf.Options.ReadTimeout.Duration,
-			WriteTimeout:                       conf.Options.WriteTimeout.Duration,
-			IdleTimeout:                        conf.Options.IdleTimeout.Duration,
-			MaxConnsPerIP:                      conf.Options.MaxConnsPerIP,
-			MaxRequestsPerConn:                 conf.Options.MaxRequestsPerConn,
-			MaxIdleWorkerDuration:              conf.Options.MaxIdleWorkerDuration.Duration,
-			TCPKeepalivePeriod:                 conf.Options.TCPKeepalivePeriod.Duration,
-			MaxRequestBodySize:                 conf.Options.MaxRequestBodySize,
-			DisableKeepalive:                   conf.Options.DisableKeepalive,
-			TCPKeepalive:                       conf.Options.TCPKeepalive,
-			ReduceMemoryUsage:                  conf.Options.ReduceMemoryUsage,
-			GetOnly:                            conf.Options.GetOnly,
-			DisablePreParseMultipartForm:       conf.Options.DisablePreParseMultipartForm,
-			LogAllErrors:                       conf.Options.LogAllErrors,
-			SecureErrorLogMessage:              conf.Options.SecureErrorLogMessage,
-			DisableHeaderNamesNormalizing:      conf.Options.DisableHeaderNamesNormalizing,
-			SleepWhenConcurrencyLimitsExceeded: conf.Options.SleepWhenConcurrencyLimitsExceeded.Duration,
-			NoDefaultServerHeader:              conf.Options.NoDefaultServerHeader,
-			NoDefaultDate:                      conf.Options.NoDefaultDate,
-			NoDefaultContentType:               conf.Options.NoDefaultContentType,
-			KeepHijackedConns:                  conf.Options.KeepHijackedConns,
-			CloseOnShutdown:                    conf.Options.CloseOnShutdown,
-			StreamRequestBody:                  conf.Options.StreamRequestBody,
-			Logger:                             &Logger{},
+		server: &http.Server{
+			Addr:              conf.Addresses.Listen,
+			ReadTimeout:       conf.Options.ReadTimeout.Duration,
+			ReadHeaderTimeout: conf.Options.ReadHeaderTimeout.Duration,
+			WriteTimeout:      conf.Options.WriteTimeout.Duration,
+			IdleTimeout:       conf.Options.IdleTimeout.Duration,
+			MaxHeaderBytes:    conf.Options.MaxHeaderBytes,
+			ErrorLog:          log.New(logWriter{}, "", 0),
 		},
-	}, nil
+	}
+	if conf.Options.DisableKeepalive {
+		s.server.SetKeepAlivesEnabled(false)
+	}
+	return s, nil
 }
 
 // AddHandler registers a service to the server and populates the router.
@@ -132,53 +105,38 @@ func (s *RestServer) AddHandler(handler any) error {
 	return s.addRouter(h)
 }
 
-// Start launches the server listener (Unix, TLS, or Standard TCP) in a background routine.
+// Start launches the server listener in a background routine.
 func (s *RestServer) Start(startErr chan error) error {
-	// Register system-level error handlers for the router.
-	s.router.NotFound = s.newNoInterceptorHandler(_ErrorHandler_NotFound_RestHandler, s.errorHandler, DefaultWriterName)
-	s.router.MethodNotAllowed = s.newNoInterceptorHandler(_ErrorHandler_MethodNotAllowed_RestHandler, s.errorHandler, DefaultWriterName)
-
-	// Custom error handler for low-level protocol errors.
-	s.server.ErrorHandler = func(ctx *fasthttp.RequestCtx, err error) {
-		logger.L(ctx).Error("request error", "method", string(ctx.Method()), "path", string(ctx.Path()), "err", err.Error())
-		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage))
-		cc.WriteData(_ErrorHandler_Error_RestHandler(cc, s.errorHandler, s.emptyInterceptor))
-	}
-
 	// Optionally enable built-in OpenAPI and Route discovery services.
 	if s.conf.Openapi.Enabled {
 		s.AddHandler(NewOpenAPI(s.conf.Openapi, s.openapi))
 	}
-	routesAPI := NewRoutesAPI(s.handlers)
 	if s.conf.Routes.Enabled {
-		s.AddHandler(routesAPI)
+		s.AddHandler(NewRoutesAPI(s.handlers))
 	}
 
-	s.server.Handler = s.router.Handler
+	router := &router{
+		mux:              s.mux,
+		notFound:         s.newNoInterceptorHandler(_ErrorHandler_NotFound_RestHandler, s.errorHandler, DefaultWriterName),
+		methodNotAllowed: s.newNoInterceptorHandler(_ErrorHandler_MethodNotAllowed_RestHandler, s.errorHandler, DefaultWriterName),
+	}
+	s.server.Handler = s.applyMiddleware(router, s.middlewares...)
+
 	if s.conf.Addresses.Listen == "" {
 		return errors.New("config servces.rest.addresses.listen not found")
 	}
 
-	// Listener implementation selection.
-	if strings.HasPrefix(s.conf.Addresses.Listen, "unix") {
-		go func() {
-			if err := s.server.ListenAndServeUNIX(s.conf.Addresses.Listen, os.ModeSocket); err != nil {
-				startErr <- fmt.Errorf("start rest server with address %s fail %s", s.conf.Addresses.Listen, err.Error())
+	go func() {
+		if s.conf.CertFile != "" && s.conf.KeyFile != "" {
+			if err := s.server.ListenAndServeTLS(s.conf.CertFile, s.conf.KeyFile); err != nil {
+				startErr <- fmt.Errorf("start https server with address %s fail %s", s.conf.Addresses.Listen, err.Error())
+				return
 			}
-		}()
-	} else if s.conf.CertFile != "" && s.conf.KeyFile != "" {
-		go func() {
-			if err := s.server.ListenAndServeTLS(s.conf.Addresses.Listen, s.conf.CertFile, s.conf.KeyFile); err != nil {
-				startErr <- fmt.Errorf("start rest server with address %s fail %s", s.conf.Addresses.Listen, err.Error())
-			}
-		}()
-	} else {
-		go func() {
-			if err := s.server.ListenAndServe(s.conf.Addresses.Listen); err != nil {
-				startErr <- fmt.Errorf("start rest server with address %s fail %s", s.conf.Addresses.Listen, err.Error())
-			}
-		}()
-	}
+		} else if err := s.server.ListenAndServe(); err != nil {
+			startErr <- fmt.Errorf("start http server with address %s fail %s", s.conf.Addresses.Listen, err.Error())
+			return
+		}
+	}()
 	logger.Debug("start rest server", "address", s.conf.Addresses.Listen)
 	return nil
 }
@@ -187,7 +145,7 @@ func (s *RestServer) Start(startErr chan error) error {
 func (s *RestServer) Stop() {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	s.server.ShutdownWithContext(ctx)
+	s.server.Shutdown(ctx)
 }
 
 // Protocol returns the server protocol name.
@@ -203,6 +161,14 @@ func (s *RestServer) Enabled() bool {
 // ListenAddresses returns the configured listening addresses.
 func (s *RestServer) ListenAddresses() server.AddressConfig {
 	return s.conf.Addresses
+}
+
+// Handle registers a raw HTTP handler on the server mux.
+func (s *RestServer) Handle(pattern string, handler http.Handler) {
+	if s.mux == nil || handler == nil || pattern == "" {
+		return
+	}
+	s.mux.Handle(pattern, handler)
 }
 
 // addRouter parses the service descriptor to register paths and merge OpenAPI docs.
@@ -236,31 +202,31 @@ func (s *RestServer) addRouter(handler Handler) error {
 
 // addRouterHandler applies middleware and registers a handler to a specific route.
 func (s *RestServer) addRouterHandler(method string, methodDesc MethodDesc, svc Handler, writerName string) {
-	s.router.Handle(method, methodDesc.Path,
-		s.applyMiddleware(s.newHandler(methodDesc.Handler, svc, writerName),
-			s.middlewares...))
+	pattern := methodDesc.Method + " " + methodDesc.Path
+	s.mux.Handle(pattern, s.applyMiddleware(s.newHandler(methodDesc.Handler, svc, writerName),
+		s.middlewares...))
 }
 
 // newHandler wraps the business logic in a REST context and response writer.
-func (s *RestServer) newHandler(methodHandler methodHandler, svc Handler, writerName string) fasthttp.RequestHandler {
+func (s *RestServer) newHandler(methodHandler methodHandler, svc Handler, writerName string) http.Handler {
 	writer := GetWriter(writerName)
-	return func(ctx *fasthttp.RequestCtx) {
-		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage), WithWriter(writer))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cc := NewContext(r, w, WithErrPage(s.conf.Doc.ErrPage), WithWriter(writer))
 		reply, err := methodHandler(cc, svc, s.interceptor)
 		cc.WriteData(reply, err)
-	}
+	})
 }
 
 // newNoInterceptorHandler wraps the business logic in a REST context and response writer without interceptor.
-func (s *RestServer) newNoInterceptorHandler(methodHandler methodHandler, svc Handler, writerName string) fasthttp.RequestHandler {
+func (s *RestServer) newNoInterceptorHandler(methodHandler methodHandler, svc Handler, writerName string) http.Handler {
 	writer := GetWriter(writerName)
-	return func(ctx *fasthttp.RequestCtx) {
-		cc := NewContext(ctx, WithErrPage(s.conf.Doc.ErrPage), WithWriter(writer))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cc := NewContext(r, w, WithErrPage(s.conf.Doc.ErrPage), WithWriter(writer))
 		reply, err := methodHandler(cc,
 			svc,
 			s.emptyInterceptor)
 		cc.WriteData(reply, err)
-	}
+	})
 }
 
 func (s *RestServer) emptyInterceptor(ctx context.Context, req any, _ *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
@@ -268,9 +234,42 @@ func (s *RestServer) emptyInterceptor(ctx context.Context, req any, _ *server.Un
 }
 
 // applyMiddleware chains multiple middleware functions into a single handler.
-func (s *RestServer) applyMiddleware(h fasthttp.RequestHandler, middlewares ...MiddlewareFunc) fasthttp.RequestHandler {
+func (s *RestServer) applyMiddleware(h http.Handler, middlewares ...MiddlewareFunc) http.Handler {
 	for i := range len(middlewares) {
 		h = middlewares[i](h)
 	}
 	return h
+}
+
+type router struct {
+	mux              *http.ServeMux
+	notFound         http.Handler
+	methodNotAllowed http.Handler
+}
+
+func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	h, pattern := r.mux.Handler(req)
+	if pattern == "" {
+		r.notFound.ServeHTTP(w, req)
+		return
+	}
+	if r.isMethodNotAllowed(pattern, req.Method) {
+		r.methodNotAllowed.ServeHTTP(w, req)
+		return
+	}
+	h.ServeHTTP(w, req)
+}
+func (r *router) isMethodNotAllowed(pattern, method string) bool {
+	routeMethod, _, found := strings.Cut(pattern, " ")
+	if !found || strings.HasPrefix(routeMethod, "/") {
+		return false
+	}
+	if routeMethod == method {
+		return false
+	}
+	// ServeMux serves GET handlers for HEAD requests.
+	if method == http.MethodHead && routeMethod == http.MethodGet {
+		return false
+	}
+	return true
 }

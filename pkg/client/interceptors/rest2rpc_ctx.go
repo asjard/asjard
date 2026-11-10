@@ -11,6 +11,7 @@ import (
 	"github.com/asjard/asjard/pkg/client/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/asjard/asjard/utils"
+	"github.com/spf13/cast"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/metadata"
 )
@@ -98,11 +99,11 @@ func (r *Rest2RpcContext) Interceptor() client.UnaryClientInterceptor {
 		// Map allowed HTTP headers/params to gRPC metadata.
 		for _, k := range r.cfg.AllowHeaders {
 			// First, check standard HTTP headers.
-			md[k] = rtx.GetHeaderParam(k)
+			md[k] = []string{rtx.Header(k)}
 			// Then, check user-defined context parameters (overrides header if present).
-			v := rtx.GetUserParam(k)
-			if len(v) != 0 {
-				md[k] = v
+			v := rtx.Value(k)
+			if v != nil {
+				md[k] = []string{cast.ToString(v)}
 			}
 		}
 
