@@ -1,1 +1,3 @@
 asjard.service.instance.group: svc-gw
+
+asjard.logger.level: DEBUG

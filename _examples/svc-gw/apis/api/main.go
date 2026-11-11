@@ -8,6 +8,7 @@ import (
 	pb "protos-repo/example/api/v1/sample"
 	"protos-repo/example/api/v1/user"
 	apiv1 "svc-gw/apis/api/v1"
+	_ "svc-gw/interceptors"
 
 	"github.com/asjard/asjard"
 	"github.com/asjard/asjard/pkg/server/mcp"
