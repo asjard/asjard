@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"sync"
 
@@ -147,7 +148,25 @@ func (c *Context) ClientIP() string {
 		return utils.SafeByte2String(bytes.TrimSpace(xri))
 	}
 
-	return c.RemoteIP().String()
+	ip, _, err := net.SplitHostPort(c.RemoteIP().String())
+	if err != nil {
+		return ""
+	}
+	return ip
+}
+
+func (c *Context) RequestIP(trustHeader string) string {
+	if trustHeader != "" {
+		trustAddr := c.Request.Header.Peek(trustHeader)
+		if len(trustAddr) > 0 {
+			ip, _, err := net.SplitHostPort(utils.SafeByte2String(trustAddr))
+			if err != nil {
+				return ""
+			}
+			return ip
+		}
+	}
+	return c.ClientIP()
 }
 
 // GetQueryParam retrieves values for a specific URL query parameter.
