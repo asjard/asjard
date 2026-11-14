@@ -148,11 +148,7 @@ func (c *Context) ClientIP() string {
 		return utils.SafeByte2String(bytes.TrimSpace(xri))
 	}
 
-	ip, _, err := net.SplitHostPort(c.RemoteIP().String())
-	if err != nil {
-		return ""
-	}
-	return ip
+	return c.RemoteIP().String()
 }
 
 func (c *Context) RequestIP(trustHeader string) string {
