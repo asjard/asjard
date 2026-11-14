@@ -228,6 +228,9 @@ func (c *Context) ReadEntityWithReaders(entity proto.Message, readers []*EntityR
 	return nil
 }
 
+// ClientIP extracts and returns the true client IP address from the request.
+// It checks standard proxy headers such as X-Forwarded-For and X-Real-IP first,
+// and falls back to parsing the remote address (RemoteAddr) if no headers are present.
 func (c *Context) ClientIP() string {
 	xff := c.Header(headerXForwardedFor)
 	if len(xff) > 0 {
@@ -243,6 +246,23 @@ func (c *Context) ClientIP() string {
 		return c.r.RemoteAddr
 	}
 	return ip
+}
+
+// RequestIP retrieves the client IP address, prioritizing a specified custom trusted header.
+// If the provided trustHeader is non-empty and present in the request, its value is returned;
+// otherwise, it falls back to the standard ClientIP() resolution logic.
+func (c *Context) RequestIP(trustHeader string) string {
+	if trustHeader != "" {
+		th := c.Header(trustHeader)
+		if th != "" {
+			ip, _, err := net.SplitHostPort(th)
+			if err == nil {
+				return ip
+			}
+			return th
+		}
+	}
+	return c.ClientIP()
 }
 
 // WriteData finalizes the request by sending data or an error back to the client.
