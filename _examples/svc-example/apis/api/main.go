@@ -18,6 +18,7 @@ func main() {
 
 	if err := server.AddHandlers(grpc.Protocol,
 		apiv1.NewUserAPI(svcCtx),
+		apiv1.NewHelloAPI(),
 		&apiv1.ConfigAPI{},
 		&apiv1.SampleAPI{}); err != nil {
 		log.Fatal(err)

@@ -56,15 +56,15 @@ func (*Trace) Name() string {
 func (t *Trace) Interceptor() server.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *server.UnaryServerInfo, handler server.UnaryHandler) (resp any, err error) {
 		logger.L(ctx).Debug("start server interceptor", "interceptor", t.Name(), "full_method", info.FullMethod, "protocol", info.Protocol)
-		// 1. Skip if tracing is disabled in configuration.
+		// Skip if tracing is disabled in configuration.
 		if !t.conf.Enabled {
 			return handler(ctx, req)
 		}
 
-		// 2. Prepare the carrier (headers/metadata) and extract existing trace context from the caller.
+		// Prepare the carrier (headers/metadata) and extract existing trace context from the caller.
 		carrier := mtrace.NewTraceCarrier(ctx)
 
-		// 3. Start a new Span.
+		// Start a new Span.
 		// Operation name format: {protocol}://{fullMethod} (e.g., grpc://api.User/Get).
 		tx, span := t.tracer.Start(t.propagator.Extract(ctx, carrier),
 			info.Protocol+"://"+info.FullMethod,
@@ -72,19 +72,19 @@ func (t *Trace) Interceptor() server.UnaryServerInterceptor {
 			trace.WithAttributes(semconv.ServiceName(t.app.Instance.Name), semconv.ServiceNamespace(t.app.Instance.Group)))
 		defer span.End()
 
-		// 4. Inject the new span context back into the carrier for downstream propagation.
+		// Inject the new span context back into the carrier for downstream propagation.
 		t.propagator.Inject(tx, carrier)
 
-		// 5. Special handling for REST protocol to attach TraceID to the response.
+		// Special handling for REST protocol to attach TraceID to the response.
 		if rtx, ok := ctx.(*rest.Context); ok {
-			rtx.SetContext(trace.ContextWithSpanContext(rtx.Context(), trace.SpanContextFromContext(tx)))
+			rtx.WithContext(trace.ContextWithSpanContext(rtx.Context(), trace.SpanContextFromContext(tx)))
 			// Attach TraceID to REST user values so it can be sent back in HTTP headers.
 			rtx.SetUserValue(rest.HeaderResponseRequestID, span.SpanContext().TraceID().String())
 			rtx.SetUserValue(rest.HeaderResponseRequestMethod, info.FullMethod)
 			return handler(rtx, req)
 		}
 
-		// 6. Pass the enriched context containing the span to the next handler.
+		// Pass the enriched context containing the span to the next handler.
 		return handler(trace.ContextWithRemoteSpanContext(tx, trace.SpanContextFromContext(tx)), req)
 	}
 }

@@ -95,7 +95,7 @@ const ()
 //
 // Sample service provides basic greeting operations.
 var SampleAmqpServiceDesc = xamqp1.ServiceDesc{
-	ServiceName: "api.v1.example.docs.Sample",
+	ServiceName: "api.v1.docs.example.Sample",
 	HandlerType: (*SampleServer)(nil),
 	Methods:     []xamqp1.MethodDesc{},
 }

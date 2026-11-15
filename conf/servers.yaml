@@ -31,6 +31,25 @@ asjard:
       prefetchCount: 1
       prefetchSize: 0
       global: false
+    mcp:
+      enabeld: true
+      addresses:
+        listen: 127.0.0.1:6010
+      # path: /mcp
+      # streamable:
+      #   ## Cursor/VS Code often send a hostname Host header on loopback
+      #   ## connections; the SDK rejects that with HTTP 403.
+      #   disableLocalhostProtection: true
+      #   jsonResponse: false
+      #   stateless: false
+      options:
+        # readTimeout: !!str 0s
+        # readHeaderTimeout: !!str 0s
+        # writeTimeout: !!str 0s
+        # idleTimeout: !!str 0s
+        # maxHeaderBytes: !!int 0
+        # maxRequestBodySize: !!int 20971520
+        # disableKeepalive: !!bool false
 
     ## grpc configuration
     grpc:

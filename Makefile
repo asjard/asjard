@@ -49,6 +49,15 @@ build_gen_ts_enum: ## Build command protoc-gen-ts-enum
 build_gen_ts_umi: ## Build command protoc-gen-ts-umi
 	go build -o $(GOPATH)/bin/protoc-gen-ts-umi -ldflags '-w -s' ./cmd/protoc-gen-ts-umi/*.go
 
+.PHONY: build_gen_go_mcp
+build_gen_go_mcp: ## Build command protoc-gen-go-mcp
+	go build -o $(GOPATH)/bin/protoc-gen-go-mcp -ldflags '-w -s' ./cmd/protoc-gen-go-mcp/*.go
+
+.PHONY: build_gen_go_mcp2grpc
+build_gen_go_mcp2grpc: ## Build command protoc-gen-go-mcp2grpc
+	go build -o $(GOPATH)/bin/protoc-gen-go-mcp2grpc -ldflags '-w -s' ./cmd/protoc-gen-go-mcp2grpc/*.go
+
+
 .PHONY: gen_proto
 gen_proto: clean ## Build protobuf
 	bash third_party/github.com/asjard/protobuf/build.sh

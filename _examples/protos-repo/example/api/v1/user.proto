@@ -7,6 +7,7 @@ package api.v1.docs.example;
 option go_package = "protos-repo/example/api/v1/user";
 
 import "github.com/asjard/protobuf/http.proto";
+import "github.com/asjard/protobuf/mcp.proto";
 import "github.com/asjard/protobuf/validate.proto";
 
 import "protos-repo/common/common.proto";
@@ -23,6 +24,8 @@ service User {
         option (asjard.api.http) = {
             post : '/'
         };
+        option (asjard.api.mcp_tool) = {
+        };
     };
 
     // Get retrieves a single user by their primary identifier (username/key).
@@ -34,6 +37,8 @@ service User {
         };
         option (asjard.api.http) = {
             get : '/{name}'
+        };
+        option (asjard.api.mcp_tool) = {
         };
     };
 
@@ -47,6 +52,8 @@ service User {
         option (asjard.api.http) = {
             put : '/{username}'
         };
+        option (asjard.api.mcp_tool) = {
+        };
     };
 
     // Del removes the user record from the persistent store and
@@ -58,6 +65,8 @@ service User {
         option (asjard.api.http) = {
             delete : '/{name}'
         };
+        option (asjard.api.mcp_tool) = {
+        };
     };
 
     // Search filters users with pagination support.
@@ -66,6 +75,8 @@ service User {
     rpc Search(UserSearchReq) returns (UserList) {
         option (asjard.api.http) = {
             get : '/search'
+        };
+        option (asjard.api.mcp_tool) = {
         };
     }
 
@@ -77,11 +88,15 @@ service User {
         option (asjard.api.http) = {
             post : '/{username}/creditcards'
         };
+        option (asjard.api.mcp_tool) = {
+        };
     }
     // User remove a credit card
     rpc RemoveCreditCard(UserCreditCardReq) returns (api.common.Empty) {
         option (asjard.api.http) = {
             delete : '/{username}/creditcards'
+        };
+        option (asjard.api.mcp_tool) = {
         };
     }
     // Get user specify credit card info
@@ -89,12 +104,16 @@ service User {
         option (asjard.api.http) = {
             get : '/{username}/creditcards'
         };
+        option (asjard.api.mcp_tool) = {
+        };
     }
 
     // Get all credit cards under user
     rpc SearchCreditCard(api.common.ReqWithName) returns (UserCreditCardList) {
         option (asjard.api.http) = {
             get : '/{username}/creditcards/search'
+        };
+        option (asjard.api.mcp_tool) = {
         };
     }
 }

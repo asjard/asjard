@@ -98,7 +98,7 @@ const ()
 // Config Example
 // Config service handles application configuration retrieval and management.
 var ConfigAmqpServiceDesc = xamqp1.ServiceDesc{
-	ServiceName: "api.v1.example.docs.Config",
+	ServiceName: "api.v1.docs.example.Config",
 	HandlerType: (*ConfigServer)(nil),
 	Methods:     []xamqp1.MethodDesc{},
 }

@@ -68,21 +68,21 @@ func (c *MetadataCarrier) Keys() []string {
 
 // Get retrieves a value from HTTP Request headers.
 func (c *HeaderCarrier) Get(key string) string {
-	values := c.GetHeaderParam(key)
-	if len(values) == 0 {
+	value := c.Header(key)
+	if len(value) == 0 {
 		return ""
 	}
-	return values[0]
+	return value
 }
 
 // Set adds a trace header to the outgoing HTTP request.
 func (c *HeaderCarrier) Set(key string, value string) {
-	c.Request.Header.Add(key, value)
+	c.Request().Header.Set(key, value)
 }
 
 // Keys identifies all header keys present in the HTTP request.
 func (c *HeaderCarrier) Keys() []string {
-	headers := c.ReadHeaderParams()
+	headers := c.Headers()
 	out := make([]string, 0, len(headers))
 	for key := range headers {
 		out = append(out, key)

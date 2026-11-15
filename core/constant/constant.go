@@ -46,6 +46,7 @@ var (
 const (
 	// Server Configuration Namespaces
 	ConfigServerRestPrefix  = "asjard.servers.rest"
+	ConfigServerMcpPrefix   = "asjard.servers.mcp"
 	ConfigServerGrpcPrefix  = "asjard.servers.grpc"
 	ConfigServerPporfPrefix = "asjard.servers.pprof"
 	ConfigServicePrefix     = "asjard.service"

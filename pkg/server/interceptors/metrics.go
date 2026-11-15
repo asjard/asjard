@@ -9,7 +9,6 @@ import (
 	"github.com/asjard/asjard/core/server"
 	"github.com/asjard/asjard/core/status"
 	"github.com/asjard/asjard/pkg/metrics/collectors"
-	"github.com/asjard/asjard/pkg/server/rest"
 )
 
 const (
@@ -68,12 +67,12 @@ func (m Metrics) Interceptor() server.UnaryServerInterceptor {
 		m.requestLatency.Observe(info.FullMethod, info.Protocol, time.Since(start).Seconds())
 
 		// Protocol-specific metrics (Size tracking for REST).
-		if rtx, ok := ctx.(*rest.Context); ok {
-			// Observe approximate size of the HTTP request.
-			m.requestSize.Observe(info.FullMethod, info.Protocol, float64(computeApproximateRequestSize(rtx)))
-			// Observe the exact content length of the HTTP response.
-			m.responseSize.Observe(info.FullMethod, info.Protocol, float64(rtx.Response.Header.ContentLength()))
-		}
+		// if rtx, ok := ctx.(*rest.Context); ok {
+		// Observe approximate size of the HTTP request.
+		// m.requestSize.Observe(info.FullMethod, info.Protocol, float64(computeApproximateRequestSize(rtx)))
+		// Observe the exact content length of the HTTP response.
+		// m.responseSize.Observe(info.FullMethod, info.Protocol, float64(rtx.Response().Header().Get("")))
+		// }
 
 		return resp, err
 	}
@@ -81,11 +80,11 @@ func (m Metrics) Interceptor() server.UnaryServerInterceptor {
 
 // computeApproximateRequestSize calculates the total byte size of an HTTP request
 // including URI, Method, Protocol version, and Headers.
-func computeApproximateRequestSize(r *rest.Context) int {
-	s := len(r.RequestURI())
-	s += len(r.Method())
-	s += len(r.Request.Header.Protocol())
-	s += r.Request.Header.Len()
-	s += r.Request.Header.ContentLength()
-	return s
-}
+// func computeApproximateRequestSize(r *rest.Context) int {
+// 	s := len(r.Request().URL.String())
+// 	s += len(r.Request().Method)
+// 	s += len(r.Request().Proto)
+// 	s += r.Request().Header.Len()
+// 	s += r.Request.Header.ContentLength()
+// 	return s
+// }

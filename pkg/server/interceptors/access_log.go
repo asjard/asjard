@@ -90,9 +90,9 @@ func (al *AccessLog) Interceptor() server.UnaryServerInterceptor {
 
 		rtx, ok := ctx.(*rest.Context)
 		if ok {
-			fields = append(fields, []any{"header", rtx.ReadHeaderParams()}...)
-			fields = append(fields, []any{"method", string(rtx.Method())}...)
-			fields = append(fields, []any{"path", string(rtx.Path())}...)
+			fields = append(fields, []any{"header", rtx.Headers()}...)
+			fields = append(fields, []any{"method", string(rtx.Request().Method)}...)
+			fields = append(fields, []any{"path", string(rtx.Request().URL.String())}...)
 		}
 
 		//  Record post-execution metrics (latency, success, error details).

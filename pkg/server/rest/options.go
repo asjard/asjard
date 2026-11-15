@@ -10,7 +10,7 @@ type Option func(ctx *Context)
 func WithWriter(wrt Writer) func(ctx *Context) {
 	return func(ctx *Context) {
 		if wrt != nil {
-			ctx.write = wrt
+			ctx.writer = wrt
 		}
 	}
 }
