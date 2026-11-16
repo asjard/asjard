@@ -81,7 +81,7 @@ etcdctl put /examples/configs/examples.yaml 'examples:
 
 import (
 	// 导入etcd配置源
-	_ "github.com/asjard/asjard/pkg/config/etcd"
+	_ "github.com/asjard/asjard/v2/pkg/config/etcd"
 )
 
 config.GetDuration("examples.timeout", time.Second)

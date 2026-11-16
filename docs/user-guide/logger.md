@@ -44,7 +44,7 @@ asjard:
 ## 使用
 
 ```go
-import "github.com/asjard/asjard/core/logger"
+import "github.com/asjard/asjard/v2/core/logger"
 
 func (api *SampleAPI) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
 	logger.Debug("say hello request", "name", name)

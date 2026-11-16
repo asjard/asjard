@@ -2,8 +2,8 @@
 
 ```go
 import (
-	"github.com/asjard/asjard/pkg/xgorm"
-	"github.com/asjard/asjard/pkg/mutex"
+	"github.com/asjard/asjard/v2/pkg/xgorm"
+	"github.com/asjard/asjard/v2/pkg/mutex"
 )
 
 func main() {

@@ -3,7 +3,7 @@ package grpc
 import (
 	"testing"
 
-	"github.com/asjard/asjard/core/client"
+	"github.com/asjard/asjard/v2/core/client"
 	"github.com/stretchr/testify/require"
 )
 

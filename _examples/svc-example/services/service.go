@@ -5,9 +5,9 @@ import (
 
 	"svc-example/datas"
 
-	"github.com/asjard/asjard/core/bootstrap"
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/pkg/stores/xgorm"
+	"github.com/asjard/asjard/v2/core/bootstrap"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/pkg/stores/xgorm"
 )
 
 type Svcs struct {

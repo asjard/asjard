@@ -17,5 +17,5 @@ asjard:
 ## 使用
 
 ```go
-import _ "github.com/asjard/asjard/pkg/registry/consul"
+import _ "github.com/asjard/asjard/v2/pkg/registry/consul"
 ```

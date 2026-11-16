@@ -3,8 +3,8 @@ package xasynq
 import (
 	"strings"
 
-	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/v2/core/runtime"
+	"github.com/asjard/asjard/v2/core/server"
 )
 
 // handlerFunc defines the internal signature for Asynq task execution.

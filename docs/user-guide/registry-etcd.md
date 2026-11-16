@@ -17,5 +17,5 @@ asjard:
 ## 使用
 
 ```go
-import _"github.com/asjard/asjard/pkg/registry/etcd"
+import _"github.com/asjard/asjard/v2/pkg/registry/etcd"
 ```

@@ -75,9 +75,9 @@ import (
 	"context"
 	"runtime/debug"
 
-	"github.com/asjard/asjard/core/client"
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/status"
+	"github.com/asjard/asjard/v2/core/client"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/status"
 )
 
 const (

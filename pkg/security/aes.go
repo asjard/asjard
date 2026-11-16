@@ -12,9 +12,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
-	"github.com/asjard/asjard/core/security"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/constant"
+	"github.com/asjard/asjard/v2/core/security"
 )
 
 const (

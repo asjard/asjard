@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"github.com/asjard/asjard/core/constant"
+	"github.com/asjard/asjard/v2/core/constant"
 )
 
 // Unmarshaler defines the interface for custom deserialization.

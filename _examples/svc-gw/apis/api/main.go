@@ -10,9 +10,9 @@ import (
 	apiv1 "svc-gw/apis/api/v1"
 	_ "svc-gw/interceptors"
 
-	"github.com/asjard/asjard"
-	"github.com/asjard/asjard/pkg/server/mcp"
-	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/v2"
+	"github.com/asjard/asjard/v2/pkg/server/mcp"
+	"github.com/asjard/asjard/v2/pkg/server/rest"
 )
 
 func main() {

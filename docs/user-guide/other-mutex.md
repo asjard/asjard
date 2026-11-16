@@ -17,7 +17,7 @@ type Locker interface {
 ## 使用
 
 ```go
-import "github.com/asjard/asjard/pkg/mutex"
+import "github.com/asjard/asjard/v2/pkg/mutex"
 
 m := &mutext.Mutex{Locker: &customeLock{}}
 m.TryLock(context.Background(), key, do, mutex.WithMaxRetries(-1))

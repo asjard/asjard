@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asjard/asjard/core/config"
-	_ "github.com/asjard/asjard/pkg/config/mem"
+	"github.com/asjard/asjard/v2/core/config"
+	_ "github.com/asjard/asjard/v2/pkg/config/mem"
 	"github.com/rabbitmq/amqp091-go"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/require"

@@ -26,7 +26,7 @@ asjard:
 ## 使用
 
 ```go
-import "github.com/asjard/asjard/pkg/stores/consul"
+import "github.com/asjard/asjard/v2/pkg/stores/consul"
 
 client, err := consul.Client()
 // OR

@@ -3,10 +3,10 @@ package handlers
 import (
 	"context"
 
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/status"
-	"github.com/asjard/asjard/pkg/protobuf/metricspb"
-	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/status"
+	"github.com/asjard/asjard/v2/pkg/protobuf/metricspb"
+	"github.com/asjard/asjard/v2/pkg/server/rest"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"google.golang.org/protobuf/types/known/emptypb"

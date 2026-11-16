@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/pkg/stores/xetcd"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/constant"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/runtime"
+	"github.com/asjard/asjard/v2/pkg/stores/xetcd"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )

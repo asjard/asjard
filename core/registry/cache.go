@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/server"
 )
 
 // healthCheckFunc defines the signature for verifying if a specific service instance is healthy.

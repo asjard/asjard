@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/v2/core/config"
 	"github.com/stretchr/testify/require"
 )
 

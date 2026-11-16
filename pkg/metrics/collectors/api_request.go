@@ -1,7 +1,7 @@
 package collectors
 
 import (
-	"github.com/asjard/asjard/core/metrics"
+	"github.com/asjard/asjard/v2/core/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

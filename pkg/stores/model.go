@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/status"
-	"github.com/asjard/asjard/pkg/tools"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/status"
+	"github.com/asjard/asjard/v2/pkg/tools"
 	"golang.org/x/sync/singleflight"
 )
 

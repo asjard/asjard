@@ -6,7 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/asjard/asjard/core/constant"
+	"github.com/asjard/asjard/v2/core/constant"
 )
 
 // ConfigsWithSyncMap implements the Configer interface using sync.Map.

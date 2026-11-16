@@ -8,7 +8,7 @@ package rest
 
 import (
 	context "context"
-	server "github.com/asjard/asjard/core/server"
+	server "github.com/asjard/asjard/v2/core/server"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 

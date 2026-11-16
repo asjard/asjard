@@ -149,8 +149,8 @@ import (
 
 	pb "protos-repo/example/api/v1/sample"
 
-	"github.com/asjard/asjard/pkg/server/grpc"
-	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/v2/pkg/server/grpc"
+	"github.com/asjard/asjard/v2/pkg/server/rest"
 )
 
 type SampleAPI struct {

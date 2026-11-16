@@ -4,8 +4,8 @@ import (
 	"math"
 	"net/http"
 
-	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/runtime"
+	"github.com/asjard/asjard/v2/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

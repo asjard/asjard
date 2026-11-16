@@ -2,8 +2,8 @@
 
 ```go
 import (
-	"github.com/asjard/asjard/pkg/xredis"
-	"github.com/asjard/asjard/pkg/mutex"
+	"github.com/asjard/asjard/v2/pkg/xredis"
+	"github.com/asjard/asjard/v2/pkg/mutex"
 )
 
 func main() {

@@ -14,21 +14,21 @@ go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 ## 生成_grpc.pb.go文件，grpc服务端，客户端
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 ## 生成_amqp.pb.go文件，rabbitmq服务端，客户端
-go install github.com/asjard/asjard/cmd/protoc-gen-go-amqp@latest
+go install github.com/asjard/asjard/v2/cmd/protoc-gen-go-amqp@latest
 ## 生成_asynq.pb.go文件, asynq服务端，客户端
-go install github.com/asjard/asjard/cmd/protoc-gen-go-asynq@latest
+go install github.com/asjard/asjard/v2/cmd/protoc-gen-go-asynq@latest
 ## 生成_rest.pb.go文件, http服务端
-go install github.com/asjard/asjard/cmd/protoc-gen-go-rest@latest
+go install github.com/asjard/asjard/v2/cmd/protoc-gen-go-rest@latest
 ## 生成_rest_gw.pb.go文件, http协议转grpc协议
-go install github.com/asjard/asjard/cmd/protoc-gen-go-rest2grpc-gw@latest
+go install github.com/asjard/asjard/v2/cmd/protoc-gen-go-rest2grpc-gw@latest
 ## 生成_validate.pb.go文件,参数校验
-go install github.com/asjard/asjard/cmd/protoc-gen-go-validate@latest
+go install github.com/asjard/asjard/v2/cmd/protoc-gen-go-validate@latest
 ## 生成enum.pb.ts文件，typescript枚举生成
-go install github.com/asjard/asjard/cmd/protoc-gen-ts-enum@latest
+go install github.com/asjard/asjard/v2/cmd/protoc-gen-ts-enum@latest
 ## 生成umi.pb.ts文件, umi request请求生成
-go install github.com/asjard/asjard/cmd/protoc-gen-ts-umi@latest
+go install github.com/asjard/asjard/v2/cmd/protoc-gen-ts-umi@latest
 ## 生成pb.ts文件, typescript类型定义
-go install github.com/asjard/asjard/cmd/protoc-gen-ts@latest
+go install github.com/asjard/asjard/v2/cmd/protoc-gen-ts@latest
 ```
 
 ## 定义protobuf文件
@@ -78,10 +78,10 @@ package main
 import (
 	"context"
 
-	pb "github.com/asjard/asjard/_examples/protos-repo/example/api/v1/sample"
-	"github.com/asjard/asjard/pkg/server/grpc"
-	"github.com/asjard/asjard/pkg/server/rest"
-	"github.com/asjard/asjard"
+	pb "github.com/asjard/asjard/v2/_examples/protos-repo/example/api/v1/sample"
+	"github.com/asjard/asjard/v2/pkg/server/grpc"
+	"github.com/asjard/asjard/v2/pkg/server/rest"
+	"github.com/asjard/asjard/v2"
 )
 
 type SampleAPI struct {
@@ -211,6 +211,6 @@ curl -s  -X GET 'http://localhost:8100/api/v1/docs/samples/helloworld'|python3 -
 }
 ```
 
-如上示例可在`github.com/asjard/asjard/_examples/svc-example/apis/api/v1/sample.go`和`github.com/asjard/asjard/_examples/protos-repo/examples/api/v1/sample.proto`中查看
+如上示例可在`github.com/asjard/asjard/v2/_examples/svc-example/apis/api/v1/sample.go`和`github.com/asjard/asjard/v2/_examples/protos-repo/examples/api/v1/sample.proto`中查看
 
 通过以上示例你启动了一个最简单的包含HTTP和GRPC的服务，后续我将通过配置为你开启各种功能，比如`cors`,`openAPI`,`参数校验`,`trace`等功能

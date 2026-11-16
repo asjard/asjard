@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/v2/core/config"
 	"github.com/spf13/cast"
 )
 

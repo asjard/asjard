@@ -3,7 +3,7 @@ package metrics
 import (
 	"testing"
 
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 )

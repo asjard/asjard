@@ -7,8 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/runtime"
+	"github.com/asjard/asjard/v2/utils"
 )
 
 // Cacher defines the standard interface that all cache implementations (Redis, Memcached, Local, etc.) must satisfy.

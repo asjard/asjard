@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/server"
-	"github.com/asjard/asjard/core/status"
-	"github.com/asjard/asjard/pkg/metrics/collectors"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/server"
+	"github.com/asjard/asjard/v2/core/status"
+	"github.com/asjard/asjard/v2/pkg/metrics/collectors"
 )
 
 const (

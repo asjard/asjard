@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/asjard/asjard/pkg/stores/xgorm"
+	"github.com/asjard/asjard/v2/pkg/stores/xgorm"
 	"gorm.io/gorm"
 )
 

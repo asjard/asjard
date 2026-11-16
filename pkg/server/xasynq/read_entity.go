@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/server"
-	"github.com/asjard/asjard/core/status"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/server"
+	"github.com/asjard/asjard/v2/core/status"
 	"google.golang.org/grpc/codes"
 )
 

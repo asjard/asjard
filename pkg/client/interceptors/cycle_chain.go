@@ -5,9 +5,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/asjard/asjard/core/client"
-	"github.com/asjard/asjard/core/status"
-	"github.com/asjard/asjard/pkg/client/grpc"
+	"github.com/asjard/asjard/v2/core/client"
+	"github.com/asjard/asjard/v2/core/status"
+	"github.com/asjard/asjard/v2/pkg/client/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 )

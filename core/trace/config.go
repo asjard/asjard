@@ -3,8 +3,8 @@ package trace
 import (
 	"time"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/utils"
 )
 
 // Config holds the settings for the distributed tracing exporter.

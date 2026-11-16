@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/v2/core/config"
 )
 
 type testLock struct {

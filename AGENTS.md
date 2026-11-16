@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This repository is a Go module (`github.com/asjard/asjard`) targeting Go 1.25.6. Framework internals live in `core/` (bootstrap, configuration, clients, registries, servers, tracing), while reusable integrations and public adapters live in `pkg/`. General-purpose helpers are under `utils/`. Command-line tools and protobuf generators are in `cmd/`; runnable reference projects and their protobuf sources are in `_examples/`. Documentation belongs in `docs/`, and shared/generated protobuf packages are under `pkg/protobuf/`. Treat files marked `Code generated ... DO NOT EDIT` as generated artifacts; change their source or generator instead.
+This repository is a Go module (`github.com/asjard/asjard/v2`) targeting Go 1.25.6. Framework internals live in `core/` (bootstrap, configuration, clients, registries, servers, tracing), while reusable integrations and public adapters live in `pkg/`. General-purpose helpers are under `utils/`. Command-line tools and protobuf generators are in `cmd/`; runnable reference projects and their protobuf sources are in `_examples/`. Documentation belongs in `docs/`, and shared/generated protobuf packages are under `pkg/protobuf/`. Treat files marked `Code generated ... DO NOT EDIT` as generated artifacts; change their source or generator instead.
 
 ## Build, Test, and Development Commands
 

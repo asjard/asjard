@@ -5,11 +5,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/asjard/asjard/core/client"
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/client"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/constant"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/utils"
 )
 
 const (

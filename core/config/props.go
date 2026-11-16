@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/asjard/asjard/core/constant"
+	"github.com/asjard/asjard/v2/core/constant"
 	"github.com/magiconair/properties"
 	"github.com/pelletier/go-toml/v2"
 	"gopkg.in/yaml.v3"

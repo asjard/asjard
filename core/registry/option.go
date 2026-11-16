@@ -3,7 +3,7 @@ package registry
 import (
 	"sync"
 
-	"github.com/asjard/asjard/core/runtime"
+	"github.com/asjard/asjard/v2/core/runtime"
 )
 
 // Options holds the criteria used to filter service instances from the cache.

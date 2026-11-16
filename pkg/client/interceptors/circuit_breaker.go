@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/asjard/asjard/core/client"
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/status"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/client"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/status"
+	"github.com/asjard/asjard/v2/utils"
 	"github.com/sony/gobreaker"
 	"google.golang.org/grpc/codes"
 )

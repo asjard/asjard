@@ -3,7 +3,7 @@ package tools
 import (
 	"runtime/debug"
 
-	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/v2/core/logger"
 )
 
 // SafeGo auto add panic recover on a goroutine

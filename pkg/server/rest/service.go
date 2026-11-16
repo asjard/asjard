@@ -1,7 +1,7 @@
 package rest
 
 import (
-	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/v2/core/server"
 )
 
 // methodHandler defines the standard signature for a REST request handler.

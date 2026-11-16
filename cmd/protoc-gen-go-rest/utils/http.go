@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/asjard/asjard/pkg/protobuf/httppb"
+	"github.com/asjard/asjard/v2/pkg/protobuf/httppb"
 	"github.com/jinzhu/inflection"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"

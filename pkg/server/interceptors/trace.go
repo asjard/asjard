@@ -3,12 +3,12 @@ package interceptors
 import (
 	"context"
 
-	"github.com/asjard/asjard/core/constant"
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/core/server"
-	mtrace "github.com/asjard/asjard/core/trace"
-	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/v2/core/constant"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/runtime"
+	"github.com/asjard/asjard/v2/core/server"
+	mtrace "github.com/asjard/asjard/v2/core/trace"
+	"github.com/asjard/asjard/v2/pkg/server/rest"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"

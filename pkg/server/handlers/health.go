@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/asjard/asjard/core/client"
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/core/server/handlers"
-	_ "github.com/asjard/asjard/pkg/client/grpc" // Side-effect import to register gRPC client
-	"github.com/asjard/asjard/pkg/protobuf/healthpb"
-	"github.com/asjard/asjard/pkg/server/grpc"
-	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/v2/core/client"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/runtime"
+	"github.com/asjard/asjard/v2/core/server/handlers"
+	_ "github.com/asjard/asjard/v2/pkg/client/grpc" // Side-effect import to register gRPC client
+	"github.com/asjard/asjard/v2/pkg/protobuf/healthpb"
+	"github.com/asjard/asjard/v2/pkg/server/grpc"
+	"github.com/asjard/asjard/v2/pkg/server/rest"
 )
 
 // Health implements the healthpb.HealthServer interface.

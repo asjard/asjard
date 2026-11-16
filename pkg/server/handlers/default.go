@@ -4,11 +4,11 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/core/server/handlers"
-	"github.com/asjard/asjard/pkg/protobuf/requestpb"
-	"github.com/asjard/asjard/pkg/server/rest"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/runtime"
+	"github.com/asjard/asjard/v2/core/server/handlers"
+	"github.com/asjard/asjard/v2/pkg/protobuf/requestpb"
+	"github.com/asjard/asjard/v2/pkg/server/rest"
+	"github.com/asjard/asjard/v2/utils"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 

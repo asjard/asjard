@@ -39,7 +39,7 @@ asjard:
 程序中可以这样使用
 
 ```go
-import "github.com/asjard/asjard/core/config"
+import "github.com/asjard/asjard/v2/core/config"
 
 config.GetString("asjard.service.app", "asjard")
 ```

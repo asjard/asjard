@@ -30,7 +30,7 @@ asjard:
 ### 自定义指标
 
 ```go
-import "github.com/asjard/asjard/core/metrics"
+import "github.com/asjard/asjard/v2/core/metrics"
 
 func main() {
 	// 注册一个计数器指标

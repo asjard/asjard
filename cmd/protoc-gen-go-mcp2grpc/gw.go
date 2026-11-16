@@ -28,11 +28,11 @@ import (
 
 const (
 	contextPackage   = protogen.GoImportPath("context")
-	mcpPackage       = protogen.GoImportPath("github.com/asjard/asjard/pkg/server/mcp")
-	configPackage    = protogen.GoImportPath("github.com/asjard/asjard/core/config")
-	clientPackage    = protogen.GoImportPath("github.com/asjard/asjard/core/client")
-	grpcPackage      = protogen.GoImportPath("github.com/asjard/asjard/pkg/client/grpc")
-	bootstrapPackage = protogen.GoImportPath("github.com/asjard/asjard/core/bootstrap")
+	mcpPackage       = protogen.GoImportPath("github.com/asjard/asjard/v2/pkg/server/mcp")
+	configPackage    = protogen.GoImportPath("github.com/asjard/asjard/v2/core/config")
+	clientPackage    = protogen.GoImportPath("github.com/asjard/asjard/v2/core/client")
+	grpcPackage      = protogen.GoImportPath("github.com/asjard/asjard/v2/pkg/client/grpc")
+	bootstrapPackage = protogen.GoImportPath("github.com/asjard/asjard/v2/core/bootstrap")
 	syncPackage      = protogen.GoImportPath("sync")
 	// FileDescriptorProto.package field number
 	fileDescriptorProtoPackageFieldNumber = 2

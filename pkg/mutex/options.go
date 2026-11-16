@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/utils"
 )
 
 // LockOptions defines the configuration parameters for acquiring a distributed lock.

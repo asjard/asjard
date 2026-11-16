@@ -8,10 +8,10 @@ package healthpb
 
 import (
 	context "context"
-	client "github.com/asjard/asjard/core/client"
-	config "github.com/asjard/asjard/core/config"
-	grpc "github.com/asjard/asjard/pkg/client/grpc"
-	rest "github.com/asjard/asjard/pkg/server/rest"
+	client "github.com/asjard/asjard/v2/core/client"
+	config "github.com/asjard/asjard/v2/core/config"
+	grpc "github.com/asjard/asjard/v2/pkg/client/grpc"
+	rest "github.com/asjard/asjard/v2/pkg/server/rest"
 )
 
 type HealthAPI struct {

@@ -1,8 +1,8 @@
 package snowflake
 
 import (
-	"github.com/asjard/asjard/core/bootstrap"
-	"github.com/asjard/asjard/core/runtime"
+	"github.com/asjard/asjard/v2/core/bootstrap"
+	"github.com/asjard/asjard/v2/core/runtime"
 	"github.com/bwmarrin/snowflake"
 )
 

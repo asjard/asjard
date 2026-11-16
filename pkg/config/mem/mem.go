@@ -7,7 +7,7 @@ package mem
 import (
 	"sync"
 
-	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/v2/core/config"
 )
 
 const (

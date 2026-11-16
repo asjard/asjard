@@ -3,8 +3,8 @@ package client
 import (
 	"sync"
 
-	"github.com/asjard/asjard/core/registry"
-	"github.com/asjard/asjard/core/runtime"
+	"github.com/asjard/asjard/v2/core/registry"
+	"github.com/asjard/asjard/v2/core/runtime"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
 	"google.golang.org/grpc/metadata"

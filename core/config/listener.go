@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/v2/core/logger"
 )
 
 // Listener manages configuration change subscribers.

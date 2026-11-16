@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/asjard/asjard/pkg/protobuf/validatepb"
+	"github.com/asjard/asjard/v2/pkg/protobuf/validatepb"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"

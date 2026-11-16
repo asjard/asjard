@@ -5,9 +5,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/core/status"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/runtime"
+	"github.com/asjard/asjard/v2/core/status"
+	"github.com/asjard/asjard/v2/utils"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 )

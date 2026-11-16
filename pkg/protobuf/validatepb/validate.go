@@ -9,7 +9,7 @@ import (
 	"strings"
 	sync "sync"
 
-	"github.com/asjard/asjard/core/status"
+	"github.com/asjard/asjard/v2/core/status"
 	"github.com/go-playground/validator/v10"
 	"google.golang.org/grpc/codes"
 )

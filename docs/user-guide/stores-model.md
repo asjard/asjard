@@ -15,10 +15,10 @@ import (
 	"protos-repo/example/api/v1/user"
 	"svc-example/datas"
 
-	"github.com/asjard/asjard/core/bootstrap"
-	"github.com/asjard/asjard/core/status"
-	"github.com/asjard/asjard/pkg/cache"
-	"github.com/asjard/asjard/pkg/stores"
+	"github.com/asjard/asjard/v2/core/bootstrap"
+	"github.com/asjard/asjard/v2/core/status"
+	"github.com/asjard/asjard/v2/pkg/cache"
+	"github.com/asjard/asjard/v2/pkg/stores"
 	"google.golang.org/grpc/codes"
 )
 

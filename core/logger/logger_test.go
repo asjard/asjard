@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/v2/core/logger"
 )
 
 type captureHandler struct {

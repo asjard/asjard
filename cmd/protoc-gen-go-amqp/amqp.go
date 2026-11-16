@@ -23,8 +23,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/asjard/asjard/cmd/protoc-gen-go-amqp/utils"
-	"github.com/asjard/asjard/pkg/protobuf/mqpb"
+	"github.com/asjard/asjard/v2/cmd/protoc-gen-go-amqp/utils"
+	"github.com/asjard/asjard/v2/pkg/protobuf/mqpb"
 	"github.com/spf13/cast"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
@@ -33,16 +33,16 @@ import (
 
 const (
 	contextPackage   = protogen.GoImportPath("context")
-	configPakcage    = protogen.GoImportPath("github.com/asjard/asjard/core/config")
-	xamqpPackage     = protogen.GoImportPath("github.com/asjard/asjard/pkg/server/xamqp")
-	amqpStorePackage = protogen.GoImportPath("github.com/asjard/asjard/pkg/stores/xamqp")
-	mqpbPackage      = protogen.GoImportPath("github.com/asjard/asjard/pkg/protobuf/mqpb")
+	configPakcage    = protogen.GoImportPath("github.com/asjard/asjard/v2/core/config")
+	xamqpPackage     = protogen.GoImportPath("github.com/asjard/asjard/v2/pkg/server/xamqp")
+	amqpStorePackage = protogen.GoImportPath("github.com/asjard/asjard/v2/pkg/stores/xamqp")
+	mqpbPackage      = protogen.GoImportPath("github.com/asjard/asjard/v2/pkg/protobuf/mqpb")
 	jsonPackage      = protogen.GoImportPath("encoding/json")
 	amqpPackage      = protogen.GoImportPath("github.com/rabbitmq/amqp091-go")
-	serverPackage    = protogen.GoImportPath("github.com/asjard/asjard/core/server")
+	serverPackage    = protogen.GoImportPath("github.com/asjard/asjard/v2/core/server")
 	protoPackage     = protogen.GoImportPath("google.golang.org/protobuf/proto")
 	syncPackage      = protogen.GoImportPath("sync")
-	bootstrapPackage = protogen.GoImportPath("github.com/asjard/asjard/core/bootstrap")
+	bootstrapPackage = protogen.GoImportPath("github.com/asjard/asjard/v2/core/bootstrap")
 	// FileDescriptorProto.package field number
 	fileDescriptorProtoPackageFieldNumber = 2
 	// FileDescriptorProto.syntax field number

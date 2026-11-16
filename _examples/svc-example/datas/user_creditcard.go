@@ -6,9 +6,9 @@ import (
 
 	"protos-repo/common/xcodes"
 
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/status"
-	"github.com/asjard/asjard/pkg/stores/xgorm"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/status"
+	"github.com/asjard/asjard/v2/pkg/stores/xgorm"
 	"google.golang.org/grpc/codes"
 	"gorm.io/gorm"
 )

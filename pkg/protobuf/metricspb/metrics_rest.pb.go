@@ -8,8 +8,8 @@ package metricspb
 
 import (
 	context "context"
-	server "github.com/asjard/asjard/core/server"
-	rest "github.com/asjard/asjard/pkg/server/rest"
+	server "github.com/asjard/asjard/v2/core/server"
+	rest "github.com/asjard/asjard/v2/pkg/server/rest"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 

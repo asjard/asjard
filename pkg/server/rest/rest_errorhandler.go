@@ -3,7 +3,7 @@ package rest
 import (
 	"context"
 
-	"github.com/asjard/asjard/core/status"
+	"github.com/asjard/asjard/v2/core/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 

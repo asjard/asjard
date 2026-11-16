@@ -14,10 +14,10 @@ import (
 	// This automatically registers pprof handlers to http.DefaultServeMux.
 	_ "net/http/pprof"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/constant"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/server"
 )
 
 const (

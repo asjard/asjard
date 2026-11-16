@@ -3,7 +3,7 @@ package metadata
 import (
 	"context"
 
-	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/v2/pkg/server/rest"
 	"github.com/spf13/cast"
 	"google.golang.org/grpc/metadata"
 )

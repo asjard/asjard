@@ -2,7 +2,7 @@
 
 ## 约定
 
-- 约定所有**对外**暴露的错误使用`github.com/asjard/asjard/core/status`提供的`Error`和`Errorf`方法
+- 约定所有**对外**暴露的错误使用`github.com/asjard/asjard/v2/core/status`提供的`Error`和`Errorf`方法
 
 ### 错误码约定
 
@@ -21,8 +21,8 @@
 ```go
 
 import （
-	"github.com/asjard/asjard/core/status"
-	"github.com/asjard/asjard/pkg/database/xgorm"
+	"github.com/asjard/asjard/v2/core/status"
+	"github.com/asjard/asjard/v2/pkg/database/xgorm"
 ）
 
 const (

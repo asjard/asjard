@@ -46,7 +46,7 @@ asjard:
 ## 使用
 
 ```go
-import "github.com/asjard/asjard/pkg/stores/xgorm"
+import "github.com/asjard/asjard/v2/pkg/stores/xgorm"
 
 // 使用默认客户端
 db, err := xgorm.DB(context.Background())

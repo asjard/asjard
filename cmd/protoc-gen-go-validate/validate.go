@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/asjard/asjard/pkg/protobuf/validatepb"
+	"github.com/asjard/asjard/v2/pkg/protobuf/validatepb"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -20,8 +20,8 @@ const (
 
 const (
 	validatorPackage        = protogen.GoImportPath("github.com/go-playground/validator")
-	defaultValidatorPackage = protogen.GoImportPath("github.com/asjard/asjard/pkg/protobuf/validatepb")
-	statusPackage           = protogen.GoImportPath("github.com/asjard/asjard/core/status")
+	defaultValidatorPackage = protogen.GoImportPath("github.com/asjard/asjard/v2/pkg/protobuf/validatepb")
+	statusPackage           = protogen.GoImportPath("github.com/asjard/asjard/v2/core/status")
 	codesPackage            = protogen.GoImportPath("google.golang.org/grpc/codes")
 	regrexpPackage          = protogen.GoImportPath("regexp")
 )

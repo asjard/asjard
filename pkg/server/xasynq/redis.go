@@ -1,7 +1,7 @@
 package xasynq
 
 import (
-	"github.com/asjard/asjard/pkg/stores/xredis"
+	"github.com/asjard/asjard/v2/pkg/stores/xredis"
 	"github.com/redis/go-redis/v9"
 )
 

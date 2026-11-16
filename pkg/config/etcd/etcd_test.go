@@ -3,7 +3,7 @@ package etcd
 import (
 	"testing"
 
-	"github.com/asjard/asjard/core/config"
+	"github.com/asjard/asjard/v2/core/config"
 )
 
 func TestMain(m *testing.M) {

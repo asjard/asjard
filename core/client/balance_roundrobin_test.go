@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/asjard/asjard/core/registry"
-	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/v2/core/registry"
+	"github.com/asjard/asjard/v2/core/runtime"
+	"github.com/asjard/asjard/v2/core/server"
 	"google.golang.org/grpc/attributes"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"

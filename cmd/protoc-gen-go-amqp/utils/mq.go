@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/asjard/asjard/pkg/protobuf/mqpb"
+	"github.com/asjard/asjard/v2/pkg/protobuf/mqpb"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 )

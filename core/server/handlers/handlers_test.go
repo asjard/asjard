@@ -3,9 +3,9 @@ package handlers
 import (
 	"testing"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/constant"
-	_ "github.com/asjard/asjard/pkg/config/mem"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/constant"
+	_ "github.com/asjard/asjard/v2/pkg/config/mem"
 )
 
 type testDefaultHandler struct{}

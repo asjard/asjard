@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/pkg/mutex"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/pkg/mutex"
 	"github.com/redis/go-redis/v9"
 )
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/v2/core/logger"
 	"github.com/hibiken/asynq"
 )
 

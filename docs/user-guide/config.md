@@ -19,7 +19,7 @@ asjard:
 - `Get(key string, options *Options) any`: 根据`key`获取配置
 
 ```go
-import "github.com/asjard/asjard/core/config"
+import "github.com/asjard/asjard/v2/core/config"
 
 val := config.Get("key", &Options{})
 if val == nil {
@@ -31,7 +31,7 @@ if val == nil {
 - `GetWithPrefix(prefix string, opts ...Option) map[string]any`: 根据前缀获取所有配置,返回的key是props格式的
 
 ```go
-import "github.com/asjard/asjard/core/config"
+import "github.com/asjard/asjard/v2/core/config"
 
 valMap := config.GetWithPrefix("asjard.service")
 /* Output:
@@ -46,7 +46,7 @@ valMap := config.GetWithPrefix("asjard.service")
 - `GetString(key string, defaultValue string, opts ...Option) string`: 获取配置并返回string类型,如果配置不存在则返回默认值
 
 ```go
-import "github.com/asjard/asjard/core/config"
+import "github.com/asjard/asjard/v2/core/config"
 
 valStr := config.GetString("key", "default_value")
 ```
@@ -54,7 +54,7 @@ valStr := config.GetString("key", "default_value")
 - `GetStrings(key string, defaultValue []string, opts ...Option) []string`: 获取配置并返回[]string类型, 如果配置不存在则返回默认值
 
 ````go
-import "github.com/asjard/asjard/core/config"
+import "github.com/asjard/asjard/v2/core/config"
 
 // 可通过字符串或者列表方式配置
 // 例如yaml文件中:
@@ -79,7 +79,7 @@ valStrs := config.GetStrings("key", []string{})
 - `GetByte(key string, defaultValue []byte, opts ...Option) []byte`: 获取配置并返回[]byte类型, 如果配置不存在则返回默认值
 
 ```go
-import "github.com/asjard/asjard/core/config"
+import "github.com/asjard/asjard/v2/core/config"
 
 valByte := config.GetByte("key", []byte{})
 ```
@@ -87,7 +87,7 @@ valByte := config.GetByte("key", []byte{})
 - `GetBool(key string, defaultValue bool, opts ...Option) bool`: 获取配置并返回bool类型
 
 ```go
-import "github.com/asjard/asjard/core/config"
+import "github.com/asjard/asjard/v2/core/config"
 
 // 字符串则除0, f, false, n, no, off为false为其他均为true
 // 数字不等于0则为true
@@ -110,7 +110,7 @@ valBool := config.GetBool("key", false)
 字符串配置可参考`time.ParseDuration`, 支持单位"ns", "us" (or "µs"), "ms", "s", "m", "h".
 
 ```go
-import "github.com/asjard/asjard/core/config"
+import "github.com/asjard/asjard/v2/core/config"
 
 conf := `
 examples:
@@ -126,7 +126,7 @@ valDura := config.GetDuration("key", time.Second)
 - `GetAndUnmarshal(key string, outPtr any, opts ...Option) error `: 获取配置并将对值反序列化
 
 ```go
-import "github.com/asjard/asjard/core/config"
+import "github.com/asjard/asjard/v2/core/config"
 
 conf := `
 examples:
@@ -170,7 +170,7 @@ if err := config.GetWithUnmarshal("examples.mysql", &dbConf, config.WithUnmarsha
 - `GetWithUnmarshal(prefix string, outPtr any, opts ...Option) error `
 
 ```go
-import "github.com/asjard/asjard/core/config"
+import "github.com/asjard/asjard/v2/core/config"
 
 conf := `
 examples:
@@ -203,7 +203,7 @@ if err := config.GetWithUnmarshal("examples.mysql", &dbConf); err != nil {
 - 手动解密
 
 ```go
-import "github.com/asjard/asjard/core/config"
+import "github.com/asjard/asjard/v2/core/config"
 
 // base64解码后返回
 val := config.GetString("encrypted_key","default_value", config.WithCipher("base64"))
@@ -228,7 +228,7 @@ val := config.GetString("encrypted_key", "default_value", config.WithDisableAuto
 ## 配置监听
 
 ```go
-import "github.com/asjard/asjard/core/config"
+import "github.com/asjard/asjard/v2/core/config"
 
 var val string
 
@@ -295,9 +295,9 @@ type Sourcer interface {
 ```go
 import (
 	// 导入etcd配置源
-	_ "github.com/asjard/asjard/pkg/config/etcd"
+	_ "github.com/asjard/asjard/v2/pkg/config/etcd"
 	// 导入consul配置源
-	_ "github.com/asjard/asjard/pkg/config/consul"
+	_ "github.com/asjard/asjard/v2/pkg/config/consul"
 )
 // 同一个配置项始终会获得最高优先级配置源的值
 ```

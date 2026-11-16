@@ -2,19 +2,19 @@ package bootstrap
 
 import (
 	// init security component
-	_ "github.com/asjard/asjard/pkg/security"
+	_ "github.com/asjard/asjard/v2/pkg/security"
 	// init server interceptors
-	_ "github.com/asjard/asjard/pkg/server/interceptors"
+	_ "github.com/asjard/asjard/v2/pkg/server/interceptors"
 	// init server handlers
-	_ "github.com/asjard/asjard/pkg/server/handlers"
+	_ "github.com/asjard/asjard/v2/pkg/server/handlers"
 	// init client interceptors
-	_ "github.com/asjard/asjard/pkg/client/interceptors"
+	_ "github.com/asjard/asjard/v2/pkg/client/interceptors"
 	// init pprof
-	_ "github.com/asjard/asjard/pkg/server/pprof"
+	_ "github.com/asjard/asjard/v2/pkg/server/pprof"
 	// init mem configuration source
-	_ "github.com/asjard/asjard/pkg/config/mem"
+	_ "github.com/asjard/asjard/v2/pkg/config/mem"
 	// init env configuration source
-	_ "github.com/asjard/asjard/pkg/config/env"
+	_ "github.com/asjard/asjard/v2/pkg/config/env"
 )
 
 // Initiator defines the lifecycle contract for components within the framework.
