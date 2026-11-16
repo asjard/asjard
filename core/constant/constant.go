@@ -11,7 +11,7 @@ import (
 const (
 	// Framework identity and versioning.
 	Framework        = "asjard"
-	FrameworkVersion = "v1.2.6"
+	FrameworkVersion = "v2.0.0"
 	FrameworkGithub  = "https://github.com/asjard/asjard"
 
 	// Delimiters for data processing.
@@ -46,6 +46,7 @@ var (
 const (
 	// Server Configuration Namespaces
 	ConfigServerRestPrefix  = "asjard.servers.rest"
+	ConfigServerMcpPrefix   = "asjard.servers.mcp"
 	ConfigServerGrpcPrefix  = "asjard.servers.grpc"
 	ConfigServerPporfPrefix = "asjard.servers.pprof"
 	ConfigServicePrefix     = "asjard.service"

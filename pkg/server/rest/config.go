@@ -21,7 +21,7 @@ type Config struct {
 	Doc           DocConfig     `json:"doc"`     // Documentation and error page settings
 	Openapi       OpenapiConfig `json:"openapi"` // OpenAPI/Swagger generation and UI settings
 	Cors          CorsConfig    `json:"cors"`    // Cross-Origin Resource Sharing settings
-	Options       OptionsConfig `json:"options"` // Low-level fasthttp server tuning options
+	Options       OptionsConfig `json:"options"` // Low-level rest server tuning options
 }
 
 // RoutesConfig determines if route-related features are enabled.
@@ -65,7 +65,10 @@ type OpenapiLicenseConfig struct {
 
 // CorsConfig defines the security policy for browsers accessing the API from different origins.
 type CorsConfig struct {
-	allowAllOrigins  bool               // Internal flag for "*"
+	allowAllOrigins bool // Internal flag for "*"
+	// Disabled skips CORS handling entirely. Used by protocols such as MCP
+	// that must not reject handshake requests with HTTP 403.
+	Disabled         bool               `json:"disabled"`
 	AllowOrigins     []string           `json:"allowOrigins"`
 	AllowMethods     []string           `json:"allowMethods"`
 	AllowHeaders     []string           `json:"allowHeaders"`
@@ -74,40 +77,21 @@ type CorsConfig struct {
 	MaxAge           utils.JSONDuration `json:"maxAge"` // How long the browser caches the preflight response
 }
 
-// OptionsConfig contains low-level performance and timeout settings for the fasthttp server.
+// OptionsConfig contains low-level performance and timeout settings for the rest server.
 type OptionsConfig struct {
-	Concurrency                        int                `json:"concurrency"` // Max simultaneous requests
-	ReadBufferSize                     int                `json:"readBufferSize"`
-	WriteBufferSize                    int                `json:"writeBufferSize"`
-	ReadTimeout                        utils.JSONDuration `json:"readTimeout"`
-	WriteTimeout                       utils.JSONDuration `json:"writeTimeout"`
-	IdleTimeout                        utils.JSONDuration `json:"idleTimeout"`
-	MaxConnsPerIP                      int                `json:"maxConnsPerIP"`
-	MaxRequestsPerConn                 int                `json:"maxRequestsPerConn"`
-	MaxIdleWorkerDuration              utils.JSONDuration `json:"maxIdleWorkerDuration"`
-	TCPKeepalivePeriod                 utils.JSONDuration `json:"tCPKeepalivePeriod"`
-	MaxRequestBodySize                 int                `json:"maxRequestBodySize"` // Max size of POST body (e.g., 20MB)
-	DisableKeepalive                   bool               `json:"disableKeepalive"`
-	TCPKeepalive                       bool               `json:"tcpKeepalive"`
-	ReduceMemoryUsage                  bool               `json:"reduceMemoryUsage"`
-	GetOnly                            bool               `json:"getOnly"`
-	DisablePreParseMultipartForm       bool               `json:"disablePreParseMultipartForm"`
-	LogAllErrors                       bool               `json:"logAllErrors"`
-	SecureErrorLogMessage              bool               `json:"secureErrorLogMessage"`
-	DisableHeaderNamesNormalizing      bool               `json:"disableHeaderNamesNormalizing"`
-	SleepWhenConcurrencyLimitsExceeded utils.JSONDuration `json:"sleepWhenConcurrencyLimitsExceeded"`
-	NoDefaultServerHeader              bool               `json:"noDefaultServerHeader"`
-	NoDefaultDate                      bool               `json:"noDefaultDate"`
-	NoDefaultContentType               bool               `json:"noDefaultContentType"`
-	KeepHijackedConns                  bool               `json:"keepHijackedConns"`
-	CloseOnShutdown                    bool               `json:"closeOnShutdown"`
-	StreamRequestBody                  bool               `json:"streamRequestBody"`
+	ReadTimeout        utils.JSONDuration `json:"readTimeout"`
+	ReadHeaderTimeout  utils.JSONDuration `json:"readHeaderTimeout"`
+	WriteTimeout       utils.JSONDuration `json:"writeTimeout"`
+	IdleTimeout        utils.JSONDuration `json:"idleTimeout"`
+	MaxHeaderBytes     int                `json:"maxHeaderBytes"`
+	MaxRequestBodySize int                `json:"maxRequestBodySize"`
+	DisableKeepalive   bool               `json:"disableKeepalive"`
 }
 
-// defaultConfig initializes the REST server with safe, production-ready default values.
-func defaultConfig() Config {
+// DefaultConfig initializes the REST server with safe, production-ready default values.
+func DefaultConfig(protocol string) Config {
 	return Config{
-		Config: server.GetConfigWithProtocol(Protocol),
+		Config: server.GetConfigWithProtocol(protocol),
 		Doc: DocConfig{
 			ErrPage: config.GetString("asjard.service.website", ""),
 		},
@@ -129,6 +113,9 @@ func defaultConfig() Config {
 			MaxAge:           utils.JSONDuration{Duration: 12 * time.Hour},
 		},
 		Options: OptionsConfig{
+			ReadTimeout:       utils.JSONDuration{Duration: 30 * time.Second},
+			ReadHeaderTimeout: utils.JSONDuration{Duration: 10 * time.Second},
+			IdleTimeout:       utils.JSONDuration{Duration: 60 * time.Second},
 			// Default maximum request body size is 20MB.
 			MaxRequestBodySize: 20 * 1024 * 1024,
 		},

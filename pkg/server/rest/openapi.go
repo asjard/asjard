@@ -15,7 +15,6 @@ import (
 	scalargo "github.com/bdpiprava/scalar-go"
 	"github.com/ghodss/yaml"
 	openapi_v3 "github.com/google/gnostic/openapiv3"
-	"github.com/valyala/fasthttp"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -49,7 +48,7 @@ func (api *OpenAPI) Yaml(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 			logger.Error("openapi yaml value fail", "err", err)
 			return nil, status.InternalServerError()
 		}
-		rtx.RequestCtx.Write(b)
+		rtx.Write(b)
 		return nil, nil
 	}
 	return &emptypb.Empty{}, nil
@@ -72,7 +71,7 @@ func (api *OpenAPI) Json(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 			logger.Error("convert openapi yaml to json fail", "err", err)
 			return nil, status.InternalServerError()
 		}
-		rtx.RequestCtx.Write(jb)
+		rtx.Write(jb)
 		return nil, nil
 	}
 	return &emptypb.Empty{}, nil
@@ -82,7 +81,7 @@ func (api *OpenAPI) Json(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty
 func (api *OpenAPI) Page(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
 	rtx, ok := ctx.(*Context)
 	if ok {
-		rtx.Redirect(fmt.Sprintf(api.conf.Page, api.listenAddress()), http.StatusMovedPermanently)
+		http.Redirect(rtx.Response(), rtx.Request(), fmt.Sprintf(api.conf.Page, api.listenAddress()), http.StatusMovedPermanently)
 		return nil, nil
 	}
 	return &emptypb.Empty{}, nil
@@ -97,8 +96,8 @@ func (api *OpenAPI) ScalarPage(ctx context.Context, in *emptypb.Empty) (*emptypb
 			logger.Error("new scalargo fail", "err", err)
 			return &emptypb.Empty{}, status.InternalServerError()
 		}
-		rtx.Response.Header.Set(fasthttp.HeaderContentType, "text/html")
-		rtx.WriteString(content)
+		rtx.Response().Header().Set("Content-Type", "text/html")
+		rtx.Write([]byte(content))
 		return nil, nil
 	}
 	return &emptypb.Empty{}, nil

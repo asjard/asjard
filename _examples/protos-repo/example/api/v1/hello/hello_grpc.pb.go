@@ -28,7 +28,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Hello_Say_FullMethodName = "/api.v1.example.docs.Hello/Say"
+	Hello_Say_FullMethodName = "/api.v1.docs.example.Hello/Say"
 )
 
 // HelloClient is the client API for Hello service.
@@ -117,7 +117,7 @@ func _Hello_Say_Handler(srv interface{}, ctx context.Context, dec func(interface
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Hello_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "api.v1.example.docs.Hello",
+	ServiceName: "api.v1.docs.example.Hello",
 	HandlerType: (*HelloServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

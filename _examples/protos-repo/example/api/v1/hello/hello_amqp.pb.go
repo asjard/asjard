@@ -167,12 +167,12 @@ func _Hello_Say_AmqpHandler(ctx *xamqp1.Context, srv any, interceptor server.Una
 const (
 	Hello_Say_Route       = "Say"
 	Hello_Say_Route_Retry = "Say_Retry"
-	Hello_Say_Queue       = "api.v1.example.docs.Hello.Say"
-	Hello_Say_Queue_Retry = "api.v1.example.docs.Hello.Say_Retry"
-	Hello_Say_Queue_Delay = "api.v1.example.docs.Hello.Say_Delay"
+	Hello_Say_Queue       = "api.v1.docs.example.Hello.Say"
+	Hello_Say_Queue_Retry = "api.v1.docs.example.Hello.Say_Retry"
+	Hello_Say_Queue_Delay = "api.v1.docs.example.Hello.Say_Delay"
 	Hello_Say_Route_Delay = "Say_Delay"
-	Hello_Exchange        = "api.v1.example.docs.Hello"
-	Hello_Exchange_Retry  = "api.v1.example.docs.Hello_Retry"
+	Hello_Exchange        = "api.v1.docs.example.Hello"
+	Hello_Exchange_Retry  = "api.v1.docs.example.Hello_Retry"
 )
 
 // HelloAmqpServiceDesc is the xamqp1.ServiceDesc for Hello service.
@@ -183,7 +183,7 @@ const (
 // 一个proto文件中只写一个service
 // 如果在rest中没有配置group字段，则service名称为group字段的值
 var HelloAmqpServiceDesc = xamqp1.ServiceDesc{
-	ServiceName: "api.v1.example.docs.Hello",
+	ServiceName: "api.v1.docs.example.Hello",
 	HandlerType: (*HelloServer)(nil),
 	Methods: []xamqp1.MethodDesc{
 		{

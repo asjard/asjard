@@ -4,6 +4,13 @@ asjard:
       enabled: true
       addresses:
         listen: 0.0.0.0:7${asjard.service.instance.systemCode}
+    mcp:
+      enabled: true
+      interceptors: mcpAuth
+      cors:
+        disabled: true
+      addresses:
+        listen: 0.0.0.0:6${asjard.service.instance.systemCode}
     rest:
       enabled: true
       openapi:

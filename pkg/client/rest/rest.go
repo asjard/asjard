@@ -8,8 +8,8 @@ package rest
 
 import (
 	"context"
+	"net/http"
 
-	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/serviceconfig"
 )
@@ -24,12 +24,12 @@ type ClientConnInterface interface {
 	Invoke(ctx context.Context, method, path string)
 }
 
-// Client is a wrapper around the fasthttp.Client.
+// Client is a wrapper around the http.Client.
 // It implements gRPC's resolver.ClientConn to allow HTTP services
 // to be discovered using the same naming resolvers (like ETCD or Consul)
 // used by gRPC clients.
 type Client struct {
-	*fasthttp.Client
+	*http.Client
 }
 
 // Verify that Client satisfies the gRPC resolver.ClientConn interface at compile time.

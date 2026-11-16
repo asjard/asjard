@@ -9,7 +9,6 @@ import (
 	"github.com/asjard/asjard/pkg/protobuf/requestpb"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/asjard/asjard/utils"
-	"github.com/valyala/fasthttp"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -28,7 +27,6 @@ func init() {
 // Favicon handles requests for the browser's shortcut icon (usually /favicon.ico).
 // It looks for the icon file defined in the application's runtime configuration.
 func (api *DefaultHandlersAPI) Favicon(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
-	// Type assertion to access the specific REST context (fasthttp wrapper).
 	rtx, ok := ctx.(*rest.Context)
 	if ok {
 		// Resolve the absolute path to the favicon file based on the application's home directory.
@@ -36,7 +34,7 @@ func (api *DefaultHandlersAPI) Favicon(ctx context.Context, in *emptypb.Empty) (
 
 		// If the file exists on disk, set the correct Content-Type and stream the file.
 		if utils.IsPathExists(faviconFile) {
-			rtx.Response.Header.Set(fasthttp.HeaderContentType, "image/x-icon")
+			rtx.Response().Header().Set("Content-Type", "image/x-icon")
 			rtx.SendFile(faviconFile)
 			// Returning nil, nil prevents the standard gRPC response from being sent.
 			return nil, nil

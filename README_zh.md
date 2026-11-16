@@ -98,8 +98,6 @@ Envs:
 
 | 库                                                                  | 描述               |
 | ------------------------------------------------------------------- | ------------------ |
-| [fasthttp](https://github.com/valyala/fasthttp)                     | http协议           |
-| [fasthttp-router](https://github.com/fasthttp/router)               | http路由管理       |
 | [grpc](https://google.golang.org/grpc)                              | grpc协议           |
 | [protobuf](https://google.golang.org/protobuf)                      | protobuf协议       |
 | [hystrix-go](https://github.com/afex/hystrix-go)                    | 熔断/降级          |

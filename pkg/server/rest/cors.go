@@ -8,12 +8,17 @@ import (
 	"time"
 
 	"github.com/asjard/asjard/core/logger"
-	"github.com/valyala/fasthttp"
 )
 
 // NewCorsMiddleware creates a new middleware to handle Cross-Origin Resource Sharing.
 func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
 	logger.Debug("new cors middleware", "conf", conf)
+
+	if conf.Disabled {
+		return func(next http.Handler) http.Handler {
+			return next
+		}
+	}
 
 	// Pre-calculate if all origins are allowed to optimize runtime checks.
 	for _, origin := range conf.AllowOrigins {
@@ -22,89 +27,89 @@ func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
 		}
 	}
 
-	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
-		return func(ctx *fasthttp.RequestCtx) {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Get the Origin header from the request.
-			origin := string(append([]byte(nil), ctx.Request.Header.Peek("Origin")...))
+			origin := r.Header.Get("Origin")
 
 			// If no Origin header is present, it's not a cross-origin request.
 			if len(origin) == 0 {
-				next(ctx)
+				next.ServeHTTP(w, r)
 				return
 			}
 
 			// Check if the origin matches the current host (Same-Origin).
-			host := string(ctx.Host())
+			host := string(r.Host)
 			if origin == "http://"+host || origin == "https://"+host {
-				next(ctx)
+				next.ServeHTTP(w, r)
 				return
 			}
 
 			// Validate the origin against the allowed list in the configuration.
 			if !corsIsOriginValid(conf, origin) {
-				ctx.SetStatusCode(http.StatusForbidden)
+				w.WriteHeader(http.StatusForbidden)
 				return
 			}
 
 			// Set standard CORS response headers.
-			ctx.Response.Header.Set(fasthttp.HeaderAccessControlAllowOrigin, origin)
+			w.Header().Set("Access-Control-Allow-Origin", origin)
 
 			// If not allowing all, set 'Vary: Origin' to prevent cache poisoning.
 			if !conf.allowAllOrigins {
-				ctx.Response.Header.Set("Vary", "Origin")
+				w.Header().Set("Vary", "Origin")
 			}
 
 			// Handle Preflight requests (OPTIONS method).
-			if string(ctx.Method()) == http.MethodOptions {
-				corsPreflight(ctx, conf)
+			if string(r.Method) == http.MethodOptions {
+				corsPreflight(w, conf)
 				return
 			}
 
 			// Handle credentials (Cookies/Auth headers).
 			if conf.AllowCredentials {
-				ctx.Response.Header.Set(fasthttp.HeaderAccessControlAllowCredentials, "true")
+				w.Header().Set("Access-Control-Allow-Credentials", "true")
 			}
 
 			// Expose custom headers to the browser client.
 			if len(conf.ExposeHeaders) > 0 {
-				ctx.Response.Header.Set(fasthttp.HeaderAccessControlExposeHeaders, strings.Join(conf.ExposeHeaders, ","))
+				w.Header().Set("Access-Control-Expose-Headers", strings.Join(conf.ExposeHeaders, ","))
 			}
 
 			// Continue to the next handler for actual business logic.
-			next(ctx)
-		}
+			next.ServeHTTP(w, r)
+		})
 	}
 }
 
 // corsPreflight handles the OPTIONS request sent by browsers before a "non-simple" request.
-func corsPreflight(ctx *fasthttp.RequestCtx, conf CorsConfig) {
+func corsPreflight(w http.ResponseWriter, conf CorsConfig) {
 	if conf.AllowCredentials {
-		ctx.Response.Header.Set(fasthttp.HeaderAccessControlAllowCredentials, "true")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 	}
 
 	// Inform the browser which methods are allowed.
 	if len(conf.AllowMethods) > 0 {
-		ctx.Response.Header.Set(fasthttp.HeaderAccessControlAllowMethods, strings.Join(conf.AllowMethods, ","))
+		w.Header().Set("Access-Control-Allow-Methods", strings.Join(conf.AllowMethods, ","))
 	}
 
 	// Inform the browser which headers can be sent.
 	if len(conf.AllowHeaders) > 0 {
-		ctx.Response.Header.Set(fasthttp.HeaderAccessControlAllowHeaders, strings.Join(conf.AllowHeaders, ","))
+		w.Header().Set("Access-Control-Allow-Headers", strings.Join(conf.AllowHeaders, ","))
 	}
 
 	// Cache the preflight response in the browser for a specific duration.
 	if conf.MaxAge.Duration != 0 {
-		ctx.Response.Header.Set(fasthttp.HeaderAccessControlMaxAge, strconv.FormatInt(int64(conf.MaxAge.Duration/time.Second), 10))
+		w.Header().Set("Access-Control-Max-Age", strconv.FormatInt(int64(conf.MaxAge.Duration/time.Second), 10))
 	}
 
 	// Tell proxies that the response varies based on these request headers.
 	if !conf.allowAllOrigins {
-		ctx.Response.Header.Add(fasthttp.HeaderVary, fasthttp.HeaderAccessControlRequestMethod)
-		ctx.Response.Header.Add(fasthttp.HeaderVary, fasthttp.HeaderAccessControlRequestHeaders)
+		w.Header().Add("Vary", "Access-Control-Request-Method")
+		w.Header().Add("Vary", "Access-Control-Request-Headers")
 	}
 
 	// Preflight requests return 204 No Content.
-	ctx.SetStatusCode(http.StatusNoContent)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // corsIsOriginValid checks if the provided origin is permitted by the configuration.

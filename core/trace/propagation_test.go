@@ -2,11 +2,12 @@ package trace
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/stretchr/testify/require"
-	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -28,10 +29,9 @@ func TestNewTraceCarrier(t *testing.T) {
 	empty.Set("traceparent", "new")
 	require.Equal(t, "new", empty.Get("traceparent"))
 
-	requestCtx := &fasthttp.RequestCtx{}
-	requestCtx.Request.Header.Add("traceparent", "rest")
-	restCtx := rest.NewContext(requestCtx)
-	t.Cleanup(restCtx.Close)
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Add("traceparent", "rest")
+	restCtx := rest.NewContext(req, httptest.NewRecorder())
 	carrier := NewTraceCarrier(restCtx)
 	require.IsType(t, &HeaderCarrier{}, carrier)
 	require.Equal(t, "rest", carrier.Get("traceparent"))

@@ -11,7 +11,7 @@ import (
 	"github.com/asjard/asjard/pkg/client/grpc"
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/asjard/asjard/utils"
-	"github.com/valyala/fasthttp"
+	"github.com/spf13/cast"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -43,8 +43,8 @@ var defaultRest2RpcContextConfig = rest2RpcContextConfig{
 		"x-request-id",
 		"x-request-instance",
 		"Traceparent", // W3C Trace Context
-		fasthttp.HeaderXForwardedFor,
-		fasthttp.HeaderAuthorization,
+		"X-Forwarded-For",
+		"Authorization",
 	},
 }
 
@@ -98,17 +98,14 @@ func (r *Rest2RpcContext) Interceptor() client.UnaryClientInterceptor {
 		// Map allowed HTTP headers/params to gRPC metadata.
 		for _, k := range r.cfg.AllowHeaders {
 			// First, check standard HTTP headers.
-			md[k] = rtx.GetHeaderParam(k)
+			md[k] = []string{rtx.Header(k)}
 			// Then, check user-defined context parameters (overrides header if present).
-			v := rtx.GetUserParam(k)
-			if len(v) != 0 {
-				md[k] = v
+			v := rtx.Value(k)
+			if v != nil {
+				md[k] = []string{cast.ToString(v)}
 			}
 		}
 
-		// Create a new gRPC outgoing context and continue the invocation chain.
-		// Note: context.Background() is used here to reset the context type to standard
-		// while carrying the new metadata.
 		return invoker(metadata.NewOutgoingContext(rtx.Context(), md),
 			method, req, reply, cc)
 	}

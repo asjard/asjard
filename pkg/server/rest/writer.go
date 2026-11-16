@@ -7,7 +7,6 @@ import (
 
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
-	"github.com/valyala/fasthttp"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -78,22 +77,22 @@ func DefaultWriter(c *Context, data any, err error) {
 	var statusCode uint32 = http.StatusOK
 
 	// Check if the client requested the actual HTTP status code via query params.
-	if c.URI().QueryArgs().Has(QueryParamNeedStatusCode) {
+	if v := c.Query(QueryParamNeedStatusCode); v != "" {
 		statusCode = st.Status
 	}
 
 	// Inject tracing metadata (Request ID and Method) into the response.
-	if requestId := c.Value(HeaderResponseRequestID); requestId != nil {
+	if requestId := c.GetUserValue(HeaderResponseRequestID); requestId != nil {
 		st.RequestId = requestId.(string)
 	}
-	if requestMethod := c.Value(HeaderResponseRequestMethod); requestMethod != nil {
+	if requestMethod := c.GetUserValue(HeaderResponseRequestMethod); requestMethod != nil {
 		st.RequestMethod = requestMethod.(string)
 	}
 
-	c.Response.Header.Set(HeaderResponseRequestID, st.RequestId)
-	c.Response.Header.Set(HeaderResponseRequestMethod, st.RequestMethod)
+	c.w.Header().Set(HeaderResponseRequestID, st.RequestId)
+	c.w.Header().Set(HeaderResponseRequestMethod, st.RequestMethod)
 
-	if (err == nil || c.Value(WriteDataInErr) != nil) && data != nil {
+	if (err == nil || c.GetUserValue(WriteDataInErr) != nil) && data != nil {
 		// wrap the business data in a Protobuf 'Any' type.
 		if msg, ok := data.(proto.Message); ok {
 			if d, err := anypb.New(msg); err == nil {
@@ -109,10 +108,10 @@ func DefaultWriter(c *Context, data any, err error) {
 	}
 }
 
-// writeJSON handles the physical serialization and writing of bytes to the fasthttp response.
+// writeJSON handles the physical serialization and writing of bytes to the rest response.
 func writeJSON(c *Context, statusCode int, body proto.Message) error {
-	c.Response.Header.Set(fasthttp.HeaderContentType, MIME_JSON)
-	c.Response.SetStatusCode(statusCode)
+	c.w.Header().Set("Content-Type", MIME_JSON)
+	c.w.WriteHeader(statusCode)
 
 	// Marshal using protojson to ensure Protobuf field names and empty values
 	// are handled according to .proto definitions.
@@ -124,7 +123,7 @@ func writeJSON(c *Context, statusCode int, body proto.Message) error {
 		return err
 	}
 
-	if _, err := c.Write(b); err != nil {
+	if _, err := c.w.Write(b); err != nil {
 		return err
 	}
 	return nil
