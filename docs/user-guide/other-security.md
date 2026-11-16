@@ -34,7 +34,7 @@ type Cipher interface {
 	Decrypt(data string, opts *Options) (string, error)
 }
 
-import "github.com/asjard/asjard/core/sercurity"
+import "github.com/asjard/asjard/v2/core/sercurity"
 
 // 注册加解密
 func init() {
@@ -51,7 +51,7 @@ func NewXXXCipher(name string) (Cipher, error) {
 ## 使用
 
 ```go
-import "github.com/asjard/asjard/core/sercurity"
+import "github.com/asjard/asjard/v2/core/sercurity"
 
 // 自定义加解密组件加密
 security.Encrypt("plain text", security.WithCipherName("XXXCipher"))

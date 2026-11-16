@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/registry"
-	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/core/server"
-	_ "github.com/asjard/asjard/pkg/config/mem"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/registry"
+	"github.com/asjard/asjard/v2/core/runtime"
+	"github.com/asjard/asjard/v2/core/server"
+	_ "github.com/asjard/asjard/v2/pkg/config/mem"
+	"github.com/asjard/asjard/v2/utils"
 	"github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/require"
 )

@@ -1,7 +1,7 @@
 package registry
 
 import (
-	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/v2/core/server"
 )
 
 // Register defines the standard lifecycle methods for service announcement.

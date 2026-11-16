@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/asjard/asjard/pkg/security"
+	"github.com/asjard/asjard/v2/pkg/security"
 )
 
 var (

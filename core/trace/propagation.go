@@ -3,7 +3,7 @@ package trace
 import (
 	"context"
 
-	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/v2/pkg/server/rest"
 	"go.opentelemetry.io/otel/propagation"
 	"google.golang.org/grpc/metadata"
 )

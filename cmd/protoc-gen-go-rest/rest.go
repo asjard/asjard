@@ -23,9 +23,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/asjard/asjard/cmd/protoc-gen-go-rest/openapi"
-	"github.com/asjard/asjard/cmd/protoc-gen-go-rest/utils"
-	"github.com/asjard/asjard/pkg/protobuf/httppb"
+	"github.com/asjard/asjard/v2/cmd/protoc-gen-go-rest/openapi"
+	"github.com/asjard/asjard/v2/cmd/protoc-gen-go-rest/utils"
+	"github.com/asjard/asjard/v2/pkg/protobuf/httppb"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -33,8 +33,8 @@ import (
 
 const (
 	contextPackage = protogen.GoImportPath("context")
-	restPackage    = protogen.GoImportPath("github.com/asjard/asjard/pkg/server/rest")
-	serverPackage  = protogen.GoImportPath("github.com/asjard/asjard/core/server")
+	restPackage    = protogen.GoImportPath("github.com/asjard/asjard/v2/pkg/server/rest")
+	serverPackage  = protogen.GoImportPath("github.com/asjard/asjard/v2/core/server")
 	// FileDescriptorProto.package field number
 	fileDescriptorProtoPackageFieldNumber = 2
 	// FileDescriptorProto.syntax field number

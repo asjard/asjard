@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/status"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"

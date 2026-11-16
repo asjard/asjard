@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/v2/pkg/server/rest"
 	"github.com/stretchr/testify/require"
 	grpcmetadata "google.golang.org/grpc/metadata"
 )

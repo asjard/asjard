@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/utils"
 )
 
 func TestCache(t *testing.T) {

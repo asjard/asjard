@@ -9,8 +9,8 @@ import (
 	"svc-example/datas/models"
 	"svc-example/services"
 
-	"github.com/asjard/asjard/pkg/server/grpc"
-	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/v2/pkg/server/grpc"
+	"github.com/asjard/asjard/v2/pkg/server/rest"
 )
 
 type UserAPI struct {

@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/asjard/asjard/core/client"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/client"
+	"github.com/asjard/asjard/v2/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/credentials"

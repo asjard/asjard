@@ -22,7 +22,7 @@ asjard:
 ## 使用
 
 ```go
-import "github.com/asjard/asjard/pkg/stores/xamqp"
+import "github.com/asjard/asjard/v2/pkg/stores/xamqp"
 
 client, err := xamqp.Client()
 if err != nil {

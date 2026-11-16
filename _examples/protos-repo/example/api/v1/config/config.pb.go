@@ -9,8 +9,8 @@
 package config
 
 import (
-	_ "github.com/asjard/asjard/pkg/protobuf/httppb"
-	_ "github.com/asjard/asjard/pkg/protobuf/validatepb"
+	_ "github.com/asjard/asjard/v2/pkg/protobuf/httppb"
+	_ "github.com/asjard/asjard/v2/pkg/protobuf/validatepb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	common "protos-repo/common/common"

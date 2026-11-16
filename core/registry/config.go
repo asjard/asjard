@@ -3,9 +3,9 @@ package registry
 import (
 	"time"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/utils"
 )
 
 // Config aggregates all settings for the Service Registry and Discovery lifecycle.

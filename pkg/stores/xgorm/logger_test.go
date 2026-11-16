@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/v2/core/logger"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"

@@ -6,14 +6,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/server"
-	"github.com/asjard/asjard/pkg/client/grpc"
-	"github.com/asjard/asjard/pkg/protobuf/healthpb"
-	"github.com/asjard/asjard/pkg/protobuf/requestpb"
-	"github.com/asjard/asjard/pkg/server/rest"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/server"
+	"github.com/asjard/asjard/v2/pkg/client/grpc"
+	"github.com/asjard/asjard/v2/pkg/protobuf/healthpb"
+	"github.com/asjard/asjard/v2/pkg/protobuf/requestpb"
+	"github.com/asjard/asjard/v2/pkg/server/rest"
+	"github.com/asjard/asjard/v2/utils"
 )
 
 const (

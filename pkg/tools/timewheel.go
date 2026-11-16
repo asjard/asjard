@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/asjard/asjard/core/bootstrap"
-	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/v2/core/bootstrap"
+	"github.com/asjard/asjard/v2/core/logger"
 )
 
 // Task represents a unit of work to be executed after a specific delay.

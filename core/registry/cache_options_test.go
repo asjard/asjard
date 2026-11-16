@@ -3,8 +3,8 @@ package registry
 import (
 	"testing"
 
-	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/v2/core/runtime"
+	"github.com/asjard/asjard/v2/core/server"
 	"github.com/stretchr/testify/require"
 )
 

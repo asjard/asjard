@@ -66,7 +66,7 @@ examples:
 ```go
 import (
 	// 导入consul配置源
-	_ "github.com/asjard/asjard/pkg/config/consul"
+	_ "github.com/asjard/asjard/v2/pkg/config/consul"
 )
 
 // 其他使用方法同ETCD

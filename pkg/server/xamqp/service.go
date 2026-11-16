@@ -1,8 +1,8 @@
 package xamqp
 
 import (
-	"github.com/asjard/asjard/core/server"
-	"github.com/asjard/asjard/pkg/protobuf/mqpb"
+	"github.com/asjard/asjard/v2/core/server"
+	"github.com/asjard/asjard/v2/pkg/protobuf/mqpb"
 )
 
 // HandlerFunc defines the signature for processing an AMQP delivery.

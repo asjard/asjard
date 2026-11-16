@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/pkg/mutex"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/pkg/mutex"
 )
 
 // Lock represents the database schema for the distributed lock.

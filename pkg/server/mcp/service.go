@@ -3,7 +3,7 @@ package mcp
 import (
 	"context"
 
-	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/v2/core/server"
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

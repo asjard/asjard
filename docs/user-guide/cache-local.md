@@ -24,7 +24,7 @@ asjard:
 ### 使用
 
 ```go
-import "github.com/asjard/asjard/pkg/database/cache"
+import "github.com/asjard/asjard/v2/pkg/database/cache"
 
 type ExampleTable struct {
 	Id        int64  `gorm:"column:id;type:INT(20);primaryKey;autoIncrement"`

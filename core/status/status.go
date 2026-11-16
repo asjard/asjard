@@ -3,8 +3,8 @@ package status
 import (
 	"net/http"
 
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/pkg/protobuf/statuspb"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/pkg/protobuf/statuspb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

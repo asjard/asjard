@@ -10,10 +10,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/asjard/asjard/core/constant"
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/security"
-	ccast "github.com/asjard/asjard/utils/cast"
+	"github.com/asjard/asjard/v2/core/constant"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/security"
+	ccast "github.com/asjard/asjard/v2/utils/cast"
 
 	"github.com/spf13/cast"
 	"gopkg.in/yaml.v2"

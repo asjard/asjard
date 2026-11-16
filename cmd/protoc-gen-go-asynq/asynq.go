@@ -29,14 +29,14 @@ import (
 
 const (
 	contextPackage      = protogen.GoImportPath("context")
-	configPakcage       = protogen.GoImportPath("github.com/asjard/asjard/core/config")
-	asynqPackage        = protogen.GoImportPath("github.com/asjard/asjard/pkg/server/xasynq")
+	configPakcage       = protogen.GoImportPath("github.com/asjard/asjard/v2/core/config")
+	asynqPackage        = protogen.GoImportPath("github.com/asjard/asjard/v2/pkg/server/xasynq")
 	jsonPackage         = protogen.GoImportPath("encoding/json")
 	hibikenAsynqPackage = protogen.GoImportPath("github.com/hibiken/asynq")
-	serverPackage       = protogen.GoImportPath("github.com/asjard/asjard/core/server")
+	serverPackage       = protogen.GoImportPath("github.com/asjard/asjard/v2/core/server")
 	protoPackage        = protogen.GoImportPath("google.golang.org/protobuf/proto")
 	syncPackage         = protogen.GoImportPath("sync")
-	bootstrapPackage    = protogen.GoImportPath("github.com/asjard/asjard/core/bootstrap")
+	bootstrapPackage    = protogen.GoImportPath("github.com/asjard/asjard/v2/core/bootstrap")
 	// FileDescriptorProto.package field number
 	fileDescriptorProtoPackageFieldNumber = 2
 	// FileDescriptorProto.syntax field number

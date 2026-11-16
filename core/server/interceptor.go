@@ -5,8 +5,8 @@ import (
 	"maps"
 	"sync"
 
-	"github.com/asjard/asjard/core/constant"
-	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/v2/core/constant"
+	"github.com/asjard/asjard/v2/core/logger"
 )
 
 // UnaryServerInfo contains metadata about a single (unary) RPC call.

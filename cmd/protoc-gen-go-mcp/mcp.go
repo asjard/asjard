@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/asjard/asjard/pkg/protobuf/mcpb"
+	"github.com/asjard/asjard/v2/pkg/protobuf/mcpb"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -32,8 +32,8 @@ import (
 const (
 	contextPackage = protogen.GoImportPath("context")
 	jsonPackage    = protogen.GoImportPath("encoding/json")
-	mcpPackage     = protogen.GoImportPath("github.com/asjard/asjard/pkg/server/mcp")
-	serverPackage  = protogen.GoImportPath("github.com/asjard/asjard/core/server")
+	mcpPackage     = protogen.GoImportPath("github.com/asjard/asjard/v2/pkg/server/mcp")
+	serverPackage  = protogen.GoImportPath("github.com/asjard/asjard/v2/core/server")
 	// FileDescriptorProto.package field number
 	fileDescriptorProtoPackageFieldNumber = 2
 	// FileDescriptorProto.syntax field number

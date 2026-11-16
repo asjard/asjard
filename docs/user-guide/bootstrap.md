@@ -25,7 +25,7 @@ type Initiator interface {
 添加到引导队列中
 
 ```go
-import "github.com/asjard/asjard/core/bootstrap"
+import "github.com/asjard/asjard/v2/core/bootstrap"
 
 type CustomeBootstrap struct{}
 
@@ -84,7 +84,7 @@ func (m *DBManager) Shutdown() {
 
 ```go
 
-import "github.com/asjard/asjard/core/bootstrap"
+import "github.com/asjard/asjard/v2/core/bootstrap"
 
 // ClientManager 客户端连接维护
 type ClientManager struct {

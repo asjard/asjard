@@ -37,7 +37,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/asjard/asjard/cmd/protoc-gen-go-rest/openapi"
+	"github.com/asjard/asjard/v2/cmd/protoc-gen-go-rest/openapi"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
 )

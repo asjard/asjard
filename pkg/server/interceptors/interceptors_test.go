@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/server"
-	_ "github.com/asjard/asjard/pkg/config/mem"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/server"
+	_ "github.com/asjard/asjard/v2/pkg/config/mem"
 	"github.com/stretchr/testify/require"
 )
 

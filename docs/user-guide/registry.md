@@ -41,7 +41,7 @@ asjard:
 ```go
 package main
 
-import _ "github.com/asjard/asjard/pkg/registry/etcd"
+import _ "github.com/asjard/asjard/v2/pkg/registry/etcd"
 ```
 
 ## 自定义服务注册
@@ -112,7 +112,7 @@ import _ "your_custome_discover_dir"
 ## 服务发现
 
 ```go
-import "github.com/asjard/asjard/core/registry"
+import "github.com/asjard/asjard/v2/core/registry"
 
 func (api *GwAPI) GetServiceInstances(ctx context.Context, in *pb.ServiceInstancesReq) (*pb.ServiceInstancesResp, error) {
 	var instances []*pb.ServiceInstancesResp_Instance

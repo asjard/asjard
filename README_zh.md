@@ -11,7 +11,7 @@ Asjard是一个用[Go](https://go.dev/)语言实现的由[protobuf](https://prot
 ## 安装
 
 ```bash
-go get github.com/asjard/asjard
+go get github.com/asjard/asjard/v2
 ```
 
 ## 使用帮助

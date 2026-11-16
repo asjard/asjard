@@ -3,8 +3,8 @@ package bootstrap
 import (
 	"log/slog"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/logger"
 )
 
 // Logger watch log configuration change after server start.

@@ -4,9 +4,9 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/runtime"
+	"github.com/asjard/asjard/v2/utils"
 )
 
 // Service represents the full profile of a running service instance.

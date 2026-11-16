@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/server"
 )
 
 // Registry is a composite interface that requires both Discovery and Registration capabilities.

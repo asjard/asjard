@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/logger"
-	ajutils "github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/logger"
+	ajutils "github.com/asjard/asjard/v2/utils"
 	gormLogger "gorm.io/gorm/logger"
 )
 

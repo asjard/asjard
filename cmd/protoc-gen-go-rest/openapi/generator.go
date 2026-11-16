@@ -31,10 +31,10 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	any_pb "google.golang.org/protobuf/types/known/anypb"
 
-	wk "github.com/asjard/asjard/cmd/protoc-gen-go-rest/openapi/wellknown"
-	"github.com/asjard/asjard/cmd/protoc-gen-go-rest/utils"
-	"github.com/asjard/asjard/pkg/protobuf/httppb"
-	"github.com/asjard/asjard/pkg/protobuf/validatepb"
+	wk "github.com/asjard/asjard/v2/cmd/protoc-gen-go-rest/openapi/wellknown"
+	"github.com/asjard/asjard/v2/cmd/protoc-gen-go-rest/utils"
+	"github.com/asjard/asjard/v2/pkg/protobuf/httppb"
+	"github.com/asjard/asjard/v2/pkg/protobuf/validatepb"
 	v3 "github.com/google/gnostic/openapiv3"
 )
 

@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/pkg/stores"
-	"github.com/asjard/asjard/pkg/stores/xredis"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/runtime"
+	"github.com/asjard/asjard/v2/pkg/stores"
+	"github.com/asjard/asjard/v2/pkg/stores/xredis"
+	"github.com/asjard/asjard/v2/utils"
 	"github.com/coocood/freecache"
 	"github.com/redis/go-redis/v9"
 )

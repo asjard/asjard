@@ -74,7 +74,7 @@ asjard:
 ## 使用
 
 ```go
-import "github.com/asjard/asjard/pkg/stores/xetcd"
+import "github.com/asjard/asjard/v2/pkg/stores/xetcd"
 
 // 使用默认客户端
 client, err := xetcd.Client()

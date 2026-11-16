@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/v2/core/server"
 	"github.com/stretchr/testify/assert"
 )
 

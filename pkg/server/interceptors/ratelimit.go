@@ -4,10 +4,10 @@ import (
 	"context"
 	"sync"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/server"
-	"github.com/asjard/asjard/core/status"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/server"
+	"github.com/asjard/asjard/v2/core/status"
 	"golang.org/x/time/rate"
 )
 

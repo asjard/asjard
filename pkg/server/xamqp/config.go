@@ -1,6 +1,6 @@
 package xamqp
 
-import "github.com/asjard/asjard/core/server"
+import "github.com/asjard/asjard/v2/core/server"
 
 // Config defines the configuration parameters for the RabbitMQ server/consumer.
 // It inherits base server settings such as listener addresses and enabled status.

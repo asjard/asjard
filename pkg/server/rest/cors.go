@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/v2/core/logger"
 )
 
 // NewCorsMiddleware creates a new middleware to handle Cross-Origin Resource Sharing.

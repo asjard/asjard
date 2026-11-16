@@ -4,7 +4,7 @@ import (
 	"context"
 	"protos-repo/example/api/v1/hello"
 
-	"github.com/asjard/asjard/pkg/server/grpc"
+	"github.com/asjard/asjard/v2/pkg/server/grpc"
 )
 
 type HelloAPI struct {

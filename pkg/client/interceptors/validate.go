@@ -3,9 +3,9 @@ package interceptors
 import (
 	"context"
 
-	"github.com/asjard/asjard/core/client"
-	"github.com/asjard/asjard/pkg/client/grpc"
-	"github.com/asjard/asjard/pkg/protobuf/validatepb"
+	"github.com/asjard/asjard/v2/core/client"
+	"github.com/asjard/asjard/v2/pkg/client/grpc"
+	"github.com/asjard/asjard/v2/pkg/protobuf/validatepb"
 )
 
 const (

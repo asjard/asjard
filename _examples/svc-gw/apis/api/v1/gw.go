@@ -5,8 +5,8 @@ import (
 
 	pb "protos-repo/gw/api/v1/gw"
 
-	"github.com/asjard/asjard/core/registry"
-	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/v2/core/registry"
+	"github.com/asjard/asjard/v2/pkg/server/rest"
 )
 
 type GwAPI struct {

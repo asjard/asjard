@@ -3,8 +3,8 @@ package handlers
 import (
 	"sync"
 
-	"github.com/asjard/asjard/core/constant"
-	"github.com/asjard/asjard/core/server"
+	"github.com/asjard/asjard/v2/core/constant"
+	"github.com/asjard/asjard/v2/core/server"
 )
 
 type serverHandler struct {

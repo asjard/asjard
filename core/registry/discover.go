@@ -1,6 +1,6 @@
 package registry
 
-import "github.com/asjard/asjard/core/logger"
+import "github.com/asjard/asjard/v2/core/logger"
 
 const (
 	// LocalRegistryName is the identifier for the built-in local service discovery.

@@ -7,7 +7,7 @@
 package common
 
 import (
-	_ "github.com/asjard/asjard/pkg/protobuf/validatepb"
+	_ "github.com/asjard/asjard/v2/pkg/protobuf/validatepb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"

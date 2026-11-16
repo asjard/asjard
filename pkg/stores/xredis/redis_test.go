@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
-	"github.com/asjard/asjard/core/bootstrap"
-	"github.com/asjard/asjard/core/config"
-	_ "github.com/asjard/asjard/pkg/config/mem"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/bootstrap"
+	"github.com/asjard/asjard/v2/core/config"
+	_ "github.com/asjard/asjard/v2/pkg/config/mem"
+	"github.com/asjard/asjard/v2/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

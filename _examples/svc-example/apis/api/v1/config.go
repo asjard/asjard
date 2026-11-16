@@ -6,15 +6,15 @@ import (
 	cpb "protos-repo/common/common"
 	pb "protos-repo/example/api/v1/config"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/core/logger"
-	"github.com/asjard/asjard/core/runtime"
-	"github.com/asjard/asjard/core/status"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/core/logger"
+	"github.com/asjard/asjard/v2/core/runtime"
+	"github.com/asjard/asjard/v2/core/status"
 
 	// init remote config center etcd
-	_ "github.com/asjard/asjard/pkg/config/etcd"
-	"github.com/asjard/asjard/pkg/server/grpc"
-	"github.com/asjard/asjard/pkg/server/rest"
+	_ "github.com/asjard/asjard/v2/pkg/config/etcd"
+	"github.com/asjard/asjard/v2/pkg/server/grpc"
+	"github.com/asjard/asjard/v2/pkg/server/rest"
 )
 
 type ConfigAPI struct {

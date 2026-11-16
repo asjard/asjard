@@ -22,7 +22,7 @@ package security
 import (
 	"encoding/base64"
 
-	"github.com/asjard/asjard/core/security"
+	"github.com/asjard/asjard/v2/core/security"
 )
 
 const (

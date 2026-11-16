@@ -3,7 +3,7 @@ package xasynq
 import (
 	"fmt"
 
-	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/v2/core/logger"
 )
 
 // asynqLogger is an adapter that satisfies the asynq.Logger interface.

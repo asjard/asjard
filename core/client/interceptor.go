@@ -5,7 +5,7 @@ import (
 	"maps"
 	"sync"
 
-	"github.com/asjard/asjard/core/constant"
+	"github.com/asjard/asjard/v2/core/constant"
 )
 
 // ClientInterceptor defines the interface for a client-side interceptor.

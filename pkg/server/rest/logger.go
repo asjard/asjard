@@ -3,7 +3,7 @@ package rest
 import (
 	"bytes"
 
-	"github.com/asjard/asjard/core/logger"
+	"github.com/asjard/asjard/v2/core/logger"
 )
 
 // logWriter adapts net/http.Server.ErrorLog to the Asjard logger.

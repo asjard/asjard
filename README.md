@@ -21,7 +21,7 @@ Asjard is a protobuf-driven microservice framework implemented in Go that provid
 ### Install
 
 ```bash
-go get -u github.com/asjard/asjard
+go get -u github.com/asjard/asjard/v2
 ```
 
 ### Running in asjard
@@ -80,9 +80,9 @@ import (
 
 	pb "protos-repo/example/api/v1/sample"
 
-	"github.com/asjard/asjard"
-	"github.com/asjard/asjard/pkg/server/grpc"
-	"github.com/asjard/asjard/pkg/server/rest"
+	"github.com/asjard/asjard/v2"
+	"github.com/asjard/asjard/v2/pkg/server/grpc"
+	"github.com/asjard/asjard/v2/pkg/server/rest"
 )
 
 type SampleAPI struct {

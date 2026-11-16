@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/asjard/asjard/core/config"
-	"github.com/asjard/asjard/pkg/tools"
+	"github.com/asjard/asjard/v2/core/config"
+	"github.com/asjard/asjard/v2/pkg/tools"
 	"github.com/stretchr/testify/assert"
 )
 

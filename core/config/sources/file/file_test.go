@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asjard/asjard/core/config"
-	_ "github.com/asjard/asjard/core/security"
-	"github.com/asjard/asjard/utils"
+	"github.com/asjard/asjard/v2/core/config"
+	_ "github.com/asjard/asjard/v2/core/security"
+	"github.com/asjard/asjard/v2/utils"
 	"github.com/stretchr/testify/assert"
 )
 

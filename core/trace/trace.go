@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/url"
 
-	"github.com/asjard/asjard/core/runtime"
+	"github.com/asjard/asjard/v2/core/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"

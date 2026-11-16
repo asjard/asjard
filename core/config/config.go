@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/asjard/asjard/core/constant"
+	"github.com/asjard/asjard/v2/core/constant"
 )
 
 // Configer defines the interface for global configuration storage and retrieval.
