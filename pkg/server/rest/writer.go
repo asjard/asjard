@@ -7,7 +7,6 @@ import (
 
 	"github.com/asjard/asjard/core/logger"
 	"github.com/asjard/asjard/core/status"
-	"github.com/valyala/fasthttp"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -109,9 +108,9 @@ func DefaultWriter(c *Context, data any, err error) {
 	}
 }
 
-// writeJSON handles the physical serialization and writing of bytes to the fasthttp response.
+// writeJSON handles the physical serialization and writing of bytes to the rest response.
 func writeJSON(c *Context, statusCode int, body proto.Message) error {
-	c.w.Header().Set(fasthttp.HeaderContentType, MIME_JSON)
+	c.w.Header().Set("Content-Type", MIME_JSON)
 	c.w.WriteHeader(statusCode)
 
 	// Marshal using protojson to ensure Protobuf field names and empty values

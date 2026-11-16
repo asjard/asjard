@@ -15,7 +15,7 @@ type Val string
 // Get retrieves a metadata value from the context for a specific key.
 // It automatically detects if the context is a REST context or a gRPC context.
 func Get(ctx context.Context, key string) Val {
-	//  Attempt to treat context as a REST (fasthttp) context.
+	// Attempt to treat context as a REST context.
 	rtx, ok := ctx.(*rest.Context)
 	if ok {
 		// In REST, metadata is typically stored in HTTP Headers.

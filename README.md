@@ -149,8 +149,6 @@ Here are some open source libraries used in this framework
 
 | Repo                                                                | Description                 |
 | ------------------------------------------------------------------- | --------------------------- |
-| [fasthttp](https://github.com/valyala/fasthttp)                     | http protocol               |
-| [fasthttp-router](https://github.com/fasthttp/router)               | http route management       |
 | [grpc](https://google.golang.org/grpc)                              | grpc protocol               |
 | [protobuf](https://google.golang.org/protobuf)                      | protobuf protocol           |
 | [hystrix-go](https://github.com/afex/hystrix-go)                    | circuit breaker             |

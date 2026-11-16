@@ -2,8 +2,11 @@ package metadata
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/stretchr/testify/require"
 	grpcmetadata "google.golang.org/grpc/metadata"
 )
@@ -14,12 +17,11 @@ func TestGet(t *testing.T) {
 	require.Empty(t, Get(grpcCtx, "missing"))
 	require.Empty(t, Get(context.Background(), "id"))
 
-	// requestCtx := &fasthttp.RequestCtx{}
-	// requestCtx.Request.Header.Add("id", "7")
-	// restCtx := rest.NewContext(requestCtx)
-	// t.Cleanup(restCtx.Close)
-	// require.Equal(t, Val("7"), Get(restCtx, "id"))
-	// require.Empty(t, Get(restCtx, "missing"))
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Add("id", "7")
+	restCtx := rest.NewContext(req, httptest.NewRecorder())
+	require.Equal(t, Val("7"), Get(restCtx, "id"))
+	require.Empty(t, Get(restCtx, "missing"))
 }
 
 func TestValConversions(t *testing.T) {

@@ -15,7 +15,6 @@ import (
 	scalargo "github.com/bdpiprava/scalar-go"
 	"github.com/ghodss/yaml"
 	openapi_v3 "github.com/google/gnostic/openapiv3"
-	"github.com/valyala/fasthttp"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -97,7 +96,7 @@ func (api *OpenAPI) ScalarPage(ctx context.Context, in *emptypb.Empty) (*emptypb
 			logger.Error("new scalargo fail", "err", err)
 			return &emptypb.Empty{}, status.InternalServerError()
 		}
-		rtx.Response().Header().Set(fasthttp.HeaderContentType, "text/html")
+		rtx.Response().Header().Set("Content-Type", "text/html")
 		rtx.Write([]byte(content))
 		return nil, nil
 	}

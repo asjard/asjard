@@ -3,6 +3,8 @@ package interceptors
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/asjard/asjard/core/config"
 	clientgrpc "github.com/asjard/asjard/pkg/client/grpc"
 	_ "github.com/asjard/asjard/pkg/config/mem"
+	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -74,6 +77,26 @@ func TestCycleChainInterceptor(t *testing.T) {
 		return nil
 	})
 	require.Error(t, err)
+}
+
+func TestRest2RpcContextPropagatesHTTPCancel(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/openapi/v1/payouts/create", nil)
+	req.Header.Set("Authorization", "OPENAPI merchantA:token")
+	parent, cancel := context.WithCancel(req.Context())
+	req = req.WithContext(parent)
+	rtx := rest.NewContext(req, httptest.NewRecorder())
+	t.Cleanup(rtx.Close)
+
+	interceptor := (&Rest2RpcContext{cfg: defaultRest2RpcContextConfig.complete()}).Interceptor()
+	cancel()
+	err := interceptor(rtx, "/openapi.v1.trade.PayoutChannel/Create", nil, nil, fakeConn{protocol: "grpc", service: "svc"},
+		func(ctx context.Context, _ string, _, _ any, _ client.ClientConnInterface) error {
+			md, ok := metadata.FromOutgoingContext(ctx)
+			require.True(t, ok)
+			require.Equal(t, []string{"OPENAPI merchantA:token"}, md.Get("Authorization"))
+			return ctx.Err()
+		})
+	require.ErrorIs(t, err, context.Canceled)
 }
 
 func TestInterceptorNamesAndConstructors(t *testing.T) {

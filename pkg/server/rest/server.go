@@ -33,7 +33,7 @@ type Handler interface {
 // MiddlewareFunc defines the standard signature for REST middleware.
 type MiddlewareFunc func(next http.Handler) http.Handler
 
-// RestServer manages the fasthttp instance, routing, and server lifecycle.
+// RestServer manages the rest instance, routing, and server lifecycle.
 type RestServer struct {
 	mux          *http.ServeMux                // Handles request multiplexing.
 	server       *http.Server                  // The high-performance HTTP engine.
@@ -63,7 +63,7 @@ func New(options *server.ServerOptions) (server.Server, error) {
 	return MustNew(conf, options)
 }
 
-// MustNew performs the low-level setup of the fasthttp engine and global CORS middleware.
+// MustNew performs the low-level setup of the rest engine and global CORS middleware.
 func MustNew(conf Config, options *server.ServerOptions) (server.Server, error) {
 	if conf.CertFile != "" {
 		conf.CertFile = filepath.Join(utils.GetCertDir(), conf.CertFile)

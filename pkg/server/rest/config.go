@@ -21,7 +21,7 @@ type Config struct {
 	Doc           DocConfig     `json:"doc"`     // Documentation and error page settings
 	Openapi       OpenapiConfig `json:"openapi"` // OpenAPI/Swagger generation and UI settings
 	Cors          CorsConfig    `json:"cors"`    // Cross-Origin Resource Sharing settings
-	Options       OptionsConfig `json:"options"` // Low-level fasthttp server tuning options
+	Options       OptionsConfig `json:"options"` // Low-level rest server tuning options
 }
 
 // RoutesConfig determines if route-related features are enabled.
@@ -77,7 +77,7 @@ type CorsConfig struct {
 	MaxAge           utils.JSONDuration `json:"maxAge"` // How long the browser caches the preflight response
 }
 
-// OptionsConfig contains low-level performance and timeout settings for the fasthttp server.
+// OptionsConfig contains low-level performance and timeout settings for the rest server.
 type OptionsConfig struct {
 	ReadTimeout        utils.JSONDuration `json:"readTimeout"`
 	ReadHeaderTimeout  utils.JSONDuration `json:"readHeaderTimeout"`

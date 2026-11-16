@@ -31,7 +31,7 @@ var (
 	comma               = ","
 )
 
-// Context wraps fasthttp.RequestCtx to provide helper methods for parameter
+// Context wraps http.Request and http.ResponseWriter to provide helper methods for parameter
 // extraction, data binding, and response writing.
 type Context struct {
 	r *http.Request

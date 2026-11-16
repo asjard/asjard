@@ -12,7 +12,6 @@ import (
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/asjard/asjard/utils"
 	"github.com/spf13/cast"
-	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -44,8 +43,8 @@ var defaultRest2RpcContextConfig = rest2RpcContextConfig{
 		"x-request-id",
 		"x-request-instance",
 		"Traceparent", // W3C Trace Context
-		fasthttp.HeaderXForwardedFor,
-		fasthttp.HeaderAuthorization,
+		"X-Forwarded-For",
+		"Authorization",
 	},
 }
 
@@ -107,9 +106,6 @@ func (r *Rest2RpcContext) Interceptor() client.UnaryClientInterceptor {
 			}
 		}
 
-		// Create a new gRPC outgoing context and continue the invocation chain.
-		// Note: context.Background() is used here to reset the context type to standard
-		// while carrying the new metadata.
 		return invoker(metadata.NewOutgoingContext(rtx.Context(), md),
 			method, req, reply, cc)
 	}

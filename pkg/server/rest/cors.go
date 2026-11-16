@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/asjard/asjard/core/logger"
-	"github.com/valyala/fasthttp"
 )
 
 // NewCorsMiddleware creates a new middleware to handle Cross-Origin Resource Sharing.
@@ -53,7 +52,7 @@ func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
 			}
 
 			// Set standard CORS response headers.
-			w.Header().Set(fasthttp.HeaderAccessControlAllowOrigin, origin)
+			w.Header().Set("Access-Control-Allow-Origin", origin)
 
 			// If not allowing all, set 'Vary: Origin' to prevent cache poisoning.
 			if !conf.allowAllOrigins {
@@ -68,12 +67,12 @@ func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
 
 			// Handle credentials (Cookies/Auth headers).
 			if conf.AllowCredentials {
-				w.Header().Set(fasthttp.HeaderAccessControlAllowCredentials, "true")
+				w.Header().Set("Access-Control-Allow-Credentials", "true")
 			}
 
 			// Expose custom headers to the browser client.
 			if len(conf.ExposeHeaders) > 0 {
-				w.Header().Set(fasthttp.HeaderAccessControlExposeHeaders, strings.Join(conf.ExposeHeaders, ","))
+				w.Header().Set("Access-Control-Expose-Headers", strings.Join(conf.ExposeHeaders, ","))
 			}
 
 			// Continue to the next handler for actual business logic.
@@ -85,28 +84,28 @@ func NewCorsMiddleware(conf CorsConfig) MiddlewareFunc {
 // corsPreflight handles the OPTIONS request sent by browsers before a "non-simple" request.
 func corsPreflight(w http.ResponseWriter, conf CorsConfig) {
 	if conf.AllowCredentials {
-		w.Header().Set(fasthttp.HeaderAccessControlAllowCredentials, "true")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 	}
 
 	// Inform the browser which methods are allowed.
 	if len(conf.AllowMethods) > 0 {
-		w.Header().Set(fasthttp.HeaderAccessControlAllowMethods, strings.Join(conf.AllowMethods, ","))
+		w.Header().Set("Access-Control-Allow-Methods", strings.Join(conf.AllowMethods, ","))
 	}
 
 	// Inform the browser which headers can be sent.
 	if len(conf.AllowHeaders) > 0 {
-		w.Header().Set(fasthttp.HeaderAccessControlAllowHeaders, strings.Join(conf.AllowHeaders, ","))
+		w.Header().Set("Access-Control-Allow-Headers", strings.Join(conf.AllowHeaders, ","))
 	}
 
 	// Cache the preflight response in the browser for a specific duration.
 	if conf.MaxAge.Duration != 0 {
-		w.Header().Set(fasthttp.HeaderAccessControlMaxAge, strconv.FormatInt(int64(conf.MaxAge.Duration/time.Second), 10))
+		w.Header().Set("Access-Control-Max-Age", strconv.FormatInt(int64(conf.MaxAge.Duration/time.Second), 10))
 	}
 
 	// Tell proxies that the response varies based on these request headers.
 	if !conf.allowAllOrigins {
-		w.Header().Add(fasthttp.HeaderVary, fasthttp.HeaderAccessControlRequestMethod)
-		w.Header().Add(fasthttp.HeaderVary, fasthttp.HeaderAccessControlRequestHeaders)
+		w.Header().Add("Vary", "Access-Control-Request-Method")
+		w.Header().Add("Vary", "Access-Control-Request-Headers")
 	}
 
 	// Preflight requests return 204 No Content.

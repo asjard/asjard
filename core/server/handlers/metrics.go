@@ -9,7 +9,6 @@ import (
 	"github.com/asjard/asjard/pkg/server/rest"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
-	"github.com/valyala/fasthttp"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -35,7 +34,7 @@ func (api *MetricsAPI) Fetch(ctx context.Context, in *emptypb.Empty) (*emptypb.E
 			return nil, status.InternalServerError()
 		}
 		contentType := expfmt.NegotiateIncludingOpenMetrics(rtx.Headers())
-		rtx.Response().Header().Set(fasthttp.HeaderContentType, string(contentType))
+		rtx.Response().Header().Set("Content-Type", string(contentType))
 		enc := expfmt.NewEncoder(rtx.Response(), contentType)
 		for _, mf := range mfs {
 			if err := enc.Encode(mf); err != nil {
