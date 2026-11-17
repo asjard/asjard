@@ -36,13 +36,13 @@ var (
 func Init() ([]Server, error) {
 	var servers []Server
 	for protocol, newServer := range newServerFuncs {
-		// 1. Generate the combined middleware chain for this specific protocol.
+		// Generate the combined middleware chain for this specific protocol.
 		interceptor, err := getChainUnaryInterceptors(protocol)
 		if err != nil {
 			return servers, err
 		}
 
-		// 2. Instantiate the server using its factory function and the generated options.
+		// Instantiate the server using its factory function and the generated options.
 		server, err := newServer(&ServerOptions{
 			Interceptor: interceptor,
 		})
