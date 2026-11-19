@@ -16,6 +16,29 @@ asjard:
     # maxBackups: 10
     ## Whether to compress
     # compress: true
+    ## Log desensitization (applies to all slog handlers created via NewSlogHandler)
+    ## on by default (disabled: false)
+    desensitize:
+      ## disable field / content masking
+      # disabled: false
+      ## replacement text for masked values
+      # replacement: "***"
+      ## global keep: keepPrefix + replacement + keepSuffix; if length <= prefix+suffix, use replacement only
+      # keepPrefix: 0
+      # keepSuffix: 0
+      ## recursion depth for nested values
+      # maxDepth: 8
+      ## sensitive field names and/or content patterns
+      ## per-key keepPrefix/keepSuffix/replacement: 0/empty falls back to global when global keep > 0
+      # keys:
+      # - name: password
+      # - name: mobile
+      #   keepPrefix: 3
+      #   keepSuffix: 4
+      # - name: phoneInText
+      #   pattern: '1[3-9]\d{9}'
+      #   keepPrefix: 3
+      #   keepSuffix: 4
     ## access log configuration
     accessLog:
       ## enable access log

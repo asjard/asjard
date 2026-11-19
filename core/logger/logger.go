@@ -25,13 +25,14 @@ type Logger struct {
 
 // Config defines the parameters for log file management and formatting.
 type Config struct {
-	FileName   string `json:"filepath"`   // Path to the log file
-	MaxSize    int    `json:"maxSize"`    // Maximum size in megabytes before rotation
-	MaxAge     int    `json:"maxAge"`     // Maximum days to retain old log files
-	MaxBackups int    `json:"maxBackups"` // Maximum number of old log files to keep
-	Compress   bool   `json:"compress"`   // Whether to compress rotated files
-	Level      string `json:"level"`      // Logging threshold (DEBUG, INFO, etc.)
-	Format     string `json:"format"`     // Output format (Text or Json)
+	FileName    string            `json:"filepath"`    // Path to the log file
+	MaxSize     int               `json:"maxSize"`     // Maximum size in megabytes before rotation
+	MaxAge      int               `json:"maxAge"`      // Maximum days to retain old log files
+	MaxBackups  int               `json:"maxBackups"`  // Maximum number of old log files to keep
+	Compress    bool              `json:"compress"`    // Whether to compress rotated files
+	Level       string            `json:"level"`       // Logging threshold (DEBUG, INFO, etc.)
+	Format      string            `json:"format"`      // Output format (Text or Json)
+	Desensitize DesensitizeConfig `json:"desensitize"` // Global field desensitization rules
 }
 
 // NewLoggerHandler is a factory type for creating custom slog handlers.
@@ -46,6 +47,49 @@ var DefaultConfig = Config{
 	Compress:   true,
 	Level:      INFO.String(),
 	Format:     Json.String(),
+	// Desensitize defaults to on (Disabled == false).
+	Desensitize: DesensitizeConfig{
+		ReplacementConfig: ReplacementConfig{
+			Replacement: "***",
+			KeepPrefix:  3,
+			KeepSuffix:  4,
+		},
+		MaxDepth: 8,
+		BuiltinKeys: []DesensitizeKey{
+			{Name: "password", ReplacementConfig: ReplacementConfig{KeepPrefix: -1, KeepSuffix: -1}},
+			{Name: "pwd", ReplacementConfig: ReplacementConfig{KeepPrefix: -1, KeepSuffix: -1}},
+			{Name: "pwd_md5", ReplacementConfig: ReplacementConfig{KeepPrefix: -1, KeepSuffix: -1}},
+			{Name: "secret"},
+			{Name: "token"},
+			{Name: "access_token"},
+			{Name: "refresh_token"},
+			{Name: "authorization"},
+			{Name: "cookie"},
+			{Name: "set-cookie"},
+			{Name: "api_key"},
+			{Name: "apikey"},
+			{Name: "private_key"},
+			{Name: "privateKey"},
+			{Name: "publicKey"},
+			{Name: "publicKey"},
+			{Name: "mobile"},
+			{Name: "phone"},
+			{Name: "email"},
+			{Name: "id_card"},
+			{Name: "idcard"},
+			{Name: "bank_card"},
+			{Name: "bankcard"},
+			{Name: "credit_card"},
+			{Name: "account_no"},
+			{Name: "accessKey"},
+			{Name: "access_key"},
+			{Name: "secretKey"},
+			{Name: "secret_key"},
+			{Name: "address"},
+			{Name: "postal_code"},
+			{Name: "postalCode"},
+		},
+	},
 }
 
 var (
@@ -92,6 +136,8 @@ func SetLoggerHandler(newFunc NewLoggerHandler) {
 }
 
 // NewSlogHandler initializes a slog handler with rotation support via lumberjack.
+// When desensitization is enabled, the base handler is wrapped so all attributes
+// (including accessLog / gorm adapters that call NewSlogHandler) are masked.
 func NewSlogHandler(cfg *Config) slog.Handler {
 	writer := &lumberjack.Logger{
 		Filename:   cfg.FileName,
@@ -103,12 +149,16 @@ func NewSlogHandler(cfg *Config) slog.Handler {
 		Level:     getSlogLevel(cfg.Level),
 		AddSource: true,
 	}
+	var h slog.Handler
 	switch cfg.Format {
 	case Text.String():
-		return slog.NewTextHandler(writer, handlerOptions)
+		h = slog.NewTextHandler(writer, handlerOptions)
 	default:
-		return slog.NewJSONHandler(writer, handlerOptions)
+		h = slog.NewJSONHandler(writer, handlerOptions)
 	}
+	// Refresh shared rules so existing DesensitizeHandlers (e.g. accessLog) hot-reload.
+	UpdateDesensitizer(&cfg.Desensitize)
+	return NewDesensitizeHandler(h)
 }
 
 // Standard logging methods: Info, Debug, Warn, Error

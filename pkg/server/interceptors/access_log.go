@@ -143,8 +143,9 @@ func (al *AccessLog) loadAndWatch() error {
 	if err := al.load(); err != nil {
 		return err
 	}
-	// Watch for configuration changes in real-time.
+	// Watch accessLog and parent logger (incl. desensitize) for real-time updates.
 	config.AddPatternListener("asjard.logger.accessLog.*", al.watch)
+	config.AddPrefixListener("asjard.logger.desensitize", al.watch)
 	return nil
 }
 

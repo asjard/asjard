@@ -19,6 +19,28 @@ asjard:
     # maxBackups: 10
     ## Whether to compress
     # compress: true
+    ## Log desensitization (global slog.Handler wrapper, on by default)
+    desensitize:
+      ## disable field / content masking
+      # disabled: false
+      ## replacement text for masked values
+      # replacement: "***"
+      ## global keep: keepPrefix + replacement + keepSuffix; if length <= prefix+suffix, use replacement only
+      # keepPrefix: 0
+      # keepSuffix: 0
+      ## recursion depth for nested values
+      # maxDepth: 8
+      ## sensitive field names and/or content patterns
+      ## per-key keepPrefix/keepSuffix/replacement: 0/empty falls back to global when global keep > 0
+      # keys:
+      # - name: password
+      # - name: mobile
+      #   keepPrefix: 3
+      #   keepSuffix: 4
+      # - name: phoneInText
+      #   pattern: '1[3-9]\d{9}'
+      #   keepPrefix: 3
+      #   keepSuffix: 4
     ## access log configuration
     accessLog:
       ## enable access log
@@ -54,4 +76,47 @@ func (api *SampleAPI) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.He
 		Message: "hello " + in.Name,
 	}, nil
 }
+```
+
+## 日志脱敏
+
+在 `slog.Handler` 层对所有日志属性递归脱敏（含 accessLog、gorm 等通过 `NewSlogHandler` 创建的 handler）。**默认开启**，并随 `asjard.logger` / `asjard.logger.desensitize` 配置热更新。
+
+- **replacement**：脱敏占位符，默认 `***`
+- **keepPrefix / keepSuffix**：全局前/后保留位数（按 rune）；格式为 `前 + replacement + 后`；均为 0，或字符串长度 `<= keepPrefix+keepSuffix` 时，整段替换为 `replacement`
+- **maxDepth**：嵌套结构递归深度，默认 `8`
+- **keys**：
+  - `name`：按字段名 / Header 名匹配（大小写不敏感）
+  - `pattern`：对字符串叶子做正则子串替换（配置了 `pattern` 时按内容规则处理，不再按 `name` 注册字段规则）
+  - 每条可单独配置 `keepPrefix` / `keepSuffix` / `replacement`；未配置或 keep 值为 `0` 且全局 keep `> 0` 时，回落使用全局配置
+  - 用户 `keys` 优先于内置 `builtInKeys`（同名字段用户配置覆盖内置）
+
+内置敏感字段名包括：`password`、`passwd`、`token`、`authorization`、`cookie`、`mobile`、`phone`、`id_card`、`bank_card` 等。
+
+关闭示例：
+
+```yaml
+asjard:
+  logger:
+    desensitize:
+      disabled: true
+```
+
+自定义示例：
+
+```yaml
+asjard:
+  logger:
+    desensitize:
+      replacement: "***"
+      keepPrefix: 1
+      keepSuffix: 1
+      keys:
+        - name: mobile
+          keepPrefix: 3
+          keepSuffix: 4
+        - name: phoneInText
+          pattern: '1[3-9]\d{9}'
+          keepPrefix: 3
+          keepSuffix: 4
 ```
