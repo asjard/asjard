@@ -83,12 +83,12 @@ func (api *SampleAPI) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.He
 在 `slog.Handler` 层对所有日志属性递归脱敏（含 accessLog、gorm 等通过 `NewSlogHandler` 创建的 handler）。**默认开启**，并随 `asjard.logger` / `asjard.logger.desensitize` 配置热更新。
 
 - **replacement**：脱敏占位符，默认 `***`
-- **keepPrefix / keepSuffix**：全局前/后保留位数（按 rune）；格式为 `前 + replacement + 后`；均为 0，或字符串长度 `<= keepPrefix+keepSuffix` 时，整段替换为 `replacement`
+- **keepPrefix / keepSuffix**：全局前/后保留位数（按 rune）；格式为 `前 + replacement + 后`；默认为前3后4，或字符串长度 `<= keepPrefix+keepSuffix` 时，整段替换为 `replacement`
 - **maxDepth**：嵌套结构递归深度，默认 `8`
 - **keys**：
   - `name`：按字段名 / Header 名匹配（大小写不敏感）
   - `pattern`：对字符串叶子做正则子串替换（配置了 `pattern` 时按内容规则处理，不再按 `name` 注册字段规则）
-  - 每条可单独配置 `keepPrefix` / `keepSuffix` / `replacement`；未配置或 keep 值为 `0` 且全局 keep `> 0` 时，回落使用全局配置
+  - 每条可单独配置 `keepPrefix` / `keepSuffix` / `replacement`；未配置或 keep 值为 `0` 且全局 keep `> 0` 时，回落使用全局配置, 小于0时则为0
   - 用户 `keys` 优先于内置 `builtInKeys`（同名字段用户配置覆盖内置）
 
 内置敏感字段名包括：`password`、`passwd`、`token`、`authorization`、`cookie`、`mobile`、`phone`、`id_card`、`bank_card` 等。

@@ -837,12 +837,12 @@ func GetAndUnmarshal(key string, outPtr any, opts ...Option) error {
 
 // GetAndJsonUnmarshal retrieves a value and deserializes it using standard JSON rules.
 func GetAndJsonUnmarshal(key string, outPtr any, opts ...Option) error {
-	return json.Unmarshal([]byte(GetString(key, "", opts...)), outPtr)
+	return unmarshalAndValid([]byte(GetString(key, "", opts...)), outPtr, json.Unmarshal)
 }
 
 // GetAndYamlUnmarshal retrieves a value and deserializes it using standard YAML rules.
 func GetAndYamlUnmarshal(key string, outPtr any, opts ...Option) error {
-	return yaml.Unmarshal([]byte(GetString(key, "", opts...)), outPtr)
+	return unmarshalAndValid([]byte(GetString(key, "", opts...)), outPtr, yaml.Unmarshal)
 }
 
 // GetWithUnmarshal retrieves configurations by prefix and unmarshals the resulting object.
@@ -865,7 +865,7 @@ func GetWithJsonUnmarshal(prefix string, outPtr any, opts ...Option) error {
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(outBytes, outPtr)
+	return unmarshalAndValid(outBytes, outPtr, json.Unmarshal)
 }
 
 // GetWithYamlUnmarshal retrieves configurations by prefix and unmarshals using YAML.
@@ -875,7 +875,17 @@ func GetWithYamlUnmarshal(prefix string, outPtr any, opts ...Option) error {
 	if err != nil {
 		return err
 	}
-	return yaml.Unmarshal(outBytes, outPtr)
+	return unmarshalAndValid(outBytes, outPtr, yaml.Unmarshal)
+}
+
+func unmarshalAndValid(in []byte, out any, decode func(in []byte, out any) error) error {
+	if err := decode(in, out); err != nil {
+		return err
+	}
+	if v, ok := out.(Validator); ok {
+		return v.IsValid()
+	}
+	return nil
 }
 
 // GetKeyValueToMap parses a single key-value pair into a structured map, supporting array notation.

@@ -52,6 +52,8 @@ type Desensitizer struct {
 
 // NewDesensitizer builds a Desensitizer from config.
 // Returns nil when desensitization is disabled.
+//
+//gocyclo:ignore
 func NewDesensitizer(cfg *DesensitizeConfig) *Desensitizer {
 	if cfg == nil || cfg.Disabled {
 		return nil
@@ -79,10 +81,10 @@ func NewDesensitizer(cfg *DesensitizeConfig) *Desensitizer {
 		if rule.replacement == "" {
 			rule.replacement = cfg.Replacement
 		}
-		if rule.keepPrefix <= 0 && cfg.KeepPrefix > 0 {
+		if rule.keepPrefix == 0 && cfg.KeepPrefix > 0 {
 			rule.keepPrefix = cfg.KeepPrefix
 		}
-		if rule.keepSuffix <= 0 && cfg.KeepSuffix > 0 {
+		if rule.keepSuffix == 0 && cfg.KeepSuffix > 0 {
 			rule.keepSuffix = cfg.KeepSuffix
 		}
 		if k.Pattern != "" {
@@ -216,6 +218,7 @@ func (d *Desensitizer) maskString(key string, val string) string {
 	return val
 }
 
+//gocyclo:ignore
 func (d *Desensitizer) maskAny(key string, v any, depth int) any {
 	if v == nil || depth > d.maxDepth {
 		return v
@@ -310,6 +313,7 @@ func (d *Desensitizer) maskStringSlice(key string, vals []string) []string {
 	return out
 }
 
+//gocyclo:ignore
 func (d *Desensitizer) replacementFor(rt reflect.Type, rv reflect.Value, rule replacementRule) any {
 	if rt == nil {
 		return rule.replacement
@@ -366,6 +370,7 @@ func (d *Desensitizer) maskHeader(h http.Header) http.Header {
 	return out
 }
 
+//gocyclo:ignore
 func (d *Desensitizer) maskReflect(key string, rv reflect.Value, depth int) any {
 	if !rv.IsValid() || depth > d.maxDepth {
 		return rv.Interface()

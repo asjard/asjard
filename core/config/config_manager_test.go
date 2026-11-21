@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -894,6 +895,88 @@ a: 1`
 		}
 	})
 
+}
+
+// validatorConfig implements Validator for unmarshal tests.
+type validatorConfig struct {
+	Port int    `json:"port" yaml:"port"`
+	Name string `json:"name" yaml:"name"`
+}
+
+func (c *validatorConfig) IsValid() error {
+	if c.Port <= 0 {
+		return errors.New("port must be > 0")
+	}
+	if c.Name == "" {
+		return errors.New("name is required")
+	}
+	return nil
+}
+
+func TestUnmarshalValidator(t *testing.T) {
+	t.Run("GetAndJsonUnmarshalValid", func(t *testing.T) {
+		assert.Nil(t, Set("test_validator_json_ok", `{"port":8080,"name":"api"}`))
+		var out validatorConfig
+		assert.Nil(t, GetAndJsonUnmarshal("test_validator_json_ok", &out))
+		assert.Equal(t, 8080, out.Port)
+		assert.Equal(t, "api", out.Name)
+	})
+
+	t.Run("GetAndJsonUnmarshalInvalid", func(t *testing.T) {
+		assert.Nil(t, Set("test_validator_json_bad", `{"port":0,"name":"api"}`))
+		var out validatorConfig
+		err := GetAndJsonUnmarshal("test_validator_json_bad", &out)
+		assert.EqualError(t, err, "port must be > 0")
+	})
+
+	t.Run("GetAndYamlUnmarshalInvalid", func(t *testing.T) {
+		assert.Nil(t, Set("test_validator_yaml_bad", "port: 1\nname: \"\"\n"))
+		var out validatorConfig
+		err := GetAndYamlUnmarshal("test_validator_yaml_bad", &out)
+		assert.EqualError(t, err, "name is required")
+	})
+
+	t.Run("GetWithJsonUnmarshalValid", func(t *testing.T) {
+		prefix := "test_validator_with_json_ok"
+		assert.Nil(t, Set(prefix+".port", 9090))
+		assert.Nil(t, Set(prefix+".name", "svc"))
+		var out validatorConfig
+		assert.Nil(t, GetWithJsonUnmarshal(prefix, &out))
+		assert.Equal(t, 9090, out.Port)
+		assert.Equal(t, "svc", out.Name)
+	})
+
+	t.Run("GetWithJsonUnmarshalInvalid", func(t *testing.T) {
+		prefix := "test_validator_with_json_bad"
+		assert.Nil(t, Set(prefix+".port", -1))
+		assert.Nil(t, Set(prefix+".name", "svc"))
+		var out validatorConfig
+		err := GetWithJsonUnmarshal(prefix, &out)
+		assert.EqualError(t, err, "port must be > 0")
+	})
+
+	t.Run("GetWithYamlUnmarshalInvalid", func(t *testing.T) {
+		prefix := "test_validator_with_yaml_bad"
+		assert.Nil(t, Set(prefix+".port", 1))
+		assert.Nil(t, Set(prefix+".name", ""))
+		var out validatorConfig
+		err := GetWithYamlUnmarshal(prefix, &out)
+		assert.EqualError(t, err, "name is required")
+	})
+
+	t.Run("GetAndUnmarshalUsesValidator", func(t *testing.T) {
+		assert.Nil(t, Set("test_validator_and_json_bad", `{"port":0,"name":""}`))
+		var out validatorConfig
+		err := GetAndUnmarshal("test_validator_and_json_bad", &out)
+		assert.EqualError(t, err, "port must be > 0")
+	})
+
+	t.Run("NonValidatorSkipped", func(t *testing.T) {
+		assert.Nil(t, Set("test_validator_plain", `{"a":1}`))
+		out := make(map[string]int)
+		assert.Nil(t, GetAndJsonUnmarshal("test_validator_plain", &out))
+		assert.Equal(t, 1, out["a"])
+	})
 }
 
 func TestGetDuration(t *testing.T) {

@@ -44,6 +44,10 @@ type SourceConfiger interface {
 	Del(key, ref string, priority int)
 }
 
+type Validator interface {
+	IsValid() error
+}
+
 // Configs represents the final, flattened global configuration state.
 type Configs struct {
 	cfgs map[string]*Value
